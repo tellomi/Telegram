@@ -3843,9 +3843,8 @@ public class QrShareView extends View {
                 c.translate(-off, off);
                 c.scale(psc, psc, lcx, lcy);
                 if (qrMark != null) {
-                    float inset = lr * 0.22f;
                     qrMark.setAlpha((int) (255 * Utilities.clamp01(pu * 2f)));
-                    qrMark.setBounds((int) (lcx - lr + inset), (int) (lcy - lr + inset), (int) (lcx + lr - inset), (int) (lcy + lr - inset));
+                    qrMark.setBounds((int) (lcx - lr), (int) (lcy - lr), (int) (lcx + lr), (int) (lcy + lr));
                     qrMark.draw(c);
                     qrMark.setAlpha(255);
                 }
