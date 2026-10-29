@@ -105,3 +105,12 @@ GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` do
 | --- | --- |
 | `TMessagesProj/build.gradle` | `-PTELLOMI_PREBUILT_JNI=<dir>` skips CMake and packages `<dir>/<abi>/libtmessages.49.so`. Unset, the CMake build is unchanged. |
 | `TMessagesProj/jni/CMakeLists.txt` | Includes `TMessagesProj/tellomi/ci/native-ci.cmake` only when `TELLOMI_CI_NATIVE` is set (ccache and ninja job pools). |
+
+## Sign-up agreement checkbox
+
+No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `popup=false`). The sign-up (name) screen's terms line becomes `☐ 我已阅读并同意《用户服务协议》和《隐私政策》`; the links open https://tellomi.cn/legal/terms/ and https://tellomi.cn/legal/privacy/, tapping the rest toggles the box, and Continue does nothing (the line shakes) until it is checked.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | New (Tellomi file in `src/main` so every flavor compiles). Builds the checkbox text and state. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | One field `tellomiAgreement`; constructor calls `tellomiAgreement.install(privacyView)` after the stock terms text; `onNextPressed` returns early unless `tellomiAgreement.checkAgreed()`. |
