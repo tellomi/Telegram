@@ -253,11 +253,11 @@
     <string name="UsernameInUse">Este nombre de usuario ya está ocupado.</string>
     <string name="UsernameInUsePurchase">Este enlace ya está ocupado.\nSin embargo, está disponible para su compra. **Saber más…**</string>
     <string name="UsernameInvalid">Este nombre de usuario no es válido.</string>
-    <string name="UsernameInvalidShort">Un nombre de usuario debe tener al menos 5 caracteres.</string>
-    <string name="UsernameInvalidShortPurchase">Un nombre de usuario básico debe tener al menos 5 caracteres.\nSin embargo, los nombres de usuario cortos y coleccionables están disponibles para su compra, incluido este. **Saber más…**</string>
+    <string name="UsernameInvalidShort">Un nombre de usuario debe tener al menos 3 caracteres.</string>
+    <string name="UsernameInvalidShortPurchase">Un nombre de usuario básico debe tener al menos 3 caracteres.\nSin embargo, los nombres de usuario cortos y coleccionables están disponibles para su compra, incluido este. **Saber más…**</string>
     <string name="UsernameInvalidLong">Un nombre de usuario no puede exceder los 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Los nombres de usuario no pueden comenzar con un número.</string>
-    <string name="UsernameHelp">Puedes elegir un nombre de usuario en **Telegram**. Los usuarios podrán encontrarte por ese nombre y contactarte sin saber tu número de teléfono.\n\nPuedes usar **a–z**, **0–9** y guiones bajos.\nLa longitud mínima es de **5** caracteres.</string>
+    <string name="UsernameHelp">Puedes elegir un nombre de usuario en **Telegram**. Los usuarios podrán encontrarte por ese nombre y contactarte sin saber tu número de teléfono.\n\nPuedes usar **a–z**, **0–9** y guiones bajos.\nLa longitud mínima es de **3** caracteres.</string>
     <string name="UsernameHelpLink">Este enlace abre un chat contigo:\n%1$s</string>
     <string name="UsernameChecking">Verificando nombre de usuario...</string>
     <string name="UsernameAvailable">%1$s está disponible.</string>
@@ -401,21 +401,21 @@
     <string name="LanguageUnsupportedError">Idioma no encontrado.</string>
     <string name="LanguageSame">Ya estás usando este pack de idioma (**%1$s**). Puedes cambiar el idioma cuando quieras en Ajustes.</string>
     <string name="LanguageUnknownCustomAlert">Lamentablemente, este pack de idioma personalizado (**%1$s**) no contiene datos para Telegram Android.</string>
-    <string name="AskAQuestionInfo">Ten en cuenta que el soporte de Telegram está en manos de voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.\n\nPuedes mirar las <![CDATA[<a href=\"https://telegram.org/faq/es#preguntas-generales\">preguntas frecuentes de Telegram</a>]]>: tienen <![CDATA[<a href=\"https://telegram.org/faq/es#solucion-de-problemas\">soluciones a problemas</a>]]> y respuestas a muchas preguntas.</string>
+    <string name="AskAQuestionInfo">Ten en cuenta que el soporte de Telegram está en manos de voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.\n\nPuedes mirar las <![CDATA[<a href=\"https://tellomi.cn/help/">preguntas frecuentes de Telegram</a>]]>: tienen <![CDATA[<a href=\"https://tellomi.cn/help/">soluciones a problemas</a>]]> y respuestas a muchas preguntas.</string>
     <string name="AskButton">Preguntar</string>
     <string name="TelegramFAQ">Preguntas frecuentes</string>
     <string name="TelegramFaq">Preguntas frecuentes</string>
     <string name="TelegramFeatures">Aprende sobre Telegram</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TelegramTipsES</string>
+    <string name="TelegramFeaturesUrl">https://tell.cc/TelegramTipsES</string>
     <string name="AddAccount">Añadir cuenta</string>
     <string name="SelectAccount">Elige una cuenta</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq/es</string>
+    <string name="TelegramFaqUrl">https://tellomi.cn/help/</string>
     <string name="PrivacyPolicy">Política de privacidad</string>
     <string name="TermsOfService">Términos de servicio</string>
     <string name="TermsOfServiceLogin">Al registrarte, aceptas\nlos *términos de servicio*.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
-    <string name="TermsOfServiceUrl">https://telegram.org/tos</string>
-    <string name="WebAppDisclaimerUrl">https://telegram.org/tos/mini-apps</string>
+    <string name="PrivacyPolicyUrl">https://tellomi.cn/legal/privacy/</string>
+    <string name="TermsOfServiceUrl">https://tellomi.cn/legal/terms/</string>
+    <string name="WebAppDisclaimerUrl">https://tellomi.cn/legal/terms/</string>
     <string name="DeleteLocalizationTitle">Eliminar pack de idioma</string>
     <string name="DeleteLocalizationText">¿Quieres eliminar el pack de idioma **%1$s**?</string>
     <string name="IncorrectLocalization">Archivo de traducción incorrecto</string>
@@ -654,9 +654,9 @@
     <string name="AuthAnotherClientScan">Escanea el código QR</string>
     <string name="AuthAnotherClientNotFound">No se encontró el token de autenticación</string>
     <string name="AuthAnotherClientOk">Autenticación exitosa</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org/</string>
-    <string name="AuthAnotherWebClientUrl">https://web.telegram.org/</string>
-    <string name="AuthAnotherClientInfo1">Descarga Telegram en tu computadora desde *desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://tellomi.cn/download/</string>
+    <string name="AuthAnotherWebClientUrl">https://tell.cc/</string>
+    <string name="AuthAnotherClientInfo1">Descarga Telegram en tu computadora desde *tellomi.cn/download*.</string>
     <string name="AuthAnotherClientInfo2">Inicia Telegram Desktop para obtener el código QR.</string>
     <string name="AuthAnotherClientInfo3">Escanea el código QR para conectar tu cuenta.</string>
     <string name="AuthAnotherClientUrl">Este código se puede utilizar para permitir que alguien inicie sesión en tu cuenta de Telegram.\n\nPara confirmar el inicio de sesión, ve a Ajustes &gt; Dispositivos &gt; Escanear QR y escanea el código.</string>
@@ -699,7 +699,7 @@
     <string name="ChannelDescriptionChanged">Descripción del canal cambiada.</string>
     <string name="CheckPhoneNumber">¿El %1$s aún es tu número?</string>
     <string name="CheckPhoneNumberInfo">Ten siempre actualizado tu número para que puedas iniciar sesión en Telegram. **Saber más**</string>
-    <string name="CheckPhoneNumberLearnMoreUrl">https://telegram.org/faq/es#p-tengo-un-nuevo-numero-que-hago</string>
+    <string name="CheckPhoneNumberLearnMoreUrl">https://tellomi.cn/help/</string>
     <string name="CheckPhoneNumberYes">Sí</string>
     <string name="CheckPhoneNumberNo">No</string>
     <!--filters-->

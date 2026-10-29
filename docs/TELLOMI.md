@@ -163,9 +163,9 @@ These were left in place on purpose. They are either in-app deep links (resolved
 - Contact MIME prefix shape and the intent action `org.telegram.messenger.OPEN_ACCOUNT` (action string, not a package).
 - Class names, JNI library `tmessages.49`, preferences file names, and the `org.telegram.messenger` Java package / namespace.
 
-**Left as telegram.org URLs inside strings (not requested automatically):**
+Bundled `strings.xml` copies show `tell.cc` for public links and `tellomi.cn` for help, privacy, terms, download, and support. `TellomiBrand.rewrite` applies the same mapping to any string that still contains the old hosts, including cloud langpack text. Link parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Internal `tg://telegram.org` rewrites are a URI-parser stand-in, not a page the user opens. The YouTube embed referer `https://messenger.telegram.org/` is unchanged.
 
-FAQ, privacy, terms, mini-app ToS, ads (`ads.telegram.org`), desktop/web client hints (`getdesktop.telegram.org`, `web.telegram.org`), passport FAQ, stars/monetization policy links, emoji suggestion host `translations.telegram.org`, and similar `*Url` string resources. With cloud strings off, the English (and bundled locale) copy is what the UI shows. Opening one of those rows still loads telegram.org in the browser. Search `telegram.org` under `TMessagesProj/src/main/res/values/strings.xml` for the full English set. Other locales keep their own copies of the same links.
+Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 3 characters. The English and bundled locale strings that said “at least 5 characters” now say 3.
 
 **Still compiled, will fail or no-op until you replace keys:**
 

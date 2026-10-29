@@ -1248,7 +1248,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             }
         }
-        if (name == null || name.length() < 4) {
+        if (name == null || name.length() < 3) {
             if (alert) {
                 AlertsCreator.showSimpleAlert(this, LocaleController.getString(R.string.UsernameInvalidShort));
             } else {
@@ -1324,12 +1324,12 @@ public class ChangeUsernameActivity extends BaseFragment {
                             lastNameAvailable = true;
                         } else {
                             if (statusTextView != null) {
-                                if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
+                                if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() < 3) {
                                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                                     statusTextView.setTag(Theme.key_text_RedRegular);
                                     statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                                 } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                                    if (req.username.length() == 4) {
+                                    if (req.username.length() < 3) {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                                     } else {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));

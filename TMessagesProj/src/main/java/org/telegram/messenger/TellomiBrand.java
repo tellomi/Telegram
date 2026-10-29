@@ -45,6 +45,15 @@ public final class TellomiBrand {
         value = rewritePolicyLinks(value);
         String host = BuildVars.LINK_HOST;
         if (host != null && !host.isEmpty()) {
+            value = replaceHost(value, "getdesktop.telegram.org", "tellomi.cn/download");
+            value = replaceHost(value, "desktop.telegram.org", "tellomi.cn/download");
+            value = replaceHost(value, "web.telegram.org", host);
+            value = replaceHost(value, "ads.telegram.org", host);
+            value = replaceHost(value, "promote.telegram.org", host);
+            value = replaceHost(value, "translations.telegram.org", BuildVars.SITE_HOST);
+            value = replaceHost(value, "core.telegram.org", BuildVars.SITE_HOST);
+            value = replaceHost(value, "sms@telegram.org", "support@" + BuildVars.SITE_HOST);
+            value = replaceHost(value, "recover@telegram.org", "support@" + BuildVars.SITE_HOST);
             value = replaceHost(value, "www.telegram.org", host);
             value = replaceHostBoundary(value, "telegram.org", host);
             value = replaceHost(value, "telegram.me", host);
@@ -54,9 +63,9 @@ public final class TellomiBrand {
         return value;
     }
 
-    private static final Pattern FAQ_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/faq\\S*");
-    private static final Pattern PRIVACY_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/privacy\\S*");
-    private static final Pattern TOS_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/tos\\S*");
+    private static final Pattern FAQ_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/faq[^\\s\"'<>)\\]]*");
+    private static final Pattern PRIVACY_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/privacy[^\\s\"'<>)\\]]*");
+    private static final Pattern TOS_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/tos[^\\s\"'<>)\\]]*");
 
     /** Help, privacy, and terms go to tellomi.cn. Other telegram.org links are rewritten afterwards. */
     private static String rewritePolicyLinks(String value) {
