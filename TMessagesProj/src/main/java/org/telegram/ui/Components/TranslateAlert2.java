@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.TranslateController.normalizeLanguage;
@@ -860,7 +862,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     newEntity.length = entity.length;
                     received.entities.set(i, newEntity);
                 } else if (
-                    entity.url.startsWith("https://t.me/") &&
+                    entity.url.startsWith(BuildVars.LINK_BASE + "") &&
                     text.startsWith("@") &&
                     TextUtils.equals(text.substring(1), entity.url.substring(13))
                 ) {

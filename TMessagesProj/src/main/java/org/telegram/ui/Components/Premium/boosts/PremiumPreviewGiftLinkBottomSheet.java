@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceTags;
 import static org.telegram.messenger.LocaleController.getString;
@@ -86,7 +88,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
     }
 
     private void share() {
-        final String slugLink = "https://t.me/giftcode/" + slug;
+        final String slugLink = BuildVars.LINK_BASE + "giftcode/" + slug;
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);

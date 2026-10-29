@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
@@ -1664,7 +1666,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         textView.setTextColor(getThemedColor(Theme.key_dialogTextHint));
         textView.setMaxLines(1);
         textView.setLines(1);
-        textView.setText("t.me/addstickers/");
+        textView.setText(BuildVars.LINK_HOST + "/addstickers/");
         textView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         textView.setGravity(Gravity.LEFT | Gravity.TOP);
         textView.setSingleLine(true);

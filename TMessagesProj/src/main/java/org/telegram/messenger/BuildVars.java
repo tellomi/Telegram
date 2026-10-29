@@ -32,6 +32,11 @@ public class BuildVars {
     public static String APP_HASH = BuildConfig.TELLOMI_API_HASH;
 
     public static final String APP_NAME = BuildConfig.TELLOMI_APP_NAME;
+    /** Public link host (tell.cc). Datacenter addresses stay IP literals; this is only for links. */
+    public static final String LINK_HOST = BuildConfig.TELLOMI_LINK_HOST;
+    /** Custom scheme that mirrors tg:// routes, for example tellomi://resolve?domain=name. */
+    public static final String LINK_SCHEME = BuildConfig.TELLOMI_LINK_SCHEME;
+    public static final String LINK_BASE = "https://" + LINK_HOST + "/";
     public static final String STORAGE_DIR_NAME = APP_NAME;
     public static final String STORAGE_IMAGES_DIR = APP_NAME + " Images";
     public static final String STORAGE_VIDEO_DIR = APP_NAME + " Video";
@@ -111,6 +116,51 @@ public class BuildVars {
 
     public static boolean isHuaweiStoreApp() {
         return ApplicationLoader.isHuaweiStoreBuild();
+    }
+
+    public static boolean isLegacyLinkHost(String host) {
+        return host != null && ("t.me".equalsIgnoreCase(host) || "telegram.me".equalsIgnoreCase(host) || "telegram.dog".equalsIgnoreCase(host));
+    }
+
+    /** tell.cc, plus t.me / telegram.me / telegram.dog so links already in chats still open. */
+    public static boolean isLinkHost(String host) {
+        return host != null && (host.equalsIgnoreCase(LINK_HOST) || isLegacyLinkHost(host));
+    }
+
+    public static boolean isAppScheme(String scheme) {
+        return scheme != null && ("tg".equalsIgnoreCase(scheme) || LINK_SCHEME.equalsIgnoreCase(scheme));
+    }
+
+    /** Rewrite tellomi: and tellomi:// to tg: / tg:// so the existing route parser can run. */
+    public static String toTgUrl(String url) {
+        if (url == null || LINK_SCHEME == null || LINK_SCHEME.isEmpty()) {
+            return url;
+        }
+        return url.replaceFirst("(?i)^" + java.util.regex.Pattern.quote(LINK_SCHEME) + ":", "tg:");
+    }
+
+    /** Force generated links onto LINK_HOST. Telegram hosts from help.getConfig are rewritten. */
+    public static String normalizeLinkPrefix(String prefix) {
+        if (prefix == null) {
+            return LINK_HOST;
+        }
+        String host = prefix.trim();
+        while (host.endsWith("/")) {
+            host = host.substring(0, host.length() - 1);
+        }
+        if (host.startsWith("https://")) {
+            host = host.substring(8);
+        } else if (host.startsWith("http://")) {
+            host = host.substring(7);
+        }
+        int slash = host.indexOf('/');
+        if (slash >= 0) {
+            host = host.substring(0, slash);
+        }
+        if (host.isEmpty() || isLegacyLinkHost(host) || host.equalsIgnoreCase(LINK_HOST)) {
+            return LINK_HOST;
+        }
+        return host;
     }
 
     public static String getSmsHash() {

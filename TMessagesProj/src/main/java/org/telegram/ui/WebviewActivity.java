@@ -241,7 +241,8 @@ public class WebviewActivity extends BaseFragment {
                     return false;
                 }
                 Uri uri = Uri.parse(url);
-                if ("tg".equals(uri.getScheme())) {
+                if (BuildVars.isAppScheme(uri.getScheme())) {
+                    url = BuildVars.toTgUrl(url);
                     if (type == TYPE_STAT) {
                         try {
                             uri = Uri.parse(url.replace("tg:statsrefresh", "tg://telegram.org"));

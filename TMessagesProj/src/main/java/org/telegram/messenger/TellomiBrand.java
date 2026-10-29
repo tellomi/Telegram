@@ -39,6 +39,19 @@ public final class TellomiBrand {
             }
             value = value.replace(token, name);
         }
+        String host = BuildVars.LINK_HOST;
+        if (host != null && !host.isEmpty()) {
+            value = replaceHost(value, "telegram.me", host);
+            value = replaceHost(value, "telegram.dog", host);
+            value = replaceHost(value, "t.me", host);
+        }
         return value;
+    }
+
+    private static String replaceHost(String value, String from, String to) {
+        if (from.equals(to) || value.indexOf(from) < 0) {
+            return value;
+        }
+        return value.replace(from, to);
     }
 }

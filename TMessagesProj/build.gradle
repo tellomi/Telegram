@@ -198,6 +198,8 @@ android {
 
         // TELLOMI build config. Values come from gradle.properties. See docs/TELLOMI.md.
         buildConfigField "String", "TELLOMI_APP_NAME", tellomiJavaString(tellomiProp("TELLOMI_APP_NAME", "Tellomi"))
+        buildConfigField "String", "TELLOMI_LINK_HOST", tellomiJavaString(tellomiProp("TELLOMI_LINK_HOST", "tell.cc"))
+        buildConfigField "String", "TELLOMI_LINK_SCHEME", tellomiJavaString(tellomiProp("TELLOMI_LINK_SCHEME", "tellomi"))
         buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
         buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
         def tellomiLocalServer = tellomiServerSelection('local')

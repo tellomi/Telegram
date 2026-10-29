@@ -47,6 +47,14 @@ Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official T
 
 `api.tellomi.cn` is a DNS-only name for that server (A record `8.137.39.82`, port 10443). The dev profile keeps the IP. `ConnectionSocket::openConnection` connects a datacenter address with `inet_pton` only: an IPv4 or IPv6 literal is accepted, and anything else is closed as `bad ipv4` / `bad ipv6`. Hostname lookup exists only for a proxy address (`getHostByName` / `gethostbyname`), not for the DC list in `initDatacenters`. If the A record changes, update `TELLOMI_PROFILE_DEV` to the new IP. Do not put `api.tellomi.cn` in the profile.
 
+### Public links (`tell.cc`)
+
+`TELLOMI_LINK_HOST` (`BuildVars.LINK_HOST`, default `tell.cc`) is the only host used when the app builds a public link (`https://tell.cc/username`, `/+hash`, `/joinchat`, `/c/`, `/s/`, `/addstickers`, `/addemoji`, `/proxy`, `/socks`, `/share`, stories, `?start`, and the rest of the t.me path set). `TELLOMI_LINK_SCHEME` (`BuildVars.LINK_SCHEME`, default `tellomi`) is accepted as the same routes as `tg://` (`tellomi://resolve?domain=name`, and so on). `tg://` itself still works.
+
+`help.getConfig`'s `me_url_prefix` is kept only when it is already `tell.cc` or some other non-Telegram host. `t.me`, `telegram.me`, and `telegram.dog` are rewritten to `tell.cc`. Those three hosts are still recognized inside the app so older messages open, but the manifest does not claim them.
+
+App Links: `AndroidManifest` has an `https`/`http` `tell.cc` intent filter with `android:autoVerify="true"`, plus `tellomi` next to `tg`. The Digital Asset Links statement is `TMessagesProj/tellomi/well-known/assetlinks.json`. Host it at `https://tell.cc/.well-known/assetlinks.json`. How to read the signing SHA256 is in `TMessagesProj/tellomi/well-known/README.md`. The checked-in fingerprint is the dummy `TMessagesProj/config/release.keystore` (`androidkey`), which this tree also uses to sign debug builds. Replace it when the keystore changes. The manifest host and scheme are literals; if you change `TELLOMI_LINK_HOST` or `TELLOMI_LINK_SCHEME`, update `AndroidManifest.xml` to match.
+
 ### Local Teamgram (docker)
 
 Teamgram's docker compose publishes gnetway on **TCP 10443** (also 5222 and websocket 11443). The client uses 10443. Select it with `-PTELLOMI_SERVER_PROFILE=local`.

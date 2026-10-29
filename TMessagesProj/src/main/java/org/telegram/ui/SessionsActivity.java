@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.getString;
@@ -328,7 +330,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         if (!TextUtils.isEmpty(username)) {
                             if (chatbots.length() > 0) chatbots.append(", ");
                             SpannableStringBuilder link = new SpannableStringBuilder("@").append(username);
-                            link.setSpan(new URLSpanNoUnderline("https://t.me/" + username), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            link.setSpan(new URLSpanNoUnderline(BuildVars.LINK_BASE + "" + username), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             chatbots.append(link);
                         } else {
                             chatbots.append(UserObject.getUserName(botUser));
@@ -1255,7 +1257,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                 this.error = null;
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
-                        String code = link.substring("tg://login?token=".length());
+                        String code = BuildVars.toTgUrl(link).substring("tg://login?token=".length());
                         code = code.replaceAll("\\/", "_");
                         code = code.replaceAll("\\+", "-");
                         byte[] token = Base64.decode(code, Base64.URL_SAFE);

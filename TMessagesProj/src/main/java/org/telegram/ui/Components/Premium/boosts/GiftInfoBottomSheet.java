@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode.NO_USER_ID;
 
 import android.content.Intent;
@@ -85,7 +87,7 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
             if (scheme != null) {
                 if ((scheme.equals("http") || scheme.equals("https"))) {
                     String host = data.getHost().toLowerCase();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
+                    if (BuildVars.isLinkHost(host)) {
                         String path = data.getPath();
                         if (path != null) {
                             String lastPathSegment = data.getLastPathSegment();
@@ -95,8 +97,8 @@ public class GiftInfoBottomSheet extends BottomSheetWithRecyclerListView {
                             }
                         }
                     }
-                } else if (scheme.equals("tg")) {
-                    String url = data.toString();
+                } else if (BuildVars.isAppScheme(scheme)) {
+                    String url = BuildVars.toTgUrl(data.toString());
                     String lastPathSegment = data.getLastPathSegment();
                     if (url.startsWith("tg:giftcode") || url.startsWith("tg://giftcode")) {
                         if (lastPathSegment != null) {

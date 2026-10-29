@@ -1532,7 +1532,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
     }
 
     private static boolean isTelegramHost(@Nullable String host) {
-        return host != null && ("t.me".equalsIgnoreCase(host) || "telegram.me".equalsIgnoreCase(host) || "telegram.dog".equalsIgnoreCase(host));
+        return host != null && BuildVars.isLinkHost(host);
     }
 
     /** A scanned text as a link; a t.me link without a scheme gets https. */

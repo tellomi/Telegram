@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.adapters;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.tgnet.TLRPC.TL_payments_checkedGiftCode.NO_USER_ID;
 
 import android.content.Context;
@@ -230,7 +232,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
     }
 
     private void share() {
-        final String slugLink = "https://t.me/giftcode/" + slug;
+        final String slugLink = BuildVars.LINK_BASE + "giftcode/" + slug;
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);

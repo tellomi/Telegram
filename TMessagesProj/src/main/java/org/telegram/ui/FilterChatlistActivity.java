@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.ui.Components.TextStyleSpan.FLAG_STYLE_SPOILER;
@@ -964,7 +966,7 @@ public class FilterChatlistActivity extends BaseFragment {
             spoilerTextView = new SimpleTextView(context);
             spoilerTextView.setTextSize(16);
             spoilerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            SpannableString spoileredText = new SpannableString("t.me/folder/N3k/dImA/bIo");
+            SpannableString spoileredText = new SpannableString(BuildVars.LINK_HOST + "/folder/N3k/dImA/bIo");
             TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
             run.flags |= FLAG_STYLE_SPOILER;
             spoileredText.setSpan(new TextStyleSpan(run), 0, spoileredText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

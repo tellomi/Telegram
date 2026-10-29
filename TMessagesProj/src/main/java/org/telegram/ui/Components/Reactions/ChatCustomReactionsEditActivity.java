@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Reactions;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceTags;
 import static org.telegram.messenger.LocaleController.formatPluralString;
@@ -289,7 +291,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         infoCell2.setText(AndroidUtilities.replaceSingleTag(
                 getString(R.string.ReactionCreateOwnPack),
                 Theme.key_chat_messageLinkIn, 0,
-                () -> Browser.openUrl(getContext(), "https://t.me/stickers"),
+                () -> Browser.openUrl(getContext(), BuildVars.LINK_BASE + "stickers"),
                 getResourceProvider()
         ));
         switchLayout.addView(infoCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

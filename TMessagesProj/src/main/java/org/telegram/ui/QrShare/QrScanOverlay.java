@@ -53,6 +53,7 @@ import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -1034,7 +1035,7 @@ public final class QrScanOverlay extends FrameLayout {
     }
 
     static boolean isTelegramLink(@Nullable String text) {
-        return !TextUtils.isEmpty(text) && (text.startsWith("tg:") || Browser.isInternalUrl(text, null));
+        return !TextUtils.isEmpty(text) && (text.startsWith("tg:") || text.regionMatches(true, 0, BuildVars.LINK_SCHEME + ":", 0, BuildVars.LINK_SCHEME.length() + 1) || Browser.isInternalUrl(text, null));
     }
 
     private void onFound(Scanned scanned) {
