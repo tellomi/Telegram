@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- TELLOMI PLACEHOLDER launcher background. Not the Telegram logo. Replace before release. See docs/TELLOMI.md. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#C73E66" />
-</shape>

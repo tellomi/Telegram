@@ -108,17 +108,20 @@ Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The 
 - Media directories are `Tellomi`, `Tellomi Images`, `Tellomi Video`, `Tellomi Audio`, `Tellomi Documents`, `Tellomi Files`, `Tellomi Stories`. The scoped-storage migration looks for `Tellomi` on external storage, not the official client's `Telegram` folder, so it will not move that folder.
 - Contacts account type follows `APP_PACKAGE` (`BuildVars.ACCOUNT_TYPE`). `res/xml/auth.xml`, `auth_menu.xml` (`android:targetPackage`), and `sync_contacts.xml` are hardcoded to `com.tellomi.app` and must be updated if `APP_PACKAGE` changes.
 - Contact shortcut MIME types are `vnd.android.cursor.item/vnd.com.tellomi.app.profile`, `.call`, and `.call.video` (manifest, `contacts.xml`, `ContactsController`, `LaunchActivity`).
-- The system account icon and the default launcher icon are the placeholder described below.
+- The system account icon and the default launcher icon are the Tellomi mark (speech bubble with @). See below.
 - The last-resort files directory in `ApplicationLoader.getFilesDirFixed()` uses the real package name.
 
-### Launcher icon (placeholder)
+### Launcher icon
 
-These are intentionally not a finished brand and not the Telegram paper plane. Replace them before any release:
+The default icon is the Tellomi mark from `docs/brand/logo.svg` in [tellomi/tellomi](https://github.com/tellomi/tellomi) (traced by `scripts/brand/trace-logo.py`; `currentColor`). A copy of that SVG is `TMessagesProj/tellomi/brand/logo.svg`. Light theme draws it in `#111113` on `#FFFFFF`. Dark theme draws it in `#FFFFFF` on `#111113`. Android 13 themed icons use the same mark as a white monochrome alpha mask.
 
-- `TMessagesProj/src/main/res/drawable/tellomi_launcher_bg.xml`
-- `TMessagesProj/src/main/res/drawable/tellomi_launcher_fg.xml`
-- `TMessagesProj/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` (they point at the two drawables)
-- `TMessagesProj/src/main/res/mipmap-*/ic_launcher.png` and `ic_launcher_round.png` (API 23–25; rose square, white T, gold corner, letters `PH`)
+Those assets are the `tellomi` product flavor, directory `TMessagesProj/tellomi/res`, not edits to DrKLO's mipmaps:
+
+- Adaptive icon, API 26+: `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` (background, foreground, monochrome). Day and night colors are `values/tellomi_launcher_colors.xml` and `values-night/tellomi_launcher_colors.xml`.
+- Legacy mipmaps, API 23–25: `mipmap-*/ic_launcher.png` and `ic_launcher_round.png`, plus `mipmap-night-*` for night mode.
+- Notification small icon: `drawable-*/notification.webp` (white mark, transparent background). `NotificationsController` still references `R.drawable.notification`.
+
+`src/main/res/mipmap-*/ic_launcher*.png` and the upstream adaptive XML are restored DrKLO files. The flavor replaces them at merge time. Regenerate with `python3 TMessagesProj/tellomi/brand/render_launcher_icons.py`.
 
 In-app alternate icons (`LauncherIconController`, `icon_foreground*.png`, `icon_plane.xml`, `ic_launcher_dr.webp`, standalone `ic_launcher_sa`) are still the upstream artwork. They are not the default launcher icon.
 
@@ -170,7 +173,7 @@ FAQ, privacy, terms, mini-app ToS, ads (`ads.telegram.org`), desktop/web client 
 - Google Maps key in the debug/release manifests (`com.google.android.maps.v2.API_KEY`) is still Telegram's. Maps tiles may be denied.
 - `BuildVars.HUAWEI_APP_ID` is still Telegram's AppGallery id. The Huawei store **URL** was pointed at `TELLOMI_DOWNLOAD_URL`.
 - `BuildVars.getSmsHash()` is still the official-app hash.
-- Upstream alternate launcher bitmaps (see above).
+- Upstream alternate launcher bitmaps (see above). The default `ic_launcher` / `notification` artwork is overridden by the `tellomi` resource flavor.
 - Features that need server support beyond core messaging (Stars payments, Premium billing, some business/mini-app endpoints, Telegram-hosted wallpapers and stickers) are still in the client. Teamgram may not implement every layer-232 method. The screens are still there.
 
 ## Upstream merges
