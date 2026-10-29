@@ -25,6 +25,7 @@
 #include "NativeByteBuffer.h"
 #include "Config.h"
 #include "Connection.h"
+#include "TellomiNetConfig.h"
 
 thread_local static std::vector<std::string> serverPublicKeys;
 thread_local static std::vector<uint64_t> serverPublicKeysFingerprints;
@@ -363,7 +364,13 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
             }
         } else {
             if (serverPublicKeys.empty()) {
-                if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
+                if (TellomiNetConfig::customBackend()) {
+                    // TELLOMI: Teamgram (or another private) RSA key from the build config.
+                    if (!TellomiNetConfig::publicKeyPem().empty() && TellomiNetConfig::publicKeyFingerprint() != 0) {
+                        serverPublicKeys.push_back(TellomiNetConfig::publicKeyPem());
+                        serverPublicKeysFingerprints.push_back(TellomiNetConfig::publicKeyFingerprint());
+                    }
+                } else if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
                     serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
                                                   "MIIBCgKCAQEAyMEdY1aR+sCR3ZSJrtztKTKqigvO/vBfqACJLZtS7QMgCGXJ6XIR\n"
                                                   "yy7mx66W0/sOFa7/1mAZtEoIokDP3ShoqF4fVNb6XeqgQfaUHd8wJpDWHcR2OFwv\n"

@@ -748,6 +748,14 @@ public class LocaleController {
                 }
             }
 
+            // TELLOMI: follow the system into zh-hans / zh-hant until the user picks a language.
+            if (!override) {
+                LocaleInfo tellomiChinese = tellomiLocaleForSystem(systemDefaultLocale);
+                if (tellomiChinese != null) {
+                    currentInfo = tellomiChinese;
+                }
+            }
+
             applyLanguage(currentInfo, override, true, UserConfig.selectedAccount);
         } catch (Exception e) {
             FileLog.e(e);
@@ -1456,7 +1464,7 @@ public class LocaleController {
         if (value == null) {
             value = getInstance().getLocalizedString(key);
         }
-        return value;
+        return TellomiBrand.rewrite(value);
     }
 
     public static String getString(@StringRes int res) {
@@ -1564,9 +1572,9 @@ public class LocaleController {
                 stringBuilder.insert(a, symbol);
             }
 
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(param) : null;
+            String value = cloudStringsEnabled() ? getInstance().localizationExternal.getByResName(param) : null;
             if (value == null) {
-                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(key + "_other") : null;
+                value = cloudStringsEnabled() ? getInstance().localizationExternal.getByResName(key + "_other") : null;
             }
             if (value == null) {
                 try {
@@ -2046,6 +2054,8 @@ public class LocaleController {
             LocaleInfo toSet = currentLocaleInfo;
             currentLocaleInfo = null;
             applyLanguage(toSet, false, false, UserConfig.selectedAccount);
+        } else if (applyTellomiSystemLocale(newConfig.locale)) {
+            // zh-hans / zh-hant applied, or that pack was left because the system language changed.
         } else {
             Locale newLocale = newConfig.locale;
             if (newLocale != null) {
@@ -4440,30 +4450,75 @@ public class LocaleController {
         return localizationInternal.getByResName(key);
     }
 
+    // TELLOMI: zh-hans / zh-hant are server langpacks. Other languages stay on bundled strings
+    // while TELLOMI_USE_CLOUD_STRINGS is false.
+    private static boolean cloudStringsEnabled() {
+        if (BuildVars.USE_CLOUD_STRINGS) {
+            return true;
+        }
+        LocaleController controller = Instance;
+        return TellomiDefaults.useCloudStrings(controller != null ? controller.currentLocaleInfo : null);
+    }
+
+    /** @return a zh-hans / zh-hant locale for this system locale, or null. */
+    private LocaleInfo tellomiLocaleForSystem(Locale systemLocale) {
+        String langCode = TellomiDefaults.systemChineseLangCode(systemLocale);
+        if (langCode == null) {
+            return null;
+        }
+        LocaleInfo existing = getLanguageFromDict(langCode);
+        return existing != null ? existing : TellomiDefaults.remoteChineseLocale(langCode);
+    }
+
+    /**
+     * @return true when Tellomi applied a language, so the caller should not also copy the system locale.
+     */
+    private boolean applyTellomiSystemLocale(Locale systemLocale) {
+        LocaleInfo chinese = tellomiLocaleForSystem(systemLocale);
+        if (chinese != null) {
+            if (currentLocaleInfo != null && TextUtils.equals(chinese.shortName, currentLocaleInfo.shortName)) {
+                return false;
+            }
+            applyLanguage(chinese, false, false, UserConfig.selectedAccount);
+            return true;
+        }
+        if (currentLocaleInfo != null && TellomiDefaults.useCloudStrings(currentLocaleInfo)) {
+            LocaleInfo fallback = null;
+            if (systemLocale != null && systemLocale.getLanguage() != null) {
+                fallback = getLanguageFromDict(systemLocale.getLanguage());
+            }
+            if (fallback == null) {
+                fallback = getLanguageFromDict(getLocaleString(systemLocale));
+            }
+            if (fallback == null) {
+                fallback = getLanguageFromDict("en");
+            }
+            applyLanguage(fallback, false, false, UserConfig.selectedAccount);
+            return true;
+        }
+        return false;
+    }
+
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
-        String value;
+        String value = null;
 
-        if (BuildVars.USE_CLOUD_STRINGS) {
+        if (cloudStringsEnabled()) {
             value = localizationExternal.getByResNameOrResId(context, key, stringRes);
-            if (value != null) {
-                return value;
-            }
-
-            value = localizationExternal.getByResName(fallback);
-            if (value != null) {
-                return value;
+            if (value == null) {
+                value = localizationExternal.getByResName(fallback);
             }
         }
 
-        checkLocalizationInternal();
-        value = localizationInternal.getByResNameOrResId(context, key, stringRes);
-        if (value != null) {
-            return value;
+        if (value == null) {
+            checkLocalizationInternal();
+            value = localizationInternal.getByResNameOrResId(context, key, stringRes);
+            if (value == null) {
+                value = localizationInternal.getByResName(fallback);
+            }
         }
-
-        return localizationInternal.getByResName(fallback);
+        return TellomiBrand.rewrite(value);
     }
 
 

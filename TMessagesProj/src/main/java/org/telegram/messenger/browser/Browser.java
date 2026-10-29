@@ -204,14 +204,24 @@ public class Browser {
         if (link.startsWith("@")) {
             return link.substring(1);
         }
-        if (link.startsWith("t.me/")) {
-            return link.substring(5);
-        }
-        if (link.startsWith("http://t.me/")) {
-            return link.substring(12);
-        }
-        if (link.startsWith("https://t.me/")) {
-            return link.substring(13);
+        final String[] prefixes = new String[] {
+                BuildVars.LINK_BASE,
+                "http://" + BuildVars.LINK_HOST + "/",
+                BuildVars.LINK_HOST + "/",
+                "https://t.me/",
+                "http://t.me/",
+                "t.me/",
+                "https://telegram.me/",
+                "http://telegram.me/",
+                "telegram.me/",
+                "https://telegram.dog/",
+                "http://telegram.dog/",
+                "telegram.dog/"
+        };
+        for (int a = 0; a < prefixes.length; a++) {
+            if (link.regionMatches(true, 0, prefixes[a], 0, prefixes[a].length())) {
+                return link.substring(prefixes[a].length());
+            }
         }
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(link);
         if (prefixMatcher.find()) {
@@ -223,14 +233,14 @@ public class Browser {
     public static boolean urlMustNotHaveConfirmation(String url) {
         return (
             isTelegraphUrl(url, false, true) ||
-            url.matches("^(https://)?t\\.me/iv\\??(/.*|$)") || // t.me/iv?
+            url.matches("^(https://)?(?:" + java.util.regex.Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)/iv\\??(/.*|$)") ||
             url.matches("^(https://)?telegram\\.org/(blog|tour)(/.*|$)") || // telegram.org/blog, telegram.org/tour
             url.matches("^(https://)?fragment\\.com(/.*|$)") // fragment.com
         );
     }
 
     public static boolean isGetPremiumUrl(String url) {
-        return url != null && url.matches("(?i)^(https?://)?(t\\.me|telegram\\.me|telegram\\.dog)/getpremium([/?#].*)?$");
+        return url != null && url.matches("(?i)^(https?://)?(" + java.util.regex.Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)/getpremium([/?#].*)?$");
     }
 
     public static class Progress {
@@ -684,7 +694,7 @@ public class Browser {
 
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
         if (prefixMatcher.find()) {
-            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+            uri = Uri.parse(BuildVars.LINK_BASE + "" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
 
             host = uri.getHost();
             host = host != null ? host.toLowerCase() : "";
@@ -701,9 +711,9 @@ public class Browser {
 
             }
             return true;
-        } else if ("tg".equals(uri.getScheme())) {
+        } else if (BuildVars.isAppScheme(uri.getScheme())) {
             return true;
-        } else if ("telegram.dog".equals(host)) {
+        } else if (BuildVars.isLinkHost(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 if (all) {
@@ -711,21 +721,6 @@ public class Browser {
                 }
                 path = path.substring(1).toLowerCase();
                 if (path.startsWith("blog") || path.equals("iv") || path.startsWith("faq") || path.equals("apps") || path.startsWith("s/")) {
-                    if (forceBrowser != null) {
-                        forceBrowser[0] = true;
-                    }
-                    return false;
-                }
-                return true;
-            }
-        } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
-            String path = uri.getPath();
-            if (path != null && path.length() > 1) {
-                if (all) {
-                    return true;
-                }
-                path = path.substring(1).toLowerCase();
-                if (path.equals("iv") || path.startsWith("s/")) {
                     if (forceBrowser != null) {
                         forceBrowser[0] = true;
                     }

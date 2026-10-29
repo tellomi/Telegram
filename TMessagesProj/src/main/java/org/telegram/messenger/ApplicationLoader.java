@@ -172,7 +172,8 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return new File("/data/data/org.telegram.messenger/files");
+        String packageName = applicationContext != null ? applicationContext.getPackageName() : BuildVars.ACCOUNT_TYPE;
+        return new File("/data/data/" + packageName + "/files");
     }
 
     public static File getFilesDirFixed(String child) {

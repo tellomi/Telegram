@@ -1,5 +1,7 @@
 package org.telegram.utils.proxy;
 
+import org.telegram.messenger.BuildVars;
+
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -103,14 +105,14 @@ public final class ProxySettings {
         StringBuilder url;
         switch (type) {
             case MTPROTO:
-                url = new StringBuilder("https://t.me/proxy?");
+                url = new StringBuilder(BuildVars.LINK_BASE + "proxy?");
                 break;
             case WEB:
-                url = new StringBuilder("https://t.me/webproxy?");
+                url = new StringBuilder(BuildVars.LINK_BASE + "webproxy?");
                 break;
             case SOCKS5:
             default:
-                url = new StringBuilder("https://t.me/socks?");
+                url = new StringBuilder(BuildVars.LINK_BASE + "socks?");
                 break;
         }
 
@@ -235,7 +237,7 @@ public final class ProxySettings {
                 }
 
                 host = host.toLowerCase();
-                if (!host.equals("telegram.me") && !host.equals("t.me") && !host.equals("telegram.dog")) {
+                if (!BuildVars.isLinkHost(host)) {
                     return null;
                 }
 
@@ -253,8 +255,8 @@ public final class ProxySettings {
                 } else {
                     return null;
                 }
-            } else if (scheme.equalsIgnoreCase("tg")) {
-                String url = uri.toString();
+            } else if (BuildVars.isAppScheme(scheme)) {
+                String url = BuildVars.toTgUrl(uri.toString());
 
                 if (url.startsWith("tg://socks") || url.startsWith("tg:socks")) {
                     type = Type.SOCKS5;

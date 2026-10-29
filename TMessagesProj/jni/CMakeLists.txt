@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
+# TELLOMI: CI sets TELLOMI_CI_NATIVE. Local builds do not, and this include is skipped.
+if(DEFINED ENV{TELLOMI_CI_NATIVE})
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../tellomi/ci/native-ci.cmake)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -123,6 +128,7 @@ add_library(tgnet STATIC
         tgnet/TLObject.cpp
         tgnet/ProxyCheckInfo.cpp
         tgnet/Handshake.cpp
+        tgnet/TellomiNetConfig.cpp
         tgnet/Config.cpp)
 target_compile_options(tgnet PUBLIC
         -Wall -frtti -finline-functions -ffast-math -Oz)

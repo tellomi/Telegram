@@ -1,3 +1,9 @@
+## Tellomi
+
+This fork is **Tellomi**, a dating app on the Telegram Android client (layer 232). Every Telegram feature stays, including Stories. The app connects to a Teamgram-compatible server instead of Telegram's datacenters.
+
+Configuration, the list of code changes, and what still points at telegram.org are in [docs/TELLOMI.md](docs/TELLOMI.md).
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.

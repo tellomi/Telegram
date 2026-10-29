@@ -1966,7 +1966,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     if (pathFull.startsWith("/")) {
                         pathFull = pathFull.substring(1);
                     }
-                    onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true, force_request);
+                    onOpenUri(Uri.parse(BuildVars.LINK_BASE + "" + pathFull), null, false, true, force_request);
                 } catch (JSONException e) {
                     FileLog.e(e);
                 }
@@ -4303,7 +4303,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         }
                     }
                     if (botWebViewContainer != null && Browser.isInternalUri(uriNew, null)) {
-                        if (!bot && "1".equals(uriNew.getQueryParameter("embed")) && "t.me".equals(uriNew.getAuthority())) {
+                        if (!bot && "1".equals(uriNew.getQueryParameter("embed")) && BuildVars.isLinkHost(uriNew.getAuthority())) {
                             return false;
                         }
                         if (MessagesController.getInstance(botWebViewContainer.currentAccount).webAppAllowedProtocols != null &&

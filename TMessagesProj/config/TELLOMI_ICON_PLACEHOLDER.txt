@@ -1,0 +1,14 @@
+The default launcher assets are placeholders, not a finished Tellomi brand
+and not the Telegram paper plane.
+
+Replace before release:
+
+  TMessagesProj/src/main/res/drawable/tellomi_launcher_bg.xml
+  TMessagesProj/src/main/res/drawable/tellomi_launcher_fg.xml
+  TMessagesProj/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+  TMessagesProj/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+  TMessagesProj/src/main/res/mipmap-*/ic_launcher.png
+  TMessagesProj/src/main/res/mipmap-*/ic_launcher_round.png
+
+The PNGs are a rose square with a white T, a gold corner, and the letters PH.
+See docs/TELLOMI.md.

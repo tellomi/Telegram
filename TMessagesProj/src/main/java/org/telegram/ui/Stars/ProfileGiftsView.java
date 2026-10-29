@@ -1,5 +1,7 @@
 package org.telegram.ui.Stars;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -507,6 +509,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     }
 
     public void onGiftClick(Gift gift) {
-        Browser.openUrl(getContext(), "https://t.me/nft/" + gift.slug);
+        Browser.openUrl(getContext(), BuildVars.LINK_BASE + "nft/" + gift.slug);
     }
 }

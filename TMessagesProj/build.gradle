@@ -109,15 +109,72 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
+def tellomiJavaString = { String value ->
+    if (value == null) {
+        value = ""
+    }
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('\r', '').replace('\n', '\\n') + '"'
+}
+
+def tellomiProp = { String name, String fallback ->
+    def value = project.findProperty(name)
+    if (value == null) {
+        return fallback
+    }
+    def text = value.toString().trim()
+    return text.isEmpty() ? fallback : text
+}
+
+def tellomiPublicKeyPem = {
+    def override = project.findProperty("TELLOMI_SERVER_PUBLIC_KEY")
+    if (override != null && override.toString().trim()) {
+        return override.toString().replace("\\n", "\n").replace('\r', '').trim()
+    }
+    def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
+    if (keyFile.exists()) {
+        return keyFile.getText("UTF-8").replace('\r', '').trim()
+    }
+    return ""
+}
+
+// Named server profiles. Debug builds default to "dev"; other build types
+// default to "local". -PTELLOMI_SERVER_PROFILE=local|dev selects one for every
+// build type. TELLOMI_DC_ADDRESSES, when set, replaces the profile addresses.
+def tellomiServerProfiles = [
+    dev  : '1:8.137.39.82:10443,2:8.137.39.82:10443',
+    local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
+]
+
+def tellomiServerSelection = { String fallbackName ->
+    def explicit = project.findProperty('TELLOMI_DC_ADDRESSES')
+    if (explicit != null && explicit.toString().trim()) {
+        return [name: 'custom', addresses: explicit.toString().trim()]
+    }
+    def selected = project.findProperty('TELLOMI_SERVER_PROFILE')
+    def name = (selected != null && selected.toString().trim()) ? selected.toString().trim() : fallbackName
+    if (!tellomiServerProfiles.containsKey(name)) {
+        throw new GradleException("Unknown TELLOMI_SERVER_PROFILE '${name}'. Use dev or local, or set TELLOMI_DC_ADDRESSES.")
+    }
+    def addresses = tellomiServerProfiles[name]
+    def profileOverride = project.findProperty('TELLOMI_PROFILE_' + name.toUpperCase())
+    if (profileOverride != null && profileOverride.toString().trim()) {
+        addresses = profileOverride.toString().trim()
+    }
+    return [name: name, addresses: addresses]
+}
+
 android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
     ndkVersion "27.2.12479018"
 
-
-    externalNativeBuild {
-        cmake {
-            path 'jni/CMakeLists.txt'
+    // TELLOMI CI: -PTELLOMI_PREBUILT_JNI=<dir> packages <dir>/<abi>/libtmessages.49.so
+    // and skips CMake. Unset on a normal local build, so the CMake path is unchanged.
+    if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+            }
         }
     }
 
@@ -142,11 +199,45 @@ android {
 
         multiDexEnabled true
 
-        externalNativeBuild {
-            cmake {
-                version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
-                targets 'tmessages.49'
+        // TELLOMI build config. Values come from gradle.properties. See docs/TELLOMI.md.
+        buildConfigField "String", "TELLOMI_APP_NAME", tellomiJavaString(tellomiProp("TELLOMI_APP_NAME", "Tellomi"))
+        buildConfigField "String", "TELLOMI_LINK_HOST", tellomiJavaString(tellomiProp("TELLOMI_LINK_HOST", "tell.cc"))
+        buildConfigField "String", "TELLOMI_LINK_SCHEME", tellomiJavaString(tellomiProp("TELLOMI_LINK_SCHEME", "tellomi"))
+        buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
+        buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
+        def tellomiLocalServer = tellomiServerSelection('local')
+        buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiLocalServer.name)
+        buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiLocalServer.addresses)
+        buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
+        buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
+        buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "true")
+        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
+        buildConfigField "boolean", "TELLOMI_CHECK_UPDATES", tellomiProp("TELLOMI_CHECK_UPDATES", "false")
+        buildConfigField "boolean", "TELLOMI_BILLING_UNAVAILABLE", tellomiProp("TELLOMI_BILLING_UNAVAILABLE", "true")
+        buildConfigField "boolean", "TELLOMI_REBRAND_STRINGS", tellomiProp("TELLOMI_REBRAND_STRINGS", "true")
+        buildConfigField "String", "TELLOMI_DOWNLOAD_URL", tellomiJavaString(tellomiProp("TELLOMI_DOWNLOAD_URL", "https://tellomi.app"))
+        buildConfigField "String", "TELLOMI_ACCOUNT_TYPE", tellomiJavaString(tellomiProp("APP_PACKAGE", "app.tellomi.chat"))
+        buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
+
+        def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
+        if (tellomiAbiOverride) {
+            ndk {
+                tellomiAbiOverride.toString().split(",").each { abi ->
+                    def trimmed = abi.trim()
+                    if (trimmed) {
+                        abiFilters trimmed
+                    }
+                }
+            }
+        }
+
+        if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+            externalNativeBuild {
+                cmake {
+                    version '3.22.1'
+                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                    targets 'tmessages.49'
+                }
             }
         }
     }
@@ -163,6 +254,10 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "0"
+            // Debug APKs talk to the live dev Teamgram unless a profile is selected.
+            def tellomiDevServer = tellomiServerSelection('dev')
+            buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiDevServer.name)
+            buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiDevServer.addresses)
         }
 
         HA_private {
@@ -231,6 +326,23 @@ android {
         }
     }
 
+    // TELLOMI: launcher and notification icons live in tellomi/res and override
+    // src/main for this flavor. src/main mipmaps stay the DrKLO bitmaps.
+    // TellomiDefaults.java lives in tellomi/java, compiled only into this flavor.
+    flavorDimensions "brand"
+    productFlavors {
+        tellomi {
+            dimension "brand"
+        }
+    }
+    sourceSets.tellomi {
+        res.srcDirs = ['tellomi/res']
+        java.srcDirs = ['tellomi/java']
+    }
+    if (findProperty("TELLOMI_PREBUILT_JNI")) {
+        sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()
+    }
+
     namespace 'org.telegram.messenger'
 }
 
@@ -268,3 +380,11 @@ task checkVisibility {
 }
 
 preBuild.dependsOn checkVisibility
+
+// TELLOMI: application modules do not declare the brand dimension. Select the
+// only library flavor so :TMessagesProj_App:assembleAfatDebug still resolves.
+rootProject.subprojects { sub ->
+    sub.plugins.withId('com.android.application') {
+        sub.android.defaultConfig.missingDimensionStrategy 'brand', 'tellomi'
+    }
+}

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
+import org.telegram.messenger.BuildVars;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -66,8 +68,8 @@ public class LinkCell extends FrameLayout {
 
     public void setSlug(String slug) {
         this.slug = slug;
-        this.link = "https://t.me/giftcode/" + slug;
-        linkView.setText("t.me/giftcode/" + slug);
+        this.link = BuildVars.LINK_BASE + "giftcode/" + slug;
+        linkView.setText(BuildVars.LINK_HOST + "/giftcode/" + slug);
     }
 
     public void hideSlug(Runnable onHiddenLinkClicked) {
@@ -75,7 +77,7 @@ public class LinkCell extends FrameLayout {
         linkView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(14), AndroidUtilities.dp(14), AndroidUtilities.dp(18));
         TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
         run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
-        SpannableStringBuilder builder = new SpannableStringBuilder("t.me/giftcode/" + slug);
+        SpannableStringBuilder builder = new SpannableStringBuilder(BuildVars.LINK_HOST + "/giftcode/" + slug);
         if (slug == null) {
             String stub = "1234567891011123654897566536223";
             builder.append(stub);

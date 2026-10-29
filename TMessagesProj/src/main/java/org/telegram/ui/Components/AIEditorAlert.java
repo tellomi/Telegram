@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.BuildVars;
+
 import static androidx.core.view.ViewCompat.performHapticFeedback;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -219,7 +221,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                             .show();
                     })
                     .add(R.drawable.msg_share, getString(R.string.AIEditorShareStyle), () -> {
-                        final String link = "https://t.me/addstyle/" + tone.slug;
+                        final String link = BuildVars.LINK_BASE + "addstyle/" + tone.slug;
                         new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
                             @Override
                             protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {

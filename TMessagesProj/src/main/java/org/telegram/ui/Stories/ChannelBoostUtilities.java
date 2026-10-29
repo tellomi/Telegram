@@ -1,5 +1,7 @@
 package org.telegram.ui.Stories;
 
+import org.telegram.messenger.BuildVars;
+
 import android.text.TextUtils;
 
 import org.telegram.messenger.ChatObject;
@@ -11,9 +13,9 @@ public class ChannelBoostUtilities {
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         String username = ChatObject.getPublicUsername(chat);
         if (!TextUtils.isEmpty(username)) {
-            return "https://t.me/boost/" + ChatObject.getPublicUsername(chat);
+            return BuildVars.LINK_BASE + "boost/" + ChatObject.getPublicUsername(chat);
         } else {
-            return "https://t.me/boost/?c=" + -dialogId;
+            return BuildVars.LINK_BASE + "boost/?c=" + -dialogId;
         }
     }
 }

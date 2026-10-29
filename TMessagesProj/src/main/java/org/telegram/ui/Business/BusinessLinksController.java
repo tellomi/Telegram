@@ -1,5 +1,7 @@
 package org.telegram.ui.Business;
 
+import org.telegram.messenger.BuildVars;
+
 import android.text.TextUtils;
 
 import org.telegram.SQLite.SQLiteCursor;
@@ -308,7 +310,7 @@ public class BusinessLinksController {
             TL_account.TL_businessChatLink chatLink = links.get(i);
             if (TextUtils.equals(chatLink.link, slug) ||
                     TextUtils.equals(chatLink.link, "https://" + slug) ||
-                    TextUtils.equals(chatLink.link, "https://t.me/m/" + slug) ||
+                    TextUtils.equals(chatLink.link, BuildVars.LINK_BASE + "m/" + slug) ||
                     TextUtils.equals(chatLink.link, "tg://message?slug=" + slug)) {
                 return chatLink;
             }

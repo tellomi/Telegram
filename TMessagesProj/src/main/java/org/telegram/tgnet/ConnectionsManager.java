@@ -209,6 +209,7 @@ public class ConnectionsManager extends BaseController {
 
     public ConnectionsManager(int instance) {
         super(instance);
+        applyTellomiBackend();
         connectionState = native_getConnectionState(currentAccount);
         String deviceModel;
         String systemLangCode;
@@ -874,6 +875,12 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static void onRequestNewServerIpAndPort(final int second, final int currentAccount) {
+        if (BuildVars.TELLOMI_CUSTOM_BACKEND) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("tellomi: skipping Telegram DNS datacenter bootstrap");
+            }
+            return;
+        }
         Utilities.globalQueue.postRunnable(() -> {
             boolean networkOnline = ApplicationLoader.isNetworkOnline();
             Utilities.stageQueue.postRunnable(() -> {
@@ -1026,6 +1033,17 @@ public class ConnectionsManager extends BaseController {
     public static native void native_setRegId(int currentAccount, String regId);
     public static native void native_setSystemLangCode(int currentAccount, String langCode);
     public static native void native_setJava(boolean useJavaByteBuffers);
+    public static native void native_setTellomiBackend(String dcSpec, int defaultDcId, String publicKeyPem, boolean customBackend, boolean lockDatacenterAddresses);
+
+    private static boolean tellomiBackendApplied;
+
+    private static void applyTellomiBackend() {
+        if (tellomiBackendApplied) {
+            return;
+        }
+        tellomiBackendApplied = true;
+        native_setTellomiBackend(BuildVars.TELLOMI_DC_ADDRESSES, BuildVars.TELLOMI_DEFAULT_DC_ID, BuildVars.TELLOMI_SERVER_PUBLIC_KEY, BuildVars.TELLOMI_CUSTOM_BACKEND, BuildVars.TELLOMI_LOCK_DC_ADDRESSES);
+    }
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
@@ -391,7 +393,7 @@ public class CreateBotAlert {
                                     ),
                                     () -> {
                                         sheet.dismiss();
-                                        Browser.openUrl(context, "https://t.me/BotFather?start=deletebot");
+                                        Browser.openUrl(context, BuildVars.LINK_BASE + "BotFather?start=deletebot");
                                     },
                                     resourcesProvider
                                 )

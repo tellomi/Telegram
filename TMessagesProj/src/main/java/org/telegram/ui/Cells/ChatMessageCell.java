@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.BuildVars;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.find;
@@ -10914,9 +10916,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 try {
                                     final Uri uri = Uri.parse(buttonTypeUrl.url);
                                     final String host = uri.getHost().toLowerCase();
+                                    final String routedButtonUrl = BuildVars.toTgUrl(buttonTypeUrl.url);
                                     botButton.isInviteButton = (uri.getQueryParameter("startgroup") != null && (
-                                            ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && ("t.me".equals(host) || "telegram.me".equals(host) || "telegram.dog".equals(host)) ||
-                                                    "tg".equals(uri.getScheme()) && (buttonTypeUrl.url.startsWith("tg:resolve") || buttonTypeUrl.url.startsWith("tg://resolve"))
+                                            ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && BuildVars.isLinkHost(host) ||
+                                                    BuildVars.isAppScheme(uri.getScheme()) && (routedButtonUrl.startsWith("tg:resolve") || routedButtonUrl.startsWith("tg://resolve"))
                                     ));
                                 } catch (Exception ignore) {
                                 }

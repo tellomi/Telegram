@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.tellomi.chat",
+      "sha256_cert_fingerprints": [
+        "6E:2B:1B:8C:F1:01:25:D2:64:68:A4:EA:BE:42:F3:48:8C:0A:D3:EF:AE:E6:30:C2:5A:18:F4:0A:7F:9C:08:ED"
+      ]
+    }
+  }
+]
