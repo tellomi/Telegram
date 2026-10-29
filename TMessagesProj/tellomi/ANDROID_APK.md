@@ -51,3 +51,4 @@ Local builds do not set these.
 
 - `TELLOMI_CI_NATIVE` (environment) includes `TMessagesProj/tellomi/ci/native-ci.cmake`, which turns on ccache and limits ninja to two compile jobs and one link job.
 - `-PTELLOMI_PREBUILT_JNI=<dir>` on the package job skips CMake and packs `<dir>/<abi>/libtmessages.49.so`. The native jobs produced those libraries with the normal CMake build.
+- `-PAPP_VERSION_CODE=$((7238 + github.run_number))` on the package job. The afat manifest `versionCode` is `APP_VERSION_CODE * 10 + 9`, so the APK is `72389 + github.run_number * 10`. That stays above the shipped 72379 and increases on every run. The ones digit stays 9 (universal). Checked-in `APP_VERSION_CODE=7237` is left alone, so a local assemble still packages 72379. The job fails if `aapt dump badging` does not report the computed code.
