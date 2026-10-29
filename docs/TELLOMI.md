@@ -15,7 +15,7 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 | `TELLOMI_API_ID` | `1` | `api_id` sent with `auth.sendCode`. Placeholder, not Telegram's app id `4`. |
 | `TELLOMI_API_HASH` | `0123456789abcdef0123456789abcdef` | `api_hash` placeholder. Replace before any deployment that checks it. |
 | `TELLOMI_SERVER_PROFILE` | unset | `dev` or `local`. When unset, **debug** builds use `dev` and every other build type uses `local`. |
-| `TELLOMI_PROFILE_DEV` | `1:8.137.39.82:10443,2:8.137.39.82:10443` | Live dev Teamgram (gnetway TCP). DC 1 and DC 2 are the same host. |
+| `TELLOMI_PROFILE_DEV` | `1:8.137.39.82:10443,2:8.137.39.82:10443` | Live dev Teamgram (gnetway TCP). DC 1 and DC 2 are the same IP. `api.tellomi.cn` is the DNS name for that IP; the client cannot use the hostname. |
 | `TELLOMI_PROFILE_LOCAL` | `1:10.0.2.2:10443,2:10.0.2.2:10443` | Android emulator alias for a Teamgram docker on the host. |
 | `TELLOMI_DC_ADDRESSES` | unset | Optional explicit `dcId:host:port` list. When set, it replaces the selected profile. Bracket IPv6 hosts: `1:[2001:db8::1]:10443`. |
 | `TELLOMI_DEFAULT_DC_ID` | `1` | Datacenter used for a fresh login. Must appear in the address list. |
@@ -44,6 +44,8 @@ Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official T
 ```
 
 `dev` is `8.137.39.82:10443` TCP (Teamgram gnetway, branch `cursor/channels-supergroups-39cf` at `5f92342`). DC 1 and DC 2 are that same address. The SMS code on that server is **12345**. `local` stays `10.0.2.2:10443` for an emulator talking to docker on the development machine.
+
+`api.tellomi.cn` is a DNS-only name for that server (A record `8.137.39.82`, port 10443). The dev profile keeps the IP. `ConnectionSocket::openConnection` connects a datacenter address with `inet_pton` only: an IPv4 or IPv6 literal is accepted, and anything else is closed as `bad ipv4` / `bad ipv6`. Hostname lookup exists only for a proxy address (`getHostByName` / `gethostbyname`), not for the DC list in `initDatacenters`. If the A record changes, update `TELLOMI_PROFILE_DEV` to the new IP. Do not put `api.tellomi.cn` in the profile.
 
 ### Local Teamgram (docker)
 
