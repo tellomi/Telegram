@@ -1,0 +1,12 @@
+name: Android APK
+
+# This default-branch file only registers the workflow so workflow_dispatch can
+# target another ref. A dispatched run uses that ref's copy of android-apk.yml.
+on:
+  workflow_dispatch:
+
+jobs:
+  registered:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Dispatch a non-default ref to build the Tellomi APK."
