@@ -7715,6 +7715,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private TextView descriptionTextView;
         private TextView wrongNumber;
         private TextView privacyView;
+        private final TellomiSignUpAgreement tellomiAgreement = new TellomiSignUpAgreement(); // Tellomi
         private TextView titleTextView;
         private FrameLayout editTextContainer;
         private String requestPhone;
@@ -8037,6 +8038,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 text.setSpan(new LinkSpan(), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             privacyView.setText(text);
+            tellomiAgreement.install(privacyView); // Tellomi: signup agreement checkbox replaces the terms text
         }
 
         @Override
@@ -8230,6 +8232,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public void onNextPressed(String code) {
             if (nextPressed) {
+                return;
+            }
+            if (!tellomiAgreement.checkAgreed()) { // Tellomi: agreement checkbox required, no terms popup
                 return;
             }
             if (currentTermsOfService != null && currentTermsOfService.popup) {
