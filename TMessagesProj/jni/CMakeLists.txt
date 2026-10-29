@@ -123,6 +123,7 @@ add_library(tgnet STATIC
         tgnet/TLObject.cpp
         tgnet/ProxyCheckInfo.cpp
         tgnet/Handshake.cpp
+        tgnet/TellomiNetConfig.cpp
         tgnet/Config.cpp)
 target_compile_options(tgnet PUBLIC
         -Wall -frtti -finline-functions -ffast-math -Oz)

@@ -59,6 +59,7 @@ import androidx.core.app.ActivityCompat;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -946,7 +947,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is not on Telegram. **Invite >**", () -> {
                     final Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse("sms:+" + phone));
-                    intent.putExtra("sms_body", LocaleController.formatString(R.string.InviteText2, "https://telegram.org/dl"));
+                    intent.putExtra("sms_body", LocaleController.formatString(R.string.InviteText2, BuildVars.DOWNLOAD_URL));
                     getContext().startActivity(intent);
                 }), true, dp(8f / 3f), dp(1)));
             } else {

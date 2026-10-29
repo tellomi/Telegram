@@ -34,6 +34,7 @@
 #include "Config.h"
 #include "ProxyCheckInfo.h"
 #include "Handshake.h"
+#include "TellomiNetConfig.h"
 
 #ifdef ANDROID
 #include <jni.h>
@@ -438,7 +439,7 @@ void ConnectionsManager::loadConfig() {
             RAND_bytes((uint8_t *) &pushSessionId, 8);
         }
         if (currentDatacenterId == 0) {
-            currentDatacenterId = 2;
+            currentDatacenterId = TellomiNetConfig::customBackend() ? (uint32_t) TellomiNetConfig::defaultDcId() : 2;
         }
         saveConfig();
     }
@@ -1818,6 +1819,18 @@ uint8_t ConnectionsManager::getIpStratagy() {
 
 void ConnectionsManager::initDatacenters() {
     Datacenter *datacenter;
+    if (TellomiNetConfig::customBackend()) {
+        // TELLOMI: never install Telegram production/test DCs. See docs/TELLOMI.md.
+        for (const auto &dc : TellomiNetConfig::datacenters()) {
+            if (datacenters.find((uint32_t) dc.dcId) != datacenters.end()) {
+                continue;
+            }
+            datacenter = new Datacenter(instanceNum, dc.dcId);
+            datacenter->addAddressAndPort(dc.host, (uint32_t) dc.port, 0, "");
+            datacenters[(uint32_t) dc.dcId] = datacenter;
+        }
+        return;
+    }
     if (!testBackend) {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 1);
@@ -3467,10 +3480,12 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround, bool 
                         datacenter = new Datacenter(instanceNum, iter.first);
                         datacenters[iter.first] = datacenter;
                     }
-                    datacenter->replaceAddresses(info->addressesIpv4, info->isCdn ? 8 : 0);
-                    datacenter->replaceAddresses(info->addressesIpv6, info->isCdn ? 9 : 1);
-                    datacenter->replaceAddresses(info->addressesIpv4Download, info->isCdn ? 10 : 2);
-                    datacenter->replaceAddresses(info->addressesIpv6Download, info->isCdn ? 11 : 3);
+                    if (!TellomiNetConfig::lockDatacenterAddresses()) {
+                        datacenter->replaceAddresses(info->addressesIpv4, info->isCdn ? 8 : 0);
+                        datacenter->replaceAddresses(info->addressesIpv6, info->isCdn ? 9 : 1);
+                        datacenter->replaceAddresses(info->addressesIpv4Download, info->isCdn ? 10 : 2);
+                        datacenter->replaceAddresses(info->addressesIpv6Download, info->isCdn ? 11 : 3);
+                    }
                     if (iter.first == movingToDatacenterId) {
                         movingToDatacenterId = DEFAULT_DATACENTER_ID;
                         moveToDatacenter(iter.first);
