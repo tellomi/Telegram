@@ -108,7 +108,7 @@ GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` do
 
 ## Sign-up agreement checkbox
 
-No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `popup=false`). The sign-up (name) screen's terms line becomes `☐ 我已阅读并同意《用户协议》和《隐私政策》`; the links open https://tellomi.cn/legal/terms/ and https://tellomi.cn/legal/privacy/, tapping the rest toggles the box, and Continue does nothing (the line shakes) until it is checked.
+No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `popup=false`). The sign-up (name) screen's terms line becomes `☐ 我已阅读并同意《用户服务协议》和《隐私政策》`; the links open https://tellomi.cn/legal/terms/ and https://tellomi.cn/legal/privacy/, tapping the rest toggles the box, and Continue does nothing (the line shakes) until it is checked.
 
 | File | Change |
 | --- | --- |

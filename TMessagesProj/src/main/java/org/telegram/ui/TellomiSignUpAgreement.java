@@ -15,7 +15,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
 
 /**
- * Tellomi: the sign-up screen's "我已阅读并同意《用户协议》和《隐私政策》" checkbox.
+ * Tellomi: the sign-up screen's "我已阅读并同意《用户服务协议》和《隐私政策》" checkbox.
  * It replaces the stock terms text in {@link LoginActivity.LoginActivityRegisterView};
  * sign-up does not proceed until it is checked. There is no in-app terms popup.
  * See TMessagesProj/tellomi/UPSTREAM_PATCHES.md.
@@ -52,7 +52,7 @@ public class TellomiSignUpAgreement {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         appendToggle(sb, agreed ? "☑ " : "☐ ", agreed);
         appendToggle(sb, "我已阅读并同意", false);
-        appendLink(sb, "《用户协议》", TERMS_URL);
+        appendLink(sb, "《用户服务协议》", TERMS_URL);
         appendToggle(sb, "和", false);
         appendLink(sb, "《隐私政策》", PRIVACY_URL);
         view.setText(sb);
