@@ -168,10 +168,13 @@ android {
     buildToolsVersion '36.0.0'
     ndkVersion "27.2.12479018"
 
-
-    externalNativeBuild {
-        cmake {
-            path 'jni/CMakeLists.txt'
+    // TELLOMI CI: -PTELLOMI_PREBUILT_JNI=<dir> packages <dir>/<abi>/libtmessages.49.so
+    // and skips CMake. Unset on a normal local build, so the CMake path is unchanged.
+    if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+            }
         }
     }
 
@@ -228,11 +231,13 @@ android {
             }
         }
 
-        externalNativeBuild {
-            cmake {
-                version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
-                targets 'tmessages.49'
+        if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+            externalNativeBuild {
+                cmake {
+                    version '3.22.1'
+                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                    targets 'tmessages.49'
+                }
             }
         }
     }
@@ -333,6 +338,9 @@ android {
     sourceSets.tellomi {
         res.srcDirs = ['tellomi/res']
         java.srcDirs = ['tellomi/java']
+    }
+    if (findProperty("TELLOMI_PREBUILT_JNI")) {
+        sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()
     }
 
     namespace 'org.telegram.messenger'

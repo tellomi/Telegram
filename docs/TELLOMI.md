@@ -95,7 +95,7 @@ echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties   # local.properties is giti
 ./gradlew :TMessagesProj_App:assembleAfatDebug -PTELLOMI_ABI_FILTERS=arm64-v8a
 ```
 
-Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The property is read by both `TMessagesProj` and `TMessagesProj_App`. Other application modules still append suffixes (`.web` on standalone, `.beta` on HockeyApp). `google-services.json` includes placeholder clients for `com.tellomi.app`, `com.tellomi.app.beta`, and `com.tellomi.app.web` so those variants configure. Push will not be delivered until you replace those files with a Firebase project you control (see below).
+Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The property is read by both `TMessagesProj` and `TMessagesProj_App`. GitHub Actions builds that same fat APK; the signing secrets and how to download the artifact are in `TMessagesProj/tellomi/ANDROID_APK.md`. Other application modules still append suffixes (`.web` on standalone, `.beta` on HockeyApp). `google-services.json` includes placeholder clients for `com.tellomi.app`, `com.tellomi.app.beta`, and `com.tellomi.app.web` so those variants configure. Push will not be delivered until you replace those files with a Firebase project you control (see below).
 
 ## What changed
 
