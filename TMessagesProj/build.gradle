@@ -321,6 +321,18 @@ android {
         }
     }
 
+    // TELLOMI: launcher and notification icons live in tellomi/res and override
+    // src/main for this flavor. src/main mipmaps stay the DrKLO bitmaps.
+    flavorDimensions "brand"
+    productFlavors {
+        tellomi {
+            dimension "brand"
+        }
+    }
+    sourceSets.tellomi {
+        res.srcDirs = ['tellomi/res']
+    }
+
     namespace 'org.telegram.messenger'
 }
 
@@ -358,3 +370,11 @@ task checkVisibility {
 }
 
 preBuild.dependsOn checkVisibility
+
+// TELLOMI: application modules do not declare the brand dimension. Select the
+// only library flavor so :TMessagesProj_App:assembleAfatDebug still resolves.
+rootProject.subprojects { sub ->
+    sub.plugins.withId('com.android.application') {
+        sub.android.defaultConfig.missingDimensionStrategy 'brand', 'tellomi'
+    }
+}
