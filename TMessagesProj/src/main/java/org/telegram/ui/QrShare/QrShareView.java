@@ -428,7 +428,8 @@ public class QrShareView extends View {
     private final Paint scanText = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final String scanLabel = org.telegram.messenger.LocaleController.getString(R.string.QrScanQr);
     private final BackDrawable icClose;     // the app's own close glyph (ActionBar back button in close state)
-    private final RLottieDrawable logo;     // the flying plane of the stock QR screen
+    private final RLottieDrawable logo;     // kept so the stock animation lifecycle still releases
+    private final Drawable qrMark;          // TELLOMI: white mark drawn in the QR circle
     private final Paint cutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public QrShareView(Context context, int account, String baseLink, String caption, boolean captionIsUsername, Delegate delegate) {
@@ -456,7 +457,8 @@ public class QrShareView extends View {
         logo.setMasterParent(this);
         logo.setAutoRepeat(1);
         logo.setCallback(this);
-        logo.start();
+        Drawable mark = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.tellomi_qr_mark);
+        qrMark = mark != null ? mark.mutate() : null;
         cutPaint.setStyle(Paint.Style.STROKE);
         cutPaint.setStrokeCap(Paint.Cap.ROUND);
         cutPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -3840,15 +3842,12 @@ public class QrShareView extends View {
                 final float off = (1f - Math.min(1f, pe)) * lr * 0.55f, psc = 0.5f + 0.5f * pe;
                 c.translate(-off, off);
                 c.scale(psc, psc, lcx, lcy);
-                if (sharing && logoOptimal != null) {
-                    // a shared image takes the plane's best frame, not the one the animation is at
-                    rect3.set(lcx - lr, lcy - lr, lcx + lr, lcy + lr);
-                    c.drawBitmap(logoOptimal, null, rect3, logoOptimalPaint);
-                } else {
-                    logo.setAlpha((int) (255 * Utilities.clamp01(pu * 2f)));
-                    logo.setBounds((int) (lcx - lr), (int) (lcy - lr), (int) (lcx + lr), (int) (lcy + lr));
-                    logo.draw(c);
-                    logo.setAlpha(255);
+                if (qrMark != null) {
+                    float inset = lr * 0.22f;
+                    qrMark.setAlpha((int) (255 * Utilities.clamp01(pu * 2f)));
+                    qrMark.setBounds((int) (lcx - lr + inset), (int) (lcy - lr + inset), (int) (lcx + lr - inset), (int) (lcy + lr - inset));
+                    qrMark.draw(c);
+                    qrMark.setAlpha(255);
                 }
                 c.restore();
             }

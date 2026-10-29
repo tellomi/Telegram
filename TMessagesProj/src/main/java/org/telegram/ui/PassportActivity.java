@@ -1675,7 +1675,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
-                builder.setNegativeButton(LocaleController.getString(R.string.RestorePasswordResetAccount), (dialog, which) -> Browser.openUrl(getParentActivity(), "https://telegram.org/deactivate?phone=" + UserConfig.getInstance(currentAccount).getClientPhone()));
+                builder.setNegativeButton(LocaleController.getString(R.string.RestorePasswordResetAccount), (dialog, which) -> Browser.openUrl(getParentActivity(), org.telegram.messenger.TellomiBrand.rewrite("https://telegram.org/deactivate?phone=") + UserConfig.getInstance(currentAccount).getClientPhone()));
                 builder.setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle));
                 builder.setMessage(LocaleController.getString(R.string.RestorePasswordNoEmailText));
                 showDialog(builder.create());

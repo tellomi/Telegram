@@ -49,7 +49,7 @@ Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official T
 
 ### Public links (`tell.cc`)
 
-`TELLOMI_LINK_HOST` (`BuildVars.LINK_HOST`, default `tell.cc`) is the only host used when the app builds a public link (`https://tell.cc/username`, `/+hash`, `/joinchat`, `/c/`, `/s/`, `/addstickers`, `/addemoji`, `/proxy`, `/socks`, `/share`, stories, `?start`, and the rest of the t.me path set). `TELLOMI_LINK_SCHEME` (`BuildVars.LINK_SCHEME`, default `tellomi`) is accepted as the same routes as `tg://` (`tellomi://resolve?domain=name`, and so on). `tg://` itself still works.
+`TELLOMI_LINK_HOST` (`BuildVars.LINK_HOST`, default `tell.cc`) is the only host used when the app builds a public link (`https://tell.cc/username`, `/+hash`, `/joinchat`, `/c/`, `/s/`, `/addstickers`, `/addemoji`, `/proxy`, `/socks`, `/share`, stories, `?start`, and the rest of the t.me path set). `TellomiBrand.rewrite` also shows `t.me`, `telegram.me`, `telegram.dog`, and `telegram.org` as `tell.cc` in strings. Parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Help, privacy, and terms use `BuildVars.SITE_HOST` (`tellomi.cn`): `HELP_URL`, `PRIVACY_URL`, and `TOS_URL`. `TELLOMI_LINK_SCHEME` (`BuildVars.LINK_SCHEME`, default `tellomi`) is accepted as the same routes as `tg://` (`tellomi://resolve?domain=name`, and so on). `tg://` itself still works.
 
 `help.getConfig`'s `me_url_prefix` is kept only when it is already `tell.cc` or some other non-Telegram host. `t.me`, `telegram.me`, and `telegram.dog` are rewritten to `tell.cc`. Those three hosts are still recognized inside the app so older messages open, but the manifest does not claim them.
 

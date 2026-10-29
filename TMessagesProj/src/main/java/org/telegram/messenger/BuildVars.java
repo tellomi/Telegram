@@ -34,6 +34,11 @@ public class BuildVars {
     public static final String APP_NAME = BuildConfig.TELLOMI_APP_NAME;
     /** Public link host (tell.cc). Datacenter addresses stay IP literals; this is only for links. */
     public static final String LINK_HOST = BuildConfig.TELLOMI_LINK_HOST;
+    /** Help, privacy, and terms. Distinct from {@link #LINK_HOST}. */
+    public static final String SITE_HOST = "tellomi.cn";
+    public static final String HELP_URL = "https://" + SITE_HOST + "/help/";
+    public static final String PRIVACY_URL = "https://" + SITE_HOST + "/legal/privacy/";
+    public static final String TOS_URL = "https://" + SITE_HOST + "/legal/terms/";
     /** Custom scheme that mirrors tg:// routes, for example tellomi://resolve?domain=name. */
     public static final String LINK_SCHEME = BuildConfig.TELLOMI_LINK_SCHEME;
     public static final String LINK_BASE = "https://" + LINK_HOST + "/";

@@ -165,9 +165,10 @@ public class QRCodeBottomSheet extends BottomSheet {
     }
 
     public void setCenterAnimation(int resId) {
-        iconImage.setAutoRepeat(true);
-        iconImage.setAnimation(resId, 60, 60);
-        iconImage.playAnimation();
+        // TELLOMI: the center of the QR is the Tellomi mark, not the Telegram plane.
+        iconImage.setAutoRepeat(false);
+        iconImage.setBackgroundColor(Color.TRANSPARENT);
+        iconImage.setImageResource(R.drawable.tellomi_qr_badge);
     }
 
     public void setCenterImage(int resId) {
