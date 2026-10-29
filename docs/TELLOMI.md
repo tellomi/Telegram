@@ -49,7 +49,7 @@ Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official T
 
 ### Public links (`tell.cc`)
 
-`TELLOMI_LINK_HOST` (`BuildVars.LINK_HOST`, default `tell.cc`) is the only host used when the app builds a public link (`https://tell.cc/username`, `/+hash`, `/joinchat`, `/c/`, `/s/`, `/addstickers`, `/addemoji`, `/proxy`, `/socks`, `/share`, stories, `?start`, and the rest of the t.me path set). `TELLOMI_LINK_SCHEME` (`BuildVars.LINK_SCHEME`, default `tellomi`) is accepted as the same routes as `tg://` (`tellomi://resolve?domain=name`, and so on). `tg://` itself still works.
+`TELLOMI_LINK_HOST` (`BuildVars.LINK_HOST`, default `tell.cc`) is the only host used when the app builds a public link (`https://tell.cc/username`, `/+hash`, `/joinchat`, `/c/`, `/s/`, `/addstickers`, `/addemoji`, `/proxy`, `/socks`, `/share`, stories, `?start`, and the rest of the t.me path set). `TellomiBrand.rewrite` also shows `t.me`, `telegram.me`, `telegram.dog`, and `telegram.org` as `tell.cc` in strings. Parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Help, privacy, and terms use `BuildVars.SITE_HOST` (`tellomi.cn`): `HELP_URL`, `PRIVACY_URL`, and `TOS_URL`. `TELLOMI_LINK_SCHEME` (`BuildVars.LINK_SCHEME`, default `tellomi`) is accepted as the same routes as `tg://` (`tellomi://resolve?domain=name`, and so on). `tg://` itself still works.
 
 `help.getConfig`'s `me_url_prefix` is kept only when it is already `tell.cc` or some other non-Telegram host. `t.me`, `telegram.me`, and `telegram.dog` are rewritten to `tell.cc`. Those three hosts are still recognized inside the app so older messages open, but the manifest does not claim them.
 
@@ -113,7 +113,7 @@ Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The 
 
 ### Launcher icon
 
-The default icon is the Tellomi mark from `docs/brand/logo.svg` in [tellomi/tellomi](https://github.com/tellomi/tellomi) (traced by `scripts/brand/trace-logo.py`; `currentColor`). A copy of that SVG is `TMessagesProj/tellomi/brand/logo.svg`. Light theme draws it in `#111113` on `#FFFFFF`. Dark theme draws it in `#FFFFFF` on `#111113`. Android 13 themed icons use the same mark as a white monochrome alpha mask.
+The default icon is the official Tellomi mark. `TMessagesProj/tellomi/brand/logo.svg` and `logo-source-light.png` / `logo-source-dark.png` are copied from `docs/brand/` on [tellomi/Telegram-iOS](https://github.com/tellomi/Telegram-iOS) branch `tellomi-brand-assets` at `181d02d` (usage rules in `OFFICIAL-README.md`). The path data is `currentColor`. The app icon is a white mark on `#17171A` in both themes. Android 13 themed icons use the same mark as a white monochrome alpha mask. The notification icon is the white mark on a transparent ground.
 
 Those assets are the `tellomi` product flavor, directory `TMessagesProj/tellomi/res`, not edits to DrKLO's mipmaps:
 
@@ -163,9 +163,9 @@ These were left in place on purpose. They are either in-app deep links (resolved
 - Contact MIME prefix shape and the intent action `org.telegram.messenger.OPEN_ACCOUNT` (action string, not a package).
 - Class names, JNI library `tmessages.49`, preferences file names, and the `org.telegram.messenger` Java package / namespace.
 
-**Left as telegram.org URLs inside strings (not requested automatically):**
+Bundled `strings.xml` copies show `tell.cc` for public links and `tellomi.cn` for help, privacy, terms, download, and support. `TellomiBrand.rewrite` applies the same mapping to any string that still contains the old hosts, including cloud langpack text. Link parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Internal `tg://telegram.org` rewrites are a URI-parser stand-in, not a page the user opens. The YouTube embed referer `https://messenger.telegram.org/` is unchanged.
 
-FAQ, privacy, terms, mini-app ToS, ads (`ads.telegram.org`), desktop/web client hints (`getdesktop.telegram.org`, `web.telegram.org`), passport FAQ, stars/monetization policy links, emoji suggestion host `translations.telegram.org`, and similar `*Url` string resources. With cloud strings off, the English (and bundled locale) copy is what the UI shows. Opening one of those rows still loads telegram.org in the browser. Search `telegram.org` under `TMessagesProj/src/main/res/values/strings.xml` for the full English set. Other locales keep their own copies of the same links.
+Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 3 characters. The English and bundled locale strings that said “at least 5 characters” now say 3.
 
 **Still compiled, will fail or no-op until you replace keys:**
 

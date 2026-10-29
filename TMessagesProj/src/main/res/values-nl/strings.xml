@@ -289,11 +289,11 @@
     <string name="UsernameInUse">Deze gebruikersnaam is al bezet.</string>
     <string name="UsernameInUsePurchase">Deze link is al bezet.\nEchter, het staat momenteel te koop. **Lees meer...**</string>
     <string name="UsernameInvalid">Deze gebruikersnaam is ongeldig.</string>
-    <string name="UsernameInvalidShort">De minimumlengte voor gebruikersnamen is 5 tekens.</string>
-    <string name="UsernameInvalidShortPurchase">De minimumlengte voor gebruikersnamen is normaliter 5 tekens. Echter, korte verzamelbare gebruikersnamen zoals deze staan momenteel te koop. **Lees meer...**</string>
+    <string name="UsernameInvalidShort">De minimumlengte voor gebruikersnamen is 3 tekens.</string>
+    <string name="UsernameInvalidShortPurchase">De minimumlengte voor gebruikersnamen is normaliter 3 tekens. Echter, korte verzamelbare gebruikersnamen zoals deze staan momenteel te koop. **Lees meer...**</string>
     <string name="UsernameInvalidLong">Naam mag niet langer dan 32 tekens zijn.</string>
     <string name="UsernameInvalidStartNumber">Gebruikersnamen kunnen niet met een nummer beginnen.</string>
-    <string name="UsernameHelp">Je kunt een gebruikersnaam instellen op **Telegram**. Op die manier kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te kennen.\n\nJe kunt **a–z**, **0–9** en underscores gebruiken. De minimumlengte is **5** tekens.</string>
+    <string name="UsernameHelp">Je kunt een gebruikersnaam instellen op **Telegram**. Op die manier kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te kennen.\n\nJe kunt **a–z**, **0–9** en underscores gebruiken. De minimumlengte is **3** tekens.</string>
     <string name="UsernameHelpLink">Via deze link wordt een chat met jou geopend: %1$s</string>
     <string name="UsernameChecking">Gebruikersnaam controleren...</string>
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
@@ -438,21 +438,21 @@
     <string name="LanguageUnsupportedError">Taal niet gevonden.</string>
     <string name="LanguageSame">Je maakt al gebruik van dit taalbestand (**%1$s**). Je kunt je taal op elk moment aanpassen via de instellingen.</string>
     <string name="LanguageUnknownCustomAlert">Helaas bevat dit aangepaste taalbestand (**%1$s**) geen informatie voor Telegram Android.</string>
-    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We proberen zo snel mogelijk te reageren, maar soms kan het even duren.\n\nBekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general-questions\">veelgestelde vragen</a>]]> van Telegram: daar vind je antwoorden op de meestgestelde vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">probleemoplossing</a>]]>.</string>
+    <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We proberen zo snel mogelijk te reageren, maar soms kan het even duren.\n\nBekijk ook de <![CDATA[<a href=\"https://tellomi.cn/help/">veelgestelde vragen</a>]]> van Telegram: daar vind je antwoorden op de meestgestelde vragen en belangrijke tips voor <![CDATA[<a href=\"https://tellomi.cn/help/">probleemoplossing</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFAQ">Veelgestelde vragen</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFeatures">Telegram-functies</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>
+    <string name="TelegramFeaturesUrl">https://tell.cc/TelegramTips</string>
     <string name="AddAccount">Account toevoegen</string>
     <string name="SelectAccount">Account kiezen</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="TelegramFaqUrl">https://tellomi.cn/help/</string>
     <string name="PrivacyPolicy">Privacybeleid</string>
     <string name="TermsOfService">Gebruiksvoorwaarden</string>
     <string name="TermsOfServiceLogin">Door je aan te melden, ga je akkoord met de *Gebruiksvoorwaarden*.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
-    <string name="TermsOfServiceUrl">https://telegram.org/tos</string>
-    <string name="WebAppDisclaimerUrl">https://telegram.org/tos/mini-apps</string>
+    <string name="PrivacyPolicyUrl">https://tellomi.cn/legal/privacy/</string>
+    <string name="TermsOfServiceUrl">https://tellomi.cn/legal/terms/</string>
+    <string name="WebAppDisclaimerUrl">https://tellomi.cn/legal/terms/</string>
     <string name="DeleteLocalizationTitle">Vertaalbestand verwijderen</string>
     <string name="DeleteLocalizationText">Taalbestand **%1$s** echt verwijderen?</string>
     <string name="IncorrectLocalization">Ongeldig vertalingsbestand</string>
@@ -691,9 +691,9 @@
     <string name="AuthAnotherClientScan">Scan QR-code</string>
     <string name="AuthAnotherClientNotFound">Geen authenticatie-token gevonden</string>
     <string name="AuthAnotherClientOk">Authenticatie gelukt</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org/</string>
-    <string name="AuthAnotherWebClientUrl">https://web.telegram.org/</string>
-    <string name="AuthAnotherClientInfo1">Download Telegram op je computer via *desktop.telegram.org*</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://tellomi.cn/download/</string>
+    <string name="AuthAnotherWebClientUrl">https://tell.cc/</string>
+    <string name="AuthAnotherClientInfo1">Download Telegram op je computer via *tellomi.cn/download*</string>
     <string name="AuthAnotherClientInfo2">Gebruik Telegram Desktop om de QR-code te krijgen.</string>
     <string name="AuthAnotherClientInfo3">Scan de QR-Code om met je account te verbinden.</string>
     <string name="AuthAnotherClientUrl">Met deze code kun je iemand toestaan om in te loggen op je Telegram-account\n\nOm de login te bevestigen ga naar, Instellingen &gt; Apparaten &gt; Scan QR en scan de code.</string>
@@ -736,7 +736,7 @@
     <string name="ChannelDescriptionChanged">Kanaalbeschrijving bijgewerkt</string>
     <string name="CheckPhoneNumber">Is %1$s nog steeds je nummer?</string>
     <string name="CheckPhoneNumberInfo">Houd je nummer actueel zodat je altijd op Telegram kunt inloggen. **Lees meer**</string>
-    <string name="CheckPhoneNumberLearnMoreUrl">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
+    <string name="CheckPhoneNumberLearnMoreUrl">https://tellomi.cn/help/</string>
     <string name="CheckPhoneNumberYes">Ja</string>
     <string name="CheckPhoneNumberNo">Nee</string>
     <!--password view-->

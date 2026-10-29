@@ -1485,7 +1485,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 }
             }
         }
-        if (name == null || name.length() < 4) {
+        if (name == null || name.length() < 3) {
             if (isChannel) {
                 checkTextView.setText(LocaleController.getString(R.string.LinkInvalidShort));
             } else {
@@ -1515,11 +1515,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                         checkTextView.setTextColorByKey(Theme.key_windowBackgroundWhiteGreenText);
                         lastNameAvailable = true;
                     } else {
-                        if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
+                        if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() < 3) {
                             checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                            if (req.username.length() == 4) {
+                            if (req.username.length() < 3) {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                             } else {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));

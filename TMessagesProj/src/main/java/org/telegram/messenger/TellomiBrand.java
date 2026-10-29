@@ -11,6 +11,9 @@
 
 package org.telegram.messenger;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public final class TellomiBrand {
 
     private static final String[] BRAND_TOKENS = new String[]{
@@ -39,8 +42,20 @@ public final class TellomiBrand {
             }
             value = value.replace(token, name);
         }
+        value = rewritePolicyLinks(value);
         String host = BuildVars.LINK_HOST;
         if (host != null && !host.isEmpty()) {
+            value = replaceHost(value, "getdesktop.telegram.org", "tellomi.cn/download");
+            value = replaceHost(value, "desktop.telegram.org", "tellomi.cn/download");
+            value = replaceHost(value, "web.telegram.org", host);
+            value = replaceHost(value, "ads.telegram.org", host);
+            value = replaceHost(value, "promote.telegram.org", host);
+            value = replaceHost(value, "translations.telegram.org", BuildVars.SITE_HOST);
+            value = replaceHost(value, "core.telegram.org", BuildVars.SITE_HOST);
+            value = replaceHost(value, "sms@telegram.org", "support@" + BuildVars.SITE_HOST);
+            value = replaceHost(value, "recover@telegram.org", "support@" + BuildVars.SITE_HOST);
+            value = replaceHost(value, "www.telegram.org", host);
+            value = replaceHostBoundary(value, "telegram.org", host);
             value = replaceHost(value, "telegram.me", host);
             value = replaceHost(value, "telegram.dog", host);
             value = replaceHost(value, "t.me", host);
@@ -48,10 +63,80 @@ public final class TellomiBrand {
         return value;
     }
 
+    private static final Pattern FAQ_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/faq[^\\s\"'<>)\\]]*");
+    private static final Pattern PRIVACY_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/privacy[^\\s\"'<>)\\]]*");
+    private static final Pattern TOS_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/tos[^\\s\"'<>)\\]]*");
+
+    /** Help, privacy, and terms go to tellomi.cn. Other telegram.org links are rewritten afterwards. */
+    private static String rewritePolicyLinks(String value) {
+        value = replaceUrl(value, FAQ_URL, "faq", BuildVars.HELP_URL);
+        value = replaceUrl(value, PRIVACY_URL, "privacy", BuildVars.PRIVACY_URL);
+        value = replaceUrl(value, TOS_URL, "tos", BuildVars.TOS_URL);
+        return value;
+    }
+
+    private static String replaceUrl(String value, Pattern pattern, String needle, String replacement) {
+        if (value.indexOf(needle) < 0 && value.toLowerCase().indexOf(needle) < 0) {
+            return value;
+        }
+        Matcher matcher = pattern.matcher(value);
+        StringBuffer out = new StringBuffer();
+        boolean found = false;
+        while (matcher.find()) {
+            found = true;
+            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        if (!found) {
+            return value;
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
     private static String replaceHost(String value, String from, String to) {
         if (from.equals(to) || value.indexOf(from) < 0) {
             return value;
         }
         return value.replace(from, to);
+    }
+
+    /** Replace {@code from} only when it is its own host, not a suffix of core.telegram.org and not an email. */
+    private static String replaceHostBoundary(String value, String from, String to) {
+        if (from.equals(to) || value.indexOf(from) < 0) {
+            return value;
+        }
+        StringBuilder sb = new StringBuilder(value.length());
+        int i = 0;
+        boolean changed = false;
+        while (i < value.length()) {
+            int j = value.indexOf(from, i);
+            if (j < 0) {
+                break;
+            }
+            boolean boundary = true;
+            if (j > 0) {
+                char prev = value.charAt(j - 1);
+                if (prev == '@' || prev == '.' || Character.isLetterOrDigit(prev)) {
+                    boundary = false;
+                }
+            }
+            int end = j + from.length();
+            if (end < value.length() && Character.isLetterOrDigit(value.charAt(end))) {
+                boundary = false;
+            }
+            sb.append(value, i, j);
+            if (boundary) {
+                sb.append(to);
+                changed = true;
+            } else {
+                sb.append(value, j, end);
+            }
+            i = end;
+        }
+        if (!changed) {
+            return value;
+        }
+        sb.append(value, i, value.length());
+        return sb.toString();
     }
 }
