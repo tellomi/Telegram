@@ -73,7 +73,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            // TELLOMI: keep applicationId exactly APP_PACKAGE (com.tellomi.app), not *.beta.
+            // TELLOMI: keep applicationId exactly APP_PACKAGE (app.tellomi.chat), not *.beta.
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true

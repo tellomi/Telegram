@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContactsAccountType xmlns:android="http://schemas.android.com/apk/res/android">
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.profile"
+        android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.profile"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.call"
+        android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.call"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>
     <ContactsDataKind android:icon="@drawable/ic_launcher_dr"
-        android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.call.video"
+        android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.call.video"
         android:summaryColumn="data2"
         android:detailColumn="data3"
         android:detailSocialSummary="true"/>

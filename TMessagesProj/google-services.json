@@ -97,7 +97,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:tellomiomtellomiapp",
         "android_client_info": {
-          "package_name": "com.tellomi.app"
+          "package_name": "app.tellomi.chat"
         }
       },
       "oauth_client": [
@@ -126,7 +126,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:tellomillomiappbeta",
         "android_client_info": {
-          "package_name": "com.tellomi.app.beta"
+          "package_name": "app.tellomi.chat.beta"
         }
       },
       "oauth_client": [
@@ -155,7 +155,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:tellomiellomiappweb",
         "android_client_info": {
-          "package_name": "com.tellomi.app.web"
+          "package_name": "app.tellomi.chat.web"
         }
       },
       "oauth_client": [
