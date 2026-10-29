@@ -383,21 +383,21 @@
     <string name="LanguageUnsupportedError">Sprache nicht gefunden.</string>
     <string name="LanguageSame">Du benutzt bereits das Sprachpaket (**%1$s**). In den Einstellungen kannst du die Sprache jederzeit wieder ändern.</string>
     <string name="LanguageUnknownCustomAlert">Leider enthält das benutzerdefinierte Sprachpaket (**%1$s**) keine Daten für Telegram Android.</string>
-    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen betreut wird. Alle versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.\n\nBitte schau auch in den <![CDATA[<a href=\"https://telegram.org/faq/de#allgemeine-fragen\">Telegram FAQ</a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
+    <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen betreut wird. Alle versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.\n\nBitte schau auch in den <![CDATA[<a href=\"https://tellomi.cn/help/">Telegram FAQ</a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://tellomi.cn/help/">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Eine Frage stellen</string>
     <string name="TelegramFAQ">Telegram FAQ</string>
     <string name="TelegramFaq">Telegram FAQ</string>
     <string name="TelegramFeatures">Telegram Funktionen</string>
-    <string name="TelegramFeaturesUrl">https://t.me/TelegramTipsDE</string>
+    <string name="TelegramFeaturesUrl">https://tell.cc/TelegramTipsDE</string>
     <string name="AddAccount">Konto hinzufügen</string>
     <string name="SelectAccount">Konto auswählen</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq/de</string>
+    <string name="TelegramFaqUrl">https://tellomi.cn/help/</string>
     <string name="PrivacyPolicy">Datenschutzerklärung</string>
     <string name="TermsOfService">Nutzungsbedingungen</string>
     <string name="TermsOfServiceLogin">Mit der Registrierung\nstimmst du den *Nutzungsbedingungen* zu.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
-    <string name="TermsOfServiceUrl">https://telegram.org/tos</string>
-    <string name="WebAppDisclaimerUrl">https://telegram.org/tos/mini-apps</string>
+    <string name="PrivacyPolicyUrl">https://tellomi.cn/legal/privacy/</string>
+    <string name="TermsOfServiceUrl">https://tellomi.cn/legal/terms/</string>
+    <string name="WebAppDisclaimerUrl">https://tellomi.cn/legal/terms/</string>
     <string name="DeleteLocalizationTitle">Sprachpaket löschen</string>
     <string name="DeleteLocalizationText">Möchtest du wirklich das Sprachpaket **%1$s** löschen?</string>
     <string name="IncorrectLocalization">Falsche Sprachdatei</string>
@@ -636,9 +636,9 @@
     <string name="AuthAnotherClientScan">QR-Code scannen</string>
     <string name="AuthAnotherClientNotFound">Kein Authentifizierungstoken gefunden</string>
     <string name="AuthAnotherClientOk">Authentifizierung erfolgreich</string>
-    <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org/</string>
-    <string name="AuthAnotherWebClientUrl">https://web.telegram.org/</string>
-    <string name="AuthAnotherClientInfo1">Installiere Telegram Desktop auf deinem Computer von *desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientDownloadClientUrl">https://tellomi.cn/download/</string>
+    <string name="AuthAnotherWebClientUrl">https://tell.cc/</string>
+    <string name="AuthAnotherClientInfo1">Installiere Telegram Desktop auf deinem Computer von *tellomi.cn/download*.</string>
     <string name="AuthAnotherClientInfo2">Starte das Programm auf dem Computer, um deinen QR-Code zu erhalten.</string>
     <string name="AuthAnotherClientInfo3">Scanne den QR-Code mit deinem Handy, um dich mit deinem Konto zu verbinden.</string>
     <string name="AuthAnotherClientUrl">Mit diesem Code kann man sich bei deinem Telegram Konto anmelden.\n\nUm die Anmeldung zu bestätigen, in die Einstellungen von Telegram wechseln &gt; Geräte &gt; QR-Code scannen und den Code mit der Kamera scannen.</string>
@@ -681,7 +681,7 @@
     <string name="ChannelDescriptionChanged">Kanalbeschreibung aktualisiert.</string>
     <string name="CheckPhoneNumber">Ist %1$s noch deine Nummer?</string>
     <string name="CheckPhoneNumberInfo">Halte deine Nummer stets auf dem aktuellsten Stand, damit du dich immer bei Telegram anmelden kannst. **Mehr dazu hier**</string>
-    <string name="CheckPhoneNumberLearnMoreUrl">https://telegram.org/faq/de#f-ich-habe-eine-neue-nummer-was-soll-ich-tun</string>
+    <string name="CheckPhoneNumberLearnMoreUrl">https://tellomi.cn/help/</string>
     <string name="CheckPhoneNumberYes">Ja</string>
     <string name="CheckPhoneNumberNo">Nein</string>
     <!--filters-->

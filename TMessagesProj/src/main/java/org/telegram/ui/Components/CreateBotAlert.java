@@ -270,8 +270,8 @@ public class CreateBotAlert {
                 showUsernameHint.run();
                 return;
             }
-            if (username.length() < 4 || username.length() > 32) {
-                usernameEditInfo.setText(getString(username.length() < 4 ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
+            if (username.length() < 3 || username.length() > 32) {
+                usernameEditInfo.setText(getString(username.length() < 3 ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
                 usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
                 return;
             }

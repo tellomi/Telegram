@@ -8082,7 +8082,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (dialogId == getUserConfig().getClientUserId()) {
             settings.business_bot_id = UserObject.REPLY_BOT;
-            settings.business_bot_manage_url = "https://telegram.org/";
+            settings.business_bot_manage_url = TellomiBrand.rewrite("https://telegram.org/");
         }
         editor.apply();
         userPeerSettings.put(dialogId, settings);

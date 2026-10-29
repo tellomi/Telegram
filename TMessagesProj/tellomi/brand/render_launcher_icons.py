@@ -23,10 +23,14 @@ HERE = Path(__file__).resolve().parent
 LOGO = HERE / "logo.svg"
 RES = HERE.parent / "res"
 
-INK_LIGHT = (0x11, 0x11, 0x13)
+# Official usage (Telegram-iOS tellomi-brand-assets, docs/brand/README.md):
+# in-app ink is #111113 on light and #FFFFFF on dark. The app icon background
+# is #17171A, so the launcher mark is white on that ground in both themes.
+INK_LIGHT = (0xFF, 0xFF, 0xFF)
 INK_DARK = (0xFF, 0xFF, 0xFF)
-BG_LIGHT = (0xFF, 0xFF, 0xFF)
-BG_DARK = (0x11, 0x11, 0x13)
+BG_LIGHT = (0x17, 0x17, 0x1A)
+BG_DARK = (0x17, 0x17, 0x1A)
+QR_FRACTION = 0.70
 
 # Legacy mipmaps are the whole icon. Adaptive layers are 108dp, of which the
 # center 72dp stays visible after the launcher mask, so the same optical size
@@ -197,6 +201,40 @@ def adaptive_xml() -> str:
 """
 
 
+def write_qr(paths: list[str], bbox) -> None:
+    """Badge and center mark. Center by the painted box, not the viewBox."""
+    scale, tx, ty = placement(bbox, 150, QR_FRACTION)
+    mark = [
+        f'<g fill="#FFFFFF" fill-rule="evenodd" transform="translate({tx:.6f} {ty:.6f}) scale({scale:.8f})">'
+    ]
+    for path in paths:
+        mark.append(f'<path d="{path}"/>')
+    mark.append("</g>")
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">'
+        '<circle cx="75" cy="75" r="75" fill="#17171A"/>'
+        + "\n".join(mark)
+        + "</svg>\n"
+    )
+    write_text(RES / "raw/qr_logo.svg", svg)
+    comment = (
+        "Tellomi mark from the official logo.svg, centered on its painted bounds. "
+        "Regenerate with render_launcher_icons.py."
+    )
+    write_text(
+        RES / "drawable/tellomi_qr_badge.xml",
+        vector_xml(paths, bbox, "#FFFFFF", 150, QR_FRACTION, comment).replace(
+            '    <group',
+            '    <path\n        android:fillColor="#17171A"\n        android:pathData="M75,0a75,75 0,1 0,0 150a75,75 0,1 0,0 -150z"/>\n    <group',
+            1,
+        ),
+    )
+    write_text(
+        RES / "drawable/tellomi_qr_mark.xml",
+        vector_xml(paths, bbox, "#FFFFFF", 108, QR_FRACTION, comment),
+    )
+
+
 def main() -> None:
     paths = load_paths()
     bbox = measure_bbox(paths)
@@ -235,6 +273,7 @@ def main() -> None:
             write_png(paths, bbox, png, size, "#FFFFFF", None, NOTIFICATION_FRACTION, False, False)
             write_webp(png, RES / f"drawable-{density}/notification.webp")
 
+    write_qr(paths, bbox)
     print("wrote", RES)
 
 
