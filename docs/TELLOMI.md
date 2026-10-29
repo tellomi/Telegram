@@ -14,8 +14,11 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 | `TELLOMI_APP_NAME` | `Tellomi` | Launcher name is set in string resources. This value is also the in-app brand rewrite and the on-disk media folder name. |
 | `TELLOMI_API_ID` | `1` | `api_id` sent with `auth.sendCode`. Placeholder, not Telegram's app id `4`. |
 | `TELLOMI_API_HASH` | `0123456789abcdef0123456789abcdef` | `api_hash` placeholder. Replace before any deployment that checks it. |
-| `TELLOMI_DC_ADDRESSES` | `1:10.0.2.2:10443,2:10.0.2.2:10443` | Comma-separated `dcId:host:port`. Bracket IPv6 hosts: `1:[2001:db8::1]:10443`. |
-| `TELLOMI_DEFAULT_DC_ID` | `1` | Datacenter used for a fresh login. Must appear in `TELLOMI_DC_ADDRESSES`. |
+| `TELLOMI_SERVER_PROFILE` | unset | `dev` or `local`. When unset, **debug** builds use `dev` and every other build type uses `local`. |
+| `TELLOMI_PROFILE_DEV` | `1:8.137.39.82:10443,2:8.137.39.82:10443` | Live dev Teamgram (gnetway TCP). DC 1 and DC 2 are the same host. |
+| `TELLOMI_PROFILE_LOCAL` | `1:10.0.2.2:10443,2:10.0.2.2:10443` | Android emulator alias for a Teamgram docker on the host. |
+| `TELLOMI_DC_ADDRESSES` | unset | Optional explicit `dcId:host:port` list. When set, it replaces the selected profile. Bracket IPv6 hosts: `1:[2001:db8::1]:10443`. |
+| `TELLOMI_DEFAULT_DC_ID` | `1` | Datacenter used for a fresh login. Must appear in the address list. |
 | `TELLOMI_CUSTOM_BACKEND` | `true` | When true, Telegram production and test DC IPs are never installed, and the Telegram DNS bootstrap (`apv3.stel.com` / `tapv3.stel.com`) is skipped. |
 | `TELLOMI_LOCK_DC_ADDRESSES` | `true` | When true (and the custom backend is on), `help.getConfig` does not replace the build-config addresses. |
 | `TELLOMI_USE_CLOUD_STRINGS` | `false` | Telegram langpack download (`translations.telegram.org` / `langpack.*`). |
@@ -27,9 +30,24 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 
 Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official Telegram DCs and RSA keys again.
 
+### Server profiles
+
+```bash
+# Debug APK, live dev server (the default):
+./gradlew :TMessagesProj_App:assembleAfatDebug
+
+# Debug APK, local docker instead:
+./gradlew :TMessagesProj_App:assembleAfatDebug -PTELLOMI_SERVER_PROFILE=local
+
+# Any build type, live dev server:
+./gradlew :TMessagesProj_App:assembleAfatRelease -PTELLOMI_SERVER_PROFILE=dev
+```
+
+`dev` is `8.137.39.82:10443` TCP (Teamgram gnetway, branch `cursor/channels-supergroups-39cf` at `5f92342`). DC 1 and DC 2 are that same address. The SMS code on that server is **12345**. `local` stays `10.0.2.2:10443` for an emulator talking to docker on the development machine.
+
 ### Local Teamgram (docker)
 
-Teamgram's docker compose publishes gnetway on **TCP 10443** (also 5222 and websocket 11443). The client uses 10443.
+Teamgram's docker compose publishes gnetway on **TCP 10443** (also 5222 and websocket 11443). The client uses 10443. Select it with `-PTELLOMI_SERVER_PROFILE=local`.
 
 | Where the app runs | Host to put in `TELLOMI_DC_ADDRESSES` |
 | --- | --- |
@@ -37,7 +55,7 @@ Teamgram's docker compose publishes gnetway on **TCP 10443** (also 5222 and webs
 | Device on the same LAN | The machine's LAN IP, for example `192.168.1.20` |
 | `adb reverse tcp:10443 tcp:10443` | `127.0.0.1` |
 
-The default lists **DC 1 and DC 2 on the same host and port**. Teamgram's single datacenter is DC 1 (`ThisDC`). The stock client used to assume DC 2 when it had no saved config; registering both ids means a `PHONE_MIGRATE_*` / `USER_MIGRATE_*` to either id still reaches the docker port.
+Both profiles list **DC 1 and DC 2 on the same host and port**. Teamgram's single datacenter is DC 1 (`ThisDC`). The stock client used to assume DC 2 when it had no saved config; registering both ids means a `PHONE_MIGRATE_*` / `USER_MIGRATE_*` to either id still reaches that port.
 
 `TELLOMI_LOCK_DC_ADDRESSES=true` matters for docker. `help.getConfig` often advertises `127.0.0.1` or an in-container address. With the lock on, the client keeps the address from `gradle.properties` after that response. For a real multi-DC deployment, set the lock to `false` and make the server advertise addresses the phone can route to.
 

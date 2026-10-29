@@ -39,6 +39,7 @@ public class BuildVars {
     public static final String STORAGE_DOCUMENTS_DIR = APP_NAME + " Documents";
     public static final String STORAGE_FILES_DIR = APP_NAME + " Files";
     public static final String STORAGE_STORIES_DIR = APP_NAME + " Stories";
+    public static final String TELLOMI_SERVER_PROFILE = BuildConfig.TELLOMI_SERVER_PROFILE;
     public static final boolean TELLOMI_CUSTOM_BACKEND = BuildConfig.TELLOMI_CUSTOM_BACKEND;
     public static final boolean TELLOMI_LOCK_DC_ADDRESSES = BuildConfig.TELLOMI_LOCK_DC_ADDRESSES;
     public static final boolean TELLOMI_REBRAND_STRINGS = BuildConfig.TELLOMI_REBRAND_STRINGS;

@@ -137,6 +137,32 @@ def tellomiPublicKeyPem = {
     return ""
 }
 
+// Named server profiles. Debug builds default to "dev"; other build types
+// default to "local". -PTELLOMI_SERVER_PROFILE=local|dev selects one for every
+// build type. TELLOMI_DC_ADDRESSES, when set, replaces the profile addresses.
+def tellomiServerProfiles = [
+    dev  : '1:8.137.39.82:10443,2:8.137.39.82:10443',
+    local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
+]
+
+def tellomiServerSelection = { String fallbackName ->
+    def explicit = project.findProperty('TELLOMI_DC_ADDRESSES')
+    if (explicit != null && explicit.toString().trim()) {
+        return [name: 'custom', addresses: explicit.toString().trim()]
+    }
+    def selected = project.findProperty('TELLOMI_SERVER_PROFILE')
+    def name = (selected != null && selected.toString().trim()) ? selected.toString().trim() : fallbackName
+    if (!tellomiServerProfiles.containsKey(name)) {
+        throw new GradleException("Unknown TELLOMI_SERVER_PROFILE '${name}'. Use dev or local, or set TELLOMI_DC_ADDRESSES.")
+    }
+    def addresses = tellomiServerProfiles[name]
+    def profileOverride = project.findProperty('TELLOMI_PROFILE_' + name.toUpperCase())
+    if (profileOverride != null && profileOverride.toString().trim()) {
+        addresses = profileOverride.toString().trim()
+    }
+    return [name: name, addresses: addresses]
+}
+
 android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
@@ -174,7 +200,9 @@ android {
         buildConfigField "String", "TELLOMI_APP_NAME", tellomiJavaString(tellomiProp("TELLOMI_APP_NAME", "Tellomi"))
         buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
         buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
-        buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiProp("TELLOMI_DC_ADDRESSES", "1:10.0.2.2:10443,2:10.0.2.2:10443"))
+        def tellomiLocalServer = tellomiServerSelection('local')
+        buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiLocalServer.name)
+        buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiLocalServer.addresses)
         buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
         buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "true")
@@ -219,6 +247,10 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "0"
+            // Debug APKs talk to the live dev Teamgram unless a profile is selected.
+            def tellomiDevServer = tellomiServerSelection('dev')
+            buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiDevServer.name)
+            buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiDevServer.addresses)
         }
 
         HA_private {
