@@ -10,7 +10,7 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 
 | Property | Default | Meaning |
 | --- | --- | --- |
-| `APP_PACKAGE` | `com.tellomi.app` | Android `applicationId`. Debug builds of `TMessagesProj_App` do **not** append `.beta`. |
+| `APP_PACKAGE` | `app.tellomi.chat` | Android `applicationId`. Debug builds of `TMessagesProj_App` do **not** append `.beta`. |
 | `TELLOMI_APP_NAME` | `Tellomi` | Launcher name is set in string resources. This value is also the in-app brand rewrite and the on-disk media folder name. |
 | `TELLOMI_API_ID` | `1` | `api_id` sent with `auth.sendCode`. Placeholder, not Telegram's app id `4`. |
 | `TELLOMI_API_HASH` | `0123456789abcdef0123456789abcdef` | `api_hash` placeholder. Replace before any deployment that checks it. |
@@ -53,7 +53,7 @@ Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official T
 
 `help.getConfig`'s `me_url_prefix` is kept only when it is already `tell.cc` or some other non-Telegram host. `t.me`, `telegram.me`, and `telegram.dog` are rewritten to `tell.cc`. Those three hosts are still recognized inside the app so older messages open, but the manifest does not claim them.
 
-App Links: `AndroidManifest` has an `https`/`http` `tell.cc` intent filter with `android:autoVerify="true"`, plus `tellomi` next to `tg`. The Digital Asset Links statement is `TMessagesProj/tellomi/well-known/assetlinks.json`. Host it at `https://tell.cc/.well-known/assetlinks.json`. How to read the signing SHA256 is in `TMessagesProj/tellomi/well-known/README.md`. The checked-in fingerprint is the dummy `TMessagesProj/config/release.keystore` (`androidkey`), which this tree also uses to sign debug builds. Replace it when the keystore changes. The manifest host and scheme are literals; if you change `TELLOMI_LINK_HOST` or `TELLOMI_LINK_SCHEME`, update `AndroidManifest.xml` to match.
+App Links: `AndroidManifest` has an `https`/`http` `tell.cc` intent filter with `android:autoVerify="true"`, plus `tellomi` next to `tg`. The Digital Asset Links statement is `TMessagesProj/tellomi/well-known/assetlinks.json`. Host it at `https://tell.cc/.well-known/assetlinks.json`. How to read the signing SHA256 is in `TMessagesProj/tellomi/well-known/README.md`. The checked-in fingerprint is the release certificate SHA-256 `6E:2B:1B:8C:F1:01:25:D2:64:68:A4:EA:BE:42:F3:48:8C:0A:D3:EF:AE:E6:30:C2:5A:18:F4:0A:7F:9C:08:ED` for `app.tellomi.chat`. Debug builds still sign with the dummy `TMessagesProj/config/release.keystore` (`androidkey`). Replace the fingerprint when the release key changes. The manifest host and scheme are literals; if you change `TELLOMI_LINK_HOST` or `TELLOMI_LINK_SCHEME`, update `AndroidManifest.xml` to match.
 
 ### Local Teamgram (docker)
 
@@ -76,7 +76,7 @@ openssl rsa -in server_pkcs1.key -pubout -outform PEM -RSAPublicKey_out \
   -out TMessagesProj/config/tellomi-server-public.pem
 ```
 
-Dev sign-in on that Teamgram build uses the fixed SMS code **12345**. That is server behavior; the client does not special-case it. The SMS Retriever hash in `BuildVars.getSmsHash()` is still Telegram's and will not match `com.tellomi.app`, so autofill of the code will not work until you register a hash for this application id.
+Dev sign-in on that Teamgram build uses the fixed SMS code **12345**. That is server behavior; the client does not special-case it. The SMS Retriever hash in `BuildVars.getSmsHash()` is still Telegram's and will not match `app.tellomi.chat`, so autofill of the code will not work until you register a hash for this application id.
 
 `api_id` / `api_hash` are sent on the auth requests. Teamgram's dev server does not check them against Telegram. They are obvious placeholders (`1` and `0123456789abcdef0123456789abcdef`). Put your own values in before a deployment that validates them.
 
@@ -89,25 +89,25 @@ echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties   # local.properties is giti
 ./gradlew :TMessagesProj_App:assembleAfatDebug
 ```
 
-`local.properties` is not committed. `assembleDebug` / `assembleAfatDebug` is the variant that installs as `com.tellomi.app`. To compile one ABI while iterating:
+`local.properties` is not committed. `assembleDebug` / `assembleAfatDebug` is the variant that installs as `app.tellomi.chat`. To compile one ABI while iterating:
 
 ```bash
 ./gradlew :TMessagesProj_App:assembleAfatDebug -PTELLOMI_ABI_FILTERS=arm64-v8a
 ```
 
-Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The property is read by both `TMessagesProj` and `TMessagesProj_App`. GitHub Actions builds that same fat APK; the signing secrets and how to download the artifact are in `TMessagesProj/tellomi/ANDROID_APK.md`. Other application modules still append suffixes (`.web` on standalone, `.beta` on HockeyApp). `google-services.json` includes placeholder clients for `com.tellomi.app`, `com.tellomi.app.beta`, and `com.tellomi.app.web` so those variants configure. Push will not be delivered until you replace those files with a Firebase project you control (see below).
+Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The property is read by both `TMessagesProj` and `TMessagesProj_App`. GitHub Actions builds that same fat APK; the signing secrets and how to download the artifact are in `TMessagesProj/tellomi/ANDROID_APK.md`. Other application modules still append suffixes (`.web` on standalone, `.beta` on HockeyApp). `google-services.json` includes placeholder clients for `app.tellomi.chat`, `app.tellomi.chat.beta`, and `app.tellomi.chat.web` so those variants configure. Push will not be delivered until you replace those files with a Firebase project you control (see below).
 
 ## What changed
 
 ### Branding
 
-- `APP_PACKAGE` is `com.tellomi.app`. `TMessagesProj_App` debug no longer adds `.beta`, so the installed id is exactly that.
+- `APP_PACKAGE` is `app.tellomi.chat`. `TMessagesProj_App` debug no longer adds `.beta`, so the installed id is exactly that.
 - `AppName` and `AppNameBeta` are `Tellomi` in every `values*/strings.xml` shipped in this tree (launcher label and package-manager name).
 - `TellomiBrand` rewrites `Telegram`, `تيليجرام`, `텔레그램`, `टेलीग्राम`, and `电报` to `TELLOMI_APP_NAME` inside `LocaleController.getString` / `formatString` / `getServerString`. String resource **keys** (`TelegramFaqUrl`, and so on) are not renamed.
 - Service-user display names (`id` 333000 and 777000) use the app name.
 - Media directories are `Tellomi`, `Tellomi Images`, `Tellomi Video`, `Tellomi Audio`, `Tellomi Documents`, `Tellomi Files`, `Tellomi Stories`. The scoped-storage migration looks for `Tellomi` on external storage, not the official client's `Telegram` folder, so it will not move that folder.
-- Contacts account type follows `APP_PACKAGE` (`BuildVars.ACCOUNT_TYPE`). `res/xml/auth.xml`, `auth_menu.xml` (`android:targetPackage`), and `sync_contacts.xml` are hardcoded to `com.tellomi.app` and must be updated if `APP_PACKAGE` changes.
-- Contact shortcut MIME types are `vnd.android.cursor.item/vnd.com.tellomi.app.profile`, `.call`, and `.call.video` (manifest, `contacts.xml`, `ContactsController`, `LaunchActivity`).
+- Contacts account type follows `APP_PACKAGE` (`BuildVars.ACCOUNT_TYPE`). `res/xml/auth.xml`, `auth_menu.xml` (`android:targetPackage`), and `sync_contacts.xml` are hardcoded to `app.tellomi.chat` and must be updated if `APP_PACKAGE` changes.
+- Contact shortcut MIME types are `vnd.android.cursor.item/vnd.app.tellomi.chat.profile`, `.call`, and `.call.video` (manifest, `contacts.xml`, `ContactsController`, `LaunchActivity`).
 - The system account icon and the default launcher icon are the Tellomi mark (speech bubble with @). See below.
 - The last-resort files directory in `ApplicationLoader.getFilesDirFixed()` uses the real package name.
 
@@ -148,7 +148,7 @@ In `BuildVars`:
 - `PLAYSTORE_APP_URL`, `HUAWEI_STORE_URL`, and the invite-SMS fallback (`ContactsController`, `NewContactBottomSheet`) use `TELLOMI_DOWNLOAD_URL` instead of `play.google.com` / `telegram.org/dl`.
 - `GOOGLE_AUTH_CLIENT_ID` is a non-functional placeholder (`000000000000-tellomi.apps.googleusercontent.com`). The server can still overwrite it from config. The Google sign-in button is still on the login screen.
 
-`google-services.json` in each app module gained client entries for the Tellomi package names so the Google Services plugin can configure the build. The Firebase project id, API key, and OAuth client inside those entries are still the ones upstream ships for `org.telegram.messenger`. **FCM push will not arrive** until you replace `google-services.json` with one from a project that contains `com.tellomi.app`. The old `org.telegram.messenger` clients were left in the file so the library module's plugin still matches namespace `org.telegram.messenger`.
+`google-services.json` in each app module gained client entries for the Tellomi package names so the Google Services plugin can configure the build. The Firebase project id, API key, and OAuth client inside those entries are still the ones upstream ships for `org.telegram.messenger`. **FCM push will not arrive** until you replace `google-services.json` with one from a project that contains `app.tellomi.chat`. The old `org.telegram.messenger` clients were left in the file so the library module's plugin still matches namespace `org.telegram.messenger`.
 
 ## What still points at Telegram
 

@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.tellomi.app",
+      "package_name": "app.tellomi.chat",
       "sha256_cert_fingerprints": [
-        "A0:8D:7D:C3:23:DD:F7:1E:F3:20:19:44:39:7E:0D:3C:CE:7D:40:84:72:63:E1:1F:32:8B:68:BB:E1:92:29:AB"
+        "6E:2B:1B:8C:F1:01:25:D2:64:68:A4:EA:BE:42:F3:48:8C:0A:D3:EF:AE:E6:30:C2:5A:18:F4:0A:7F:9C:08:ED"
       ]
     }
   }

@@ -216,7 +216,7 @@ android {
         buildConfigField "boolean", "TELLOMI_BILLING_UNAVAILABLE", tellomiProp("TELLOMI_BILLING_UNAVAILABLE", "true")
         buildConfigField "boolean", "TELLOMI_REBRAND_STRINGS", tellomiProp("TELLOMI_REBRAND_STRINGS", "true")
         buildConfigField "String", "TELLOMI_DOWNLOAD_URL", tellomiJavaString(tellomiProp("TELLOMI_DOWNLOAD_URL", "https://tellomi.app"))
-        buildConfigField "String", "TELLOMI_ACCOUNT_TYPE", tellomiJavaString(tellomiProp("APP_PACKAGE", "com.tellomi.app"))
+        buildConfigField "String", "TELLOMI_ACCOUNT_TYPE", tellomiJavaString(tellomiProp("APP_PACKAGE", "app.tellomi.chat"))
         buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
 
         def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")

@@ -252,7 +252,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.profile"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.profile"/>
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
@@ -305,8 +305,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.call"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.com.tellomi.app.call.video"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.tellomi.chat.call.video"/>
             </intent-filter>
         </activity-alias>
         <activity

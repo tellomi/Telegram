@@ -2,7 +2,7 @@
 
 GitHub Actions workflow: [`.github/workflows/android-apk.yml`](../../.github/workflows/android-apk.yml).
 
-It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, application id `com.tellomi.app`) and the native library `libtmessages.49.so` for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. That is the same APK as a local `./gradlew :TMessagesProj_App:assembleAfatDebug` (or `assembleAfatRelease` when the signing secrets below are set).
+It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, application id `app.tellomi.chat`) and the native library `libtmessages.49.so` for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. That is the same APK as a local `./gradlew :TMessagesProj_App:assembleAfatDebug` (or `assembleAfatRelease` when the signing secrets below are set).
 
 The workflow runs on:
 
@@ -43,7 +43,7 @@ The workflow page is `https://github.com/tellomi/Telegram/actions/workflows/andr
 
 **Run workflow** is listed only when this filename exists on the default branch (`master`). The copy on `master` is a registration stub. Choosing another branch runs that branch's `android-apk.yml`.
 
-Install a debug build with `adb install -r tellomi-debug.apk`. The package id is `com.tellomi.app`.
+Install a debug build with `adb install -r tellomi-debug.apk`. The package id is `app.tellomi.chat`.
 
 ## What CI changes in the build
 
