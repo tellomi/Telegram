@@ -41,6 +41,8 @@ The checked-in dummy key stays in git. Release signing on your laptop is still t
 
 The workflow page is `https://github.com/tellomi/Telegram/actions/workflows/android-apk.yml`. Each run's URL looks like `https://github.com/tellomi/Telegram/actions/runs/<run-id>`. The artifact is on that page; it is not attached to the pull request.
 
+**Run workflow** is listed only when this filename exists on the default branch (`master`). The copy on `master` is a registration stub. Choosing another branch runs that branch's `android-apk.yml`.
+
 Install a debug build with `adb install -r tellomi-debug.apk`. The package id is `com.tellomi.app`.
 
 ## What CI changes in the build
