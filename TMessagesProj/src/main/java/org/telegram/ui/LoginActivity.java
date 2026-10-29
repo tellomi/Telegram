@@ -142,6 +142,7 @@ import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TellomiDefaults;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -2503,8 +2504,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 addView(bottomSpacer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             }
 
-            HashMap<String, String> languageMap = new HashMap<>();
-
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -2532,7 +2531,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     if (args.length > 3) {
                         phoneFormatMap.put(args[0], Collections.singletonList(args[3]));
                     }
-                    languageMap.put(args[1], args[2]);
                 }
                 reader.close();
             } catch (Exception e) {
@@ -2541,30 +2539,26 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             Collections.sort(countriesArray, Comparator.comparing(o -> o.name));
 
-            String country = null;
-
-            try {
-                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                if (telephonyManager != null) {
-                    country = null;//telephonyManager.getSimCountryIso().toUpperCase();
+            // TELLOMI: default calling code is China +86. The SIM country, the device
+            // region, and help.getNearestDc are not consulted. The field stays editable.
+            CountrySelectActivity.Country pinned = null;
+            List<CountrySelectActivity.Country> pinnedList = codesMap.get(TellomiDefaults.LOGIN_COUNTRY_CODE);
+            if (pinnedList != null) {
+                for (int i = 0; i < pinnedList.size(); i++) {
+                    CountrySelectActivity.Country candidate = pinnedList.get(i);
+                    if (candidate != null && TellomiDefaults.LOGIN_COUNTRY_ISO.equalsIgnoreCase(candidate.shortname)) {
+                        pinned = candidate;
+                        break;
+                    }
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
+                if (pinned == null && !pinnedList.isEmpty()) {
+                    pinned = pinnedList.get(0);
+                }
             }
-
-            if (country != null) {
-                setCountry(languageMap, country.toUpperCase());
+            if (pinned != null) {
+                selectCountry(pinned);
             } else {
-                TLRPC.TL_help_getNearestDc req = new TLRPC.TL_help_getNearestDc();
-                getAccountInstance().getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (response == null) {
-                        return;
-                    }
-                    TLRPC.TL_nearestDc res = (TLRPC.TL_nearestDc) response;
-                    if (codeField.length() == 0) {
-                        setCountry(languageMap, res.country.toUpperCase());
-                    }
-                }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                codeField.setText(TellomiDefaults.LOGIN_COUNTRY_CODE);
             }
             if (codeField.length() == 0) {
                 setCountryButtonText(null);
@@ -2814,23 +2808,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             CharSequence prevText = countryButton.getCurrentView().getText();
             countryButton.setText(cs, !(TextUtils.isEmpty(cs) && TextUtils.isEmpty(prevText)) && !Objects.equals(prevText, cs));
             countryOutlineView.animateSelection(cs != null ? 1f : 0f);
-        }
-
-        private void setCountry(HashMap<String, String> languageMap, String country) {
-            String name = languageMap.get(country);
-            if (name != null && countriesArray != null) {
-                CountrySelectActivity.Country countryWithCode = null;
-                for (int i = 0; i < countriesArray.size(); i++) {
-                    if (countriesArray.get(i) != null && countriesArray.get(i).name.equals(country)) {
-                        countryWithCode = countriesArray.get(i);
-                        break;
-                    }
-                }
-                if (countryWithCode != null) {
-                    codeField.setText(countryWithCode.code);
-                    countryState = COUNTRY_STATE_NOT_SET_OR_VALID;
-                }
-            }
         }
 
         @Override

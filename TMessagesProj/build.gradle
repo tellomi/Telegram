@@ -323,6 +323,7 @@ android {
 
     // TELLOMI: launcher and notification icons live in tellomi/res and override
     // src/main for this flavor. src/main mipmaps stay the DrKLO bitmaps.
+    // TellomiDefaults.java lives in tellomi/java, compiled only into this flavor.
     flavorDimensions "brand"
     productFlavors {
         tellomi {
@@ -331,6 +332,7 @@ android {
     }
     sourceSets.tellomi {
         res.srcDirs = ['tellomi/res']
+        java.srcDirs = ['tellomi/java']
     }
 
     namespace 'org.telegram.messenger'
