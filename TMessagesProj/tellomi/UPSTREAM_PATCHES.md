@@ -119,7 +119,7 @@ No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | New (Tellomi file in `src/main` so every flavor compiles). Builds the checkbox text and state. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | One field `tellomiAgreement`; constructor calls `tellomiAgreement.install(privacyView)` after the stock terms text; `onNextPressed` returns early unless `tellomiAgreement.checkAgreed()`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | One field `tellomiAgreement`; constructor calls `tellomiAgreement.install(privacyView)` after the stock terms text; `onNextPressed` returns early unless `tellomiAgreement.checkAgreed()`. The two links open in the system browser (`Browser.openUrlInSystemBrowser`), not an in-app page. |
 
 ## Emoji blocklist
 
@@ -138,3 +138,16 @@ Client-side list. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `he
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ReactionsContainerLayout.java` | The reaction popup list drops a blocked emoji before it is shown. |
 | `TMessagesProj/src/main/java/org/telegram/ui/SelectAnimatedEmojiDialog.java` | Pasting a blocked emoji into reaction search does not offer it as an available reaction. The standard emoji grid reads `dataColored`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/GroupCallActivity.java` | The random call reel reads `dataColored` instead of the sprite sheet. | |
+
+## Email OTP login
+
+Login home stays phone, calling code `86`. A text button switches to email and back. Email is a code only: there is no password field and no Google button on that path. `auth.sendCode` puts the address in `phone_number`. `auth.sentCodeTypeEmailCode` reuses `LoginActivityEmailCodeView`. An unregistered address comes back as `auth.authorizationSignUpRequired`, then the existing name screen (nickname only, last name hidden) calls `auth.signUp` with that same address. Nothing on this path reads the SIM or asks for phone permissions. The in-app terms popup is forced off; the agreement checkbox from the section above is the gate, and its links stay `https://tellomi.cn/legal/terms/` and `https://tellomi.cn/legal/privacy/`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailLogin.java` | New (tellomi flavor). Validates the address, stamps it on the auth bundle, and fills a missing email pattern or code length. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Switch labels, email field, invalid/banned email, nickname. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `PhoneView` | Email field and switch, login mode only. `onNextPressed` sends `auth.sendCode` with the email and skips the phone confirmation and SIM permission prompts. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `fillNextCodeParams` | Email-start `sentCodeTypeEmailCode` keeps Google sign-in off and uses the typed address when the server pattern is empty. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityEmailCodeView` | Same screen as a phone account's email code. Email-start hides "can't access this email" and carries the address through resend into sign-up. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | Email sign-up shows one nickname, puts the address in `auth.signUp.phone_number`, and does not show the terms popup. |

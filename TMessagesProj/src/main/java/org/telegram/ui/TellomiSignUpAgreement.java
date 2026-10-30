@@ -18,6 +18,7 @@ import org.telegram.ui.ActionBar.Theme;
  * Tellomi: the sign-up screen's "我已阅读并同意《用户服务协议》和《隐私政策》" checkbox.
  * It replaces the stock terms text in {@link LoginActivity.LoginActivityRegisterView};
  * sign-up does not proceed until it is checked. There is no in-app terms popup.
+ * The two titles open in the system browser.
  * See TMessagesProj/tellomi/UPSTREAM_PATCHES.md.
  */
 public class TellomiSignUpAgreement {
@@ -83,7 +84,7 @@ public class TellomiSignUpAgreement {
         sb.setSpan(new ClickableSpan() {
             @Override
             public void onClick(@NonNull View widget) {
-                Browser.openUrl(widget.getContext(), url);
+                Browser.openUrlInSystemBrowser(widget.getContext(), url);
             }
 
             @Override

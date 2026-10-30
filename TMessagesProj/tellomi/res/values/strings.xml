@@ -7,4 +7,13 @@
     <string name="AppIconFilled">Filled</string>
     <string name="AppIconFilledBlack">Filled Black</string>
     <string name="AppIconStarry">Starry</string>
+    <string name="TellomiLoginWithEmail">Log in with email</string>
+    <string name="TellomiLoginWithPhone">Log in with phone number</string>
+    <string name="TellomiYourEmail">Your email</string>
+    <string name="TellomiEmailLoginSubtitle">Enter your email. We will send a verification code.</string>
+    <string name="TellomiEmail">Email</string>
+    <string name="TellomiEmailInvalid">Please enter a valid email address.</string>
+    <string name="TellomiEmailBanned">This email is banned.</string>
+    <string name="TellomiNickname">Nickname</string>
+    <string name="TellomiNicknameHint">Choose a nickname to finish signing up.</string>
 </resources>
