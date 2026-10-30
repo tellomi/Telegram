@@ -1815,6 +1815,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     .toArray())
                 .toArray(int[][]::new);
         config.load(mainPreferences);
+        // TELLOMI: saved emoji_blocklist, unioned with the built-in default.
+        EmojiBlocklist.mergeServerList(config.emojiBlocklist.get());
 
         final boolean paidReactionsActual = (System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2;
         paidReactionsPrivacy = null;
@@ -2643,6 +2645,11 @@ public class MessagesController extends BaseController implements NotificationCe
         boolean downloadImprovementKillswitch = false;
 
         changed = config.apply(editor, object);
+        // TELLOMI: emoji_blocklist from this help.getAppConfig response.
+        if (EmojiBlocklist.mergeServerList(config.emojiBlocklist.get())) {
+            changed = true;
+            Emoji.applyBlocklistToRecent();
+        }
 
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);

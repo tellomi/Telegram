@@ -112,6 +112,9 @@ public class AppGlobalConfig {
 
     public final ConfigStringSet botAllowedSuffixes = ofStringSet("bot_allowed_suffixes", Collections.singleton("bot"));
 
+    /** TELLOMI: help.getAppConfig emoji_blocklist. Merged onto EmojiBlocklist's built-in default. */
+    public final ConfigStringSet emojiBlocklist = ofStringSet("emoji_blocklist", Collections.emptySet());
+
     public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", BuildVars.DEBUG_VERSION);
     public final ConfigBoolean walletPaidMessageRecipientMessageAmountCheck = ofBoolean("wallet_paid_message_recipient_message_amount_check", true);
     public final ConfigLong walletTransferMinNanos = ofLong("wallet_transfer_min_nanos", 100_000_000);

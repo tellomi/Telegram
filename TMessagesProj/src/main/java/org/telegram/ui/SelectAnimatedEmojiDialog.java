@@ -74,6 +74,7 @@ import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.EmojiBlocklist;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -1810,7 +1811,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                             searchResult.addAll(reactions);
                         } else {
                             TLRPC.TL_availableReaction reaction = availableReactions.get(query);
-                            if (reaction != null) {
+                            if (reaction != null && !EmojiBlocklist.isBlocked(reaction.reaction)) {
                                 searchResult.add(ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(reaction));
                             }
                         }

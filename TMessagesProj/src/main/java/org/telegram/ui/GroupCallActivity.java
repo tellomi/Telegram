@@ -9736,7 +9736,12 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     private static String getRandomEmoji() {
-        String[] set = EmojiData.data[(int) Math.floor(Math.random() * EmojiData.data.length)];
+        // TELLOMI: the call reel reads the filtered picker list. Sprite data still draws a sent emoji.
+        String[][] sections = EmojiData.dataColored;
+        String[] set = sections[(int) Math.floor(Math.random() * sections.length)];
+        if (set == null || set.length == 0) {
+            set = EmojiData.data[(int) Math.floor(Math.random() * EmojiData.data.length)];
+        }
         return set[(int) Math.floor(Math.random() * set.length)];
     }
 

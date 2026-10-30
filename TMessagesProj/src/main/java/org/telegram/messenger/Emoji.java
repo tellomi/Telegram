@@ -41,6 +41,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -891,6 +892,10 @@ public class Emoji {
     }
 
     public static void addRecentEmoji(String code) {
+        // TELLOMI: blocked emoji never enter the recent row.
+        if (code != null && EmojiBlocklist.isBlocked(code)) {
+            return;
+        }
         Integer count = emojiUseHistory.get(code);
         if (count == null) {
             count = 0;
@@ -913,6 +918,13 @@ public class Emoji {
 
     public static void sortEmoji() {
         recentEmoji.clear();
+        Iterator<HashMap.Entry<String, Integer>> iterator = emojiUseHistory.entrySet().iterator();
+        while (iterator.hasNext()) {
+            // TELLOMI: drop blocked emoji that were saved before the blocklist existed.
+            if (EmojiBlocklist.isBlocked(iterator.next().getKey())) {
+                iterator.remove();
+            }
+        }
         for (HashMap.Entry<String, Integer> entry : emojiUseHistory.entrySet()) {
             recentEmoji.add(entry.getKey());
         }
@@ -934,6 +946,18 @@ public class Emoji {
         });
         while (recentEmoji.size() > MAX_RECENT_EMOJI_COUNT) {
             recentEmoji.remove(recentEmoji.size() - 1);
+        }
+    }
+
+    /** TELLOMI: rewrite the recent row after {@link EmojiBlocklist#mergeServerList}. No-op until recent emoji have been loaded. */
+    public static void applyBlocklistToRecent() {
+        if (!recentEmojiLoaded) {
+            return;
+        }
+        int before = emojiUseHistory.size();
+        sortEmoji();
+        if (emojiUseHistory.size() != before) {
+            saveRecentEmoji();
         }
     }
 

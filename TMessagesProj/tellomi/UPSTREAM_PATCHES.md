@@ -120,3 +120,21 @@ No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | New (Tellomi file in `src/main` so every flavor compiles). Builds the checkbox text and state. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | One field `tellomiAgreement`; constructor calls `tellomiAgreement.install(privacyView)` after the stock terms text; `onNextPressed` returns early unless `tellomiAgreement.checkAgreed()`. |
+
+## Emoji blocklist
+
+Client-side list. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `help.getAppConfig` field `emoji_blocklist` (array of emoji strings or codepoint sequences such as `U+1F1F9 U+1F1FC` / `1F1F9-1F1FC`) is merged on top of that default. An absent or empty field leaves the default in place. A server entry cannot remove a built-in one.
+
+`EmojiData.data` is not rewritten. Sprite indexes and already-sent messages still draw the emoji. `EmojiData.dataColored` is what the panel and the sticker-set emoji grid read; blocked entries are removed there at init, and again when a server list changes the set.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/EmojiBlocklist.java` | New (tellomi flavor). Default set, `isBlocked`, `mergeServerList`, and the picker-section filter. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/EmojiData.java` | After `dataColored` null sections are filled from `data`, `EmojiBlocklist.installPickerSections` drops blocked emoji from the picker copy. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/Emoji.java` | `addRecentEmoji` ignores a blocked emoji. `sortEmoji` drops any that were already saved. `applyBlocklistToRecent` runs after a server list changes the set. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java` | `getEmojiSuggestions` drops blocked keyword hits (panel search and reaction search, including 台湾 / Taiwan / TW). Enabled, recent, top, and saved reaction lists skip a blocked emoji reaction. The full reaction map used to draw a reaction already on a message is unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `emoji_blocklist` string set. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | After `config.load` and inside `applyAppConfig`, merge that set into `EmojiBlocklist`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ReactionsContainerLayout.java` | The reaction popup list drops a blocked emoji before it is shown. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SelectAnimatedEmojiDialog.java` | Pasting a blocked emoji into reaction search does not offer it as an available reaction. The standard emoji grid reads `dataColored`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/GroupCallActivity.java` | The random call reel reads `dataColored` instead of the sprite sheet. | |
