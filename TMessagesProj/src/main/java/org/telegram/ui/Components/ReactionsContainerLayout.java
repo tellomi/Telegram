@@ -52,6 +52,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.EmojiBlocklist;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
@@ -581,6 +582,13 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     @SuppressLint("NotifyDataSetChanged")
     private void setVisibleReactionsList(List<ReactionsLayoutInBubble.VisibleReaction> visibleReactionsList, boolean animated) {
+        // TELLOMI: reaction picker shares EmojiBlocklist with the emoji panel.
+        for (int i = 0; i < visibleReactionsList.size(); i++) {
+            if (EmojiBlocklist.isBlocked(visibleReactionsList.get(i).emojicon)) {
+                visibleReactionsList.remove(i);
+                i--;
+            }
+        }
         this.visibleReactionsList.clear();
         if (showCustomEmojiReaction()) {
             int i = 0;

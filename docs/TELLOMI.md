@@ -167,6 +167,12 @@ Bundled `strings.xml` copies show `tell.cc` for public links and `tellomi.cn` fo
 
 Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 3 characters. The English and bundled locale strings that said “at least 5 characters” now say 3.
 
+### Emoji blocklist
+
+The emoji panel, emoji search, the recent row, and the reaction picker share one client-side blocklist. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `help.getAppConfig` may send `emoji_blocklist`, an array of emoji strings or codepoint sequences (`U+1F1F9 U+1F1FC`, `1F1F9-1F1FC`). That array is merged onto the default. If the field is missing or empty, the default still applies, and a server list cannot put a built-in emoji back.
+
+The sprite sheet (`EmojiData.data`) is unchanged, so a message that already contains the flag still draws it. The picker reads `EmojiData.dataColored`, which is filtered when emoji data is initialized. Search keyword hits and the recent row use the same `EmojiBlocklist.isBlocked` check. Reaction popups and the enabled / recent / top reaction lists skip a blocked emoji; the reaction map that draws a reaction already on a message is left alone.
+
 **Still compiled, will fail or no-op until you replace keys:**
 
 - FCM, as described above.

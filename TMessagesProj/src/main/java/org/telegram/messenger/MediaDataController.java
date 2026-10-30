@@ -8769,7 +8769,7 @@ public class MediaDataController extends BaseController {
     }
 
     public List<TLRPC.TL_availableReaction> getEnabledReactionsList() {
-        return enabledReactionsList;
+        return withoutBlockedAvailable(enabledReactionsList);
     }
 
     public void uploadRingtone(String filePath) {
@@ -9310,6 +9310,12 @@ public class MediaDataController extends BaseController {
             } catch (Exception e) {
                 FileLog.e(e);
             }
+            // TELLOMI: keyword hits for a blocked emoji (台湾 / Taiwan / TW) never reach the picker.
+            for (int i = result.size() - 1; i >= 0; i--) {
+                if (EmojiBlocklist.isBlocked(result.get(i).emoji)) {
+                    result.remove(i);
+                }
+            }
             Collections.sort(result, (o1, o2) -> {
                 int idx1 = recentEmoji.indexOf(o1.emoji);
                 if (idx1 < 0) {
@@ -9810,7 +9816,7 @@ public class MediaDataController extends BaseController {
     boolean loadingSavedReactions, loadedSavedReactions;
 
     public ArrayList<TLRPC.Reaction> getRecentReactions() {
-        return recentReactions;
+        return withoutBlockedReactions(recentReactions);
     }
 
     public void clearRecentReactions() {
@@ -9827,7 +9833,7 @@ public class MediaDataController extends BaseController {
     }
 
     public ArrayList<TLRPC.Reaction> getTopReactions() {
-        return topReactions;
+        return withoutBlockedReactions(topReactions);
     }
 
     public void loadRecentAndTopReactions(boolean force) {
@@ -9899,8 +9905,53 @@ public class MediaDataController extends BaseController {
     }
 
     public ArrayList<TLRPC.Reaction> getSavedReactions() {
-        return savedReactions;
+        return withoutBlockedReactions(savedReactions);
     }
+
+    /** TELLOMI: same list when nothing is blocked, so callers that only read it stay on the live instance. */
+    private static List<TLRPC.TL_availableReaction> withoutBlockedAvailable(List<TLRPC.TL_availableReaction> source) {
+        if (source == null || source.isEmpty()) {
+            return source;
+        }
+        ArrayList<TLRPC.TL_availableReaction> filtered = null;
+        for (int i = 0; i < source.size(); i++) {
+            TLRPC.TL_availableReaction reaction = source.get(i);
+            if (reaction != null && EmojiBlocklist.isBlocked(reaction.reaction)) {
+                if (filtered == null) {
+                    filtered = new ArrayList<>(Math.max(0, source.size() - 1));
+                    for (int j = 0; j < i; j++) {
+                        filtered.add(source.get(j));
+                    }
+                }
+            } else if (filtered != null) {
+                filtered.add(reaction);
+            }
+        }
+        return filtered == null ? source : filtered;
+    }
+
+    /** TELLOMI: same list when nothing is blocked. */
+    private static ArrayList<TLRPC.Reaction> withoutBlockedReactions(ArrayList<TLRPC.Reaction> source) {
+        if (source == null || source.isEmpty()) {
+            return source;
+        }
+        ArrayList<TLRPC.Reaction> filtered = null;
+        for (int i = 0; i < source.size(); i++) {
+            TLRPC.Reaction reaction = source.get(i);
+            if (reaction instanceof TLRPC.TL_reactionEmoji && EmojiBlocklist.isBlocked(((TLRPC.TL_reactionEmoji) reaction).emoticon)) {
+                if (filtered == null) {
+                    filtered = new ArrayList<>(Math.max(0, source.size() - 1));
+                    for (int j = 0; j < i; j++) {
+                        filtered.add(source.get(j));
+                    }
+                }
+            } else if (filtered != null) {
+                filtered.add(reaction);
+            }
+        }
+        return filtered == null ? source : filtered;
+    }
+
     public void loadSavedReactions(boolean force) {
         if (loadingSavedReactions || loadedSavedReactions && !force) {
             return;
