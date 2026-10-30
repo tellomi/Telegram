@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AppIconDefault">默认</string>
+    <string name="AppIconWater">水色</string>
+    <string name="AppIconSunset">晚霞</string>
+    <string name="AppIconClassic">经典</string>
+    <string name="AppIconClassicBlack">经典黑</string>
+    <string name="AppIconFilled">填充</string>
+    <string name="AppIconFilledBlack">填充黑</string>
+    <string name="AppIconStarry">星空</string>
+    <string name="AppIconPremium">高级</string>
+</resources>

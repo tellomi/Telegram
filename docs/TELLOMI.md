@@ -123,7 +123,21 @@ Those assets are the `tellomi` product flavor, directory `TMessagesProj/tellomi/
 
 `src/main/res/mipmap-*/ic_launcher*.png` and the upstream adaptive XML are restored DrKLO files. The flavor replaces them at merge time. Regenerate with `python3 TMessagesProj/tellomi/brand/render_launcher_icons.py`.
 
-In-app alternate icons (`LauncherIconController`, `icon_foreground*.png`, `icon_plane.xml`, `ic_launcher_dr.webp`, standalone `ic_launcher_sa`) are still the upstream artwork. They are not the default launcher icon.
+In-app alternate icons use the same bubble and @, each at 75–80% of the frame. The settings row and the launcher aliases are:
+
+| Slot | Alias | Look |
+| --- | --- | --- |
+| Default | `DefaultIcon` | White outline on `#17171A` |
+| Water | `AquaIcon` | White outline on a teal–cyan gradient |
+| Sunset | `VintageIcon` | White outline on an orange–rose–violet gradient |
+| Classic | `ClassicIcon` | Dark outline on a white round disc |
+| Classic black | `ClassicBlackIcon` | White outline on a black round disc |
+| Filled | `TurboIcon` | Solid white bubble, larger (80%), on blue |
+| Filled black | `FilledBlackIcon` | Solid white bubble, larger (80%), on black |
+| Starry | `NoxIcon` | White outline on a night field with stars |
+| Premium | `PremiumIcon` | Navy bubble and @ on a gold star |
+
+`AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep the upstream component names. `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon` are new aliases. Regenerated from `render_launcher_icons.py`. `icon_plane.xml`, `ic_launcher_dr.webp`, and the standalone `*_sa` bitmaps are still the upstream artwork; the standalone manifest points its aliases at the Tellomi mipmaps instead.
 
 ### Datacenters and RSA key
 
@@ -173,7 +187,7 @@ Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActiv
 - Google Maps key in the debug/release manifests (`com.google.android.maps.v2.API_KEY`) is still Telegram's. Maps tiles may be denied.
 - `BuildVars.HUAWEI_APP_ID` is still Telegram's AppGallery id. The Huawei store **URL** was pointed at `TELLOMI_DOWNLOAD_URL`.
 - `BuildVars.getSmsHash()` is still the official-app hash.
-- Upstream alternate launcher bitmaps (see above). The default `ic_launcher` / `notification` artwork is overridden by the `tellomi` resource flavor.
+- Upstream `*_sa` launcher bitmaps, `icon_plane.xml`, and `ic_launcher_dr.webp` are still in the tree. The launcher aliases and the in-app icon row use the Tellomi set above. The default `ic_launcher` / `notification` artwork is the `tellomi` resource flavor.
 - Features that need server support beyond core messaging (Stars payments, Premium billing, some business/mini-app endpoints, Telegram-hosted wallpapers and stickers) are still in the client. Teamgram may not implement every layer-232 method. The screens are still there.
 
 ## Upstream merges

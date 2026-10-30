@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AppIconWater">Water</string>
+    <string name="AppIconSunset">Sunset</string>
+    <string name="AppIconClassic">Classic</string>
+    <string name="AppIconClassicBlack">Classic Black</string>
+    <string name="AppIconFilled">Filled</string>
+    <string name="AppIconFilledBlack">Filled Black</string>
+    <string name="AppIconStarry">Starry</string>
+</resources>

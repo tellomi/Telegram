@@ -34,12 +34,18 @@ public class LauncherIconController {
     }
 
     public enum LauncherIcon {
-        DEFAULT("DefaultIcon", R.drawable.icon_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconDefault),
-        VINTAGE("VintageIcon", R.drawable.icon_6_background_sa, R.mipmap.icon_6_foreground_sa, R.string.AppIconVintage),
-        AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),
-        PREMIUM("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium, true),
-        TURBO("TurboIcon", R.drawable.icon_5_background_sa, R.mipmap.icon_5_foreground_sa, R.string.AppIconTurbo, true),
-        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true);
+        // TELLOMI: Aqua/Vintage/Turbo/Nox/Premium keep their upstream component names
+        // so an already-enabled icon keeps working. Art and titles are the Tellomi set.
+        // Order is daily, then structure, then the two specials. None are premium-gated.
+        DEFAULT("DefaultIcon", R.color.tellomi_launcher_background, R.drawable.tellomi_launcher_foreground, R.string.AppIconDefault),
+        WATER("AquaIcon", R.drawable.tellomi_bg_water, R.drawable.tellomi_launcher_foreground, R.string.AppIconWater),
+        SUNSET("VintageIcon", R.drawable.tellomi_bg_sunset, R.drawable.tellomi_launcher_foreground, R.string.AppIconSunset),
+        CLASSIC("ClassicIcon", R.drawable.tellomi_bg_classic, R.drawable.tellomi_fg_mark_dark, R.string.AppIconClassic),
+        CLASSIC_BLACK("ClassicBlackIcon", R.drawable.tellomi_bg_classic_black, R.drawable.tellomi_launcher_foreground, R.string.AppIconClassicBlack),
+        FILLED("TurboIcon", R.drawable.tellomi_bg_filled, R.drawable.tellomi_fg_filled, R.string.AppIconFilled),
+        FILLED_BLACK("FilledBlackIcon", R.drawable.tellomi_bg_filled_black, R.drawable.tellomi_fg_filled_black, R.string.AppIconFilledBlack),
+        STARRY("NoxIcon", R.drawable.tellomi_bg_starry, R.drawable.tellomi_launcher_foreground, R.string.AppIconStarry),
+        PREMIUM("PremiumIcon", R.drawable.tellomi_bg_premium, R.drawable.tellomi_fg_premium, R.string.AppIconPremium);
 
         public final String key;
         public final int background;
