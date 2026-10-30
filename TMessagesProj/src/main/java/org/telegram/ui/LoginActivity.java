@@ -143,6 +143,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TellomiDefaults;
+import org.telegram.messenger.TellomiLoginErrors;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -3212,6 +3213,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                        } else if (req instanceof TLRPC.TL_auth_sendCode && TellomiLoginErrors.isSmsCodeCreateFailed(error.text)) {
+                            // TELLOMI: auth.sendCode SMS_CODE_CREATE_FAILED is not in the upstream list,
+                            // and AlertsCreator.processError has no auth.sendCode branch, so the spinner
+                            // stopped with no dialog. Same alert as the neighboring cases.
+                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), TellomiLoginErrors.SMS_CODE_CREATE_FAILED_ALERT);
                         } else if (error.code != -1000) {
                             AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, phoneInputData.phoneNumber);
                         }
