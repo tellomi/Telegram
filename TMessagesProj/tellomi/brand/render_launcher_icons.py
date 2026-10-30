@@ -32,11 +32,12 @@ BG_LIGHT = (0x17, 0x17, 0x1A)
 BG_DARK = (0x17, 0x17, 0x1A)
 QR_FRACTION = 0.70
 
-# Legacy mipmaps are the whole icon. Adaptive layers are 108dp, of which the
-# center 72dp stays visible after the launcher mask, so the same optical size
-# is 72/108 of the fraction used on the legacy bitmap. Measured against the
-# Tellomi mark on the sister Android icon (about 68.75% of the visible icon).
-LEGACY_FRACTION = 132 / 192
+# Legacy mipmaps are the whole icon the user sees. The mark's painted box is
+# 77% of that frame (inside the 75–80% acceptance band) so the tail and the
+# @ stay off the edges. Adaptive layers are 108dp; the center 72dp stays
+# visible after the launcher mask, so the same optical size is 72/108 of the
+# legacy fraction.
+LEGACY_FRACTION = 0.77
 ADAPTIVE_FRACTION = LEGACY_FRACTION * (72 / 108)
 NOTIFICATION_FRACTION = 0.90
 # Sister Tellomi Android legacy icon corner, 38px on a 192px bitmap.
@@ -274,7 +275,24 @@ def main() -> None:
             write_webp(png, RES / f"drawable-{density}/notification.webp")
 
     write_qr(paths, bbox)
+    write_default_previews(paths, bbox)
     print("wrote", RES)
+
+
+def write_default_previews(paths, bbox) -> None:
+    """After still of the default icon. default-before*.png is the previous art and is not rewritten."""
+    preview = HERE / "preview"
+    preview.mkdir(parents=True, exist_ok=True)
+    after = preview / "default-after.png"
+    write_png(paths, bbox, after, 512, hex_rgb(INK_LIGHT), hex_rgb(BG_LIGHT), LEGACY_FRACTION, True, False)
+    before = preview / "default-before-512.png"
+    if before.exists():
+        left = Image.open(before).convert("RGBA")
+        right = Image.open(after).convert("RGBA")
+        sheet = Image.new("RGBA", (512 * 2 + 32, 512), (255, 255, 255, 255))
+        sheet.paste(left, (0, 0))
+        sheet.paste(right, (512 + 32, 0))
+        sheet.save(preview / "default-compare.png")
 
 
 if __name__ == "__main__":

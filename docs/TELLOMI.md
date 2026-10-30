@@ -113,7 +113,7 @@ Omit the property to build `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. The 
 
 ### Launcher icon
 
-The default icon is the official Tellomi mark. `TMessagesProj/tellomi/brand/logo.svg` and `logo-source-light.png` / `logo-source-dark.png` are copied from `docs/brand/` on [tellomi/Telegram-iOS](https://github.com/tellomi/Telegram-iOS) branch `tellomi-brand-assets` at `181d02d` (usage rules in `OFFICIAL-README.md`). The path data is `currentColor`. The app icon is a white mark on `#17171A` in both themes. Android 13 themed icons use the same mark as a white monochrome alpha mask. The notification icon is the white mark on a transparent ground.
+The default icon is the official Tellomi mark. `TMessagesProj/tellomi/brand/logo.svg` and `logo-source-light.png` / `logo-source-dark.png` are copied from `docs/brand/` on [tellomi/Telegram-iOS](https://github.com/tellomi/Telegram-iOS) branch `tellomi-brand-assets` at `181d02d` (usage rules in `OFFICIAL-README.md`). The path data is `currentColor`. The app icon is a white mark on `#17171A` in both themes. The mark's painted box is 77% of the icon frame, inside the 75–80% band, so the bubble, the tail, and the @ keep a margin. Android 13 themed icons use the same mark as a white monochrome alpha mask. The notification icon is the white mark on a transparent ground.
 
 Those assets are the `tellomi` product flavor, directory `TMessagesProj/tellomi/res`, not edits to DrKLO's mipmaps:
 
