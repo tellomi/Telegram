@@ -165,7 +165,7 @@ The agreement checkbox is on every login and sign-up screen. Submitting while it
 | `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | `setTellomiSquares` draws login OTP boxes as filled gray squares with a black focus stroke. The count follows the server code length (the mock shows 4; a 5-digit server code still fits). |
 | `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Black checkbox. Agreement modal. Terms, privacy, and carrier links. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, password, email, OTP, and agreement copy. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home:「登录发现更多精彩」, `+86`,「密码登录」, full-width Apple / Google / 邮箱 / 其他 rows,「找回账号」, bottom carrier checkbox. Phone password and email password: back arrow, password field (eye on the left for phone, right for email), circle icons. Email code entry:「请输入邮箱地址」. SMS OTP: square boxes,「收不到验证码？」, resend countdown,「验证码发送成功」pill. Email OTP: single field,「输入验证码」,「邮件已发送至 …」, red「请输入正确的验证码」. Nickname sign-up uses the same CTA and checkbox. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home:「登录发现更多精彩」, `+86`,「密码登录」, full-width Apple / Google / 邮箱 / 其他 rows,「找回账号」, bottom carrier checkbox. Phone password and email password: back arrow, password field (eye on the left for phone, right for email), circle icons. 登录 on those screens toasts「暂未开放」. Email code entry:「请输入邮箱地址」. SMS OTP: square boxes,「收不到验证码？」, resend countdown,「验证码发送成功」pill. Email OTP: single field,「输入验证码」,「邮件已发送至 …」, red「请输入正确的验证码」. Nickname sign-up uses the same CTA and checkbox. |
 
 ## Email OTP login
 
