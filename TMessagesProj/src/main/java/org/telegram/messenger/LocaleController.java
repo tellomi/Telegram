@@ -1452,8 +1452,15 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, String fallback, int res) {
-        final String value = getStringV2(key, res, fallback);
+        String value = getStringV2(key, res, fallback);
+        if (value == null && TextUtils.isEmpty(key) && res != R.string.ErrorOccurred) {
+            value = getStringV2("ErrorOccurred", R.string.ErrorOccurred, "ErrorOccurred");
+        }
         if (value == null) {
+            // A null key used to render as the literal "LOC_ERR:null" (getString(int) passes key=null).
+            if (TextUtils.isEmpty(key)) {
+                return "An error occurred.";
+            }
             return "LOC_ERR:" + key;
         }
         return value;
@@ -1481,7 +1488,7 @@ public class LocaleController {
     @Deprecated
     public static String getString(String key) {
         if (TextUtils.isEmpty(key)) {
-            return "LOC_ERR:" + key;
+            return getInstance().getStringInternal(null, R.string.ErrorOccurred);
         }
         return getString(key, 0);
     }
@@ -1636,6 +1643,9 @@ public class LocaleController {
         try {
             final String value = getInstance().getStringV2(key, res, fallback);
             if (value == null) {
+                if (TextUtils.isEmpty(key)) {
+                    return getInstance().getStringInternal(null, R.string.ErrorOccurred);
+                }
                 return "LOC_ERR: " + key;
             }
 
@@ -1646,6 +1656,9 @@ public class LocaleController {
             }
         } catch (Exception e) {
             FileLog.e(e);
+            if (TextUtils.isEmpty(key)) {
+                return getInstance().getStringInternal(null, R.string.ErrorOccurred);
+            }
             return "LOC_ERR: " + key;
         }
     }
@@ -1662,6 +1675,9 @@ public class LocaleController {
         try {
             final String value = getInstance().getStringV2(key, res, fallback);
             if (value == null) {
+                if (TextUtils.isEmpty(key)) {
+                    return getInstance().getStringInternal(null, R.string.ErrorOccurred);
+                }
                 return "LOC_ERR: " + key;
             }
 
@@ -1695,6 +1711,9 @@ public class LocaleController {
             return builder;
         } catch (Exception e) {
             FileLog.e(e);
+            if (TextUtils.isEmpty(key)) {
+                return getInstance().getStringInternal(null, R.string.ErrorOccurred);
+            }
             return "LOC_ERR: " + key;
         }
     }
@@ -4516,6 +4535,15 @@ public class LocaleController {
             value = localizationInternal.getByResNameOrResId(context, key, stringRes);
             if (value == null) {
                 value = localizationInternal.getByResName(fallback);
+            }
+        }
+        // Flavor strings (tellomi/res) are real Android resources. They are not packed into
+        // localization_*.bin, and getString(int) passes a null key, so a bin miss used to
+        // become the literal "LOC_ERR:null".
+        if (value == null && stringRes != 0 && context != null) {
+            try {
+                value = context.getResources().getString(stringRes);
+            } catch (Throwable ignored) {
             }
         }
         return TellomiBrand.rewrite(value);

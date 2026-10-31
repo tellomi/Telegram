@@ -144,6 +144,24 @@ Client-side list. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `he
 | `TMessagesProj/src/main/java/org/telegram/ui/SelectAnimatedEmojiDialog.java` | Pasting a blocked emoji into reaction search does not offer it as an available reaction. The standard emoji grid reads `dataColored`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/GroupCallActivity.java` | The random call reel reads `dataColored` instead of the sprite sheet. | |
 
+## Login screens and LOC_ERR:null
+
+`LocaleController.getString(int)` passes a null key. Flavor strings in `tellomi/res` are not packed into `localization_*.bin` (`TelegramStringsTask` only reads `src/main/res`). A miss therefore rendered as the literal `LOC_ERR:null`. That string was the email link under the phone field (`TellomiLoginWithEmail`, color `windowBackgroundWhiteBlueText4`), including while `auth.sendCode` progress was on the arrow button. The FAB spinner is `needShowProgress` for that RPC. It hides when the callback runs. A spinner that never stops means the RPC has not completed (the server has not answered) or the response could not be parsed. A parse failure used to return before the callback, so the button kept spinning and no dialog was shown. Unknown `auth.sendCode` errors were also dropped: `AlertsCreator.processError` has no branch for that request.
+
+There is no phone-password sign-in. Login is `auth.sendCode` (SMS or email). The cloud password screen is only the existing 2FA step after a code (`SESSION_PASSWORD_NEEDED`). The product「密码登录」entry is not shown.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | After the bin lookup, `getStringV2` reads `Resources.getString` for a real resource id. A null key no longer becomes `LOC_ERR:null`; the fallback is `ErrorOccurred` or "An error occurred." |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java` | A response that fails to deserialize is delivered as `TL_error` `-500` `RESPONSE_DESERIALIZE_FAILED` instead of dropping the callback. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/OutlineTextContainerView.java` | `setTellomiFilled` draws a gray rounded field and skips the floating label. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/SlideView.java` | `onTellomiProgress` so a page can spin its own button. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Pink action button. Idle `#FFB7C6`, filled `#FF3B5C`, 10dp corners. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | `setTellomiSquares` draws login OTP boxes as filled gray squares with a pink focus stroke. The count follows the server code length. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Circle checkbox. Blue links open terms and privacy in the system browser. Phone home adds a short carrier note. No in-app dialog. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, email, and OTP copy, including the sent-code toast and the resend countdown. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home: title「登录发现更多精彩」, `+86` in a gray field (country card hidden, code still editable),「邮箱登录」link, checkbox opening `https://tellomi.cn/legal/terms/` and `…/privacy/`, pink「验证并登录」. No confirm sheet, no in-app terms popup, no Apple/Google row, no「密码登录」. Email home:「请输入邮箱地址」and the auto-register subtitle. OTP (SMS and email):「请输入验证码」,「验证码已发送至 …」, digit boxes, pink「登录」,「收不到验证码？」. Nickname sign-up uses the same button and field, last name hidden, no password. A failed or empty `auth.sendCode` shows `ErrorOccurred` plus the server text when there is one. |
+
 ## Email OTP login
 
 Login home stays phone, calling code `86`. A text button switches to email and back. Email is a code only: there is no password field and no Google button on that path. `auth.sendCode` puts the address in `phone_number`. `auth.sentCodeTypeEmailCode` reuses `LoginActivityEmailCodeView`. An unregistered address comes back as `auth.authorizationSignUpRequired`, then the existing name screen (nickname only, last name hidden) calls `auth.signUp` with that same address. Nothing on this path reads the SIM or asks for phone permissions. The in-app terms popup is forced off; the agreement checkbox from the section above is the gate, and its links stay `https://tellomi.cn/legal/terms/` and `https://tellomi.cn/legal/privacy/`.
