@@ -150,7 +150,7 @@ Client-side list. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `he
 
 Owner mockups `login-ui-ref/owner-2026-10-31` are the layout. Brand color is not the pink in those shots. A ready CTA is `#111111` with white text. An empty CTA is `#E5E5E5` with gray text. Links are `#3478F6`. Errors stay red. A checked agreement box is black.
 
-Login is still `auth.sendCode` (SMS or email). The phone and email password screens are in the layout. This client has no `auth.*` password-login RPC, so a filled password form shows「账号或密码错误，请重试。」. Apple, Google,「其他登录方式」, and「找回账号」toast「暂未开放」.「邮箱登录」opens the email screen. The cloud password screen is still the 2FA step after a code (`SESSION_PASSWORD_NEEDED`).
+Login is still `auth.sendCode` (SMS or email). The phone and email password screens are in the layout. This client has no `auth.*` password-login RPC, so 登录 on those screens toasts「暂未开放」, the same as Apple, Google,「其他登录方式」, and「找回账号」. It does not show a fake「账号或密码错误」.「邮箱登录」opens the email screen. The cloud password screen is still the 2FA step after a code (`SESSION_PASSWORD_NEEDED`).
 
 The agreement checkbox is on every login and sign-up screen. Submitting while it is clear opens「用户协议及隐私政策」. Agree checks the box and continues. Disagree only dismisses. Phone home includes「运营商服务协议」(`https://tellomi.cn/legal`). Email and password screens link only terms and privacy (`https://tellomi.cn/legal/terms/`, `https://tellomi.cn/legal/privacy/`). Links open in the system browser. The line is a `SpannableString`, so the circle and the links receive the tap.
 

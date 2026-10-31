@@ -3246,36 +3246,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
         }
 
-        private void tellomiShowPasswordError() {
-            if (tellomiPasswordError != null) {
-                tellomiPasswordError.setVisibility(VISIBLE);
-            }
-            if (tellomiPasswordOutline != null) {
-                AndroidUtilities.shakeViewSpring(tellomiPasswordOutline, 3.5f);
-            }
-        }
-
         /**
-         * Phone or email plus a password. There is no auth.* password-login RPC on this client,
-         * so a filled form shows the designed error instead of an empty tap.
+         * Phone or email plus a password. There is no auth.* password-login RPC,
+         * so the button uses the same「暂未开放」toast as Apple, Google, and 找回账号.
+         * It does not invent「账号或密码错误」.
          */
         private void tellomiSubmitPassword() {
-            boolean email = tellomiScreen == TELLOMI_EMAIL_PASSWORD;
-            if (email) {
-                String address = TellomiEmailLogin.normalize(emailField.getText() == null ? "" : emailField.getText().toString());
-                if (!TellomiEmailLogin.isValid(address)) {
-                    onFieldError(emailOutlineView, true);
-                    return;
-                }
-            } else if (codeField.length() == 0 || phoneField.length() == 0) {
-                onFieldError(phoneOutlineView, false);
-                return;
-            }
-            if (tellomiPasswordField.getText() == null || tellomiPasswordField.getText().length() == 0) {
-                tellomiShowPasswordError();
-                return;
-            }
-            tellomiRequireAgreement(this::tellomiShowPasswordError);
+            TellomiLoginChrome.showUnavailable(getContext());
         }
 
         /**
