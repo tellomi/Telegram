@@ -27,6 +27,8 @@ public class TellomiSignUpAgreement {
 
     private TextView view;
     private boolean agreed;
+    /** Phone home adds a short carrier note. There is still no in-app agreement dialog. */
+    private boolean phoneCarrierNote;
 
     public boolean isAgreed() {
         return agreed;
@@ -34,7 +36,12 @@ public class TellomiSignUpAgreement {
 
     /** Shows the agreement on {@code textView}: a link opens the document, the rest toggles the box. */
     public void install(TextView textView) {
+        install(textView, false);
+    }
+
+    public void install(TextView textView, boolean phoneCarrierNote) {
         view = textView;
+        this.phoneCarrierNote = phoneCarrierNote;
         render();
     }
 
@@ -51,11 +58,14 @@ public class TellomiSignUpAgreement {
             return;
         }
         SpannableStringBuilder sb = new SpannableStringBuilder();
-        appendToggle(sb, agreed ? "☑ " : "☐ ", agreed);
-        appendToggle(sb, "我已阅读并同意", false);
-        appendLink(sb, "《用户服务协议》", TERMS_URL);
-        appendToggle(sb, "和", false);
-        appendLink(sb, "《隐私政策》", PRIVACY_URL);
+        appendToggle(sb, agreed ? "● " : "○ ", agreed);
+        appendToggle(sb, "已阅读并同意 ", false);
+        appendLink(sb, "用户协议", TERMS_URL);
+        appendToggle(sb, " 和 ", false);
+        appendLink(sb, "隐私政策", PRIVACY_URL);
+        if (phoneCarrierNote) {
+            appendToggle(sb, "，运营商将对你提供的手机号进行验证", false);
+        }
         view.setText(sb);
         view.setContentDescription(sb.toString());
     }
@@ -89,7 +99,7 @@ public class TellomiSignUpAgreement {
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
-                ds.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+                ds.setColor(0xFF3478F6);
                 ds.setUnderlineText(false);
             }
         }, start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

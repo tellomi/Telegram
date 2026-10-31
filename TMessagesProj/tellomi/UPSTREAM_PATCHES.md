@@ -156,8 +156,10 @@ There is no phone-password sign-in. Login is `auth.sendCode` (SMS or email). The
 | `TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java` | A response that fails to deserialize is delivered as `TL_error` `-500` `RESPONSE_DESERIALIZE_FAILED` instead of dropping the callback. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/OutlineTextContainerView.java` | `setTellomiFilled` draws a gray rounded field and skips the floating label. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/SlideView.java` | `onTellomiProgress` so a page can spin its own button. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Pink action button (`#FF4B6A`) and the gray field helper. |
-| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, email, and OTP copy. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Pink action button. Idle `#FFB7C6`, filled `#FF3B5C`, 10dp corners. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | `setTellomiSquares` draws login OTP boxes as filled gray squares with a pink focus stroke. The count follows the server code length. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Circle checkbox. Blue links open terms and privacy in the system browser. Phone home adds a short carrier note. No in-app dialog. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, email, and OTP copy, including the sent-code toast and the resend countdown. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home: title「登录发现更多精彩」, `+86` in a gray field (country card hidden, code still editable),「邮箱登录」link, checkbox opening `https://tellomi.cn/legal/terms/` and `…/privacy/`, pink「验证并登录」. No confirm sheet, no in-app terms popup, no Apple/Google row, no「密码登录」. Email home:「请输入邮箱地址」and the auto-register subtitle. OTP (SMS and email):「请输入验证码」,「验证码已发送至 …」, digit boxes, pink「登录」,「收不到验证码？」. Nickname sign-up uses the same button and field, last name hidden, no password. A failed or empty `auth.sendCode` shows `ErrorOccurred` plus the server text when there is one. |
 
 ## Email OTP login

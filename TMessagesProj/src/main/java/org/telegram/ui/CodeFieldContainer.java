@@ -25,6 +25,9 @@ public class CodeFieldContainer extends LinearLayout {
 
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint tellomiFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** Login OTP: filled gray squares, pink stroke on the focused box. */
+    private boolean tellomiSquares;
     float strokeWidth;
     public boolean ignoreOnTextChange;
     public boolean isFocusSuppressed;
@@ -34,7 +37,13 @@ public class CodeFieldContainer extends LinearLayout {
     public CodeFieldContainer(Context context) {
         super(context);
         paint.setStyle(Paint.Style.STROKE);
+        tellomiFillPaint.setStyle(Paint.Style.FILL);
         setOrientation(HORIZONTAL);
+    }
+
+    public void setTellomiSquares(boolean enabled) {
+        tellomiSquares = enabled;
+        invalidate();
     }
 
     @Override
@@ -67,7 +76,18 @@ public class CodeFieldContainer extends LinearLayout {
                     AndroidUtilities.rectTmp.inset(offset, offset);
                 }
 
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+                if (tellomiSquares) {
+                    tellomiFillPaint.setColor(0xFFF3F4F6);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), tellomiFillPaint);
+                    if (codeField.getFocusedProgress() > 0.35f) {
+                        paint.setStyle(Paint.Style.STROKE);
+                        paint.setStrokeWidth(AndroidUtilities.dp(1.5f));
+                        paint.setColor(0xFFFF4B6A);
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
+                    }
+                } else {
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+                }
             }
         }
         super.dispatchDraw(canvas);
@@ -184,7 +204,11 @@ public class CodeFieldContainer extends LinearLayout {
                 int width;
                 int height;
                 int gapSize;
-                if (currentType == TYPE_PASSCODE) {
+                if (tellomiSquares) {
+                    width = 52;
+                    height = 52;
+                    gapSize = 10;
+                } else if (currentType == TYPE_PASSCODE) {
                     width = 42;
                     height = 47;
                     gapSize = 10;

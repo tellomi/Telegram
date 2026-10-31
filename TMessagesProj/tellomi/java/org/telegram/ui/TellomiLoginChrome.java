@@ -26,8 +26,12 @@ import org.telegram.ui.Components.OutlineTextContainerView;
 
 public final class TellomiLoginChrome {
 
-    public static final int PINK = 0xFFFF4B6A;
+    /** Saturated pink once the field is filled. Matches the owner mock. */
+    public static final int PINK = 0xFFFF3B5C;
+    /** Light pink while the field is still empty. */
+    public static final int PINK_IDLE = 0xFFFFB7C6;
     public static final int FIELD = 0xFFF3F4F6;
+    public static final int LINK = 0xFF3478F6;
 
     private TellomiLoginChrome() {
     }
@@ -50,12 +54,13 @@ public final class TellomiLoginChrome {
     public static final class ActionButton extends FrameLayout {
         private final TextView labelView;
         private final ProgressBar progressView;
+        private final GradientDrawable background;
 
         ActionButton(Context context, String label) {
             super(context);
-            GradientDrawable background = new GradientDrawable();
-            background.setColor(PINK);
-            background.setCornerRadius(AndroidUtilities.dp(24));
+            background = new GradientDrawable();
+            background.setColor(PINK_IDLE);
+            background.setCornerRadius(AndroidUtilities.dp(10));
             setBackground(background);
             setMinimumHeight(AndroidUtilities.dp(48));
 
@@ -75,6 +80,11 @@ public final class TellomiLoginChrome {
 
         public void setLabel(String label) {
             labelView.setText(label);
+        }
+
+        /** Hot pink when the form can be submitted, pale pink while it is empty. */
+        public void setReady(boolean ready) {
+            background.setColor(ready ? PINK : PINK_IDLE);
         }
 
         public void setBusy(boolean busy) {
