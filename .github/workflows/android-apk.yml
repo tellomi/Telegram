@@ -443,12 +443,49 @@ jobs:
           org.gradle.vfs.watch=false
           org.gradle.daemon=true
           EOF
+          # Shippable APKs (release and 测包 debug) must embed production DC
+          # profile dev (8.137.39.82:10443). Release also fails closed in Gradle
+          # if this is omitted or overridden to local (10.0.2.2).
           ./gradlew ":TMessagesProj_App:${GRADLE_TASK}" \
             -PAPP_VERSION_CODE="$app_version_code" \
+            -PTELLOMI_SERVER_PROFILE=dev \
             -PTELLOMI_PREBUILT_JNI="$GITHUB_WORKSPACE/tellomi-jni" \
             -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g" \
             --stacktrace \
             --console=plain
+          mapfile -t found_configs < <(find TMessagesProj/build/generated/source/buildConfig -type f -name BuildConfig.java 2>/dev/null || true)
+          configs=()
+          shopt -s nocasematch
+          for config in "${found_configs[@]}"; do
+            if [[ "$config" == *"${BUILD_TYPE}"* ]]; then
+              configs+=("$config")
+            fi
+          done
+          shopt -u nocasematch
+          if [ "${#configs[@]}" -lt 1 ]; then
+            echo "No BuildConfig.java for ${BUILD_TYPE}" >&2
+            printf '%s\n' "${found_configs[@]+"${found_configs[@]}"}" >&2 || true
+            exit 1
+          fi
+          for config in "${configs[@]}"; do
+            profile_line=$(grep -F 'TELLOMI_SERVER_PROFILE' "$config" || true)
+            addresses_line=$(grep -F 'TELLOMI_DC_ADDRESSES' "$config" || true)
+            case "$profile_line" in
+              *'"dev"'*) ;;
+              *) echo "expected TELLOMI_SERVER_PROFILE=dev in $config: ${profile_line:-missing}" >&2; exit 1 ;;
+            esac
+            case "$addresses_line" in
+              *'1:8.137.39.82:10443,2:8.137.39.82:10443'*) ;;
+              *) echo "expected production DC 8.137.39.82:10443 in $config: ${addresses_line:-missing}" >&2; exit 1 ;;
+            esac
+            if grep -q '10.0.2.2' "$config"; then
+              echo "emulator DC 10.0.2.2 leaked into $config" >&2
+              exit 1
+            fi
+            echo "BuildConfig DC: $config" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$profile_line" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$addresses_line" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
           shopt -s nullglob
           apks=(TMessagesProj_App/build/outputs/apk/afat/"${BUILD_TYPE}"/*.apk)
           if [ "${#apks[@]}" -ne 1 ]; then
