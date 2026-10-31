@@ -1603,10 +1603,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             newView.setVisibility(View.VISIBLE);
 
             AnimatorSet pagesAnimation = new AnimatorSet();
+            final boolean needFloatingButtonFinal = needFloatingButton;
             pagesAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (currentDoneType == DONE_TYPE_FLOATING && needFloatingButton) {
+                    if (currentDoneType == DONE_TYPE_FLOATING && needFloatingButtonFinal) {
                         showDoneButton(true, true);
                     }
                     outView.setVisibility(View.GONE);
