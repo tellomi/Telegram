@@ -762,7 +762,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             tellomiHelpButton = new TextView(context);
             tellomiHelpButton.setText(getString(R.string.TellomiHelp));
             tellomiHelpButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            tellomiHelpButton.setTextColor(0xFF222222);
+            tellomiHelpButton.setTextColor(TellomiLoginChrome.text());
             tellomiHelpButton.setGravity(Gravity.CENTER);
             tellomiHelpButton.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
             tellomiHelpButton.setOnClickListener(v -> {
@@ -1569,7 +1569,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (activityMode == MODE_LOGIN && backButtonView != null) {
             boolean tellomiHome = page == VIEW_PHONE_INPUT && views[VIEW_PHONE_INPUT] instanceof PhoneView && ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiIsHome();
             backButtonView.setImageResource(tellomiHome ? R.drawable.msg_close : R.drawable.ic_ab_back);
-            backButtonView.setColorFilter(new PorterDuffColorFilter(0xFF111111, PorterDuff.Mode.SRC_IN));
+            backButtonView.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
         }
         boolean needFloatingButton = page == VIEW_PHONE_INPUT || page == VIEW_REGISTER || page == VIEW_PASSWORD ||
                 page == VIEW_NEW_PASSWORD_STAGE_1 || page == VIEW_NEW_PASSWORD_STAGE_2 || page == VIEW_ADD_EMAIL || page == VIEW_CODE_PHRASE || page == VIEW_CODE_WORD;
@@ -1677,36 +1677,37 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
         clearCurrentState();
         if (getParentActivity() instanceof LaunchActivity) {
+            LaunchActivity launch = (LaunchActivity) getParentActivity();
             if (newAccount) {
+                int signedIn = currentAccount;
                 newAccount = false;
                 pendingSwitchingAccount = true;
-                ((LaunchActivity) getParentActivity()).switchToAccount(currentAccount, true, obj -> {
-                    Bundle args = new Bundle();
-                    args.putBoolean("afterSignup", afterSignup);
-                    MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                    mainTabsActivity.prepareDialogsActivity(args);
-                    return mainTabsActivity;
-                });
-                pendingSwitchingAccount = false;
-                finishFragment();
-            } else {
-                if (afterSignup && showSetPasswordConfirm) {
-                    TwoStepVerificationSetupActivity twoStepVerification = new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null);
-                    twoStepVerification.setBlockingAlert(otherwiseRelogin);
-                    twoStepVerification.setFromRegistration(true);
-                    presentFragment(twoStepVerification, true);
+                if (signedIn != UserConfig.selectedAccount) {
+                    launch.switchToAccount(signedIn, true, obj -> {
+                        Bundle args = new Bundle();
+                        args.putBoolean("afterSignup", afterSignup);
+                        MainTabsActivity mainTabsActivity = new MainTabsActivity();
+                        mainTabsActivity.prepareDialogsActivity(args);
+                        return mainTabsActivity;
+                    });
                 } else {
-                    Bundle args = new Bundle();
-                    args.putBoolean("afterSignup", afterSignup);
-                    MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                    mainTabsActivity.prepareDialogsActivity(args);
-                    presentFragment(mainTabsActivity, true);
+                    launch.showMainTabsReplacingStack(afterSignup);
                 }
-
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-                LocaleController.getInstance().loadRemoteLanguages(currentAccount);
-                RestrictedLanguagesSelectActivity.checkRestrictedLanguages(true);
+                pendingSwitchingAccount = false;
+            } else if (afterSignup && showSetPasswordConfirm) {
+                TwoStepVerificationSetupActivity twoStepVerification = new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null);
+                twoStepVerification.setBlockingAlert(otherwiseRelogin);
+                twoStepVerification.setFromRegistration(true);
+                presentFragment(twoStepVerification, true);
+            } else {
+                // Replace the stack. presentFragment(MainTabs, removeLast) left IntroActivity
+                // underneath, so the first account never actually landed on the home UI
+                // and Add Account later opened that welcome screen with no way back.
+                launch.showMainTabsReplacingStack(afterSignup);
             }
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+            LocaleController.getInstance().loadRemoteLanguages(currentAccount);
+            RestrictedLanguagesSelectActivity.checkRestrictedLanguages(true);
         } else if (getParentActivity() instanceof ExternalActionActivity) {
             ((ExternalActionActivity) getParentActivity()).onFinishLogin();
         }
@@ -1723,8 +1724,80 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private boolean pendingSwitchingAccount;
+    private boolean tellomiBindPhone;
+
+    public LoginActivity tellomiBindPhone() {
+        tellomiBindPhone = true;
+        activityMode = MODE_CHANGE_PHONE_NUMBER;
+        return this;
+    }
+
+    private void tellomiRememberSignedInEmail(TLRPC.User user) {
+        String email = null;
+        if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+            email = ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiTypedEmail();
+        }
+        if (!TellomiEmailLogin.isValid(TellomiEmailLogin.normalize(email)) && user != null && TellomiAccount.looksLikeEmail(user.phone)) {
+            email = user.phone;
+        }
+        if (TellomiEmailLogin.isValid(TellomiEmailLogin.normalize(email))) {
+            TellomiAccount.rememberEmail(currentAccount, email);
+        }
+    }
+
+    private boolean tellomiAlreadyOnDevice(String typed) {
+        int existing = TellomiAccount.accountMatching(typed, currentAccount);
+        if (existing < 0 || !(getParentActivity() instanceof LaunchActivity)) {
+            return false;
+        }
+        final int num = existing;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.AppName));
+        builder.setMessage(getString(R.string.AccountAlreadyLoggedIn));
+        builder.setPositiveButton(getString(R.string.AccountSwitch), (dialog, which) -> {
+            if (UserConfig.selectedAccount != num) {
+                ((LaunchActivity) getParentActivity()).switchToAccount(num, true);
+            } else {
+                ((LaunchActivity) getParentActivity()).showMainTabsReplacingStack(false);
+            }
+        });
+        builder.setNegativeButton(getString(R.string.OK), null);
+        showDialog(builder.create());
+        return true;
+    }
 
     private void onAuthSuccess(TLRPC.TL_auth_authorization res, boolean afterSignup) {
+        if (res == null || res.user == null) {
+            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), tellomiLoginFailureText(null));
+            return;
+        }
+        int existing = TellomiAccount.accountForUser(res.user.id, currentAccount);
+        if (existing >= 0) {
+            // OTP for an account that is already on this device must not open a second session.
+            ConnectionsManager.getInstance(currentAccount).cleanup(true);
+            UserConfig.getInstance(currentAccount).clearConfig();
+            final int switchTo = existing;
+            if (!(getParentActivity() instanceof LaunchActivity)) {
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(getString(R.string.AppName));
+            builder.setMessage(getString(R.string.AccountAlreadyLoggedIn));
+            builder.setPositiveButton(getString(R.string.AccountSwitch), (dialog, which) -> {
+                LaunchActivity launch = (LaunchActivity) getParentActivity();
+                if (launch == null) {
+                    return;
+                }
+                if (UserConfig.selectedAccount != switchTo) {
+                    launch.switchToAccount(switchTo, true);
+                } else {
+                    launch.showMainTabsReplacingStack(false);
+                }
+            });
+            builder.setCancelable(false);
+            showDialog(builder.create());
+            return;
+        }
         MessagesController.getInstance(currentAccount).cleanup();
         ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
         UserConfig.getInstance(currentAccount).clearConfig();
@@ -1732,6 +1805,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         UserConfig.getInstance(currentAccount).syncContacts = syncContacts;
         UserConfig.getInstance(currentAccount).setCurrentUser(res.user);
         UserConfig.getInstance(currentAccount).saveConfig(true);
+        tellomiRememberSignedInEmail(res.user);
         MessagesStorage.getInstance(currentAccount).cleanup(true);
         ArrayList<TLRPC.User> users = new ArrayList<>();
         users.add(res.user);
@@ -2131,7 +2205,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, activityMode == MODE_LOGIN ? 22 : 18);
             titleView.setTypeface(AndroidUtilities.bold());
-            titleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneNewNumber : R.string.YourNumber));
+            titleView.setText(getString(tellomiBindPhone ? R.string.TellomiBindPhone : activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneNewNumber : R.string.YourNumber));
             titleView.setGravity(Gravity.CENTER);
             titleView.setLineSpacing(dp(2), 1.0f);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 0));
@@ -2158,7 +2232,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
 
             subtitleView = new LinkSpanDrawable.LinksTextView(context);
-            subtitleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneHelp : R.string.StartText));
+            subtitleView.setText(getString(tellomiBindPhone ? R.string.TellomiBindPhoneHint : activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneHelp : R.string.StartText));
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setGravity(Gravity.CENTER);
             subtitleView.setLineSpacing(dp(2), 1.0f);
@@ -2905,6 +2979,44 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             phoneOutlineView.updateColor();
             countryOutlineView.updateColor();
+            if (activityMode == MODE_LOGIN || tellomiBindPhone) {
+                titleView.setTextColor(TellomiLoginChrome.text());
+                if (tellomiPrimaryButton != null) {
+                    tellomiPrimaryButton.applyTheme();
+                }
+                if (tellomiPasswordField != null) {
+                    tellomiPasswordField.setTextColor(TellomiLoginChrome.text());
+                    tellomiPasswordField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                }
+                if (phoneField != null) {
+                    phoneField.setTextColor(TellomiLoginChrome.text());
+                    phoneField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                }
+                if (emailField != null) {
+                    emailField.setTextColor(TellomiLoginChrome.text());
+                    emailField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                }
+                TellomiLoginChrome.grayField(phoneOutlineView);
+                if (emailOutlineView != null) {
+                    TellomiLoginChrome.grayField(emailOutlineView);
+                }
+                if (tellomiPasswordOutline != null) {
+                    TellomiLoginChrome.grayField(tellomiPasswordOutline);
+                }
+                if (tellomiSocialColumn != null) {
+                    for (int i = 0; i < tellomiSocialColumn.getChildCount(); i++) {
+                        TellomiLoginChrome.restyleSocial(tellomiSocialColumn.getChildAt(i));
+                    }
+                }
+                if (tellomiCircleRow != null) {
+                    for (int i = 0; i < tellomiCircleRow.getChildCount(); i++) {
+                        View child = tellomiCircleRow.getChildAt(i);
+                        if (child instanceof ImageView) {
+                            TellomiLoginChrome.restyleCircle((ImageView) child);
+                        }
+                    }
+                }
+            }
         }
 
         @Override
@@ -2935,6 +3047,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         public boolean tellomiIsHome() {
             return tellomiScreen == TELLOMI_PHONE_CODE;
+        }
+
+        String tellomiTypedEmail() {
+            if (emailField == null || emailField.getText() == null) {
+                return "";
+            }
+            return emailField.getText().toString();
         }
 
         @Override
@@ -3231,7 +3350,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             backButtonView.setImageResource(tellomiIsHome() ? R.drawable.msg_close : R.drawable.ic_ab_back);
-            backButtonView.setColorFilter(new PorterDuffColorFilter(0xFF111111, PorterDuff.Mode.SRC_IN));
+            backButtonView.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
             backButtonView.setVisibility(VISIBLE);
         }
 
@@ -3271,6 +3390,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (tellomiPhoneAgreement != null && !tellomiPhoneAgreement.isAgreed()) {
                 tellomiRequireAgreement(this::tellomiSendEmailCode);
+                return;
+            }
+            if (tellomiAlreadyOnDevice(email)) {
                 return;
             }
             if (getParentActivity() instanceof LaunchActivity) {
@@ -3771,6 +3893,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
+            if (activityMode == MODE_LOGIN && tellomiAlreadyOnDevice(phone)) {
+                needHideProgress(false);
+                return;
+            }
             if (activityMode == MODE_LOGIN) {
                 if (getParentActivity() instanceof LaunchActivity) {
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -4518,8 +4644,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 frameLayout.addView(blueImageView, LayoutHelper.createFrame(size, size, Gravity.LEFT | Gravity.TOP, 0, 0, 0, currentType == AUTH_TYPE_MESSAGE && !AndroidUtilities.isSmallScreen() ? -AndroidUtilities.dp(16) : 0));
                 titleTextView.setText(overrideTitle != null ? overrideTitle : getString(currentType == AUTH_TYPE_MESSAGE ? R.string.SentAppCodeTitle : R.string.SentSmsCodeTitle));
-                if (activityMode == MODE_LOGIN && overrideTitle == null && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
-                    titleTextView.setText(getString(R.string.TellomiOtpTitle));
+                if ((activityMode == MODE_LOGIN || tellomiBindPhone) && overrideTitle == null && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
+                    titleTextView.setText(getString(tellomiBindPhone ? R.string.TellomiBindPhone : R.string.TellomiOtpTitle));
                     frameLayout.setVisibility(GONE);
                 }
                 addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 0));
@@ -4534,7 +4660,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                 };
 
-                boolean tellomiOtp = activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE);
+                boolean tellomiOtp = (activityMode == MODE_LOGIN || tellomiBindPhone) && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE);
                 if (tellomiOtp) {
                     codeFieldContainer.setTellomiSquares(true);
                     titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
@@ -4552,7 +4678,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, tellomiOtp ? 52 : 42, tellomiOtp ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL, 0, 24, 0, 0));
                 if (tellomiOtp) {
-                    tellomiLoginButton = TellomiLoginChrome.actionButton(context, getString(R.string.TellomiOtpLogin), v -> onNextPressed(null));
+                    tellomiLoginButton = TellomiLoginChrome.actionButton(context, getString(tellomiBindPhone ? R.string.TellomiBindAction : R.string.TellomiOtpLogin), v -> onNextPressed(null));
                     addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 20, 0, 0));
                 }
             }
@@ -4917,6 +5043,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (codeFieldContainer != null) {
                 codeFieldContainer.invalidate();
             }
+            if (tellomiLoginButton != null) {
+                tellomiLoginButton.applyTheme();
+            }
 
             Integer timeTextColorTag = (Integer) timeText.getTag();
             if (timeTextColorTag == null) {
@@ -5092,8 +5221,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public String getHeaderName() {
-            if (activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
-                return getString(R.string.TellomiOtpTitle);
+            if ((activityMode == MODE_LOGIN || tellomiBindPhone) && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
+                return getString(tellomiBindPhone ? R.string.TellomiBindAction : R.string.TellomiOtpTitle);
             }
             if (currentType == AUTH_TYPE_FLASH_CALL || currentType == AUTH_TYPE_MISSED_CALL) {
                 return phone;
@@ -7383,7 +7512,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             tellomiCodeField.setSingleLine(true);
             tellomiCodeField.setInputType(InputType.TYPE_CLASS_NUMBER);
             tellomiCodeField.setHint(getString(R.string.TellomiEmailCodeHint));
-            tellomiCodeField.setHintTextColor(0xFFC7C7CC);
+            tellomiCodeField.setTextColor(TellomiLoginChrome.text());
+            tellomiCodeField.setHintTextColor(TellomiLoginChrome.fieldHint());
             tellomiCodeField.setBackground(null);
             tellomiCodeField.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(14));
             tellomiCodeField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
@@ -7565,6 +7695,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             wrongCodeView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
 
             codeFieldContainer.invalidate();
+            if (tellomiLoginButton != null) {
+                tellomiLoginButton.applyTheme();
+            }
+            if (tellomiCodeField != null) {
+                tellomiCodeField.setTextColor(TellomiLoginChrome.text());
+                tellomiCodeField.setHintTextColor(TellomiLoginChrome.fieldHint());
+            }
+            if (tellomiCodeOutline != null) {
+                TellomiLoginChrome.grayField(tellomiCodeOutline);
+            }
         }
 
         @Override
@@ -9164,6 +9304,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             firstNameOutlineView.updateColor();
             lastNameOutlineView.updateColor();
+            if (activityMode == MODE_LOGIN) {
+                titleTextView.setTextColor(TellomiLoginChrome.text());
+                descriptionTextView.setTextColor(TellomiLoginChrome.night() ? 0xFF8E8E93 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                firstNameField.setTextColor(TellomiLoginChrome.text());
+                firstNameField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                TellomiLoginChrome.grayField(firstNameOutlineView);
+                if (tellomiRegisterButton != null) {
+                    tellomiRegisterButton.applyTheme();
+                }
+            }
         }
 
         private void buildEditTextLayout(boolean small) {
@@ -9618,8 +9768,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private void updateColors() {
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
-        backButtonView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        backButtonView.setColorFilter(new PorterDuffColorFilter(activityMode == MODE_LOGIN || tellomiBindPhone ? TellomiLoginChrome.text() : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+        if (tellomiHelpButton != null) {
+            tellomiHelpButton.setTextColor(TellomiLoginChrome.text());
+        }
 
         proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
         proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));

@@ -64,5 +64,9 @@
     <string name="TellomiIntroPage4Message">**Tellomi** keeps your messages safe\nfrom hacker attacks.</string>
     <string name="TellomiIntroPage5Message">**Tellomi** has no limits on\nthe size of your media and chats.</string>
     <string name="TellomiIntroPage6Message">**Tellomi** lets you access your messages\nfrom multiple devices.</string>
-    <string name="TellomiIntroStart">Start Messaging</string>
+    <string name="TellomiIntroStart">Get started</string>
+    <string name="TellomiBindPhone">Bind phone number</string>
+    <string name="TellomiBindPhoneHint">We will send a verification code to this number.</string>
+    <string name="TellomiBindAction">Bind</string>
+    <string name="AccountAlreadyLoggedIn">This account is already signed in on this device.</string>
 </resources>

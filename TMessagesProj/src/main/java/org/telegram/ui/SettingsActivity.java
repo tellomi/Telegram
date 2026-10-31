@@ -548,12 +548,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarView.setForUserOrChat(user, avatarDrawable);
         titleView.setText(UserObject.getUserName(user));
         final StringBuilder sb = new StringBuilder();
-        if (user != null) {
-            sb.append(PhoneFormat.getInstance().format("+" + user.phone));
+        String label = TellomiAccount.switcherLabel(currentAccount, user);
+        if (!TextUtils.isEmpty(label) && (user == null || !label.equals(UserObject.getUserName(user)))) {
+            sb.append(label);
+        } else if (TellomiAccount.phoneOf(user) != null) {
+            sb.append(PhoneFormat.getInstance().format("+" + TellomiAccount.phoneOf(user)));
         }
         final String username = UserObject.getPublicUsername(user);
         if (username != null) {
-            sb.append(" • @").append(username);
+            if (sb.length() > 0) {
+                sb.append(" • ");
+            }
+            sb.append("@").append(username);
         }
         subtitleView.setText(sb);
 
@@ -1089,7 +1095,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             avatarDrawable.setInfo(account, user);
             avatarView.getImageReceiver().setCurrentAccount(account);
             avatarView.setForUserOrChat(user, avatarDrawable);
-            textView.setText(UserObject.getUserName(user));
+            textView.setText(TellomiAccount.switcherLabel(account, user));
 
             botDrawable.setCurrentAccount(account);
             emojiStatusDrawable.setCurrentAccount(account);

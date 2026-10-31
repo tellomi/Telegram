@@ -33,6 +33,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.OutlineTextContainerView;
 
 public final class TellomiLoginChrome {
@@ -54,12 +55,69 @@ public final class TellomiLoginChrome {
     private TellomiLoginChrome() {
     }
 
+    public static boolean night() {
+        try {
+            Theme.ThemeInfo theme = Theme.getActiveTheme();
+            return theme != null && theme.isDark();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Page and field label. Light stays #111111; dark uses white so typed text stays readable. */
+    public static int text() {
+        return night() ? 0xFFFFFFFF : TEXT;
+    }
+
+    public static int fieldFill() {
+        return night() ? 0xFF2C2C2E : FIELD;
+    }
+
+    public static int fieldHint() {
+        return night() ? 0xFF8E8E93 : 0xFFC7C7CC;
+    }
+
+    /** Light CTA is #111111. On a dark page that color disappears into the chrome, so the button flips to white. */
+    public static int ctaFill(boolean ready) {
+        if (ready) {
+            return night() ? 0xFFFFFFFF : CTA;
+        }
+        return night() ? 0xFF3A3A3C : CTA_DISABLED;
+    }
+
+    public static int ctaLabel(boolean ready) {
+        if (ready) {
+            return night() ? 0xFF111111 : Color.WHITE;
+        }
+        return night() ? 0xFF8E8E93 : CTA_DISABLED_TEXT;
+    }
+
+    public static int focusStroke() {
+        return night() ? 0xFFFFFFFF : 0xFF111111;
+    }
+
+    public static int lineColor() {
+        return night() ? 0xFF3A3A3C : LINE;
+    }
+
+    public static int checkedFill() {
+        return night() ? 0xFFFFFFFF : CHECKED;
+    }
+
+    public static int checkedMark() {
+        return night() ? 0xFF111111 : Color.WHITE;
+    }
+
+    public static int pageFill() {
+        return night() ? 0xFF1C1C1E : Color.WHITE;
+    }
+
     /** Gray rounded field. The caller clears the floating label when it should not show. */
     public static void grayField(OutlineTextContainerView outline) {
         if (outline == null) {
             return;
         }
-        outline.setTellomiFilled(FIELD);
+        outline.setTellomiFilled(fieldFill());
         outline.setText("");
     }
 
@@ -146,9 +204,9 @@ public final class TellomiLoginChrome {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setMinimumHeight(AndroidUtilities.dp(48));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.WHITE);
+        background.setColor(pageFill());
         background.setCornerRadius(AndroidUtilities.dp(10));
-        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), LINE);
+        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
         row.setBackground(background);
         ImageView icon = new ImageView(context);
         icon.setImageResource(iconRes);
@@ -158,7 +216,7 @@ public final class TellomiLoginChrome {
         row.addView(icon, iconLp);
         TextView text = new TextView(context);
         text.setText(label);
-        text.setTextColor(TEXT);
+        text.setTextColor(text());
         text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         text.setGravity(Gravity.CENTER);
         row.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -175,8 +233,8 @@ public final class TellomiLoginChrome {
         icon.setPadding(pad, pad, pad, pad);
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.OVAL);
-        background.setColor(Color.WHITE);
-        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), LINE);
+        background.setColor(pageFill());
+        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
         icon.setBackground(background);
         icon.setOnClickListener(click);
         return icon;
@@ -184,26 +242,56 @@ public final class TellomiLoginChrome {
 
     private static View line(Context context) {
         View view = new View(context);
-        view.setBackgroundColor(LINE);
+        view.setBackgroundColor(lineColor());
         return view;
     }
 
-    public static final class ActionButton extends FrameLayout {
+        public static void restyleSocial(View row) {
+            if (!(row instanceof LinearLayout)) {
+                return;
+            }
+            GradientDrawable background = new GradientDrawable();
+            background.setColor(pageFill());
+            background.setCornerRadius(AndroidUtilities.dp(10));
+            background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
+            row.setBackground(background);
+            LinearLayout layout = (LinearLayout) row;
+            for (int i = 0; i < layout.getChildCount(); i++) {
+                View child = layout.getChildAt(i);
+                if (child instanceof TextView) {
+                    ((TextView) child).setTextColor(text());
+                }
+            }
+        }
+
+        public static void restyleCircle(ImageView icon) {
+            if (icon == null) {
+                return;
+            }
+            GradientDrawable background = new GradientDrawable();
+            background.setShape(GradientDrawable.OVAL);
+            background.setColor(pageFill());
+            background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
+            icon.setBackground(background);
+        }
+
+        public static final class ActionButton extends FrameLayout {
         private final TextView labelView;
         private final ProgressBar progressView;
         private final GradientDrawable background;
+        private boolean ready;
 
         ActionButton(Context context, String label) {
             super(context);
             background = new GradientDrawable();
-            background.setColor(CTA_DISABLED);
+            background.setColor(ctaFill(false));
             background.setCornerRadius(AndroidUtilities.dp(10));
             setBackground(background);
             setMinimumHeight(AndroidUtilities.dp(48));
 
             labelView = new TextView(context);
             labelView.setText(label);
-            labelView.setTextColor(CTA_DISABLED_TEXT);
+            labelView.setTextColor(ctaLabel(false));
             labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             labelView.setTypeface(AndroidUtilities.bold());
             labelView.setGravity(Gravity.CENTER);
@@ -219,10 +307,15 @@ public final class TellomiLoginChrome {
             labelView.setText(label);
         }
 
-        /** Black when the form can be submitted, light gray while the field is empty. Still clickable. */
+        /** Black (or white in dark mode) when the form can be submitted. Still clickable while empty. */
         public void setReady(boolean ready) {
-            background.setColor(ready ? CTA : CTA_DISABLED);
-            labelView.setTextColor(ready ? Color.WHITE : CTA_DISABLED_TEXT);
+            this.ready = ready;
+            background.setColor(ctaFill(ready));
+            labelView.setTextColor(ctaLabel(ready));
+        }
+
+        public void applyTheme() {
+            setReady(ready);
         }
 
         public void setBusy(boolean busy) {

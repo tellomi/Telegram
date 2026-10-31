@@ -1089,10 +1089,55 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private BaseFragment getClientNotActivatedFragment() {
+        if (UserConfig.getActivatedAccountsCount() > 0) {
+            // The selected slot is empty but another account is signed in.
+            // The welcome intro has no back button, so never put it on screen here.
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    if (a != UserConfig.selectedAccount) {
+                        UserConfig.selectedAccount = a;
+                        UserConfig.getInstance(0).saveConfig(false);
+                        currentAccount = a;
+                        checkCurrentAccount();
+                    }
+                    break;
+                }
+            }
+            return new MainTabsActivity();
+        }
         if (LoginActivity.loadCurrentState(false, currentAccount).getInt("currentViewNum", 0) != 0) {
             return new LoginActivity();
         }
         return new IntroActivity();
+    }
+
+    /**
+     * After a successful sign-in the welcome intro must not stay under the main UI.
+     * With one account that leftover intro was what Add Account opened, and it could not be dismissed.
+     */
+    public void showMainTabsReplacingStack(boolean afterSignup) {
+        if (termsOfServiceView != null) {
+            termsOfServiceView.setVisibility(View.GONE);
+        }
+        if (AndroidUtilities.isTablet()) {
+            layersActionBarLayout.removeAllFragments();
+            rightActionBarLayout.removeAllFragments();
+        }
+        actionBarLayout.removeAllFragments();
+        Bundle args = new Bundle();
+        args.putBoolean("afterSignup", afterSignup);
+        MainTabsActivity mainTabsActivity = new MainTabsActivity();
+        mainTabsActivity.prepareDialogsActivity(args);
+        actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+        actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+        if (AndroidUtilities.isTablet()) {
+            layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+            rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+        }
+        if (UserConfig.getInstance(currentAccount).unacceptedTermsOfService != null) {
+            showTosActivity(currentAccount, UserConfig.getInstance(currentAccount).unacceptedTermsOfService);
+        }
+        updateCurrentConnectionState(currentAccount);
     }
 
     public FireworksOverlay getFireworksOverlay() {

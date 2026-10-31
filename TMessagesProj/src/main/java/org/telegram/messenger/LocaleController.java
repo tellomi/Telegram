@@ -723,7 +723,7 @@ public class LocaleController {
             }
         }
 
-        systemDefaultLocale = Locale.getDefault();
+        systemDefaultLocale = TellomiDefaults.deviceLocale();
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
         LocaleInfo currentInfo = null;
         boolean override = false;
@@ -2068,7 +2068,9 @@ public class LocaleController {
             return;
         }
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
-        systemDefaultLocale = newConfig.locale;
+        // The activity configuration can stay English after we install zh. The device
+        // locale is what decides whether to keep the Chinese pack.
+        systemDefaultLocale = TellomiDefaults.deviceLocale();
         if (languageOverride != null) {
             LocaleInfo toSet = currentLocaleInfo;
             currentLocaleInfo = null;
@@ -4496,7 +4498,10 @@ public class LocaleController {
         LocaleInfo chinese = tellomiLocaleForSystem(systemLocale);
         if (chinese != null) {
             if (currentLocaleInfo != null && TextUtils.equals(chinese.shortName, currentLocaleInfo.shortName)) {
-                return false;
+                // Already on zh-hans / zh-hant. Returning false let the caller copy the
+                // activity locale (often English) over currentLocale and the login screens
+                // dropped back to the English bin.
+                return true;
             }
             applyLanguage(chinese, false, false, UserConfig.selectedAccount);
             return true;
@@ -4544,6 +4549,16 @@ public class LocaleController {
             try {
                 value = context.getResources().getString(stringRes);
             } catch (Throwable ignored) {
+            }
+        }
+        // Flavor values-zh is not in localization_*.bin. On a Chinese phone the English
+        // bin (or the English resource) used to win for every key it contained, so
+        // welcome, login, and OTP stayed English until a langpack was saved in Settings.
+        if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
+            String zh = TellomiDefaults.chineseResource(stringRes);
+            String en = TellomiDefaults.englishResource(stringRes);
+            if (zh != null && zh.length() > 0 && (value == null || (en != null && value.equals(en) && !zh.equals(en)))) {
+                value = zh;
             }
         }
         return TellomiBrand.rewrite(value);

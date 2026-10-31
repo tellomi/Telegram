@@ -293,6 +293,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private static final int BUTTON_LOCATION = 5;
     private static final int BUTTON_AI = 6;
     private static final int INFO_PHONE = 7;
+    private static final int INFO_EMAIL = 12;
     private static final int INFO_USERNAME = 8;
     private static final int INFO_BIRTHDAY = 9;
     private static final int BUTTON_ADD_ACCOUNT = 10;
@@ -355,9 +356,17 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
         final TLRPC.User user = getUserConfig().getCurrentUser();
         items.add(UItem.asHeader(getString(R.string.EditAccountInfoHeader)));
-        if (user != null) {
+        String phone = TellomiAccount.phoneOf(user);
+        String email = TellomiAccount.emailOf(currentAccount, user);
+        if (phone != null) {
             numberRow = items.size();
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, PhoneFormat.getInstance().format("+" + user.phone), getString(R.string.TapToChangePhone)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, PhoneFormat.getInstance().format("+" + phone), getString(R.string.TapToChangePhone)));
+        } else {
+            numberRow = items.size();
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
+        }
+        if (email != null) {
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, email, getString(R.string.TellomiEmail)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
@@ -471,22 +480,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == BUTTON_ADD_ACCOUNT) {
-            int freeAccounts = 0;
-            Integer availableAccount = null;
-            for (int a = UserConfig.MAX_ACCOUNT_COUNT - 1; a >= 0; a--) {
-                if (!UserConfig.getInstance(a).isClientActivated()) {
-                    freeAccounts++;
-                    if (availableAccount == null) {
-                        availableAccount = a;
-                    }
-                }
-            }
-            if (!UserConfig.hasPremiumOnAccounts()) {
-                freeAccounts -= (UserConfig.MAX_ACCOUNT_COUNT - UserConfig.MAX_ACCOUNT_DEFAULT_COUNT);
-            }
-            if (freeAccounts > 0 && availableAccount != null) {
-                presentFragment(new LoginActivity(availableAccount));
-            } else if (!UserConfig.hasPremiumOnAccounts()) {
+            if (!TellomiAccount.openAddAccount(this) && !UserConfig.hasPremiumOnAccounts()) {
                 showDialog(new LimitReachedBottomSheet(this, getContext(), TYPE_ACCOUNTS, currentAccount, null));
             }
         } else if (item.instanceOf(SettingsActivity.AccountCell.Factory.class)) {
@@ -546,11 +540,19 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         } else if (item.id == BUTTON_AI) {
             presentFragment(new ChatbotsActivity());
         } else if (item.id == INFO_PHONE) {
-            presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            TLRPC.User self = getUserConfig().getCurrentUser();
+            if (TellomiAccount.phoneOf(self) == null) {
+                presentFragment(new LoginActivity().tellomiBindPhone());
+            } else {
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            }
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
         } else if (item.id == BUTTON_LOGOUT) {
-            presentFragment(new LogoutActivity());
+            // Same confirm for email and phone sessions. LogoutActivity's dialog used to
+            // wait on a wallet fetch that never completed for an email session, so the row
+            // looked untappable. Confirm here, immediately.
+            LogoutActivity.confirmLogout(this);
         }
     }
 
