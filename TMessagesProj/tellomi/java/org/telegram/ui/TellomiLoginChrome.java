@@ -210,7 +210,7 @@ public final class TellomiLoginChrome {
         row.setBackground(background);
         ImageView icon = new ImageView(context);
         icon.setImageResource(iconRes);
-        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(AndroidUtilities.dp(22), AndroidUtilities.dp(22));
         iconLp.leftMargin = AndroidUtilities.dp(16);
         row.addView(icon, iconLp);

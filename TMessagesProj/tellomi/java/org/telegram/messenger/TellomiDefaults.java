@@ -13,6 +13,7 @@ package org.telegram.messenger;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
+import android.provider.Settings;
 
 import java.util.Locale;
 
@@ -54,18 +55,52 @@ public final class TellomiDefaults {
         return LANG_ZH_HANS;
     }
 
-    /** Remote locale for {@code zh-hans} or {@code zh-hant}. The strings come from langpack.getLangPack. */
-    public static LocaleController.LocaleInfo remoteChineseLocale(String langCode) {
-        boolean traditional = LANG_ZH_HANT.equals(langCode);
+    /**
+     * Built-in list entry. {@code pathToFile} stays null so Settings shows 简体中文 / 繁體中文
+     * even when langpack.getLanguages has not returned, and the row is not dropped as unofficial.
+     */
+    public static LocaleController.LocaleInfo builtinChinese(boolean traditional) {
         LocaleController.LocaleInfo info = new LocaleController.LocaleInfo();
         info.name = traditional ? "繁體中文" : "简体中文";
         info.nameEnglish = traditional ? "Chinese (Traditional)" : "Chinese (Simplified)";
-        info.shortName = (langCode == null ? LANG_ZH_HANS : langCode).replace('-', '_');
+        info.shortName = traditional ? "zh_hant" : "zh_hans";
         info.pluralLangCode = "zh";
         info.baseLangCode = "";
+        info.pathToFile = null;
+        info.builtIn = true;
+        info.serverIndex = 0;
+        return info;
+    }
+
+    /** Remote locale for {@code zh-hans} or {@code zh-hant}. The strings come from langpack.getLangPack. */
+    public static LocaleController.LocaleInfo remoteChineseLocale(String langCode) {
+        String code = langCode == null ? LANG_ZH_HANS : langCode.replace('_', '-').toLowerCase(Locale.US);
+        boolean traditional = LANG_ZH_HANT.equals(code);
+        LocaleController.LocaleInfo info = builtinChinese(traditional);
+        info.builtIn = false;
         info.pathToFile = "remote";
         info.serverIndex = Integer.MAX_VALUE;
         return info;
+    }
+
+    /** First entry of Settings.System system_locales, or null. This is the phone language, not the locale the app installed. */
+    private static Locale systemLocalesSetting() {
+        try {
+            if (ApplicationLoader.applicationContext == null) {
+                return null;
+            }
+            String raw = Settings.System.getString(ApplicationLoader.applicationContext.getContentResolver(), "system_locales");
+            if (raw == null || raw.length() == 0) {
+                return null;
+            }
+            String first = raw.split(",")[0].trim();
+            if (first.length() == 0) {
+                return null;
+            }
+            return Locale.forLanguageTag(first.replace('_', '-'));
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     /**
@@ -74,16 +109,34 @@ public final class TellomiDefaults {
      * process has already applied the bundled default, even if the phone is Chinese.
      */
     public static Locale deviceLocale() {
+        Locale tagged = systemLocalesSetting();
+        if (systemChineseLangCode(tagged) != null) {
+            return tagged;
+        }
         try {
             Configuration config = Resources.getSystem().getConfiguration();
             if (config != null) {
                 if (Build.VERSION.SDK_INT >= 24 && config.getLocales() != null && !config.getLocales().isEmpty()) {
                     Locale locale = config.getLocales().get(0);
+                    if (systemChineseLangCode(locale) != null) {
+                        return locale;
+                    }
+                    Locale fallback = Locale.getDefault();
+                    if (systemChineseLangCode(fallback) != null) {
+                        return fallback;
+                    }
                     if (locale != null) {
                         return locale;
                     }
                 }
+                if (config.locale != null && systemChineseLangCode(config.locale) != null) {
+                    return config.locale;
+                }
                 if (config.locale != null) {
+                    Locale fallback = Locale.getDefault();
+                    if (systemChineseLangCode(fallback) != null) {
+                        return fallback;
+                    }
                     return config.locale;
                 }
             }
@@ -121,7 +174,22 @@ public final class TellomiDefaults {
      * consulted: intro and login copy live there and would stay English on a Chinese phone.
      */
     public static String chineseResource(int resId) {
-        return resourceFor(Locale.SIMPLIFIED_CHINESE, resId);
+        String simplified = resourceFor(Locale.SIMPLIFIED_CHINESE, resId);
+        String english = resourceFor(Locale.ENGLISH, resId);
+        if (simplified != null && simplified.length() > 0 && (english == null || !simplified.equals(english))) {
+            return simplified;
+        }
+        // values-zh-rCN and values-b+zh+Hans are the qualifiers some devices match
+        // before the plain values-zh folder. Try each before giving up.
+        String hans = resourceFor(Locale.forLanguageTag("zh-Hans"), resId);
+        if (hans != null && hans.length() > 0 && (english == null || !hans.equals(english))) {
+            return hans;
+        }
+        String zh = resourceFor(new Locale("zh"), resId);
+        if (zh != null && zh.length() > 0 && (english == null || !zh.equals(english))) {
+            return zh;
+        }
+        return simplified == null ? "" : simplified;
     }
 
     /** The same resource in English, used to tell a real Chinese translation from the default. */

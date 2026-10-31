@@ -360,13 +360,15 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         String email = TellomiAccount.emailOf(currentAccount, user);
         if (phone != null) {
             numberRow = items.size();
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, PhoneFormat.getInstance().format("+" + phone), getString(R.string.TapToChangePhone)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.msg_newphone, PhoneFormat.getInstance().format("+" + phone), getString(R.string.TapToChangePhone)));
         } else {
             numberRow = items.size();
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.msg_newphone, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
         }
         if (email != null) {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, email, getString(R.string.TellomiEmail)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, email, getString(R.string.TellomiChangeEmail)));
+        } else {
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, getString(R.string.TellomiBindEmail), getString(R.string.TellomiBindEmailHint)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
@@ -540,12 +542,13 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         } else if (item.id == BUTTON_AI) {
             presentFragment(new ChatbotsActivity());
         } else if (item.id == INFO_PHONE) {
-            TLRPC.User self = getUserConfig().getCurrentUser();
-            if (TellomiAccount.phoneOf(self) == null) {
-                presentFragment(new LoginActivity().tellomiBindPhone());
-            } else {
-                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
-            }
+            presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+        } else if (item.id == INFO_EMAIL) {
+            presentFragment(new LoginActivity().changeEmail(() -> {
+                if (listView != null) {
+                    listView.adapter.update(true);
+                }
+            }));
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
         } else if (item.id == BUTTON_LOGOUT) {
