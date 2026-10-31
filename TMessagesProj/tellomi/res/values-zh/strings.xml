@@ -33,4 +33,17 @@
     <string name="TellomiEmailBanned">该邮箱已被封禁。</string>
     <string name="TellomiNickname">昵称</string>
     <string name="TellomiNicknameHint">设置昵称即可完成注册</string>
+    <string name="TellomiIntroPage1Title">Tellomi</string>
+    <string name="TellomiIntroPage2Title">快速</string>
+    <string name="TellomiIntroPage3Title">免费</string>
+    <string name="TellomiIntroPage4Title">安全</string>
+    <string name="TellomiIntroPage5Title">强大</string>
+    <string name="TellomiIntroPage6Title">云端</string>
+    <string name="TellomiIntroPage1Message">世界上**最快**的通讯应用。\n它**免费**且**安全**。</string>
+    <string name="TellomiIntroPage2Message">**Tellomi** 发送消息的速度比任何其他应用都快。</string>
+    <string name="TellomiIntroPage3Message">**Tellomi** 为聊天和媒体提供免费的无限云存储。</string>
+    <string name="TellomiIntroPage4Message">**Tellomi** 保护你的消息免受黑客攻击。</string>
+    <string name="TellomiIntroPage5Message">**Tellomi** 对媒体和聊天的大小没有限制。</string>
+    <string name="TellomiIntroPage6Message">**Tellomi** 让你可以从多台设备访问消息。</string>
+    <string name="TellomiIntroStart">开始发消息</string>
 </resources>

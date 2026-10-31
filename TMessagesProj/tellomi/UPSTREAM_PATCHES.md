@@ -174,3 +174,22 @@ Login home stays phone, calling code `86`. A text button switches to email and b
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `fillNextCodeParams` | Email-start `sentCodeTypeEmailCode` keeps Google sign-in off and uses the typed address when the server pattern is empty. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityEmailCodeView` | Same screen as a phone account's email code. Email-start hides "can't access this email" and carries the address through resend into sign-up. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | Email sign-up shows one nickname, puts the address in `auth.signUp.phone_number`, and does not show the terms popup. |
+
+## Agreement taps, login language, and intro
+
+The agreement line was a `SpannableStringBuilder`. That class is `Editable`, so `TextView.setText` installed an editor and the circle, 用户协议, 隐私政策, and the carrier link never received the click. The line is now a `SpannableString`. Phone home also links 运营商服务协议 to `https://tellomi.cn/legal`. Terms stay `https://tellomi.cn/legal/terms/` and privacy stays `https://tellomi.cn/legal/privacy/`. The pink button, gray fields, and circle checkbox are unchanged.
+
+Login copy in `values/strings.xml` was Simplified Chinese, so an English system still showed Chinese. Those defaults are English. `values-zh` is the Chinese copy. `LocaleController` already selects `zh-hans` for a mainland Chinese system (`zh`, `zh-Hans`, `zh-CN`, `zh-SG`) until the user picks another language, and that sets the resource locale, so the login screens follow it.
+
+The intro carousel reads `localization_en.bin` by resource id, which wins over `values-zh`. On a Chinese UI it now reads the bundled `TellomiIntro*` strings instead. Other languages stay on the bin. No `versionName` or `versionCode` change.
+
+Checked and left alone: no user-facing `Teamgram` or `@teamgram` string in login, auth, session, or profile UI (the word is only in docs, the server PEM comment, and a native comment). Last-online still goes through `LocaleController.formatUserStatus` / `formatDateOnline` (`formatterYear` is `dd.MM.yy`). Status `0` is "a long time ago", and the negative sentinels are "recently" / "within a week" / "within a month". Nothing formats a year as `year - 2000`, so a zero status does not render `01/01/-30`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | `SpannableString` so taps reach the circle and the links. Phone home links 运营商服务协议 to `https://tellomi.cn/legal`. Chinese vs English follows `TellomiDefaults.uiIsChinese()`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | The sign-up terms view is not given an `Editable` buffer before the checkbox replaces it. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `uiIsChinese()` and `chineseResource()` for bundled Simplified Chinese that must not come from the English bin. |
+| `TMessagesProj/tellomi/res/values/strings.xml` | English login copy, and English intro fallbacks. |
+| `TMessagesProj/tellomi/res/values-zh/strings.xml` | Bundled intro carousel copy. Login copy was already Chinese. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | When the UI language is Chinese, titles, messages, and Start use `TellomiIntro*`. |
