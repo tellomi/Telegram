@@ -683,6 +683,13 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        // TELLOMI: 简体中文 and 繁體中文 stay on the settings list without a langpack round-trip.
+        for (int i = 0; i < 2; i++) {
+            LocaleInfo chinese = TellomiDefaults.builtinChinese(i == 1);
+            languages.add(chinese);
+            languagesDict.put(chinese.shortName, chinese);
+        }
+
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> loadRemoteLanguages(UserConfig.selectedAccount));
@@ -1396,7 +1403,11 @@ public class LocaleController {
             changingConfiguration = true;
             Locale.setDefault(currentLocale);
             android.content.res.Configuration config = new android.content.res.Configuration();
-            config.locale = currentLocale;
+            if (Build.VERSION.SDK_INT >= 24) {
+                config.setLocales(new android.os.LocaleList(newLocale));
+            }
+            config.setLocale(newLocale);
+            config.locale = newLocale;
             ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
             changingConfiguration = false;
             FileLog.d("applyLanguage: reloadLastFile=" + reloadLastFile + " force=" + force + " isLoadingRemote=" + isLoadingRemote);
@@ -3131,7 +3142,11 @@ public class LocaleController {
                         changingConfiguration = true;
                         Locale.setDefault(currentLocale);
                         Configuration config = new Configuration();
-                        config.locale = currentLocale;
+                        if (Build.VERSION.SDK_INT >= 24) {
+                            config.setLocales(new android.os.LocaleList(newLocale));
+                        }
+                        config.setLocale(newLocale);
+                        config.locale = newLocale;
                         ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
                         changingConfiguration = false;
 
@@ -3211,6 +3226,10 @@ public class LocaleController {
                     }
                     for (int a = 0; a < remoteLanguages.size(); a++) {
                         LocaleInfo info = remoteLanguages.get(a);
+                        if (info.builtIn) {
+                            info.serverIndex = 0;
+                            continue;
+                        }
                         if (info.serverIndex != Integer.MAX_VALUE || info == currentLocaleInfo) {
                             continue;
                         }
@@ -4487,7 +4506,11 @@ public class LocaleController {
         if (langCode == null) {
             return null;
         }
-        LocaleInfo existing = getLanguageFromDict(langCode);
+        String key = langCode.replace('-', '_');
+        LocaleInfo existing = getLanguageFromDict(key);
+        if (existing == null) {
+            existing = getLanguageFromDict(langCode);
+        }
         return existing != null ? existing : TellomiDefaults.remoteChineseLocale(langCode);
     }
 
@@ -4557,7 +4580,9 @@ public class LocaleController {
         if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
             String zh = TellomiDefaults.chineseResource(stringRes);
             String en = TellomiDefaults.englishResource(stringRes);
-            if (zh != null && zh.length() > 0 && (value == null || (en != null && value.equals(en) && !zh.equals(en)))) {
+            // The English localization bin wins over values-zh for every key it contains.
+            // A bundled Chinese string that differs from English replaces that hit.
+            if (zh != null && zh.length() > 0 && (en == null || !zh.equals(en))) {
                 value = zh;
             }
         }

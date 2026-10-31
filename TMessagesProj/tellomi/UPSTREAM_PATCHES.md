@@ -230,3 +230,28 @@ Deferred: a full profile layout for email, binding a phone as a separate product
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAccount.java` | New. Saved email, masked label, already-on-device match, Add Account routing. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Light palette kept. Dark mode uses a white primary button and light field text. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` |「开始使用」, bind-phone copy,「该账号已登录」. |
+
+## Login locale, welcome mark, Help, bind (14.0.3)
+
+v14.0.2 release datacenter selection is not changed here. That pack's `release` build type still inherits `local` (`10.0.2.2:10443`) unless another change points it at `8.137.39.82:10443`.
+
+Welcome page 1 used `R.drawable.telegram_logo` as an image span, so the title stayed the Telegram wordmark, and the intro circle was `ThemeColors.TELEGRAM_COLOR` plus `intro_tg_plane`. The circle is now `#17171A` with the Tellomi mark. The title is the bundled Tellomi string.
+
+Login copy stayed English while the agreement line was Chinese because that line is composed in code and the other labels come from `LocaleController`. `getStringV2` now uses a `values-zh` / `values-zh-rCN` / `values-b+zh+Hans` string whenever the UI is Chinese and that string differs from English. 简体中文 and 繁體中文 are built-in language rows. `applyLanguage` sets the locale list, not only the deprecated `Configuration.locale` field.
+
+The proxy shield is the upstream top-right control. Help is Tellomi and was given the same corner, so the two drew on top of each other. Help moves left while the shield is visible.
+
+`auth.sendCode` had no client deadline. If the request never returns, the button clears after 20 seconds and shows an error. A response that is not `auth.authorization` is not cast. Phone OTP no longer runs the paper-plane progress animation after that art is hidden, which skipped `needHideProgress`. A wrong code is a line under the button. The calling code opens `CountrySelectActivity` and is not typed digit by digit. Password eyes sit on the right. Phone accounts get a bind-email row; email accounts get change-email through `LoginActivity.changeEmail`. Both phone rows use the upstream change-number intro.
+
+`APP_VERSION_NAME` is `14.0.3`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Page-1 title is text. Intro circle and mark are Tellomi. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Built-in Chinese rows. Locale list on apply. Chinese flavor strings replace the English bin. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Built-in locale, device-locale fallback, Chinese resource qualifiers. |
+| `TMessagesProj/tellomi/res/values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Same Chinese copy as `values-zh`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Help beside the proxy. sendCode timeout. Country list. OTP error line. Password eye. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Social icons use center-inside. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Bind phone uses the change-number intro. Bind or change email uses `changeEmail`. |
+| `gradle.properties` | `APP_VERSION_NAME=14.0.3`. |

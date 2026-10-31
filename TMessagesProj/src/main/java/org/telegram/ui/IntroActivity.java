@@ -34,9 +34,6 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Looper;
 import android.os.Parcelable;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -73,7 +70,6 @@ import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -113,7 +109,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private int lastPage = 0;
     private boolean justCreated = false;
     private boolean startPressed = false;
-    private Drawable logoDrawable;
     private CharSequence[] titles;
     private String[] messages;
     private int currentViewPagerPage;
@@ -162,11 +157,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public View createView(Context context) {
-        logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo).mutate();
-        logoDrawable.setBounds(0, dp(8.666f), dp(115), dp(35));
-        SpannableStringBuilder ssb = new SpannableStringBuilder(introString(R.string.TellomiIntroPage1Title, R.string.Page1Title));
-        ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        titles[0] = ssb;
+        // The stock page-1 title is the Telegram wordmark drawable. That image
+        // replaced the string, so the welcome screen kept saying Telegram.
+        titles[0] = introString(R.string.TellomiIntroPage1Title, R.string.Page1Title);
 
 
         actionBar.setAddToContainer(false);
@@ -781,10 +774,18 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_powerful_star, 18);
             loadTexture(R.drawable.intro_private_door, 19);
             loadTexture(R.drawable.intro_private_screw, 20);
-            loadTexture(R.drawable.intro_tg_plane, 21);
+            loadTexture(v -> {
+                int size = dp(ICON_HEIGHT_DP);
+                Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                Canvas c = new Canvas(bm);
+                Drawable mark = getParentActivity().getResources().getDrawable(R.drawable.tellomi_launcher_foreground).mutate();
+                mark.setBounds(0, 0, size, size);
+                mark.draw(c);
+                return bm;
+            }, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                paint.setColor(ThemeColors.TELEGRAM_COLOR); // It's logo color, it should not be colored by the theme
+                paint.setColor(0xFF17171A);
                 int size = dp(ICON_HEIGHT_DP);
                 Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(bm);
@@ -953,7 +954,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     private void updateColors(boolean fromTheme) {
         startMessagingButtonBackground.setColors(new int[]{getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButton2)});
-        logoDrawable.setColorFilter(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultTitle), 0.9f), PorterDuff.Mode.MULTIPLY);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         startMessagingButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));

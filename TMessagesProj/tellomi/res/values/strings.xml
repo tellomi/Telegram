@@ -68,5 +68,9 @@
     <string name="TellomiBindPhone">Bind phone number</string>
     <string name="TellomiBindPhoneHint">We will send a verification code to this number.</string>
     <string name="TellomiBindAction">Bind</string>
+    <string name="TellomiBindEmail">Bind email</string>
+    <string name="TellomiBindEmailHint">We will send a verification code to this address.</string>
+    <string name="TellomiChangeEmail">Change email</string>
+    <string name="TellomiAuthTimeout">Could not reach the server. Check the network and try again.</string>
     <string name="AccountAlreadyLoggedIn">This account is already signed in on this device.</string>
 </resources>
