@@ -4,39 +4,57 @@
  *
  * Copyright Nikolai Kudashov, 2013-2020.
  *
- * Tellomi flavor only. Login home, email, and OTP share one pink action
- * and gray field. There is no phone-password sign-in on this client:
- * auth.sendCode is the login, and the cloud password screen stays the
- * 2FA step that already follows a code. See UPSTREAM_PATCHES.md.
+ * Tellomi flavor only. Login, email, OTP, password, and sign-up share one
+ * action button and the owner-2026-10-31 layout. Brand color is black on
+ * white: a ready CTA is #111111 with white text, an empty CTA is #E5E5E5
+ * with gray text. Links stay #3478F6. See UPSTREAM_PATCHES.md.
  */
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Space;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.OutlineTextContainerView;
 
 public final class TellomiLoginChrome {
 
-    /** Saturated pink once the field is filled. Matches the owner mock. */
-    public static final int PINK = 0xFFFF3B5C;
-    /** Light pink while the field is still empty. */
-    public static final int PINK_IDLE = 0xFFFFB7C6;
+    /** Ready primary CTA. White label. */
+    public static final int CTA = 0xFF111111;
+    /** Empty primary CTA. Gray label. */
+    public static final int CTA_DISABLED = 0xFFE5E5E5;
+    public static final int CTA_DISABLED_TEXT = 0xFFA3A3A3;
     public static final int FIELD = 0xFFF3F4F6;
     public static final int LINK = 0xFF3478F6;
+    public static final int ERROR = 0xFFFF3B30;
+    public static final int TEXT = 0xFF111111;
+    /** Checked agreement box. */
+    public static final int CHECKED = 0xFF111111;
+    public static final int MUTED = 0xFF8E8E93;
+    public static final int LINE = 0xFFE6E6E6;
 
     private TellomiLoginChrome() {
     }
 
-    /** Gray rounded field. The floating outline label is cleared by the caller when it should not show. */
+    /** Gray rounded field. The caller clears the floating label when it should not show. */
     public static void grayField(OutlineTextContainerView outline) {
         if (outline == null) {
             return;
@@ -51,6 +69,125 @@ public final class TellomiLoginChrome {
         return button;
     }
 
+    /** Apple, Google, and any other third-party row that is not wired up. */
+    public static void showUnavailable(Context context) {
+        if (context == null) {
+            return;
+        }
+        Toast.makeText(context, LocaleController.getString(R.string.TellomiNotOpen), Toast.LENGTH_SHORT).show();
+    }
+
+    /** Dark pill used when an SMS code has been sent. Sits in the middle of the screen. */
+    public static void showSentPill(Context context, String text) {
+        if (!(context instanceof Activity) || text == null) {
+            return;
+        }
+        Activity activity = (Activity) context;
+        View content = activity.findViewById(android.R.id.content);
+        if (!(content instanceof ViewGroup)) {
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ViewGroup root = (ViewGroup) content;
+        TextView pill = new TextView(context);
+        pill.setText(text);
+        pill.setTextColor(Color.WHITE);
+        pill.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        int padH = AndroidUtilities.dp(16);
+        int padV = AndroidUtilities.dp(10);
+        pill.setPadding(padH, padV, padH, padV);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xE63A3A3C);
+        background.setCornerRadius(AndroidUtilities.dp(18));
+        pill.setBackground(background);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        pill.setAlpha(0f);
+        root.addView(pill, lp);
+        pill.animate().alpha(1f).setDuration(150).start();
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            pill.animate().alpha(0f).setDuration(180).withEndAction(() -> root.removeView(pill)).start();
+        }, 1600);
+    }
+
+    public static TextView swapLink(Context context, String label, View.OnClickListener click) {
+        TextView view = new TextView(context);
+        view.setText(label);
+        view.setTextColor(LINK);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        view.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+        view.setCompoundDrawablePadding(AndroidUtilities.dp(6));
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.tellomi_ic_swap, 0, 0, 0);
+        view.setPadding(0, AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+        view.setOnClickListener(click);
+        return view;
+    }
+
+    public static View orDivider(Context context, String label) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        View left = line(context);
+        View right = line(context);
+        TextView text = new TextView(context);
+        text.setText(label);
+        text.setTextColor(MUTED);
+        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        text.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
+        row.addView(left, new LinearLayout.LayoutParams(0, AndroidUtilities.dp(1), 1f));
+        row.addView(text, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        row.addView(right, new LinearLayout.LayoutParams(0, AndroidUtilities.dp(1), 1f));
+        return row;
+    }
+
+    /** Full-width social row. The label is centered; the icon sits on the left. */
+    public static View socialRow(Context context, int iconRes, String label, View.OnClickListener click) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(AndroidUtilities.dp(48));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(AndroidUtilities.dp(10));
+        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), LINE);
+        row.setBackground(background);
+        ImageView icon = new ImageView(context);
+        icon.setImageResource(iconRes);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(AndroidUtilities.dp(22), AndroidUtilities.dp(22));
+        iconLp.leftMargin = AndroidUtilities.dp(16);
+        row.addView(icon, iconLp);
+        TextView text = new TextView(context);
+        text.setText(label);
+        text.setTextColor(TEXT);
+        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        text.setGravity(Gravity.CENTER);
+        row.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        row.addView(new Space(context), new LinearLayout.LayoutParams(AndroidUtilities.dp(38), 1));
+        row.setOnClickListener(click);
+        return row;
+    }
+
+    public static ImageView circleButton(Context context, int iconRes, View.OnClickListener click) {
+        ImageView icon = new ImageView(context);
+        icon.setImageResource(iconRes);
+        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        int pad = AndroidUtilities.dp(12);
+        icon.setPadding(pad, pad, pad, pad);
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.OVAL);
+        background.setColor(Color.WHITE);
+        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), LINE);
+        icon.setBackground(background);
+        icon.setOnClickListener(click);
+        return icon;
+    }
+
+    private static View line(Context context) {
+        View view = new View(context);
+        view.setBackgroundColor(LINE);
+        return view;
+    }
+
     public static final class ActionButton extends FrameLayout {
         private final TextView labelView;
         private final ProgressBar progressView;
@@ -59,14 +196,14 @@ public final class TellomiLoginChrome {
         ActionButton(Context context, String label) {
             super(context);
             background = new GradientDrawable();
-            background.setColor(PINK_IDLE);
+            background.setColor(CTA_DISABLED);
             background.setCornerRadius(AndroidUtilities.dp(10));
             setBackground(background);
             setMinimumHeight(AndroidUtilities.dp(48));
 
             labelView = new TextView(context);
             labelView.setText(label);
-            labelView.setTextColor(0xFFFFFFFF);
+            labelView.setTextColor(CTA_DISABLED_TEXT);
             labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             labelView.setTypeface(AndroidUtilities.bold());
             labelView.setGravity(Gravity.CENTER);
@@ -82,9 +219,10 @@ public final class TellomiLoginChrome {
             labelView.setText(label);
         }
 
-        /** Hot pink when the form can be submitted, pale pink while it is empty. */
+        /** Black when the form can be submitted, light gray while the field is empty. Still clickable. */
         public void setReady(boolean ready) {
-            background.setColor(ready ? PINK : PINK_IDLE);
+            background.setColor(ready ? CTA : CTA_DISABLED);
+            labelView.setTextColor(ready ? Color.WHITE : CTA_DISABLED_TEXT);
         }
 
         public void setBusy(boolean busy) {

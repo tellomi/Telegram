@@ -68,7 +68,7 @@ public class SlideView extends LinearLayout {
 
     }
 
-    /** Tellomi login pages draw their own pink button. The floating arrow stays hidden. */
+    /** Tellomi login pages draw their own black CTA. The floating arrow stays hidden. */
     public void onTellomiProgress(boolean show) {
     }
 }

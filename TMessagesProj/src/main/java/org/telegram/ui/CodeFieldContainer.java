@@ -26,7 +26,7 @@ public class CodeFieldContainer extends LinearLayout {
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint tellomiFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    /** Login OTP: filled gray squares, pink stroke on the focused box. */
+    /** Login OTP: filled gray squares, black stroke on the focused box. */
     private boolean tellomiSquares;
     float strokeWidth;
     public boolean ignoreOnTextChange;
@@ -82,7 +82,7 @@ public class CodeFieldContainer extends LinearLayout {
                     if (codeField.getFocusedProgress() > 0.35f) {
                         paint.setStyle(Paint.Style.STROKE);
                         paint.setStrokeWidth(AndroidUtilities.dp(1.5f));
-                        paint.setColor(0xFFFF4B6A);
+                        paint.setColor(0xFF111111);
                         canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
                     }
                 } else {
