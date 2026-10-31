@@ -424,11 +424,11 @@ public class ConnectionsManager extends BaseController {
                         try {
                             resp = object.deserializeResponse(buff, magic, true);
                         } catch (Exception e2) {
-                            if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                                throw e2;
-                            }
+                            // Dropping the callback left login's progress button spinning with no dialog.
                             FileLog.fatal(e2);
-                            return;
+                            error = new TLRPC.TL_error();
+                            error.code = -500;
+                            error.text = "RESPONSE_DESERIALIZE_FAILED";
                         }
                     } else if (errorText != null) {
                         error = new TLRPC.TL_error();

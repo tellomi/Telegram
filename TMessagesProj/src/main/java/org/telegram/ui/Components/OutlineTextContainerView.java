@@ -50,7 +50,11 @@ public class OutlineTextContainerView extends FrameLayout {
     private final RectF rect = new RectF();
     private String mText = "";
     private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    /** Tellomi login fields: solid gray rounded rect, no floating label. */
+    private boolean tellomiFilled;
+    private int tellomiFillColor;
 
     private final SpringAnimation selectionSpring = new SpringAnimation(this, SELECTION_PROGRESS_PROPERTY);
     private float selectionProgress;
@@ -113,6 +117,19 @@ public class OutlineTextContainerView extends FrameLayout {
 
     public void setText(@NonNull String text) {
         this.mText = text;
+        invalidate();
+    }
+
+    /**
+     * Solid rounded field. The floating outline label is not drawn.
+     * Focus uses {@code selectionProgress} only as a flag for the stroke color set by the caller via {@link #updateColor}; the fill stays {@code fillColor}.
+     */
+    public void setTellomiFilled(int fillColor) {
+        tellomiFilled = true;
+        tellomiFillColor = fillColor;
+        fillPaint.setStyle(Paint.Style.FILL);
+        fillPaint.setColor(fillColor);
+        setPadding(0, 0, 0, 0);
         invalidate();
     }
 
@@ -192,6 +209,20 @@ public class OutlineTextContainerView extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        if (tellomiFilled) {
+            float radius = AndroidUtilities.dp(12);
+            rect.set(0, 0, getWidth(), getHeight());
+            fillPaint.setColor(tellomiFillColor);
+            canvas.drawRoundRect(rect, radius, radius, fillPaint);
+            outlinePaint.setStyle(Paint.Style.STROKE);
+            outlinePaint.setStrokeWidth(AndroidUtilities.dp(selectionProgress > 0.5f ? 1.5f : 1f));
+            outlinePaint.setColor(selectionProgress > 0.5f ? 0xFFFF4B6A : 0xFFE4E5E8);
+            float inset = outlinePaint.getStrokeWidth() / 2f;
+            rect.inset(inset, inset);
+            canvas.drawRoundRect(rect, radius, radius, outlinePaint);
+            return;
+        }
 
         float textOffset = textPaint.getTextSize() / 2f - AndroidUtilities.dp(1.75f);
         float topY = getPaddingTop() + textOffset;
