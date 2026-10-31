@@ -217,7 +217,7 @@ public class OutlineTextContainerView extends FrameLayout {
             canvas.drawRoundRect(rect, radius, radius, fillPaint);
             outlinePaint.setStyle(Paint.Style.STROKE);
             outlinePaint.setStrokeWidth(AndroidUtilities.dp(selectionProgress > 0.5f ? 1.5f : 1f));
-            outlinePaint.setColor(selectionProgress > 0.5f ? 0xFFFF4B6A : 0xFFE4E5E8);
+            outlinePaint.setColor(selectionProgress > 0.5f ? 0xFF111111 : 0xFFE6E6E6);
             float inset = outlinePaint.getStrokeWidth() / 2f;
             rect.inset(inset, inset);
             canvas.drawRoundRect(rect, radius, radius, outlinePaint);

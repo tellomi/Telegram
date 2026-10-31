@@ -160,7 +160,7 @@ In `BuildVars`:
 - `IS_BILLING_UNAVAILABLE` defaults to true.
 - `USE_CLOUD_STRINGS` and `CHECK_UPDATES` default to false.
 - `PLAYSTORE_APP_URL`, `HUAWEI_STORE_URL`, and the invite-SMS fallback (`ContactsController`, `NewContactBottomSheet`) use `TELLOMI_DOWNLOAD_URL` instead of `play.google.com` / `telegram.org/dl`.
-- `GOOGLE_AUTH_CLIENT_ID` is a non-functional placeholder (`000000000000-tellomi.apps.googleusercontent.com`). The server can still overwrite it from config. The Google sign-in button is still on the login screen.
+- `GOOGLE_AUTH_CLIENT_ID` is a non-functional placeholder (`000000000000-tellomi.apps.googleusercontent.com`). The server can still overwrite it from config. Apple, Google, and「其他登录方式」on the login screen toast「暂未开放」. They do not start a sign-in.
 
 `google-services.json` in each app module gained client entries for the Tellomi package names so the Google Services plugin can configure the build. The Firebase project id, API key, and OAuth client inside those entries are still the ones upstream ships for `org.telegram.messenger`. **FCM push will not arrive** until you replace `google-services.json` with one from a project that contains `app.tellomi.chat`. The old `org.telegram.messenger` clients were left in the file so the library module's plugin still matches namespace `org.telegram.messenger`.
 

@@ -119,12 +119,12 @@ The package job (debug or release) passes `-PAPP_VERSION_CODE=$((7238 + github.r
 
 ## Sign-up agreement checkbox
 
-No in-app terms popup (the server returns `help.termsOfServiceUpdateEmpty` and `popup=false`). The sign-up (name) screen's terms line becomes `☐ 我已阅读并同意《用户服务协议》和《隐私政策》`; the links open https://tellomi.cn/legal/terms/ and https://tellomi.cn/legal/privacy/, tapping the rest toggles the box, and Continue does nothing (the line shakes) until it is checked.
+The server terms popup stays off (`popup=false`). The sign-up screen uses the same checkbox and「用户协议及隐私政策」modal as login. Links open https://tellomi.cn/legal/terms/ and https://tellomi.cn/legal/privacy/ in the system browser. Agree checks the box and continues.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | New (Tellomi file in `src/main` so every flavor compiles). Builds the checkbox text and state. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | One field `tellomiAgreement`; constructor calls `tellomiAgreement.install(privacyView)` after the stock terms text; `onNextPressed` returns early unless `tellomiAgreement.checkAgreed()`. The two links open in the system browser (`Browser.openUrlInSystemBrowser`), not an in-app page. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Checkbox, modal, and the legal links. Lives in `src/main` so every flavor compiles. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | `tellomiAgreement.install(privacyView)` replaces the stock terms line. Continue while unchecked opens the modal. |
 
 ## Emoji blocklist
 
@@ -148,48 +148,52 @@ Client-side list. The built-in default is the Taiwan flag (U+1F1F9 U+1F1FC). `he
 
 `LocaleController.getString(int)` passes a null key. Flavor strings in `tellomi/res` are not packed into `localization_*.bin` (`TelegramStringsTask` only reads `src/main/res`). A miss therefore rendered as the literal `LOC_ERR:null`. That string was the email link under the phone field (`TellomiLoginWithEmail`, color `windowBackgroundWhiteBlueText4`), including while `auth.sendCode` progress was on the arrow button. The FAB spinner is `needShowProgress` for that RPC. It hides when the callback runs. A spinner that never stops means the RPC has not completed (the server has not answered) or the response could not be parsed. A parse failure used to return before the callback, so the button kept spinning and no dialog was shown. Unknown `auth.sendCode` errors were also dropped: `AlertsCreator.processError` has no branch for that request.
 
-There is no phone-password sign-in. Login is `auth.sendCode` (SMS or email). The cloud password screen is only the existing 2FA step after a code (`SESSION_PASSWORD_NEEDED`). The product「密码登录」entry is not shown.
+Owner mockups `login-ui-ref/owner-2026-10-31` are the layout. Brand color is not the pink in those shots. A ready CTA is `#111111` with white text. An empty CTA is `#E5E5E5` with gray text. Links are `#3478F6`. Errors stay red. A checked agreement box is black.
+
+Login is still `auth.sendCode` (SMS or email). The phone and email password screens are in the layout. This client has no `auth.*` password-login RPC, so 登录 on those screens toasts「暂未开放」, the same as Apple, Google,「其他登录方式」, and「找回账号」. It does not show a fake「账号或密码错误」.「邮箱登录」opens the email screen. The cloud password screen is still the 2FA step after a code (`SESSION_PASSWORD_NEEDED`).
+
+The agreement checkbox is on every login and sign-up screen. Submitting while it is clear opens「用户协议及隐私政策」. Agree checks the box and continues. Disagree only dismisses. Phone home includes「运营商服务协议」(`https://tellomi.cn/legal`). Email and password screens link only terms and privacy (`https://tellomi.cn/legal/terms/`, `https://tellomi.cn/legal/privacy/`). Links open in the system browser. The line is a `SpannableString`, so the circle and the links receive the tap.
 
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | After the bin lookup, `getStringV2` reads `Resources.getString` for a real resource id. A null key no longer becomes `LOC_ERR:null`; the fallback is `ErrorOccurred` or "An error occurred." |
 | `TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java` | A response that fails to deserialize is delivered as `TL_error` `-500` `RESPONSE_DESERIALIZE_FAILED` instead of dropping the callback. |
-| `TMessagesProj/src/main/java/org/telegram/ui/Components/OutlineTextContainerView.java` | `setTellomiFilled` draws a gray rounded field and skips the floating label. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/OutlineTextContainerView.java` | `setTellomiFilled` draws a gray rounded field. Focus stroke is `#111111`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/SlideView.java` | `onTellomiProgress` so a page can spin its own button. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Pink action button. Idle `#FFB7C6`, filled `#FF3B5C`, 10dp corners. |
-| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | `setTellomiSquares` draws login OTP boxes as filled gray squares with a pink focus stroke. The count follows the server code length. |
-| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Circle checkbox. Blue links open terms and privacy in the system browser. Phone home adds a short carrier note. No in-app dialog. |
-| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, email, and OTP copy, including the sent-code toast and the resend countdown. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home: title「登录发现更多精彩」, `+86` in a gray field (country card hidden, code still editable),「邮箱登录」link, checkbox opening `https://tellomi.cn/legal/terms/` and `…/privacy/`, pink「验证并登录」. No confirm sheet, no in-app terms popup, no Apple/Google row, no「密码登录」. Email home:「请输入邮箱地址」and the auto-register subtitle. OTP (SMS and email):「请输入验证码」,「验证码已发送至 …」, digit boxes, pink「登录」,「收不到验证码？」. Nickname sign-up uses the same button and field, last name hidden, no password. A failed or empty `auth.sendCode` shows `ErrorOccurred` plus the server text when there is one. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | CTA `#111111` / disabled `#E5E5E5`, social rows, circle buttons, swap link, sent-code pill,「暂未开放」toast. |
+| `TMessagesProj/tellomi/res/drawable/tellomi_ic_*.xml` | Swap, Apple, mail, more, and eye icons for this flow. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | `setTellomiSquares` draws login OTP boxes as filled gray squares with a black focus stroke. The count follows the server code length (the mock shows 4; a 5-digit server code still fits). |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Black checkbox. Agreement modal. Terms, privacy, and carrier links. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Login, password, email, OTP, and agreement copy. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home:「登录发现更多精彩」, `+86`,「密码登录」, full-width Apple / Google / 邮箱 / 其他 rows,「找回账号」, bottom carrier checkbox. Phone password and email password: back arrow, password field (eye on the left for phone, right for email), circle icons. 登录 on those screens toasts「暂未开放」. Email code entry:「请输入邮箱地址」. SMS OTP: square boxes,「收不到验证码？」, resend countdown,「验证码发送成功」pill. Email OTP: single field,「输入验证码」,「邮件已发送至 …」, red「请输入正确的验证码」. Nickname sign-up uses the same CTA and checkbox. |
 
 ## Email OTP login
 
-Login home stays phone, calling code `86`. A text button switches to email and back. Email is a code only: there is no password field and no Google button on that path. `auth.sendCode` puts the address in `phone_number`. `auth.sentCodeTypeEmailCode` reuses `LoginActivityEmailCodeView`. An unregistered address comes back as `auth.authorizationSignUpRequired`, then the existing name screen (nickname only, last name hidden) calls `auth.signUp` with that same address. Nothing on this path reads the SIM or asks for phone permissions. The in-app terms popup is forced off; the agreement checkbox from the section above is the gate, and its links stay `https://tellomi.cn/legal/terms/` and `https://tellomi.cn/legal/privacy/`.
+Login home stays phone, calling code `86`.「邮箱登录」opens the email screen. `auth.sendCode` puts the address in `phone_number`. `auth.sentCodeTypeEmailCode` reuses `LoginActivityEmailCodeView`, which for an email-start login shows one field instead of digit boxes. An unregistered address comes back as `auth.authorizationSignUpRequired`, then the name screen (nickname only, last name hidden) calls `auth.signUp` with that same address. Nothing on this path reads the SIM or asks for phone permissions.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailLogin.java` | New (tellomi flavor). Validates the address, stamps it on the auth bundle, and fills a missing email pattern or code length. |
-| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` | Switch labels, email field, invalid/banned email, nickname. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `PhoneView` | Email field and switch, login mode only. `onNextPressed` sends `auth.sendCode` with the email and skips the phone confirmation and SIM permission prompts. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailLogin.java` | Validates the address, stamps it on the auth bundle, and fills a missing email pattern or code length. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `PhoneView` | Email field, password field, and the screen switch. `onNextPressed` sends `auth.sendCode` with the email and skips the phone confirmation and SIM permission prompts. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `fillNextCodeParams` | Email-start `sentCodeTypeEmailCode` keeps Google sign-in off and uses the typed address when the server pattern is empty. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityEmailCodeView` | Same screen as a phone account's email code. Email-start hides "can't access this email" and carries the address through resend into sign-up. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | Email sign-up shows one nickname, puts the address in `auth.signUp.phone_number`, and does not show the terms popup. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityEmailCodeView` | Email-start uses one numeric field,「邮件已发送至」, and the red wrong-code line. A phone account's email code still uses the digit boxes. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` `LoginActivityRegisterView` | Email sign-up shows one nickname, puts the address in `auth.signUp.phone_number`, and gates on the agreement checkbox and modal. |
 
 ## Agreement taps, login language, and intro
 
-The agreement line was a `SpannableStringBuilder`. That class is `Editable`, so `TextView.setText` installed an editor and the circle, 用户协议, 隐私政策, and the carrier link never received the click. The line is now a `SpannableString`. Phone home also links 运营商服务协议 to `https://tellomi.cn/legal`. Terms stay `https://tellomi.cn/legal/terms/` and privacy stays `https://tellomi.cn/legal/privacy/`. The pink button, gray fields, and circle checkbox are unchanged.
+The agreement line is a `SpannableString`. A `SpannableStringBuilder` is `Editable`, and `TextView.setText` then installs an editor that consumes the touch before the circle and the legal links run. Phone home links 运营商服务协议 to `https://tellomi.cn/legal`. Terms stay `https://tellomi.cn/legal/terms/` and privacy stays `https://tellomi.cn/legal/privacy/`.
 
-Login copy in `values/strings.xml` was Simplified Chinese, so an English system still showed Chinese. Those defaults are English. `values-zh` is the Chinese copy. `LocaleController` already selects `zh-hans` for a mainland Chinese system (`zh`, `zh-Hans`, `zh-CN`, `zh-SG`) until the user picks another language, and that sets the resource locale, so the login screens follow it.
+Login copy in `values/strings.xml` is English. `values-zh` is the Chinese copy. `LocaleController` selects `zh-hans` for a mainland Chinese system (`zh`, `zh-Hans`, `zh-CN`, `zh-SG`) until the user picks another language, and that sets the resource locale, so these screens follow it. `TellomiDefaults.uiIsChinese()` picks the composed agreement sentence.
 
-The intro carousel reads `localization_en.bin` by resource id, which wins over `values-zh`. On a Chinese UI it now reads the bundled `TellomiIntro*` strings instead. Other languages stay on the bin. No `versionName` or `versionCode` change.
+The intro carousel reads `localization_en.bin` by resource id, which wins over `values-zh`. On a Chinese UI it reads the bundled `TellomiIntro*` strings instead. Other languages stay on the bin. No `versionName` or `versionCode` change.
 
 Checked and left alone: no user-facing `Teamgram` or `@teamgram` string in login, auth, session, or profile UI (the word is only in docs, the server PEM comment, and a native comment). Last-online still goes through `LocaleController.formatUserStatus` / `formatDateOnline` (`formatterYear` is `dd.MM.yy`). Status `0` is "a long time ago", and the negative sentinels are "recently" / "within a week" / "within a month". Nothing formats a year as `year - 2000`, so a zero status does not render `01/01/-30`.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | `SpannableString` so taps reach the circle and the links. Phone home links 运营商服务协议 to `https://tellomi.cn/legal`. Chinese vs English follows `TellomiDefaults.uiIsChinese()`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | `SpannableString` so taps reach the circle and the links. Phone home links 运营商服务协议 to `https://tellomi.cn/legal`. Chinese vs English follows `TellomiDefaults.uiIsChinese()`. The unchecked submit still opens the agreement modal. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | The sign-up terms view is not given an `Editable` buffer before the checkbox replaces it. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `uiIsChinese()` and `chineseResource()` for bundled Simplified Chinese that must not come from the English bin. |
 | `TMessagesProj/tellomi/res/values/strings.xml` | English login copy, and English intro fallbacks. |
-| `TMessagesProj/tellomi/res/values-zh/strings.xml` | Bundled intro carousel copy. Login copy was already Chinese. |
+| `TMessagesProj/tellomi/res/values-zh/strings.xml` | Chinese login copy and the bundled intro carousel. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | When the UI language is Chinese, titles, messages, and Start use `TellomiIntro*`. |
