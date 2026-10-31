@@ -111,6 +111,11 @@ GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` do
 | --- | --- |
 | `TMessagesProj/build.gradle` | `-PTELLOMI_PREBUILT_JNI=<dir>` skips CMake and packages `<dir>/<abi>/libtmessages.49.so`. Unset, the CMake build is unchanged. |
 | `TMessagesProj/jni/CMakeLists.txt` | Includes `TMessagesProj/tellomi/ci/native-ci.cmake` only when `TELLOMI_CI_NATIVE` is set (ccache and ninja job pools). |
+| `.github/workflows/android-apk.yml` | Package job passes `-PAPP_VERSION_CODE`. Gradle sources and `gradle.properties` stay as they are. |
+
+`TMessagesProj_App/build.gradle` sets the afat manifest `versionCode` to `APP_VERSION_CODE * 10 + 9`. Checked-in `APP_VERSION_CODE` is 7237, so that code is 72379. Release `v13.1.1-72379-ea5aa5b` shipped 72379, and Android will not install another build with the same code over it.
+
+The package job (debug or release) passes `-PAPP_VERSION_CODE=$((7238 + github.run_number))`. Gradle command-line `-P` overrides `gradle.properties` for that invocation. The afat APK's `versionCode` is therefore `72389 + github.run_number * 10`. 72389 is the next code above 72379 whose ones digit is still 9 (this tree treats 9 as the universal APK; 1 and 2 mean a store build). `github.run_number` increases on every run of Android APK, including pushes, pull requests, and manual runs, so each packaged APK is a higher code than the last. The job reads the code back with `aapt dump badging` and fails if it is not that value. A local `./gradlew` without `-PAPP_VERSION_CODE` still packages 72379.
 
 ## Sign-up agreement checkbox
 

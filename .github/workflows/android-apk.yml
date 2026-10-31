@@ -405,8 +405,36 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
+          # Next afat versionCode above the shipped 72379. The ones digit is
+          # the ABI marker (afat universal = 9). Each run adds 10.
+          TELLOMI_VERSION_CODE_BASE: "72389"
         run: |
           set -euo pipefail
+          # Manifest versionCode = APP_VERSION_CODE * 10 + abiVersionCode.
+          # Checked-in APP_VERSION_CODE=7237 packages the afat APK as 72379,
+          # so a new build could not install over v13.1.1-72379. -P overrides
+          # gradle.properties for this job only.
+          run="${GITHUB_RUN_NUMBER:?}"
+          case "$run" in
+            ''|*[!0-9]*) echo "GITHUB_RUN_NUMBER is not an integer: $run" >&2; exit 1 ;;
+          esac
+          base="${TELLOMI_VERSION_CODE_BASE:?}"
+          manifest=$((base + run * 10))
+          if [ "$manifest" -le 72379 ] || [ $((manifest % 10)) -ne 9 ]; then
+            echo "refusing versionCode $manifest" >&2
+            exit 1
+          fi
+          app_version_code=$(( (manifest - 9) / 10 ))
+          if [ $((app_version_code * 10 + 9)) -ne "$manifest" ]; then
+            echo "APP_VERSION_CODE $app_version_code does not encode versionCode $manifest" >&2
+            exit 1
+          fi
+          file_code=$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)
+          if [ -z "$file_code" ] || [ "$app_version_code" -le "$file_code" ]; then
+            echo "CI APP_VERSION_CODE $app_version_code is not above gradle.properties (${file_code:-missing})" >&2
+            exit 1
+          fi
+          echo "versionCode: $manifest (APP_VERSION_CODE=$app_version_code, run=$run)" | tee -a "$GITHUB_STEP_SUMMARY"
           mkdir -p "$HOME/.gradle"
           cat > "$HOME/.gradle/gradle.properties" <<'EOF'
           org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
@@ -416,6 +444,7 @@ jobs:
           org.gradle.daemon=true
           EOF
           ./gradlew ":TMessagesProj_App:${GRADLE_TASK}" \
+            -PAPP_VERSION_CODE="$app_version_code" \
             -PTELLOMI_PREBUILT_JNI="$GITHUB_WORKSPACE/tellomi-jni" \
             -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g" \
             --stacktrace \
@@ -437,9 +466,22 @@ jobs:
           done
           out="tellomi-${BUILD_TYPE}.apk"
           cp "$apk" "$out"
+          aapt="${ANDROID_SDK_ROOT:?}/build-tools/36.0.0/aapt"
+          if [ ! -x "$aapt" ]; then
+            echo "aapt not found at $aapt" >&2
+            exit 1
+          fi
+          badging=$("$aapt" dump badging "$out")
+          packaged=$(printf '%s\n' "$badging" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p")
+          if [ "$packaged" != "$manifest" ]; then
+            echo "APK versionCode '${packaged:-missing}' != $manifest" >&2
+            printf '%s\n' "$badging" | head -n 1 >&2 || true
+            exit 1
+          fi
           bytes=$(stat -c '%s' "$out")
           echo "APK: $out" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Size: ${bytes} bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "versionCode: $packaged" | tee -a "$GITHUB_STEP_SUMMARY"
           ls -lh "$out"
 
       - name: Upload APK
