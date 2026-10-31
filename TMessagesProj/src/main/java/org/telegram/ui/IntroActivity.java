@@ -62,6 +62,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.Intro;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.TellomiDefaults;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -134,28 +135,36 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
         titles = new CharSequence[]{
                 null,
-                LocaleController.getString(R.string.Page2Title),
-                LocaleController.getString(R.string.Page3Title),
-                LocaleController.getString(R.string.Page5Title),
-                LocaleController.getString(R.string.Page4Title),
-                LocaleController.getString(R.string.Page6Title)
+                introString(R.string.TellomiIntroPage2Title, R.string.Page2Title),
+                introString(R.string.TellomiIntroPage3Title, R.string.Page3Title),
+                introString(R.string.TellomiIntroPage5Title, R.string.Page5Title),
+                introString(R.string.TellomiIntroPage4Title, R.string.Page4Title),
+                introString(R.string.TellomiIntroPage6Title, R.string.Page6Title)
         };
         messages = new String[]{
-                LocaleController.getString(R.string.Page1Message),
-                LocaleController.getString(R.string.Page2Message),
-                LocaleController.getString(R.string.Page3Message),
-                LocaleController.getString(R.string.Page5Message),
-                LocaleController.getString(R.string.Page4Message),
-                LocaleController.getString(R.string.Page6Message)
+                introString(R.string.TellomiIntroPage1Message, R.string.Page1Message),
+                introString(R.string.TellomiIntroPage2Message, R.string.Page2Message),
+                introString(R.string.TellomiIntroPage3Message, R.string.Page3Message),
+                introString(R.string.TellomiIntroPage5Message, R.string.Page5Message),
+                introString(R.string.TellomiIntroPage4Message, R.string.Page4Message),
+                introString(R.string.TellomiIntroPage6Message, R.string.Page6Message)
         };
         return true;
+    }
+
+    /** Chinese UI uses the bundled flavor strings. Other languages stay on the localization bin. */
+    private static String introString(int chineseRes, int stockRes) {
+        if (TellomiDefaults.uiIsChinese()) {
+            return TellomiDefaults.chineseResource(chineseRes);
+        }
+        return LocaleController.getString(stockRes);
     }
 
     @Override
     public View createView(Context context) {
         logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo).mutate();
         logoDrawable.setBounds(0, dp(8.666f), dp(115), dp(35));
-        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString(R.string.Page1Title));
+        SpannableStringBuilder ssb = new SpannableStringBuilder(introString(R.string.TellomiIntroPage1Title, R.string.Page1Title));
         ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         titles[0] = ssb;
 
@@ -372,7 +381,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
         };
         ScaleStateListAnimator.apply(startMessagingButton, .02f, 1.2f);
-        startMessagingButton.setText(LocaleController.getString(R.string.StartMessaging));
+        startMessagingButton.setText(introString(R.string.TellomiIntroStart, R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTypeface(AndroidUtilities.bold());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);

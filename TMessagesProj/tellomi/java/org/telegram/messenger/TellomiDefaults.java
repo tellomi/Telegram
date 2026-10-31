@@ -10,6 +10,8 @@
 
 package org.telegram.messenger;
 
+import android.content.res.Configuration;
+
 import java.util.Locale;
 
 public final class TellomiDefaults {
@@ -62,6 +64,42 @@ public final class TellomiDefaults {
         info.pathToFile = "remote";
         info.serverIndex = Integer.MAX_VALUE;
         return info;
+    }
+
+    /**
+     * True when the active UI language is Chinese. A saved language wins.
+     * Before that, {@link LocaleController} has already mapped a Chinese system
+     * locale (mainland {@code zh} / {@code zh-Hans} / {@code zh-CN} included) onto
+     * {@code zh-hans}.
+     */
+    public static boolean uiIsChinese() {
+        Locale locale = null;
+        try {
+            LocaleController controller = LocaleController.getInstance();
+            locale = controller.getCurrentLocale();
+            if (locale == null) {
+                locale = controller.getSystemDefaultLocale();
+            }
+        } catch (Throwable ignored) {
+        }
+        if (locale == null) {
+            locale = Locale.getDefault();
+        }
+        return locale != null && "zh".equalsIgnoreCase(locale.getLanguage());
+    }
+
+    /**
+     * A flavor string in Simplified Chinese. The English localization bin is not
+     * consulted: intro copy lives there and would stay English on a Chinese phone.
+     */
+    public static String chineseResource(int resId) {
+        if (resId == 0 || ApplicationLoader.applicationContext == null) {
+            return "";
+        }
+        Configuration config = new Configuration(ApplicationLoader.applicationContext.getResources().getConfiguration());
+        config.setLocale(Locale.SIMPLIFIED_CHINESE);
+        String value = ApplicationLoader.applicationContext.createConfigurationContext(config).getResources().getString(resId);
+        return TellomiBrand.rewrite(value);
     }
 
     /** True when this locale's strings should be read from the downloaded android langpack. */

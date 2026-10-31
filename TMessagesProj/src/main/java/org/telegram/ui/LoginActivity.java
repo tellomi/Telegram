@@ -59,6 +59,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -8605,7 +8606,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 text.replace(index1, index1 + 1, "");
                 text.setSpan(new LinkSpan(), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-            privacyView.setText(text);
+            // A SpannableStringBuilder is Editable. setText would install an editor that
+            // eats taps before the agreement's links run. install() draws the checkbox.
+            privacyView.setText(new SpannableString(text), TextView.BufferType.SPANNABLE);
             tellomiAgreement.install(privacyView); // Tellomi: signup agreement checkbox replaces the terms text
         }
 
