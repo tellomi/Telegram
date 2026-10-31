@@ -1794,8 +1794,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     launch.showMainTabsReplacingStack(false);
                 }
             });
-            builder.setCancelable(false);
-            showDialog(builder.create());
+            Dialog dialog = showDialog(builder.create());
+            if (dialog != null) {
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.setCancelable(false);
+            }
             return;
         }
         MessagesController.getInstance(currentAccount).cleanup();
