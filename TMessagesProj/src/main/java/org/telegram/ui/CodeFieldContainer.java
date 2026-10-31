@@ -77,12 +77,13 @@ public class CodeFieldContainer extends LinearLayout {
                 }
 
                 if (tellomiSquares) {
-                    tellomiFillPaint.setColor(0xFFF3F4F6);
+                    tellomiFillPaint.setColor(TellomiLoginChrome.fieldFill());
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), tellomiFillPaint);
+                    codeField.setTextColor(TellomiLoginChrome.text());
                     if (codeField.getFocusedProgress() > 0.35f) {
                         paint.setStyle(Paint.Style.STROKE);
                         paint.setStrokeWidth(AndroidUtilities.dp(1.5f));
-                        paint.setColor(0xFF111111);
+                        paint.setColor(TellomiLoginChrome.focusStroke());
                         canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), paint);
                     }
                 } else {

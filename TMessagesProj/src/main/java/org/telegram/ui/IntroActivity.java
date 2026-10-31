@@ -386,7 +386,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         startMessagingButton.setTypeface(AndroidUtilities.bold());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         startMessagingButton.setPadding(dp(34), 0, dp(34), 0);
-        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 76));
+        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 32));
         startMessagingButton.setOnClickListener(view -> {
             if (startPressed) {
                 return;
@@ -403,6 +403,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         switchLanguageTextView = new TextView(context);
         switchLanguageTextView.setGravity(Gravity.CENTER);
         switchLanguageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        // The welcome screen keeps a single start button. "Continue in English" is not offered.
+        switchLanguageTextView.setVisibility(View.GONE);
         frameContainerView.addView(switchLanguageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
         switchLanguageTextView.setOnClickListener(v -> {
             if (startPressed || localeInfo == null) {
@@ -451,6 +453,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
+        if (leaveIntroIfAlreadySignedIn()) {
+            return;
+        }
         if (justCreated) {
             if (LocaleController.isRTL) {
                 viewPager.setCurrentItem(6);
@@ -485,62 +490,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void checkContinueText() {
-        LocaleController.LocaleInfo englishInfo = null;
-        LocaleController.LocaleInfo systemInfo = null;
-        LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
-        String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
-        if (systemLang == null || systemLang.equals("en") && LocaleController.getInstance().getSystemDefaultLocale().getLanguage() != null && !LocaleController.getInstance().getSystemDefaultLocale().getLanguage().equals("en")) {
-            systemLang = LocaleController.getInstance().getSystemDefaultLocale().getLanguage();
-            if (systemLang == null) {
-                systemLang = "en";
-            }
+        // The welcome screen keeps one button. "Continue in English" is not shown.
+        if (switchLanguageTextView != null) {
+            switchLanguageTextView.setVisibility(View.GONE);
         }
-
-        String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
-        String alias = LocaleController.getLocaleAlias(arg);
-        for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
-            LocaleController.LocaleInfo info = LocaleController.getInstance().languages.get(a);
-            if (info.shortName.equals("en")) {
-                englishInfo = info;
-            }
-            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || info.shortName.equals(alias)) {
-                systemInfo = info;
-            }
-            if (englishInfo != null && systemInfo != null) {
-                break;
-            }
-        }
-        if (englishInfo == null || systemInfo == null || englishInfo == systemInfo) {
-            return;
-        }
-        TLRPC.TL_langpack_getStrings req = new TLRPC.TL_langpack_getStrings();
-        if (systemInfo != currentLocaleInfo) {
-            req.lang_code = systemInfo.getLangCode();
-            localeInfo = systemInfo;
-        } else {
-            req.lang_code = englishInfo.getLangCode();
-            localeInfo = englishInfo;
-        }
-        req.keys.add("ContinueOnThisLanguage");
-        String finalSystemLang = systemLang;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (response instanceof Vector) {
-                Vector vector = (Vector) response;
-                if (vector.objects.isEmpty()) {
-                    return;
-                }
-                final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
-                if (string instanceof TLRPC.TL_langPackString) {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (!destroyed) {
-                            switchLanguageTextView.setText(string.value);
-                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
-                        }
-                    });
-                }
-            }
-        }, ConnectionsManager.RequestFlagWithoutLogin);
     }
 
     @Override
@@ -553,6 +506,35 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     public IntroActivity setOnLogout() {
         isOnLogout = true;
         return this;
+    }
+
+    /**
+     * Add Account used to land here when the first login left this welcome screen
+     * under the main UI. There is no back button, so the user was stuck.
+     * If any account is already signed in, leave for that account.
+     */
+    private boolean leaveIntroIfAlreadySignedIn() {
+        if (UserConfig.getActivatedAccountsCount() <= 0 || !(getParentActivity() instanceof LaunchActivity)) {
+            return false;
+        }
+        LaunchActivity activity = (LaunchActivity) getParentActivity();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (getParentActivity() instanceof LaunchActivity) {
+                ((LaunchActivity) getParentActivity()).showMainTabsReplacingStack(false);
+            }
+        });
+        return activity != null;
+    }
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
+        if (UserConfig.getActivatedAccountsCount() > 0) {
+            if (invoked && getParentActivity() instanceof LaunchActivity) {
+                ((LaunchActivity) getParentActivity()).showMainTabsReplacingStack(false);
+            }
+            return false;
+        }
+        return super.onBackPressed(invoked);
     }
 
     @Override

@@ -18,6 +18,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.TellomiLoginChrome;
 
 public class OutlineTextContainerView extends FrameLayout {
     private final static int PADDING_LEFT = 14, PADDING_TEXT = 4;
@@ -217,7 +218,7 @@ public class OutlineTextContainerView extends FrameLayout {
             canvas.drawRoundRect(rect, radius, radius, fillPaint);
             outlinePaint.setStyle(Paint.Style.STROKE);
             outlinePaint.setStrokeWidth(AndroidUtilities.dp(selectionProgress > 0.5f ? 1.5f : 1f));
-            outlinePaint.setColor(selectionProgress > 0.5f ? 0xFF111111 : 0xFFE6E6E6);
+            outlinePaint.setColor(selectionProgress > 0.5f ? TellomiLoginChrome.focusStroke() : TellomiLoginChrome.lineColor());
             float inset = outlinePaint.getStrokeWidth() / 2f;
             rect.inset(inset, inset);
             canvas.drawRoundRect(rect, radius, radius, outlinePaint);

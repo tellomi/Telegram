@@ -105,13 +105,13 @@ public class TellomiSignUpAgreement {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(22), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.WHITE);
+        background.setColor(TellomiLoginChrome.pageFill());
         background.setCornerRadius(AndroidUtilities.dp(16));
         card.setBackground(background);
 
         TextView title = new TextView(context);
         title.setText(LocaleController.getString(R.string.TellomiAgreeTitle));
-        title.setTextColor(TellomiLoginChrome.TEXT);
+        title.setTextColor(TellomiLoginChrome.text());
         title.setTextSize(17);
         title.setTypeface(AndroidUtilities.bold());
         title.setGravity(Gravity.CENTER);
@@ -248,9 +248,9 @@ public class TellomiSignUpAgreement {
                 float r = AndroidUtilities.dp(7);
                 if (checked) {
                     box.setStyle(Paint.Style.FILL);
-                    box.setColor(TellomiLoginChrome.CHECKED);
+                    box.setColor(TellomiLoginChrome.checkedFill());
                     canvas.drawCircle(cx, cy, r, box);
-                    box.setColor(Color.WHITE);
+                    box.setColor(TellomiLoginChrome.checkedMark());
                     box.setStyle(Paint.Style.STROKE);
                     box.setStrokeWidth(AndroidUtilities.dp(1.4f));
                     box.setStrokeCap(Paint.Cap.ROUND);

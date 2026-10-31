@@ -16127,7 +16127,16 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void performLogout(int type) {
         if (type == 1) {
-            GramWalletStorage.wipeForUser(ApplicationLoader.applicationContext, currentAccount, getUserConfig().getClientUserId());
+            try {
+                GramWalletStorage.wipeForUser(ApplicationLoader.applicationContext, currentAccount, getUserConfig().getClientUserId());
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+            try {
+                org.telegram.ui.TellomiAccount.clearEmail(currentAccount);
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
             unregistedPush();
             TLRPC.TL_auth_logOut req = new TLRPC.TL_auth_logOut();
             getConnectionsManager().sendRequest(req, (response, error) -> {

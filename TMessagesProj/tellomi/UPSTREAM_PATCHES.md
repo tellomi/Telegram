@@ -197,3 +197,36 @@ Checked and left alone: no user-facing `Teamgram` or `@teamgram` string in login
 | `TMessagesProj/tellomi/res/values/strings.xml` | English login copy, and English intro fallbacks. |
 | `TMessagesProj/tellomi/res/values-zh/strings.xml` | Chinese login copy and the bundled intro carousel. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | When the UI language is Chinese, titles, messages, and Start use `TellomiIntro*`. |
+
+## Auth chrome, OTP home, add account, logout (owner 14.0.1)
+
+Welcome, login, and OTP stayed English on a Chinese phone because a later configuration callback copied the activity locale (English) over `currentLocale` after `zh-hans` was chosen. Settings Chinese worked only after the user saved a language. Built-in flavor strings now win over the English bin when the device locale is Chinese and no language is saved. The welcome screen has one button,「开始使用」.「使用英文继续」is not shown.
+
+The first successful code no longer stacks the main UI on top of the welcome screen. That leftover intro is what Add Account opened when only one account existed, and it has no back. Add Account removes any intro still in the stack and opens the login flow for a free slot. If the welcome screen is showing while an account is already signed in, it leaves for the main UI.
+
+Signing in an account that is already on the device switches to that account and shows「该账号已登录」instead of keeping a second session. Email used at sign-in is remembered for the account page and the switcher. The account page shows the phone when there is one, then the email, and「绑定手机号」when the phone is empty (existing +86 change-number OTP, button「绑定」). The switcher label is the phone, otherwise `a***@x.com`. Logout confirms immediately for email and phone sessions.
+
+Login controls follow the light palette (`#111111` / `#E5E5E5` / `#3478F6`) and flip the primary button and field text in dark mode so they stay distinct from the page.
+
+Deferred: a full profile layout for email, binding a phone as a separate product screen beyond the existing change-number OTP, and locales other than zh/en.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Device locale comes from `Resources.getSystem()`, not the locale the app already installed. Staying on `zh-hans` no longer lets the activity configuration replace `currentLocale`. `getStringV2` prefers a real `values-zh` string over the English bin. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Hides「Continue in English」. One start button. If an account is already signed in, the welcome screen leaves for the main UI and back is not a trap. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | `showMainTabsReplacingStack` drops the welcome screen after sign-in. An empty selected slot does not open the intro when another account is live. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | OTP success replaces the stack with the main UI. An already-signed-in user id switches instead of duplicating. Bind-phone uses the +86 code flow with「绑定」. Login chrome colors follow night mode. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/OutlineTextContainerView.java` | Filled-field stroke uses the theme-aware focus color. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | OTP squares and the digits inside them follow the same light/dark contrast. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | Agreement card and the checked box stay visible in dark mode. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Account page: phone, then email, then「绑定手机号」. Logout confirms immediately. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LogoutActivity.java` | Logout no longer waits on a wallet fetch that did not finish for email sessions. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Logout still clears local state if the wallet wipe throws, and forgets a saved sign-in email. |
+| `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | Add Account goes through the shared helper. Switcher label is phone or a masked email. |
+| `TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java` | Same switcher label. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | Header subtitle and account row use the same label. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | Settings search「add account」uses the same helper. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Device locale and bundled zh/en resource lookup. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAccount.java` | New. Saved email, masked label, already-on-device match, Add Account routing. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Light palette kept. Dark mode uses a white primary button and light field text. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` |「开始使用」, bind-phone copy,「该账号已登录」. |

@@ -124,22 +124,7 @@ public class LogoutActivity extends BaseFragment {
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (position == addAccountRow) {
-                int freeAccounts = 0;
-                Integer availableAccount = null;
-                for (int a = UserConfig.MAX_ACCOUNT_COUNT - 1; a >= 0; a--) {
-                    if (!UserConfig.getInstance(a).isClientActivated()) {
-                        freeAccounts++;
-                        if (availableAccount == null) {
-                            availableAccount = a;
-                        }
-                    }
-                }
-                if (!UserConfig.hasPremiumOnAccounts()) {
-                    freeAccounts -= (UserConfig.MAX_ACCOUNT_COUNT - UserConfig.MAX_ACCOUNT_DEFAULT_COUNT);
-                }
-                if (freeAccounts > 0 && availableAccount != null) {
-                    presentFragment(new LoginActivity(availableAccount));
-                } else if (!UserConfig.hasPremiumOnAccounts()) {
+                if (!TellomiAccount.openAddAccount(this) && !UserConfig.hasPremiumOnAccounts()) {
                     LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(this, getContext(), TYPE_ACCOUNTS, currentAccount, null);
                     showDialog(limitReachedBottomSheet);
                 }
@@ -165,13 +150,23 @@ public class LogoutActivity extends BaseFragment {
     }
 
     public void showLogOutDialog() {
-        final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
-        progressDialog.showDelayed(500);
-        GramWallet.ensureLocalWalletBalances(currentAccount, () -> {
-            progressDialog.dismiss();
-            long localGramBalance = 0L;
-            if (MessagesController.getInstance(currentAccount).config.walletAvailable.get()) {
-                final GramWallet wallet = GramWallet.getInstance(currentAccount);
+        confirmLogout(this);
+    }
+
+    /**
+     * Confirm immediately. Waiting on the wallet state left email sessions on a spinner
+     * that did not finish, so logout looked untappable. Phone sessions already had a
+     * cached wallet and returned at once.
+     */
+    public static void confirmLogout(BaseFragment host) {
+        if (host == null || host.getParentActivity() == null) {
+            return;
+        }
+        final int account = host.getCurrentAccount();
+        long localGramBalance = 0L;
+        try {
+            if (MessagesController.getInstance(account).config.walletAvailable.get()) {
+                final GramWallet wallet = GramWallet.getInstance(account);
                 if (wallet.getBalance() > 0 && !wallet.isBackupEnabled() && !wallet.cantAccessWallet()) {
                     localGramBalance += wallet.getBalance();
                 }
@@ -181,8 +176,18 @@ public class LogoutActivity extends BaseFragment {
                     }
                 }
             }
-            showLogOutDialog(localGramBalance);
-        });
+        } catch (Throwable ignore) {
+        }
+        final long grams = localGramBalance;
+        new AlertDialog.Builder(host.getParentActivity())
+            .setTitle(getString(R.string.LogOut))
+            .setMessage(AndroidUtilities.replaceTags(grams > 0 ? formatString(R.string.AreYouSureLogoutGrams, GramWallet.formatGramsWithUnit(grams)) : getString(R.string.AreYouSureLogout)))
+            .setPositiveButton(getString(R.string.LogOut), (dialogInterface, i) -> {
+                MessagesController.getInstance(account).performLogout(1);
+            })
+            .setNegativeButton(getString(R.string.Cancel), null)
+            .makeRed(DialogInterface.BUTTON_POSITIVE)
+            .show();
     }
 
     public void showLogOutDialog(long grams) {
