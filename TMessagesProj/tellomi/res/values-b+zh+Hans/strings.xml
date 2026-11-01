@@ -28,6 +28,8 @@
     <string name="TellomiOtherLogin">其他登录方式</string>
     <string name="TellomiRecoverAccount">找回账号</string>
     <string name="TellomiNotOpen">暂未开放</string>
+    <string name="TellomiNotOpenBody">该登录方式即将开放，请先使用手机号或邮箱。</string>
+    <string name="TellomiNotOpenOk">好</string>
     <string name="TellomiAgreeTitle">用户协议及隐私政策</string>
     <string name="TellomiAgreeAndLogin">同意并登录</string>
     <string name="TellomiDisagree">不同意</string>
@@ -68,7 +70,7 @@
     <string name="TellomiIntroPage6Message">**Tellomi** 让你可以从多台设备访问消息。</string>
     <string name="TellomiIntroStart">开始使用</string>
     <string name="TellomiBindPhone">绑定手机号</string>
-    <string name="TellomiBindPhoneHint">验证码将发送到这个手机号。</string>
+    <string name="TellomiBindPhoneHint">绑定后可使用手机号登录</string>
     <string name="TellomiBindAction">绑定</string>
     <string name="TellomiBindEmail">绑定邮箱</string>
     <string name="TellomiBindEmailHint">验证码将发送到这个邮箱。</string>

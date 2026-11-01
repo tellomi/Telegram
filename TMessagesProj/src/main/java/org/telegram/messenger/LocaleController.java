@@ -4518,6 +4518,30 @@ public class LocaleController {
         return localizationInternal.getByResName(key);
     }
 
+    private static final HashMap<Integer, String> tellomiResourceNames = new HashMap<>();
+
+    /** Resource entry name for a string id. Empty when the id is not a string resource. */
+    private static String tellomiResourceName(Context context, int stringRes) {
+        synchronized (tellomiResourceNames) {
+            String cached = tellomiResourceNames.get(stringRes);
+            if (cached != null) {
+                return cached.length() == 0 ? null : cached;
+            }
+        }
+        String name = "";
+        try {
+            name = context.getResources().getResourceEntryName(stringRes);
+        } catch (Throwable ignored) {
+        }
+        if (name == null) {
+            name = "";
+        }
+        synchronized (tellomiResourceNames) {
+            tellomiResourceNames.put(stringRes, name);
+        }
+        return name.length() == 0 ? null : name;
+    }
+
     // TELLOMI: zh-hans / zh-hant are server langpacks. Other languages stay on bundled strings
     // while TELLOMI_USE_CLOUD_STRINGS is false.
     private static boolean cloudStringsEnabled() {
@@ -4577,6 +4601,12 @@ public class LocaleController {
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
+        // getString(int) passes a null key. Flavor login strings live in
+        // localization_zh.bin under their resource name. The APK locale filter
+        // drops values-zh, so a resource lookup cannot see that Chinese.
+        if ((key == null || key.length() == 0) && stringRes != 0 && context != null) {
+            key = tellomiResourceName(context, stringRes);
+        }
         String value = null;
 
         if (cloudStringsEnabled()) {
