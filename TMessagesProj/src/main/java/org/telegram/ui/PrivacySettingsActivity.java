@@ -1335,7 +1335,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             val = spannable;
                         }
                         textCell2.setPrioritizeTitleOverValue(true);
-                        textCell2.setTextAndSpoilersValueAndIcon(getString(R.string.EmailLogin), val, R.drawable.msg2_email, true);
+                        textCell2.setTextAndSpoilersValueAndIcon(getString(R.string.EmailLogin), val, R.drawable.tellomi_ic_email, true);
                     } else if (position == passwordRow) {
                         value = "";
                         int icon = R.drawable.menu_2sv;

@@ -28,6 +28,7 @@ import android.text.TextUtils;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
@@ -101,6 +102,8 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_PREMIUM = 25;
     public static final int AVATAR_TYPE_STARS = 26;
     public static final int AVATAR_TYPE_SUGGESTION = 27;
+    /** Official service account (777000 and the other service ids). Tellomi mark, not a letter. */
+    public static final int AVATAR_TYPE_TELLOMI = 28;
 
     /**
      * Matches {@link org.telegram.ui.Components.AvatarConstructorFragment#defaultColors}
@@ -221,7 +224,33 @@ public class AvatarDrawable extends Drawable {
         if (user != null) {
             setInfo(user.id, user.first_name, user.last_name, null, user != null && user.color != null ? UserObject.getColorId(user) : null, UserObject.getPeerColorForAvatar(currentAccount, user));
             drawDeleted = UserObject.isDeleted(user);
+            if (UserObject.isService(user.id)) {
+                applyTellomiServiceAvatar();
+            }
         }
+    }
+
+    /** Dark disc and the white Tellomi mark. Same asset as the launcher, not the first letter of the name. */
+    private void applyTellomiServiceAvatar() {
+        avatarType = AVATAR_TYPE_TELLOMI;
+        hasGradient = false;
+        hasAdvancedGradient = false;
+        rotate45Background = false;
+        color = color2 = 0xFF17171A;
+        needApplyColorAccent = false;
+        invalidateTextLayout = true;
+    }
+
+    private Drawable tellomiMark;
+
+    private Drawable tellomiMark() {
+        if (tellomiMark == null && ApplicationLoader.applicationContext != null) {
+            try {
+                tellomiMark = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.tellomi_qr_mark).mutate();
+            } catch (Throwable ignored) {
+            }
+        }
+        return tellomiMark;
     }
 
     public void setInfo(TLObject object) {
@@ -627,6 +656,18 @@ public class AvatarDrawable extends Drawable {
             Theme.dialogs_archiveAvatarDrawable.setBounds(x, y, x + w, y + h);
             Theme.dialogs_archiveAvatarDrawable.draw(canvas);
             canvas.restore();
+        } else if (avatarType == AVATAR_TYPE_TELLOMI) {
+            Drawable mark = tellomiMark();
+            if (mark != null) {
+                mark.setBounds(0, 0, size, size);
+                if (alpha != 255) {
+                    mark.setAlpha(alpha);
+                    mark.draw(canvas);
+                    mark.setAlpha(255);
+                } else {
+                    mark.draw(canvas);
+                }
+            }
         } else if (avatarType != 0 || customIconDrawable != null) {
             Drawable drawable;
 

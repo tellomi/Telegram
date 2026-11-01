@@ -76,6 +76,20 @@ public class LocaleController {
     public static int nameDisplayOrder = 1;
     public static boolean is24HourFormat = false;
 
+    /**
+     * Clock patterns for Chinese use 上午/下午. {@link Locale#US} would print those
+     * patterns as {@code AM11:34}. Arabic and Korean already take this path.
+     */
+    private static Locale tellomiTimeLocale(String lang, Locale locale) {
+        if (lang != null) {
+            String code = lang.toLowerCase(Locale.US);
+            if (code.equals("ar") || code.equals("ko") || code.equals("zh")) {
+                return locale != null ? locale : Locale.getDefault();
+            }
+        }
+        return Locale.US;
+    }
+
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
         if (formatterDay == null) {
@@ -87,7 +101,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
+                    formatterDay = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
                 }
             }
         }
@@ -105,7 +119,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterDayWithSeconds = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDayWithSeconds24H", R.string.formatterDayWithSeconds24H) : getStringInternal("formatterDayWithSeconds12H", R.string.formatterDayWithSeconds12H), is24HourFormat ? "HH:mm:ss" : "h:mm:ss a");
+                    formatterDayWithSeconds = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? getStringInternal("formatterDayWithSeconds24H", R.string.formatterDayWithSeconds24H) : getStringInternal("formatterDayWithSeconds12H", R.string.formatterDayWithSeconds12H), is24HourFormat ? "HH:mm:ss" : "h:mm:ss a");
                 }
             }
         }
@@ -123,7 +137,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterConstDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? "HH:mm" : "h:mm a", is24HourFormat ? "HH:mm" : "h:mm a");
+                    formatterConstDay = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? "HH:mm" : "h:mm a", is24HourFormat ? "HH:mm" : "h:mm a");
                 }
             }
         }
@@ -704,6 +718,14 @@ public class LocaleController {
         for (int a = 0; a < remoteLanguages.size(); a++) {
             LocaleInfo locale = remoteLanguages.get(a);
             LocaleInfo existingLocale = getLanguageFromDict(locale.getKey());
+            if (existingLocale != null && TellomiDefaults.bundledChinese(existingLocale)) {
+                // values-zh is packed into localization_zh.bin. Turning this row into a
+                // remote pack with no file left the UI on the English bin (dates stayed Chinese).
+                remoteLanguages.remove(a);
+                remoteLanguagesDict.remove(locale.getKey());
+                a--;
+                continue;
+            }
             if (existingLocale != null) {
                 existingLocale.pathToFile = locale.pathToFile;
                 existingLocale.version = locale.version;
@@ -3207,6 +3229,9 @@ public class LocaleController {
                         localeInfo.serverIndex = a;
 
                         LocaleInfo existing = getLanguageFromDict(localeInfo.getKey());
+                        if (TellomiDefaults.bundledChinese(existing)) {
+                            continue;
+                        }
                         if (existing == null) {
                             languages.add(localeInfo);
                             languagesDict.put(localeInfo.getKey(), localeInfo);
