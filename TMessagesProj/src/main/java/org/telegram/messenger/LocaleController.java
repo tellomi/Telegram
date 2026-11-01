@@ -2101,14 +2101,17 @@ public class LocaleController {
             return;
         }
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
-        // The activity configuration can stay English after we install zh. The device
-        // locale is what decides whether to keep the Chinese pack.
+        // The activity configuration can stay English after we install zh, and on
+        // API 24+ newConfig.locale is often null or that activity locale. Passing it
+        // here dropped zh-hans (useCloudStrings) back to the English bin, so the
+        // welcome screen and the rest of the UI stayed English on a Chinese phone.
+        // The device locale is what decides whether to keep the Chinese pack.
         systemDefaultLocale = TellomiDefaults.deviceLocale();
         if (languageOverride != null) {
             LocaleInfo toSet = currentLocaleInfo;
             currentLocaleInfo = null;
             applyLanguage(toSet, false, false, UserConfig.selectedAccount);
-        } else if (applyTellomiSystemLocale(newConfig.locale)) {
+        } else if (applyTellomiSystemLocale(systemDefaultLocale)) {
             // zh-hans / zh-hant applied, or that pack was left because the system language changed.
         } else {
             Locale newLocale = newConfig.locale;

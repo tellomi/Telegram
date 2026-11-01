@@ -202,7 +202,9 @@ public final class TellomiDefaults {
             return "";
         }
         try {
-            Configuration config = new Configuration(ApplicationLoader.applicationContext.getResources().getConfiguration());
+            // Copying the live configuration keeps the activity locale on some
+            // devices, so a zh lookup and an en lookup both come back English.
+            Configuration config = new Configuration();
             config.setLocale(locale);
             if (Build.VERSION.SDK_INT >= 24) {
                 config.setLocales(new android.os.LocaleList(locale));
