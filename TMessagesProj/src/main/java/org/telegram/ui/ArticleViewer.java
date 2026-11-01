@@ -13001,12 +13001,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 photoPressed = true;
             } else if (event.getAction() == MotionEvent.ACTION_UP && photoPressed) {
                 photoPressed = false;
-                try {
-                    double lat = currentBlock.geo.lat;
-                    double lon = currentBlock.geo._long;
-                    getContext().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                } catch (Exception e) {
-                    FileLog.e(e);
+                if (currentBlock != null && currentBlock.geo != null && !(currentBlock.geo instanceof TLRPC.TL_geoPointEmpty)) {
+                    TellomiMaps.openPoint(getContext(), null, null, currentBlock.geo.lat, currentBlock.geo._long, null);
                 }
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                 photoPressed = false;

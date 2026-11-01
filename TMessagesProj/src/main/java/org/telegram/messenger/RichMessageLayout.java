@@ -7,7 +7,6 @@ import static org.telegram.tgnet.TLObject.setFlag;
 
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.app.Activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -31,7 +30,6 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -7454,13 +7452,9 @@ public class RichMessageLayout {
                     photoPressed = false;
                     if (inside && block.geo != null && view != null) {
                         view.playSoundEffect(SoundEffectConstants.CLICK);
-                        try {
-                            final double lat = block.geo.lat;
-                            final double lon = block.geo._long;
-                            view.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
+                        final double lat = block.geo.lat;
+                        final double lon = block.geo._long;
+                        org.telegram.ui.TellomiMaps.openPoint(view.getContext(), null, null, lat, lon, null);
                         return true;
                     }
                 }

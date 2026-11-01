@@ -164,6 +164,7 @@ import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
+import org.telegram.ui.TellomiMaps;
 import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.TopicsFragment;
 
@@ -8818,7 +8819,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     final TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) messageMedia;
 
                     if (media.geo != null) {
-                        if (!AndroidUtilities.isMapsInstalled(profileActivity)) {
+                        String place = media.address != null ? media.address : (answer != null && answer.text != null ? answer.text.text : "");
+                        if (!(media.geo instanceof TLRPC.TL_geoPointEmpty) && TellomiMaps.openReceivedPin(profileActivity, media.geo.lat, media.geo._long, place, false)) {
                             return;
                         }
                         LocationActivity fragment = new LocationActivity(3) {

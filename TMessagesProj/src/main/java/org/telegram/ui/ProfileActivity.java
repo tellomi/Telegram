@@ -16261,7 +16261,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void openLocation(boolean inMapsApp) {
         if (userInfo == null || userInfo.business_location == null) return;
-        if (userInfo.business_location.geo_point != null && !inMapsApp) {
+        TLRPC.GeoPoint geo = userInfo.business_location.geo_point;
+        boolean hasGeo = geo != null && !(geo instanceof TLRPC.TL_geoPointEmpty);
+        String place = userInfo.business_location.address;
+        if (hasGeo && !inMapsApp) {
+            if (TellomiMaps.openReceivedPin(this, geo.lat, geo._long, place, false)) {
+                return;
+            }
             LocationActivity fragment = new LocationActivity(3) {
                 @Override
                 protected boolean disablePermissionCheck() {
@@ -16279,30 +16285,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             fragment.setSharingAllowed(false);
             fragment.setMessageObject(new MessageObject(UserConfig.selectedAccount, message, false, false));
             presentFragment(fragment);
+        } else if (hasGeo) {
+            TellomiMaps.openPoint(getParentActivity(), this, getResourceProvider(), geo.lat, geo._long, place);
         } else {
-            String domain;
-            if (BuildVars.isHuaweiStoreApp()) {
-                domain = "mapapp://navigation";
-            } else {
-                domain = "http://maps.google.com/maps";
-            }
-//                    if (myLocation != null) {
-//                        try {
-//                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong)));
-//                            getParentActivity().startActivity(intent);
-//                        } catch (Exception e) {
-//                            FileLog.e(e);
-//                        }
-//                    } else {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?q=" + userInfo.business_location.address)));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-//                    }
+            TellomiMaps.openPoint(getParentActivity(), this, getResourceProvider(), Double.NaN, Double.NaN, place);
         }
-
     }
 
     private boolean editNotes(View view, int position) {

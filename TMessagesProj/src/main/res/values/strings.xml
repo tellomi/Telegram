@@ -1580,6 +1580,13 @@
     <string name="MapPreviewProviderYandex">Yandex</string>
     <string name="MapPreviewProviderNobody">No previews</string>
     <string name="InstallGoogleMaps">Install Google Maps?</string>
+    <string name="TellomiMapChooserPoint">Open in map</string>
+    <string name="TellomiMapChooserRoute">Directions</string>
+    <string name="TellomiMapAmap">Amap</string>
+    <string name="TellomiMapBaidu">Baidu Maps</string>
+    <string name="TellomiMapTencent">Tencent Maps</string>
+    <string name="TellomiMapGoogle">Google Maps</string>
+    <string name="TellomiMapCurrentLocation">My location</string>
     <string name="InstallHuaweiMaps">Install Petal Maps?</string>
     <string name="ScamMessage">SCAM</string>
     <string name="FakeMessage">FAKE</string>
