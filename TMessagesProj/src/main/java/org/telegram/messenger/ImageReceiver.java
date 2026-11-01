@@ -429,6 +429,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             parentObject = object;
         }
         setUseRoundForThumbDrawable(true);
+        // Service accounts (777000) have no formal server photo. The letter avatar is the
+        // first character of "Tellomi". Draw the client logo instead of waiting on a photo.
+        if (object instanceof TLRPC.User && UserObject.isService(((TLRPC.User) object).id)) {
+            if (avatarDrawable instanceof AvatarDrawable) {
+                ((AvatarDrawable) avatarDrawable).setInfo(currentAccount, (TLRPC.User) object);
+            }
+            setImage(null, "50_50", avatarDrawable, null, parentObject, 0);
+            return;
+        }
         BitmapDrawable strippedBitmap = null;
         boolean hasStripped = false;
         ImageLocation videoLocation = null;

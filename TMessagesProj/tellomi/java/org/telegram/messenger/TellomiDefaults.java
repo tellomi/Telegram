@@ -214,6 +214,19 @@ public final class TellomiDefaults {
         }
     }
 
+    /**
+     * Simplified and Traditional Chinese ship in {@code localization_zh.bin}
+     * ({@code src/main/res/values-zh}). They must stay built-in. A remote row with
+     * no downloaded file used to replace them and leave every string on the English bin.
+     */
+    public static boolean bundledChinese(LocaleController.LocaleInfo info) {
+        if (info == null || !info.builtIn || info.pathToFile != null || info.shortName == null) {
+            return false;
+        }
+        String code = info.shortName.replace('_', '-').toLowerCase(Locale.US);
+        return LANG_ZH_HANS.equals(code) || LANG_ZH_HANT.equals(code);
+    }
+
     /** True when this locale's strings should be read from the downloaded android langpack. */
     public static boolean useCloudStrings(LocaleController.LocaleInfo info) {
         if (info == null || info.shortName == null) {

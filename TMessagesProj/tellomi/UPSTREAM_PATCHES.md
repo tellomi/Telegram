@@ -255,3 +255,28 @@ The proxy shield is the upstream top-right control. Help is Tellomi and was give
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Social icons use center-inside. |
 | `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Bind phone uses the change-number intro. Bind or change email uses `changeEmail`. |
 | `gradle.properties` | `APP_VERSION_NAME=14.0.3`. |
+
+## Chat list brand, bundled Simplified Chinese, service avatar (14.0.3)
+
+The chat-list title is not the `AppName` string. `DialogsActivity` and `DialogStoriesCell` draw `R.drawable.telegram_logo_2`, a vector that spells Telegram, and tint it blue. `AppName` is already Tellomi. The flavor file replaces that drawable (and the unused `telegram_logo`) with a Tellomi wordmark. The stories header slot was a fixed 90dp, which was the width of the old wordmark; it now wraps the new one so the star sits against the word. Launcher mipmaps, notification art, QR mark, and intro circle were already the Tellomi mark. Other user-visible "Telegram" copy still goes through `TellomiBrand.rewrite`. No `BuildConfig` or datacenter change.
+
+Simplified Chinese did not apply. Built-in `zh_hans` sets `currentLocale` to `zh` (so `formatterWeek` prints 周六) but `TelegramStringsTask` only packs `src/main/res/values-*/strings.xml`. There was no `values-zh` there, so `LocalizationUtils` had no `localization_zh.bin` and every string stayed on `localization_en.bin`. Flavor `values-zh` is login copy only and is not an input to that task. Picking 简体中文 in settings used the same built-in row (`pathToFile` null), so the switch changed dates and not labels. A later `langpack.getLanguages` result could also mark that row remote; with no file downloaded, the UI never left the English bin.
+
+`src/main/res/values-zh/strings.xml` is the official zh-hans Android export, filtered to keys this tree already has. The packer emits `localization_zh.bin`. System Chinese and the 简体中文 row both apply `Locale("zh")` and read that bin. The built-in row is not replaced by a remote pack. Clock patterns for Chinese use the Chinese locale so 上午/下午 is not printed as `AM`. Flavor login strings still win when they differ from English. 繁體中文 uses this same simplified pack.
+
+Service users (`777000`, `333000`, `42777`) draw `tellomi_qr_mark` on `#17171A` instead of the first letter of the name. `ImageReceiver` does not replace that with a missing server photo. A channel named "tellomi" with no photo is a normal peer and still uses a letter avatar.
+
+The bind-email and login-email rows used `msg2_email.webp`, an opaque bitmap in a 24dp slot. They use `tellomi_ic_email`, a white envelope vector. `TextCell` tints it; the account row shows it white on the blue tile.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable/telegram_logo_2.xml`, `telegram_logo.xml` | Tellomi wordmark. White fill, tinted by the title color. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Stories/DialogStoriesCell.java` | Logo slot wraps the wordmark. |
+| `TMessagesProj/src/main/res/values-zh/strings.xml` | Bundled Simplified Chinese. Packed as `localization_zh.bin`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Keep bundled Chinese off the remote-pack path. Chinese clock locale. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `bundledChinese`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/AvatarDrawable.java` | Service avatar is the Tellomi mark. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/ImageReceiver.java` | Service peers skip the photo fetch. |
+| `TMessagesProj/tellomi/res/drawable/tellomi_ic_email.xml` | Envelope glyph. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Bind and change email use that glyph. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | Login-email row uses the same glyph. |

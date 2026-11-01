@@ -366,9 +366,9 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.msg_newphone, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
         }
         if (email != null) {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, email, getString(R.string.TellomiChangeEmail)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, email, getString(R.string.TellomiChangeEmail)));
         } else {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.msg2_email, getString(R.string.TellomiBindEmail), getString(R.string.TellomiBindEmailHint)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiBindEmail), getString(R.string.TellomiBindEmailHint)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
