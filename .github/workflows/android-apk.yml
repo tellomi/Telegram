@@ -405,28 +405,38 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # Next afat versionCode above the shipped 72379. The ones digit is
+          # Next afat versionCode above checked-in 1800049. The ones digit is
           # the ABI marker (afat universal = 9). Each run adds 10.
-          TELLOMI_VERSION_CODE_BASE: "72389"
+          # 1800059 = (180004 + 1) * 10 + 9, so this job stays above
+          # gradle.properties and above website-prod latest.json 178001.
+          TELLOMI_VERSION_CODE_BASE: "1800059"
+          TELLOMI_VERSION_CODE_FLOOR: "178001"
         run: |
           set -euo pipefail
           # Manifest versionCode = APP_VERSION_CODE * 10 + abiVersionCode.
-          # Checked-in APP_VERSION_CODE=7237 packages the afat APK as 72379,
-          # so a new build could not install over v13.1.1-72379. -P overrides
+          # abi 9 = afat universal, 1 and 2 = store/bundle. -P overrides
           # gradle.properties for this job only.
           run="${GITHUB_RUN_NUMBER:?}"
           case "$run" in
             ''|*[!0-9]*) echo "GITHUB_RUN_NUMBER is not an integer: $run" >&2; exit 1 ;;
           esac
           base="${TELLOMI_VERSION_CODE_BASE:?}"
+          floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
           manifest=$((base + run * 10))
-          if [ "$manifest" -le 72379 ] || [ $((manifest % 10)) -ne 9 ]; then
+          if [ "$manifest" -le "$floor" ] || [ $((manifest % 10)) -ne 9 ]; then
             echo "refusing versionCode $manifest" >&2
             exit 1
           fi
           app_version_code=$(( (manifest - 9) / 10 ))
           if [ $((app_version_code * 10 + 9)) -ne "$manifest" ]; then
             echo "APP_VERSION_CODE $app_version_code does not encode versionCode $manifest" >&2
+            exit 1
+          fi
+          # Digit 0 is the lowest ABI marker this formula can emit. Every
+          # variant of this APP_VERSION_CODE must clear the website floor.
+          low=$((app_version_code * 10))
+          if [ "$low" -le "$floor" ]; then
+            echo "lowest ABI versionCode $low is not above $floor" >&2
             exit 1
           fi
           file_code=$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)
