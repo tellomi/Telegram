@@ -11459,4 +11459,16 @@
     <string name="NoPaidMessagesTokenUsed">un1 已使用您的二维码，可以免费给您发送消息。</string>
     <string name="NoPaidMessagesTokenUsedOut">你扫描了 un1 的二维码，可以免费向对方发送消息。</string>
     <string name="NoPaidMessagesTokenImported">您现在可以免费向 **%1$s** 发送消息。</string>
+    <string name="AreTyping">正在输入...</string>
+    <string name="OutgoingCallsCount_one">%1$d 通拨出电话</string>
+    <string name="OutgoingCallsCount_other">%1$d 通拨出电话</string>
+    <string name="IncomingCallsCount_one">%1$d 通来电</string>
+    <string name="IncomingCallsCount_other">%1$d 通来电</string>
+    <string name="ReactionsCount">%1$s/%2$s</string>
+    <string name="Chats">聊天</string>
+    <string name="Files">文件</string>
+    <string name="Voice">语音</string>
+    <string name="Reactions_one">%d 个回应</string>
+    <string name="Reactions_other">%d 个回应</string>
+    <string name="NotificationsInternal">内部通知</string>
 </resources>

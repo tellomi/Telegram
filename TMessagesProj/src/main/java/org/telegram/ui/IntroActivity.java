@@ -147,12 +147,31 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         return true;
     }
 
-    /** Chinese UI uses the bundled flavor strings. Other languages stay on the localization bin. */
+    /**
+     * Chinese UI prefers the flavor TellomiIntro strings. If that lookup is stuck
+     * on the English default, the stock key is already in localization_zh.bin.
+     * Other languages stay on the bin.
+     */
     private static String introString(int chineseRes, int stockRes) {
         if (TellomiDefaults.uiIsChinese()) {
-            return TellomiDefaults.chineseResource(chineseRes);
+            String zh = TellomiDefaults.chineseResource(chineseRes);
+            String en = TellomiDefaults.englishResource(chineseRes);
+            if (zh != null && zh.length() > 0 && (en == null || !zh.equals(en) || hasCjk(zh))) {
+                return zh;
+            }
+            return LocaleController.getString(stockRes);
         }
         return LocaleController.getString(stockRes);
+    }
+
+    private static boolean hasCjk(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c >= 0x4E00 && c <= 0x9FFF) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -1317,6 +1317,7 @@
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>
+    <string name="NotificationsInternal">Internal notifications</string>
     <string name="VerifyCodesNotifications">Verification Codes</string>
     <string name="GettingLinkInfo">Getting Link Info...</string>
     <string name="OpenInBrowser">OPEN IN...</string>
