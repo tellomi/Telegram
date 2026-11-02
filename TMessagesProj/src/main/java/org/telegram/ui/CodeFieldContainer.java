@@ -48,6 +48,16 @@ public class CodeFieldContainer extends LinearLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (tellomiSquares && codeField != null && codeField.length > 0 && MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED) {
+            int available = MeasureSpec.getSize(widthMeasureSpec);
+            int[] sized = TellomiCodeBoxes.fit(available, codeField.length, AndroidUtilities.dp(52), AndroidUtilities.dp(36), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+            for (int i = 0; i < codeField.length; i++) {
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) codeField[i].getLayoutParams();
+                lp.width = sized[0];
+                lp.height = sized[0];
+                lp.rightMargin = i == codeField.length - 1 ? 0 : sized[1];
+            }
+        }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         paint.setStrokeWidth(strokeWidth = AndroidUtilities.dp(1.5f));
     }

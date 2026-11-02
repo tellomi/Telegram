@@ -356,6 +356,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     /** Bumped when auth.sendCode returns, so a hung request cannot leave the button spinning. */
     private int tellomiAuthWatch;
     private boolean tellomiAuthTimedOut;
+    /** The submit currently allowed to open the code screen. */
+    private final TellomiPendingAuth tellomiPendingAuth = new TellomiPendingAuth();
     private boolean[] doneButtonVisible = new boolean[] {true, false};
 
     private AlertDialog cancelDeleteProgressDialog;
@@ -705,6 +707,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         Bundle savedInstanceState = activityMode == MODE_LOGIN ? loadCurrentState(newAccount, currentAccount) : null;
+        if (savedInstanceState != null && activityMode == MODE_LOGIN && tellomiLoginCodePage(savedInstanceState.getInt("currentViewNum", 0))) {
+            // A killed process used to reopen the code screen for the previous number.
+            savedInstanceState.putInt("currentViewNum", VIEW_PHONE_INPUT);
+            clearCurrentState();
+        }
         if (savedInstanceState != null) {
             int viewNum = savedInstanceState.getInt("currentViewNum", 0);
             if (viewNum < 0 || viewNum >= views.length)
@@ -1131,7 +1138,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             return false;
         }
 
-        if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
+        if (activityMode == MODE_LOGIN && tellomiLoginCodePage(currentViewNum)) {
+            if (invoked) {
+                tellomiLeaveCodeEntry();
+            }
+            return false;
+        } else if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
             if (activityMode == MODE_LOGIN && currentViewNum == VIEW_PHONE_INPUT && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
                 if (((PhoneView) views[VIEW_PHONE_INPUT]).tellomiHandleBack()) {
                     return false;
@@ -1707,9 +1719,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public void saveSelfArgs(Bundle outState) {
         try {
             Bundle bundle = new Bundle();
-            bundle.putInt("currentViewNum", currentViewNum);
+            int savedPage = currentViewNum;
+            if (activityMode == MODE_LOGIN && tellomiLoginCodePage(savedPage)) {
+                // Keep the number the user typed. Do not persist the code page.
+                savedPage = VIEW_PHONE_INPUT;
+            }
+            bundle.putInt("currentViewNum", savedPage);
             bundle.putInt("syncContacts", syncContacts ? 1 : 0);
-            for (int a = 0; a <= currentViewNum; a++) {
+            for (int a = 0; a <= savedPage; a++) {
                 SlideView v = views[a];
                 if (v != null) {
                     v.saveStateParams(bundle);
@@ -1722,6 +1739,42 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             editor.commit();
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    /** SMS, email, and the other code pages. Not the phone form and not 2FA. */
+    private static boolean tellomiLoginCodePage(int page) {
+        return page == VIEW_CODE_MESSAGE || page == VIEW_CODE_SMS || page == VIEW_CODE_FLASH_CALL
+                || page == VIEW_CODE_CALL || page == VIEW_CODE_MISSED_CALL || page == VIEW_CODE_EMAIL
+                || page == VIEW_CODE_EMAIL_SETUP || page == VIEW_CODE_FRAGMENT_SMS
+                || page == VIEW_CODE_WORD || page == VIEW_CODE_PHRASE;
+    }
+
+    /** Tags this submit and drops any code page still stored from an older number. */
+    private int tellomiNoteSubmit(String digits) {
+        tellomiClearAuthTimeout();
+        if (progressRequestId != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(progressRequestId, true);
+            progressRequestId = 0;
+        }
+        clearCurrentState();
+        return tellomiPendingAuth.begin(digits);
+    }
+
+    /** Back and close on a code page return to the number or email form. */
+    private void tellomiLeaveCodeEntry() {
+        tellomiPendingAuth.clear();
+        tellomiClearAuthTimeout();
+        if (progressRequestId != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(progressRequestId, true);
+            progressRequestId = 0;
+        }
+        if (views != null && currentViewNum >= 0 && currentViewNum < views.length && views[currentViewNum] != null) {
+            views[currentViewNum].onBackPressed(true);
+        }
+        clearCurrentState();
+        if (currentViewNum != VIEW_PHONE_INPUT) {
+            setPage(VIEW_PHONE_INPUT, true, null, true);
         }
     }
 
@@ -2223,6 +2276,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private TextView tellomiRecoverView;
         private LinearLayout tellomiCircleRow;
         private ImageView tellomiMailCircle;
+        /** Login form scrolls inside the page so the keyboard cannot shove it under the header. */
+        private ScrollView tellomiFormScroll;
+        private LinearLayout tellomiForm;
 
         private int titleClickCount = 0;
         private long lastTitleClick = 0;
@@ -2253,11 +2309,70 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 .show();
         }
 
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            if (tellomiForm != null && child != tellomiFormScroll) {
+                tellomiForm.addView(child, index, params);
+                return;
+            }
+            super.addView(child, index, params);
+        }
+
+        @Override
+        public void removeView(View view) {
+            if (tellomiForm != null && view != tellomiFormScroll && tellomiForm.indexOfChild(view) >= 0) {
+                tellomiForm.removeView(view);
+                return;
+            }
+            super.removeView(view);
+        }
+
+        @Override
+        public int indexOfChild(View child) {
+            if (tellomiForm != null && child != tellomiFormScroll) {
+                return tellomiForm.indexOfChild(child);
+            }
+            return super.indexOfChild(child);
+        }
+
         public PhoneView(Context context) {
             super(context);
 
             setOrientation(VERTICAL);
-            setGravity(Gravity.CENTER);
+            if (activityMode == MODE_LOGIN) {
+                setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+                tellomiForm = new LinearLayout(context) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        // The natural height is what the scroll range is based on.
+                        // When the page is taller than the form, fillViewport asks for
+                        // an exact height and the bottom spacer can push the agreement down.
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+                        int content = getMeasuredHeight();
+                        int mode = MeasureSpec.getMode(heightMeasureSpec);
+                        int size = MeasureSpec.getSize(heightMeasureSpec);
+                        if (mode == MeasureSpec.EXACTLY && size > content) {
+                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                        }
+                    }
+                };
+                tellomiForm.setOrientation(VERTICAL);
+                tellomiForm.setGravity(Gravity.CENTER_HORIZONTAL);
+                tellomiFormScroll = new ScrollView(context) {
+                    @Override
+                    public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
+                        rectangle.top -= AndroidUtilities.dp(28);
+                        rectangle.bottom += AndroidUtilities.dp(24);
+                        return super.requestChildRectangleOnScreen(child, rectangle, immediate);
+                    }
+                };
+                tellomiFormScroll.setFillViewport(true);
+                tellomiFormScroll.setVerticalScrollBarEnabled(false);
+                tellomiFormScroll.addView(tellomiForm, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                super.addView(tellomiFormScroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            } else {
+                setGravity(Gravity.CENTER);
+            }
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, activityMode == MODE_LOGIN ? 22 : 18);
@@ -3429,7 +3544,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         /**
          * Phone or email plus a password. There is no auth.* password-login RPC,
-         * so the button uses the same「暂未开放」toast as Apple, Google, and 找回账号.
+         * so the button uses the same「暂未开放」dialog as Apple, Google, and 找回账号.
          * It does not invent「账号或密码错误」.
          */
         private void tellomiSubmitPassword() {
@@ -3533,7 +3648,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             TellomiEmailLogin.stamp(params, email);
 
             nextPressed = true;
+            final int tellomiTicket = tellomiNoteSubmit(email);
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(sendCode, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (!tellomiPendingAuth.accepts(tellomiTicket, email)) {
+                    return;
+                }
                 tellomiClearAuthTimeout();
                 nextPressed = false;
                 if (tellomiAuthTimedOut) {
@@ -4096,7 +4215,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneInputData.phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
             phoneInputData.country = currentCountry;
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
+            final int tellomiTicket = tellomiNoteSubmit(phone);
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (!tellomiPendingAuth.accepts(tellomiTicket, phone)) {
+                    return;
+                }
                 tellomiClearAuthTimeout();
                 nextPressed = false;
                 if (tellomiAuthTimedOut) {
@@ -4753,7 +4876,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     confirmLp.gravity = Gravity.LEFT | Gravity.TOP;
                     confirmLp.topMargin = AndroidUtilities.dp(6);
                 }
-                addView(codeFieldContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, tellomiOtp ? 52 : 42, tellomiOtp ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL, 0, 24, 0, 0));
+                addView(codeFieldContainer, LayoutHelper.createLinear(tellomiOtp ? LayoutHelper.MATCH_PARENT : LayoutHelper.WRAP_CONTENT, tellomiOtp ? LayoutHelper.WRAP_CONTENT : 42, tellomiOtp ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL, 0, 24, 0, 0));
                 if (tellomiOtp) {
                     tellomiLoginButton = TellomiLoginChrome.actionButton(context, getString(tellomiBindPhone ? R.string.TellomiBindAction : R.string.TellomiOtpLogin), v -> onNextPressed(null));
                     addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 20, 0, 0));
@@ -5467,6 +5590,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             confirmTextView.setText(str);
             if (activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
                 titleTextView.setText(getString(R.string.TellomiOtpTitle));
+                String sentDigits = TellomiPendingAuth.digitsOnly(requestPhone);
+                String shownDigits = TellomiPendingAuth.digitsOnly(number);
+                if (sentDigits.length() > 0 && !shownDigits.contains(sentDigits)) {
+                    number = "+" + requestPhone;
+                }
                 confirmTextView.setText(LocaleController.formatString(R.string.TellomiOtpSentSms, LocaleController.addNbsp(number)));
             }
 
@@ -6112,51 +6240,35 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public boolean onBackPressed(boolean force) {
-            if (activityMode != MODE_LOGIN) {
-                finishFragment();
-                return false;
-            }
+            if (activityMode == MODE_LOGIN) {
+                // The activity returns to the phone form. Do not stop on the edit-number dialog.
+                nextPressed = false;
+                tryHideProgress(true);
+                if (requestPhone != null && phoneHash != null) {
+                    TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
+                    req.phone_number = requestPhone;
+                    req.phone_code_hash = phoneHash;
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 
-            if (prevType != 0) {
-                setPage(prevType, true, null, true);
-                return false;
+                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                }
+                destroyTimer();
+                destroyCodeTimer();
+                currentParams = null;
+                if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
+                    NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
+                } else if (currentType == AUTH_TYPE_SMS) {
+                    AndroidUtilities.setWaitingForSms(false);
+                    NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
+                } else if (currentType == AUTH_TYPE_FLASH_CALL) {
+                    AndroidUtilities.setWaitingForCall(false);
+                    NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveCall);
+                }
+                waitingForEvent = false;
+                return true;
             }
-
-            if (!force) {
-                showDialog(new AlertDialog.Builder(getParentActivity())
-                        .setTitle(getString(R.string.EditNumber))
-                        .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("EditNumberInfo", R.string.EditNumberInfo, phone)))
-                        .setPositiveButton(getString(R.string.Close), null)
-                        .setNegativeButton(getString(R.string.Edit), (dialogInterface, i) -> {
-                            onBackPressed(true);
-                            setPage(VIEW_PHONE_INPUT, true, null, true);
-                        })
-                        .create());
-                return false;
-            }
-            nextPressed = false;
-            tryHideProgress(true);
-            TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
-            req.phone_number = requestPhone;
-            req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-
-            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-
-            destroyTimer();
-            destroyCodeTimer();
-            currentParams = null;
-            if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
-                NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-            } else if (currentType == AUTH_TYPE_SMS) {
-                AndroidUtilities.setWaitingForSms(false);
-                NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
-            } else if (currentType == AUTH_TYPE_FLASH_CALL) {
-                AndroidUtilities.setWaitingForCall(false);
-                NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveCall);
-            }
-            waitingForEvent = false;
-            return true;
+            finishFragment();
+            return false;
         }
 
         @Override
@@ -7847,6 +7959,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public boolean needBackButton() {
             return true;
+        }
+
+        @Override
+        public boolean onBackPressed(boolean force) {
+            if (activityMode == MODE_LOGIN && (TellomiEmailLogin.isEmailLogin(currentParams) || !isSetup)) {
+                currentParams = null;
+                return true;
+            }
+            return super.onBackPressed(force);
         }
 
         @Override

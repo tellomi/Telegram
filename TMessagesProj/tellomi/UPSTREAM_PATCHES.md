@@ -303,6 +303,32 @@ No `versionName`, `versionCode`, or datacenter change.
 | `TMessagesProj/src/main/res/values/strings.xml`, `values-zh/strings.xml` | Internal-notification name, and the zh keys that were absent. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java` | Internal channel uses that string. |
 
+## Login language, keyboard, code boxes, back, bind (owner Honor)
+
+`localeFilters` keeps only the dummy locale `zz`, so `values-zh` never ships in the APK. Upstream copy still comes from `localization_zh.bin`. Tellomi strings lived only in `tellomi/res/values-zh`, which that filter drops, and `getString(int)` looked them up with a null key so the bin missed them too. A Chinese phone therefore showed the English flavor strings ("Log in to see more", "Bind phone number", "Carrier agreement") next to Chinese sentences that are written in code. The string task now packs `tellomi/res/values/strings.xml` into `localization_en.bin` and `tellomi/res/values-zh/strings.xml` into `localization_zh.bin`. `getStringV2` resolves a null key to the resource name before the bin lookup. The same gap covered the intro lines; those now read the bin.
+
+The phone form was a vertical layout with center gravity inside a slot that shrinks when the keyboard opens. The column was taller than the slot, so the top slid under the close button and Help. Login mode keeps the header fixed and scrolls the form inside the page. The code boxes were a fixed 52dp, so six of them ran past the right edge. They now shrink to the field width.
+
+Back on the code screen opened the edit-number dialog and returned false, so the arrow did nothing useful, and `logininfo2` kept that code page. Force-close or Add account reopened it, including a previous number and `phone_code_hash`. Back and close now cancel that code, clear the saved code page, and return to the phone or email form. A relaunch does not restore a code page. Each `auth.sendCode` takes a ticket; a late response for an older number is ignored, and the code screen shows the number from that submit.
+
+Apple, Google, other methods, recover, and password login open a card (title, one sentence, OK) with the same copy as the iOS text alert, instead of the "Not available yet" toast.
+
+Settings > Account draws the phone row with the upstream `settings_calls` icon. An empty phone is "绑定手机号" / "绑定后可使用手机号登录", which fits the two-line cell.
+
+| File | Change |
+| --- | --- |
+| `buildSrc/src/main/kotlin/org/telegram/plugin/TelegramBuildAppPlugin.kt` | Flavor login strings are inputs of the localization bins. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | A null string key is the resource name, so the bin hit wins over the stripped `values-zh`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Chinese intro lines come from the bin. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml`, `values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Unavailable-dialog copy and the shorter bind-phone subtitle. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Unavailable methods use the card dialog. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPendingAuth.java` | Submit ticket. A cleared or replaced ticket cannot paint an older number. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiCodeBoxes.java` | Box size that fits the row. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Login code boxes use that size. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Scrolling phone form, code-page back, no restored code page, submit ticket. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Phone row uses `settings_calls`. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | Ticket, box width, and Chinese string coverage. |
+
 ## Map apps for mainland China
 
 Tapping a location used to stop in `AndroidUtilities.isMapsInstalled`. That method checks `com.google.android.apps.maps` and, when the package is missing, shows "Install Google Maps?" (`InstallGoogleMaps` via `GoogleMapsProvider.getInstallMapsString`). The alert is built there, not in `AlertsCreator`. `AlertsCreator.showSecretLocationAlert` is only the secret-chat static-preview picker (Telegram / Google / Yandex).
