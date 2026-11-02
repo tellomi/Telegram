@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the signed APK to the download pipeline (release = official download at www.tellomi.cn/dl + R2 dl.tellomi.cn; test = R2 android/test/, pruned after 14 days)"
+        type: choice
+        options: [none, test, release]
+        default: none
 
 # A new push to the same ref cancels the run it replaces.
 concurrency:
@@ -257,6 +263,10 @@ jobs:
     name: Package Tellomi APK
     needs: native
     runs-on: ubuntu-24.04
+    outputs:
+      type: ${{ steps.variant.outputs.type }}
+      version_code: ${{ steps.assemble.outputs.version_code }}
+      version_name: ${{ steps.assemble.outputs.version_name }}
     timeout-minutes: 120
     steps:
       - name: Checkout
@@ -402,6 +412,7 @@ jobs:
           printf 'sdk.dir=%s\n' "$SDK" > local.properties
 
       - name: Assemble APK
+        id: assemble
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
@@ -529,6 +540,8 @@ jobs:
           echo "APK: $out" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Size: ${bytes} bytes" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "versionCode: $packaged" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "version_code=$packaged" >> "$GITHUB_OUTPUT"
+          echo "version_name=$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
           ls -lh "$out"
 
       - name: Upload APK
@@ -539,3 +552,59 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 1
+
+  # Publishes the signed APK. Release only on an explicit manual run (publish=release), so the
+  # official download never changes without someone choosing to ship. v* tag pushes publish to
+  # the test channel. The upload goes to R2 (tellomi-updates, backup line dl.tellomi.cn); the
+  # Chengdu server pulls it within 10 minutes and serves it as the primary www.tellomi.cn/dl/.
+  # Needs repo secrets TELLOMI_R2_UPDATES_ACCESS_KEY_ID, TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY,
+  # TELLOMI_R2_ENDPOINT (R2 API token with Object Read & Write on tellomi-updates only).
+  publish:
+    name: Publish APK (${{ github.event_name == 'workflow_dispatch' && inputs.publish || 'test' }})
+    needs: apk
+    if: >-
+      needs.apk.outputs.type == 'release' && (
+        (github.event_name == 'workflow_dispatch' && inputs.publish != 'none') ||
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: tellomi-installer-publish-android
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: Tools
+
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: tellomi-release
+          path: dist
+
+      - name: Install rclone
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rclone
+          rclone version | head -1
+
+      - name: Publish
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.TELLOMI_R2_UPDATES_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.TELLOMI_R2_ENDPOINT }}
+          CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || 'test' }}
+          VERSION_NAME: ${{ needs.apk.outputs.version_name }}
+          VERSION_CODE: ${{ needs.apk.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          if [ -z "${R2_ACCESS_KEY_ID:-}" ] || [ -z "${R2_SECRET_ACCESS_KEY:-}" ] || [ -z "${R2_ENDPOINT:-}" ]; then
+            echo "::error::Set repo secrets TELLOMI_R2_UPDATES_ACCESS_KEY_ID, TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY and TELLOMI_R2_ENDPOINT to publish."
+            exit 1
+          fi
+          bash Tools/tellomi-publish-installer.sh --platform android \
+            --version-name "$VERSION_NAME" --version-code "$VERSION_CODE" \
+            --channel "$CHANNEL" dist/tellomi-release.apk | tee -a "$GITHUB_STEP_SUMMARY"
