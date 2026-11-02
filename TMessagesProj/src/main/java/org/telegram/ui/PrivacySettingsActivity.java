@@ -44,6 +44,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -654,7 +655,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                 }
             } else if (position == passportRow) {
-                presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null, null));
+                if (TellomiFeatures.passportEnabled(currentAccount)) {
+                    presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null, null));
+                }
             } else if (position == botsBiometryRow) {
                 presentFragment(new BotBiometrySettings());
             }
@@ -766,7 +769,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         deleteAccountRow = rowCount++;
         deleteAccountDetailRow = rowCount++;
         botsSectionRow = rowCount++;
-        if (getUserConfig().hasSecureData) {
+        if (TellomiFeatures.passportEnabled(currentAccount) && getUserConfig().hasSecureData) {
             passportRow = rowCount++;
         } else {
             passportRow = -1;

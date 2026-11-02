@@ -59,6 +59,7 @@ import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -685,6 +686,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                                 new ClickableSpan() {
                                     @Override
                                     public void onClick(@NonNull View view) {
+                                        if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
+                                            return;
+                                        }
                                         Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                     }
 
@@ -723,7 +727,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                 if (index1 != -1 && index2 != -1 && index1 != index2) {
                     text.replace(index2, index2 + 1, "");
                     text.replace(index1, index1 + 1, "");
-                    text.setSpan(new URLSpanNoUnderline("https://fragment.com"), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (TellomiFeatures.fragmentEnabled(currentAccount)) {
+                        text.setSpan(new URLSpanNoUnderline("https://fragment.com"), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
                 }
                 text1View.setText(text);
             } else {

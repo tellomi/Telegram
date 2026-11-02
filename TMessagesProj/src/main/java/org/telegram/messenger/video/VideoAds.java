@@ -41,6 +41,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
@@ -195,6 +196,9 @@ public static VideoAds make(
     private void load() {
         if (loading || loaded) return;
 
+        if (!TellomiFeatures.channelRevenueEnabled(currentAccount)) {
+            return;
+        }
         if (UserConfig.getInstance(currentAccount).isPremium() && MessagesController.getInstance(currentAccount).isSponsoredDisabled()) {
             return;
         }

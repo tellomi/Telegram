@@ -67,6 +67,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -1466,7 +1467,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        if (getMessagesController().premiumFeaturesBlocked()) {
+        if (type == FEATURES_BUSINESS) {
+            if (!TellomiFeatures.businessEnabled(currentAccount)) {
+                return false;
+            }
+        } else if (!TellomiFeatures.premiumEntryEnabled(currentAccount) || getMessagesController().premiumFeaturesBlocked()) {
             return false;
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.billingProductDetailsUpdated);

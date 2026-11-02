@@ -36,6 +36,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
@@ -416,6 +417,9 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
     }
 
     public static void showCocoonAlert(Context context, Theme.ResourcesProvider resourcesProvider) {
+        if (!TellomiFeatures.translateEnabled()) {
+            return;
+        }
         final BottomSheet.Builder builder = new BottomSheet.Builder(context, false, resourcesProvider);
         builder.setApplyBottomPadding(false);
         builder.setApplyTopPadding(false);

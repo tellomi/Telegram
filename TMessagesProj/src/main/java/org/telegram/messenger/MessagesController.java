@@ -763,10 +763,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean giftTextFieldIcon;
 
     public boolean isTranslationsManualEnabled() {
-        return !"disabled".equals(translationsManualEnabled);
+        return config.tellomiTranslateEnabled.get() && !"disabled".equals(translationsManualEnabled);
     }
     public boolean isTranslationsAutoEnabled() {
-        return !"disabled".equals(translationsAutoEnabled);
+        return config.tellomiTranslateEnabled.get() && !"disabled".equals(translationsAutoEnabled);
     }
 
     public final AppGlobalConfig config = new AppGlobalConfig();
@@ -1675,7 +1675,7 @@ public class MessagesController extends BaseController implements NotificationCe
         verifyAgeCountry = mainPreferences.getString("verifyAgeCountry", "GB");
         verifyAgeMin = mainPreferences.getInt("verifyAgeMin", 18);
         premiumBotUsername = mainPreferences.getString("premiumBotUsername", null);
-        premiumLocked = mainPreferences.getBoolean("premiumLocked", false);
+        premiumLocked = mainPreferences.getBoolean("premiumLocked", true);
         starsLocked = mainPreferences.getBoolean("starsLocked", true);
         transcribeButtonPressed = mainPreferences.getInt("transcribeButtonPressed", 0);
         forumUpgradeParticipantsMin = mainPreferences.getInt("forumUpgradeParticipantsMin", 200);
@@ -1732,7 +1732,7 @@ public class MessagesController extends BaseController implements NotificationCe
         starsPaidMessageAmountMax = mainPreferences.getLong("starsPaidMessageAmountMax", 10_000L);
         starsPaidMessageCommissionPermille = mainPreferences.getInt("starsPaidMessageCommissionPermille", 850);
         stargiftsPinnedToTopLimit = mainPreferences.getInt("stargiftsPinnedToTopLimit", 6);
-        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", true);
+        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", false);
         freezeSinceDate = mainPreferences.getLong("freezeSinceDate", 0L);
         freezeUntilDate = mainPreferences.getLong("freezeUntilDate", 0L);
         conferenceCallSizeLimit = mainPreferences.getInt("conferenceCallSizeLimit", isTest ? 5 : 100);
@@ -8089,7 +8089,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (dialogId == getUserConfig().getClientUserId()) {
             settings.business_bot_id = UserObject.REPLY_BOT;
-            settings.business_bot_manage_url = TellomiBrand.rewrite("https://telegram.org/");
+            settings.business_bot_manage_url = BuildVars.LINK_BASE;
         }
         editor.apply();
         userPeerSettings.put(dialogId, settings);
@@ -21675,6 +21675,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
+        if (!TellomiFeatures.channelRevenueEnabled(currentAccount)) {
+            return null;
+        }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
         if (info != null && (info.loading || Math.abs(SystemClock.elapsedRealtime() - info.loadTime) <= 5 * 60 * 1000)) {
             return info;

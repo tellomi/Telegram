@@ -123,6 +123,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -5293,6 +5294,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         }
                         if (response1 != null) {
                             TL_account.Password accountPassword = (TL_account.Password) response1;
+                            if (!TellomiFeatures.passportEnabled(intentAccount)) {
+                                return;
+                            }
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
                             presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, callbackUrl, authorizationForm, accountPassword));
                         }

@@ -137,8 +137,10 @@ public class TranslateController extends BaseController {
     }
 
     public static boolean isSummarizable(MessageObject messageObject) {
+        if (messageObject == null || !TellomiFeatures.aiSummaryEnabled(messageObject.currentAccount)) {
+            return false;
+        }
         return (
-            messageObject != null &&
             messageObject.messageOwner != null &&
             messageObject.messageOwner.summary_from_language != null &&
             !messageObject.isOutOwner() &&
@@ -161,8 +163,10 @@ public class TranslateController extends BaseController {
     }
 
     public static boolean isTranslatable(MessageObject messageObject) {
+        if (messageObject == null || !TellomiFeatures.translateEnabled(messageObject.currentAccount)) {
+            return false;
+        }
         return (
-            messageObject != null &&
             messageObject.messageOwner != null &&
             !messageObject.isOutOwner() &&
             !messageObject.isRestrictedMessage &&
@@ -191,6 +195,9 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isDialogTranslatable(long dialogId) {
+        if (!messagesController.isTranslationsManualEnabled() && !messagesController.isTranslationsAutoEnabled()) {
+            return false;
+        }
         return (
             translatableDialogs.contains(dialogId) &&
             isFeatureAvailable(dialogId) &&

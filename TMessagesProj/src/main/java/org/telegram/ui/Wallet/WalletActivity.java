@@ -83,6 +83,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TelegramQRCodeWriter;
@@ -2371,7 +2372,11 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
             sheet.dismiss();
             fragment.presentFragment(new WalletSendSelectSender().setCollectible(collectible));
         });
-        actions.getChildAt(1).setOnClickListener(v -> Browser.openUrlInSystemBrowser(context, "https://fragment.com/"));
+        if (TellomiFeatures.fragmentEnabled()) {
+            actions.getChildAt(1).setOnClickListener(v -> Browser.openUrlInSystemBrowser(context, "https://fragment.com/"));
+        } else {
+            actions.getChildAt(1).setVisibility(View.GONE);
+        }
         okButton.setOnClickListener(v -> sheet.dismiss());
         sheet.show();
         sheet.fixNavigationBar(backgroundColor);
@@ -3713,6 +3718,9 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
+        if (!TellomiFeatures.walletEnabled(currentAccount)) {
+            return false;
+        }
         WalletCard2DMaterial.prewarm(org.telegram.messenger.ApplicationLoader.applicationContext);
         getNotificationCenter().addObserver(this, NotificationCenter.walletUpdate);
         getNotificationCenter().addObserver(this, NotificationCenter.starBalanceUpdated);

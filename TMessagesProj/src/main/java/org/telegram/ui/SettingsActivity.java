@@ -79,6 +79,7 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -716,7 +717,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         final boolean walletAbove = getConnectionsManager().getCurrentTime() - 1791538462 < 4 * 7 * 24 * 60 * 60;
-        if (walletAbove && getMessagesController().config.walletAvailable.get()) {
+        if (walletAbove && TellomiFeatures.walletEnabled(currentAccount)) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
             items.add(SettingCell.Factory.of(25, 0, 0, Theme.isCurrentThemeDark() ? R.drawable.settings_wallet_dark : R.drawable.settings_wallet, TextCell.applyNewSpanTimed(getString(R.string.WalletAttachMoney), 1790679020), null, wallet.getBalance() > 0 ? GramWallet.formatGrams(wallet.getBalance()) : null));
             items.add(UItem.asShadow(null));
@@ -733,31 +734,33 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
 
         items.add(UItem.asShadow(null));
-        if (!walletAbove && getMessagesController().config.walletAvailable.get()) {
+        if (!walletAbove && TellomiFeatures.walletEnabled(currentAccount)) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
             items.add(SettingCell.Factory.of(25, 0, 0, Theme.isCurrentThemeDark() ? R.drawable.settings_wallet_dark : R.drawable.settings_wallet, TextCell.applyNewSpanTimed(getString(R.string.WalletAttachMoney), 1790679020), null, wallet.getBalance() > 0 ? GramWallet.formatGrams(wallet.getBalance()) : null));
             items.add(UItem.asShadow(null));
         }
 
-        if (!getMessagesController().premiumFeaturesBlocked()) {
+        if (TellomiFeatures.premiumEntryEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(11, 0xFFB659FF, 0xFF617CFF, R.drawable.settings_premium, getString(R.string.TelegramPremium)));
         }
-        if (getMessagesController().starsPurchaseAvailable()) {
+        if (TellomiFeatures.starsEnabled(currentAccount)) {
             StarsController c = StarsController.getInstance(currentAccount);
             long balance = c.getBalance().amount;
             items.add(SettingCell.Factory.of(12, 0xFFEFA612, 0xFFE77512, R.drawable.settings_stars, getString(R.string.TelegramStars), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
         }
-        StarsController.getInstance(currentAccount, true).getBalance();
-        if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
-            final StarsController c = StarsController.getTonInstance(currentAccount);
-            final long balance = c.getBalance().amount;
-            items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
+        if (TellomiFeatures.tonEnabled(currentAccount)) {
+            StarsController.getInstance(currentAccount, true).getBalance();
+            if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
+                final StarsController c = StarsController.getTonInstance(currentAccount);
+                final long balance = c.getBalance().amount;
+                items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
+            }
         }
 
-        if (!getMessagesController().premiumFeaturesBlocked()) {
+        if (TellomiFeatures.businessEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
         }
-        if (!getMessagesController().premiumPurchaseBlocked()) {
+        if (TellomiFeatures.giftsEnabled(currentAccount) && !getMessagesController().premiumPurchaseBlocked()) {
             items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
         }
         if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
@@ -872,22 +875,34 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
 
             case 11:
-                presentSettingFragment(new PremiumPreviewFragment("settings"));
+                if (TellomiFeatures.premiumEntryEnabled(currentAccount)) {
+                    presentSettingFragment(new PremiumPreviewFragment("settings"));
+                }
                 break;
             case 12:
-                presentSettingFragment(new StarsIntroActivity());
+                if (TellomiFeatures.starsEnabled(currentAccount)) {
+                    presentSettingFragment(new StarsIntroActivity());
+                }
                 break;
             case 13:
-                presentSettingFragment(new TONIntroActivity());
+                if (TellomiFeatures.tonEnabled(currentAccount)) {
+                    presentSettingFragment(new TONIntroActivity());
+                }
                 break;
             case 25:
-                presentSettingFragment(new WalletActivity());
+                if (TellomiFeatures.walletEnabled(currentAccount)) {
+                    presentSettingFragment(new WalletActivity());
+                }
                 break;
             case 15:
-                presentSettingFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
+                if (TellomiFeatures.businessEnabled(currentAccount)) {
+                    presentSettingFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
+                }
                 break;
             case 16:
-                UserSelectorBottomSheet.open(0, BirthdayController.getInstance(UserConfig.selectedAccount).getState());
+                if (TellomiFeatures.giftsEnabled(currentAccount)) {
+                    UserSelectorBottomSheet.open(0, BirthdayController.getInstance(UserConfig.selectedAccount).getState());
+                }
                 break;
 
             case 17:

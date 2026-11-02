@@ -118,6 +118,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BirthdayController;
@@ -6075,7 +6076,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private boolean shownAiButton;
     private void showAiButton(boolean show_) {
-        final boolean show = (show_ || richDraftActive) && parentFragment != null && !parentFragment.isSecretChat();
+        final boolean show = TellomiFeatures.aiComposeEnabled(currentAccount) && (show_ || richDraftActive) && parentFragment != null && !parentFragment.isSecretChat();
 
         if (shownAiButton == show) return;
         if (show) {
@@ -10950,6 +10951,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         final TLRPC.UserFull myUserInfo = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         final TLRPC.User user = getParentFragment() == null ? null : getParentFragment().getCurrentUser();
         final boolean visible =
+            TellomiFeatures.giftsEnabled(currentAccount) &&
             !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() &&
             getParentFragment() != null && user != null &&
             !BuildVars.IS_BILLING_UNAVAILABLE &&

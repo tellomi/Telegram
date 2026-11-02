@@ -175,6 +175,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -4466,7 +4467,7 @@ public class ChatActivity extends BaseFragment implements
             if (searchItem != null) {
                 headerItem.lazilyAddSubItem(search, R.drawable.msg_search, LocaleController.getString(R.string.Search));
             }
-            if (ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
+            if (TellomiFeatures.boostsEnabled(currentAccount) && ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, dp(24), dp(24));
                 headerItem.lazilyAddSubItem(boost_group, drawable, LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.BoostingBoostChannelMenu : R.string.BoostingBoostGroupMenu));
             }
@@ -9873,7 +9874,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void createTranslateButton() {
-        if (translateButton != null || getContext() == null) {
+        if (!TellomiFeatures.translateEnabled(currentAccount) || translateButton != null || getContext() == null) {
             return;
         }
 
@@ -29415,13 +29416,13 @@ public class ChatActivity extends BaseFragment implements
         }
 
         boolean showRestartTopic = !isInPreviewMode() && forumTopic != null && forumTopic.closed && !forumTopic.hidden && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic);
-        boolean showTranslate = (
+        boolean showTranslate = TellomiFeatures.translateEnabled(currentAccount) && ((
             getUserConfig().isPremium() || currentChat != null && currentChat.autotranslation ?
                 getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) && !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) :
                 !getMessagesController().premiumFeaturesBlocked() && preferences.getInt("dialog_show_translate_count" + did, 5) <= 0
-        ) || DEBUG_TOP_PANELS;
+        ) || DEBUG_TOP_PANELS);
         boolean showAddProfilePicture = UserObject.isBot(currentUser) && currentUser.bot_can_edit && currentUser.photo == null;
-        boolean showBizBot = currentEncryptedChat == null && getUserConfig().isPremium() && preferences.getLong("dialog_botid" + did, 0) != 0 || DEBUG_TOP_PANELS;
+        boolean showBizBot = TellomiFeatures.businessEnabled(currentAccount) && (currentEncryptedChat == null && getUserConfig().isPremium() && preferences.getLong("dialog_botid" + did, 0) != 0 || DEBUG_TOP_PANELS);
         boolean showBotAd = currentUser != null && currentUser.bot && messages.size() >= 2 && botSponsoredMessage != null;
         if (showRestartTopic) {
             shownRestartTopic = true;
@@ -45213,7 +45214,7 @@ public class ChatActivity extends BaseFragment implements
                 AndroidUtilities.addToClipboard("@" + username);
                 BulletinFactory.of(ChatActivity.this).createCopyBulletin(getString(R.string.UsernameCopied)).show();
             });
-            if (selling) {
+            if (selling && TellomiFeatures.fragmentEnabled(currentAccount)) {
                 options.add(R.drawable.outline_gram_24, getString(R.string.BuyUsernameOnFragment), () -> {
                     Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                 });
@@ -46164,13 +46165,13 @@ public class ChatActivity extends BaseFragment implements
             allowChatActions = false;
         }
 
-        if (message.isSponsored() && !getUserConfig().isPremium() && !getMessagesController().premiumFeaturesBlocked() && !message.sponsoredCanReport) {
+        if (TellomiFeatures.channelRevenueEnabled(currentAccount) && message.isSponsored() && !getUserConfig().isPremium() && !getMessagesController().premiumFeaturesBlocked() && !message.sponsoredCanReport) {
             items.add(LocaleController.getString(R.string.HideAd));
             options.add(OPTION_HIDE_SPONSORED_MESSAGE);
             icons.add(R.drawable.msg_block2);
         }
 
-        if (message.isSponsored() && message.sponsoredCanReport) {
+        if (TellomiFeatures.channelRevenueEnabled(currentAccount) && message.isSponsored() && message.sponsoredCanReport) {
             items.add(LocaleController.getString(R.string.AboutRevenueSharingAds));
             options.add(OPTION_ABOUT_REVENUE_SHARING_ADS);
             icons.add(R.drawable.msg_report);
