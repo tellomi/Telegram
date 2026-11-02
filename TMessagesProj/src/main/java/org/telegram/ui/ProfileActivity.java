@@ -156,6 +156,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -7519,13 +7520,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (o.getLastView() instanceof TextView) {
                     final TextView textView = (TextView) o.getLastView();
                     textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6));
-                    textView.setOnClickListener(v -> {
-                        try {
-                            v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://fragment.com")));
-                        } catch (ActivityNotFoundException e) {
-                            FileLog.e(e);
-                        }
-                    });
+                    if (TellomiFeatures.fragmentEnabled(currentAccount)) {
+                        textView.setOnClickListener(v -> {
+                            try {
+                                v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://fragment.com")));
+                            } catch (ActivityNotFoundException e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    }
                 }
             }
             o.show();
@@ -9186,7 +9189,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     avatarImage.setHasStories(needInsetForStories());
                 }
                 if (chatId != 0) {
-                    boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
+                    boolean gift = TellomiFeatures.giftsEnabled(currentAccount) && !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
                     otherItem.setSubItemShown(gift_premium, gift);
                     if (actionsView != null) {
                         actionsView.set(ProfileActionsView.KEY_GIFT, gift);
@@ -10385,7 +10388,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         fetchUsersFromChannelInfo();
         if (chatId != 0) {
-            boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
+            boolean gift = TellomiFeatures.giftsEnabled(currentAccount) && !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
             otherItem.setSubItemShown(gift_premium, gift);
             if (actionsView != null) {
                 actionsView.set(ProfileActionsView.KEY_GIFT, gift);
@@ -10699,20 +10702,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 devicesRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
-                if (!getMessagesController().premiumFeaturesBlocked()) {
+                if (TellomiFeatures.premiumEntryEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
                     premiumRow = rowCount++;
                 }
-                if (getMessagesController().starsPurchaseAvailable()) {
+                if (TellomiFeatures.starsEnabled(currentAccount)) {
                     starsRow = rowCount++;
                 }
-                StarsController.getInstance(currentAccount, true).getBalance();
-                if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
-                    tonRow = rowCount++;
+                if (TellomiFeatures.tonEnabled(currentAccount)) {
+                    StarsController.getInstance(currentAccount, true).getBalance();
+                    if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
+                        tonRow = rowCount++;
+                    }
                 }
-                if (!getMessagesController().premiumFeaturesBlocked()) {
+                if (TellomiFeatures.businessEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
                     businessRow = rowCount++;
                 }
-                if (!getMessagesController().premiumPurchaseBlocked()) {
+                if (TellomiFeatures.giftsEnabled(currentAccount) && !getMessagesController().premiumPurchaseBlocked()) {
                     premiumGiftingRow = rowCount++;
                 }
                 if (premiumRow >= 0 || starsRow >= 0 || tonRow >= 0 || businessRow >= 0 || premiumGiftingRow >= 0) {
@@ -10957,6 +10962,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         blockedUsersRow = rowCount++;
                     }
                     if (
+                        TellomiFeatures.channelRevenueEnabled(currentAccount) &&
                         chatInfo != null && chatInfo.can_view_stars_revenue && (
                             BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount > 0 ||
                             BotStarsController.getInstance(currentAccount).hasTransactions(-chatId)
@@ -10972,6 +10978,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             } else {
                 if (
+                        TellomiFeatures.channelRevenueEnabled(currentAccount) &&
                         chatInfo != null &&
                                 chatInfo.can_view_stars_revenue && (
                                 BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount > 0 ||
@@ -12231,12 +12238,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
+                    if (TellomiFeatures.giftsEnabled(currentAccount) && !BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
                         StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGift));
                         giftAction = true;
                     }
-                    if (getMessagesController().config.walletAvailable.get() && !MessagesController.isSupportUser(user) && !UserObject.isService(user.id)) {
+                    if (TellomiFeatures.walletEnabled(currentAccount) && !MessagesController.isSupportUser(user) && !UserObject.isService(user.id)) {
                         otherItem.addSubItem(send_money, R.drawable.ic_gram, LocaleController.getString(R.string.WalletSendMoney));
                     }
                     otherItem.addSubItem(start_secret_chat, R.drawable.msg_secret, LocaleController.getString(R.string.StartEncryptedChat));
@@ -12323,7 +12330,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         otherItem.addSubItem(share, R.drawable.msg_share, LocaleController.getString(R.string.BotShare));
                         shareAction = !chat.creator;
                     }
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked()) {
+                    if (TellomiFeatures.giftsEnabled(currentAccount) && !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked()) {
                         StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGiftToChannel));
                         otherItem.setSubItemShown(gift_premium, chatInfo != null && chatInfo.stargifts_available);
@@ -13539,7 +13546,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     isTopic || bizHoursRow != -1 || bizLocationRow != -1
                             );
 
-                            containsGift = !myProfile && today && !getMessagesController().premiumPurchaseBlocked();
+                            containsGift = TellomiFeatures.giftsEnabled(currentAccount) && !myProfile && today && !getMessagesController().premiumPurchaseBlocked();
                         }
                     } else if (position == phoneRow) {
                         String text;
@@ -14850,6 +14857,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         private static boolean isPremiumFeatureAvailable(int currentAccount, int feature) {
+            if (!TellomiFeatures.premiumEntryEnabled(currentAccount))
+                return false;
             if (MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && !UserConfig.getInstance(currentAccount).isPremium())
                 return false;
             if (feature == -1)

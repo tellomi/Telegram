@@ -63,6 +63,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
@@ -1103,6 +1104,9 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public void show() {
+        if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
+            return;
+        }
         super.show();
         if (actionBar != null) {
             actionBar.setTitle(getTitle());
@@ -2451,6 +2455,9 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
         @Override
         public void show() {
+            if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
+                return;
+            }
             super.show();
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.loadedAiComposeTones);
         }

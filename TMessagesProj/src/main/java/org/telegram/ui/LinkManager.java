@@ -21,6 +21,7 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -1428,7 +1429,7 @@ public class LinkManager {
     }
 
     private boolean handleAiStyle(String slug) {
-        if (TextUtils.isEmpty(slug)) return false;
+        if (!TellomiFeatures.aiComposeEnabled(currentAccount) || TextUtils.isEmpty(slug)) return false;
         final TL_aicompose.getTone req = new TL_aicompose.getTone();
         final TL_aicompose.inputAiComposeToneSlug input = new TL_aicompose.inputAiComposeToneSlug();
         input.slug = slug;

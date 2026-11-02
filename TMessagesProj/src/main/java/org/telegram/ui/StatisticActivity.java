@@ -54,6 +54,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LruCache;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -611,8 +612,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
         TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
         final boolean hasStats = chatFull != null && chatFull.can_view_stats;
-        boolean isBoostSupported = ChatObject.isBoostSupported(currentChat);
-        final boolean hasMonetization = chatFull != null && (chatFull.can_view_revenue || chatFull.can_view_stars_revenue);
+        boolean isBoostSupported = TellomiFeatures.boostsEnabled(currentAccount) && ChatObject.isBoostSupported(currentChat);
+        final boolean hasMonetization = TellomiFeatures.channelRevenueEnabled(currentAccount) && chatFull != null && (chatFull.can_view_revenue || chatFull.can_view_stars_revenue);
 
         ArrayList<GlassTabView> tabViews = new ArrayList<>(3);
         if (hasStats) {

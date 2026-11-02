@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AiButtonDrawable;
@@ -182,7 +183,15 @@ public class RichEditorToolbar extends FrameLayout {
         bottomPanel.addView(aiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setContentDescription("AI");
-        aiButton.setOnClickListener(v -> delegate.onAi());
+        if (!TellomiFeatures.aiComposeEnabled()) {
+            aiButton.setVisibility(View.GONE);
+        }
+        aiButton.setOnClickListener(v -> {
+            if (!TellomiFeatures.aiComposeEnabled()) {
+                return;
+            }
+            delegate.onAi();
+        });
 
         final FrameLayout blocksContainer2 = new FrameLayout(context);
         blocksContainer2.setClipToPadding(false);

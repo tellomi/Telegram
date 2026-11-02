@@ -31,7 +31,7 @@ public class AppGlobalConfig {
 
     public final ConfigDouble tonUsdRate = ofDouble("ton_usd_rate", 3);
 
-    public final ConfigString starsRatingLearnMoreUrl = ofString("stars_rating_learnmore_url", TellomiBrand.rewrite("https://telegram.org/blog/telegram-stars"));
+    public final ConfigString starsRatingLearnMoreUrl = ofString("stars_rating_learnmore_url", "");
     public final ConfigBoolean needAgeVideoVerification = ofBoolean("need_age_video_verification", false);
 
     public final ConfigInt starsStarGiftResaleCommissionPermille = ofInt("stars_stargift_resale_commission_permille", 800);
@@ -115,7 +115,20 @@ public class AppGlobalConfig {
     /** TELLOMI: help.getAppConfig emoji_blocklist. Merged onto EmojiBlocklist's built-in default. */
     public final ConfigStringSet emojiBlocklist = ofStringSet("emoji_blocklist", Collections.emptySet());
 
-    public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", BuildVars.DEBUG_VERSION);
+    /** Missing key stays off. A debug build must not surface the TON wallet. */
+    public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", false);
+
+    /** Tellomi gates. Missing keys stay off. See {@link TellomiFeatures}. */
+    public final ConfigBoolean tellomiAiComposeEnabled = ofBoolean("tellomi_ai_compose_enabled", false);
+    public final ConfigBoolean tellomiTranslateEnabled = ofBoolean("tellomi_translate_enabled", false);
+    public final ConfigBoolean tellomiGiftsEnabled = ofBoolean("tellomi_gifts_enabled", false);
+    public final ConfigBoolean tellomiTonEnabled = ofBoolean("tellomi_ton_enabled", false);
+    public final ConfigBoolean tellomiFragmentEnabled = ofBoolean("tellomi_fragment_enabled", false);
+    public final ConfigBoolean tellomiChannelRevenueEnabled = ofBoolean("tellomi_channel_revenue_enabled", false);
+    public final ConfigBoolean tellomiBusinessEnabled = ofBoolean("tellomi_business_enabled", false);
+    public final ConfigBoolean tellomiBoostsEnabled = ofBoolean("tellomi_boosts_enabled", false);
+    public final ConfigBoolean tellomiPassportEnabled = ofBoolean("tellomi_passport_enabled", false);
+    public final ConfigBoolean tellomiAiSummaryEnabled = ofBoolean("tellomi_ai_summary_enabled", false);
     public final ConfigBoolean walletPaidMessageRecipientMessageAmountCheck = ofBoolean("wallet_paid_message_recipient_message_amount_check", true);
     public final ConfigLong walletTransferMinNanos = ofLong("wallet_transfer_min_nanos", 100_000_000);
     public final ConfigLong walletGaslessMinNanos = ofLong("wallet_gasless_min_nanos", 100_000_000);

@@ -35,6 +35,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -594,6 +595,9 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
 
     @Override
     public boolean onFragmentCreate() {
+        if (!TellomiFeatures.boostsEnabled(currentAccount)) {
+            return false;
+        }
         getNotificationCenter().addObserver(this, NotificationCenter.boostByChannelCreated);
         getNotificationCenter().addObserver(this, NotificationCenter.chatWasBoostedByUser);
         return super.onFragmentCreate();

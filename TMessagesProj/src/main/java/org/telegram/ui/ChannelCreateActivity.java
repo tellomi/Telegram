@@ -52,6 +52,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -870,6 +871,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 new ClickableSpan() {
                                     @Override
                                     public void onClick(@NonNull View view) {
+                                        if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
+                                            return;
+                                        }
                                         Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                     }
 

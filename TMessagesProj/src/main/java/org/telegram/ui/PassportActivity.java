@@ -68,6 +68,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
@@ -931,6 +932,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public boolean onFragmentCreate() {
+        if (!TellomiFeatures.passportEnabled(currentAccount)) {
+            return false;
+        }
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
@@ -1675,7 +1679,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
-                builder.setNegativeButton(LocaleController.getString(R.string.RestorePasswordResetAccount), (dialog, which) -> Browser.openUrl(getParentActivity(), org.telegram.messenger.TellomiBrand.rewrite("https://telegram.org/deactivate?phone=") + UserConfig.getInstance(currentAccount).getClientPhone()));
                 builder.setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle));
                 builder.setMessage(LocaleController.getString(R.string.RestorePasswordNoEmailText));
                 showDialog(builder.create());
