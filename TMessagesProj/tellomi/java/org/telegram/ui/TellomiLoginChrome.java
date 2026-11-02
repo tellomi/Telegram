@@ -195,6 +195,67 @@ public final class TellomiLoginChrome {
     }
 
     /**
+     * 「其他登录方式」 and the round ⋯ button. Weibo, WeChat, and QQ stay hidden.
+     * The sheet is only 找回账号 and 取消. There is no pre-login recovery RPC,
+     * so 找回账号 uses the same「暂未开放」card as Apple and Google.
+     */
+    public static void showLoginSheet(Context context) {
+        if (context == null) {
+            return;
+        }
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setCanceledOnTouchOutside(true);
+
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(pageFill());
+        float r = AndroidUtilities.dp(14);
+        cardBg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        card.setBackground(cardBg);
+        card.addView(sheetRow(context, LocaleController.getString(R.string.TellomiRecoverAccount), () -> {
+            dialog.dismiss();
+            showUnavailable(context);
+        }));
+        root.addView(card, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        View gap = new View(context);
+        gap.setBackgroundColor(night() ? 0xFF000000 : 0xFFF2F2F2);
+        root.addView(gap, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(8)));
+
+        LinearLayout cancelCard = new LinearLayout(context);
+        cancelCard.setOrientation(LinearLayout.VERTICAL);
+        cancelCard.setBackgroundColor(pageFill());
+        cancelCard.addView(sheetRow(context, LocaleController.getString(R.string.Cancel), dialog::dismiss));
+        root.addView(cancelCard, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        dialog.setContentView(root);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setGravity(Gravity.BOTTOM);
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setDimAmount(0.45f);
+        }
+        dialog.show();
+    }
+
+    private static View sheetRow(Context context, String label, Runnable click) {
+        TextView row = new TextView(context);
+        row.setText(label);
+        row.setTextColor(text());
+        row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        row.setGravity(Gravity.CENTER);
+        row.setMinimumHeight(AndroidUtilities.dp(54));
+        row.setOnClickListener(v -> click.run());
+        return row;
+    }
+
+    /**
      * Options under「收不到验证码？」. Help opens {@link BuildVars#HELP_URL}.
      * {@code resend} is the SMS / resend row; null hides it (app-code screen
      * already shows that action on the page).
@@ -417,6 +478,7 @@ public final class TellomiLoginChrome {
 
         public static final class ActionButton extends FrameLayout {
         private final TextView labelView;
+        private final TextView dotsView;
         private final ProgressBar progressView;
         private final GradientDrawable background;
         private boolean ready;
@@ -437,6 +499,16 @@ public final class TellomiLoginChrome {
             labelView.setGravity(Gravity.CENTER);
             addView(labelView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER));
 
+            dotsView = new TextView(context);
+            dotsView.setText("•••");
+            dotsView.setTextColor(ctaLabel(true));
+            dotsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+            dotsView.setTypeface(AndroidUtilities.bold());
+            dotsView.setLetterSpacing(0.35f);
+            dotsView.setGravity(Gravity.CENTER);
+            dotsView.setVisibility(GONE);
+            addView(dotsView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER));
+
             progressView = new ProgressBar(context);
             progressView.setIndeterminate(true);
             progressView.setVisibility(GONE);
@@ -449,8 +521,16 @@ public final class TellomiLoginChrome {
         }
 
         /** Black (or white in dark mode) when the form can be submitted. Still clickable while empty. */
+        public boolean isReady() {
+            return ready;
+        }
+
         public void setReady(boolean ready) {
             this.ready = ready;
+            if (dotsView.getVisibility() == VISIBLE) {
+                background.setColor(ctaFill(true));
+                return;
+            }
             background.setColor(ctaFill(ready));
             labelView.setTextColor(ctaLabel(ready));
         }
@@ -468,14 +548,20 @@ public final class TellomiLoginChrome {
 
         public void setBusy(boolean busy) {
             labelView.setVisibility(busy ? INVISIBLE : VISIBLE);
-            progressView.setVisibility(busy ? VISIBLE : GONE);
+            dotsView.setVisibility(busy ? VISIBLE : GONE);
+            dotsView.setTextColor(ctaLabel(true));
+            progressView.setVisibility(GONE);
+            background.setColor(ctaFill(busy || ready));
+            if (!busy) {
+                labelView.setTextColor(ctaLabel(ready));
+            }
             // Stay enabled. A second tap cancels auth.sendCode instead of
             // starting another one. Disabling the button left no cancel.
             setEnabled(true);
         }
 
         public boolean isBusy() {
-            return progressView.getVisibility() == VISIBLE;
+            return dotsView.getVisibility() == VISIBLE;
         }
     }
 }

@@ -469,3 +469,17 @@ The send control is `tellomi/res/drawable/send_plane_24.xml`, an arrow-up, on th
 | `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list is Blue and Dark Blue. Accent swatches are not shown. |
 | `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Arrow-up instead of the paper plane. |
 | `TMessagesProj/tellomi/res/drawable-*/notification.webp` | White Tellomi silhouette. |
+
+## Login screens match the 2026-11-03 spec
+
+The first page is the phone form again (`PhoneView`), not the email page. Password and email are modes of that same form. SMS stays `LoginActivitySmsView`. The email code stays `LoginActivityEmailCodeView`. `auth.sendCode` is unchanged.
+
+The numeric keypad covers the phone form instead of pushing it. On the email form the round icons sit under a spacer, so `adjustResize` lifts only that row. Agreement text is 已阅读并同意 用户协议 和 隐私政策, with no carrier line. SMS boxes use the server length. A wrong SMS code stays in the boxes and the line under them is 验证码错误，请重新输入. The primary button shows ••• while the request is in flight.
+
+「其他登录方式」 and ⋯ open a bottom sheet with 找回账号 and 取消. Apple, Google, password login, and 找回账号 still open「暂未开放」. There is no Apple sign-in, no Google account login, no password RPC, and no pre-login recovery. The top-right control is still the language globe.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home, phone password, and email entry. Sheet, clear buttons, keypad overlay, code error line. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Bottom sheet and the ••• busy state. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | Agreement sentence without the carrier line. SMS error copy. |
