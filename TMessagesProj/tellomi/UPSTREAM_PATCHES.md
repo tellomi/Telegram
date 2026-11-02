@@ -416,3 +416,34 @@ The default accent colors are unchanged. Blue's home accent is `0xFF5890C5` and 
 | `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Previewing the default slug does not overlay `default_pattern`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ThemeSmallPreviewView.java` | A built-in accent with no downloaded pattern is not filled with `default_pattern`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The default chat-theme stub uses the same light and dark solids. |
+
+## MingCute icons, phase 1
+
+Phase 1 swaps the icons on the bottom tabs, the chat input, the chat list and its swipe actions, message menus (`msg_*` / `menu_*` used there), the action bar, and profile/settings rows. The art is [MingCute](https://github.com/Richard9394/MingCute) (Apache-2.0; the tree now lives at `mingcute-design/mingcute-icons`). `TMessagesProj/tellomi/icons/mingcute/LICENSE` and `NOTICE` are the attribution. This client has no in-app open-source licenses screen.
+
+Replacements sit in the `tellomi` resource flavor under the same resource name. A drawable that already ships as a density bitmap is a white-on-transparent WebP at that bitmap's pixel size, so the existing tint still applies. A drawable that is only a vector stays a vector. Density bitmaps are not turned into VectorDrawables. `tellomi/icons/mapping.csv` is the sheet (`telegram_resource`, `mingcute_name`, `style` line or fill, `kind`). `tellomi/icons/generate_icons.py` rebuilds it from a MingCute `packages/svg` checkout (`MINGCUTE_SVG`).
+
+332 resource names are replaced (333 rows: `chats_archive` is both the bitmap and the swipe Lottie). Of those, 240 are rasters, 70 are vectors, 15 are one-frame Lotties standing in for swipe/archive raw files, and 8 are the new tab line/fill bitmaps.
+
+The four main tabs no longer play `R.raw.tab_*`. `GlassTabView` crossfades `tab_chats` / `tab_contacts` / `tab_calls` / `tab_settings` with the matching `_fill` bitmap (scale plus alpha). The emoji, sticker, keyboard, GIF, mic, and camera button uses the same static glyphs with a short scale crossfade instead of the morph Lottie.
+
+`send_plane_24` and `send_outline` are MingCute `send` for now, not the Telegram paper plane. `SendButton` colors are unchanged (white glyph on the accent disk). A follow-up replaces that control with a black day / white night circle and MingCute `arrow-up`.
+
+`msg_inputarrow` is a white chevron the login country row tints, so it is MingCute `arrow-right`. The other login-only icons stay: `tellomi_ic_*` bake `#111111`, `#C7C7CC`, or `#3478F6` and nothing tints them, and `login_arrow1` / `login_phone1` are 128px missed-call drawings.
+
+Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phase):
+
+- Login-only icons left as they are: `tellomi_ic_*`, `login_arrow1`, `login_phone1`. The shared back, close, and overflow glyphs do change on the login screens because they are the action-bar icons.
+- Brand marks and the notification silhouette: `telegram_logo*`, `ic_gram`, `outline_gram_24`, `settings_gram_24`, `dialog_gram_transfer`, `filled_gram_earnings`, `notification.webp`.
+- Layered drawings: archive-hint pieces (`chats_archive_arrow`, `_box`, `_muted`, `_pin`), the two-layer calendar (`input_calendar1`, `input_calendar2`), the add-poll pair, the small star pair, `tooltip_arrow`, `redcircle`, `floating_shadow_profile`, `avd_speed`.
+- Colored vectors: `settings_wallet`, `settings_wallet_dark`.
+- Every other Lottie (attach-sheet tabs, stickers, stories, photo editor, calls) and icons that those screens use but the phase-1 activities do not.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | Builds the overlays from MingCute SVGs. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | Resource to MingCute name, line or fill. |
+| `TMessagesProj/tellomi/icons/mingcute/` | Apache-2.0 LICENSE, NOTICE, and the SVGs that were used. |
+| `TMessagesProj/tellomi/res/` | Same-name WebP, vector, and raw overlays. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | Main tabs crossfade line and fill. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Input glyphs are static, with a short scale crossfade. |
