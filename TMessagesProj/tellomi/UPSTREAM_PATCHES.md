@@ -375,7 +375,6 @@ The in-app map is unchanged. See the note under the table.
 
 In-app preview, not changed here. `ApplicationLoader.onCreateMapsProvider` returns `GoogleMapsProvider` (`com.google.android.gms.maps`). `LocationActivity` and `ChatAttachAlertLocationLayout` draw that SDK. Without Play services the view stays on `MapPlaceholderDrawable` (the preload thread already swallows the init failure). This tree has no OSM `IMapsProvider`. The Huawei app module is the only other provider (`HuaweiMapsProvider` when Play services are absent). Upstream DrKLO later plugs OSM in through the same `IMapsProvider`; that swap is a separate change. The bubble thumbnail is not the SDK: `WebFile.createWithGeoPoint` asks the server (`mapProvider` 2, `static_maps_provider=telegram`), or the client downloads a Yandex or Google static image when the server config says so (`AndroidUtilities.formapMapUrl`). Default before config loads is `mapProvider` 0, which is the Google static URL.
 
-<<<<<<< HEAD
 ## Email is the first login page
 
 After 开始使用, `LoginActivity` opens `VIEW_TELLOMI_EMAIL_CODE` (`TellomiAuthPage`) instead of the phone form. 「使用手机号登录」calls `setPage(VIEW_PHONE_INPUT)` with the same 300ms slide as the other login steps. Back on the phone page slides back to email. Back on the email page closes login. A code started from email returns to the email page. Black/white buttons and the shared agreement line are unchanged.
