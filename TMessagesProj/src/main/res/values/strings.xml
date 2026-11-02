@@ -4218,16 +4218,16 @@
     <!--Intro view-->
     <string name="Page1Title">Tellomi</string>
     <string name="Page2Title">Nearby</string>
-    <string name="Page3Title">With you</string>
+    <string name="Page3Title">Anywhere</string>
     <string name="Page4Title">Messages</string>
     <string name="Page5Title">Photos</string>
     <string name="Page6Title">Private</string>
-    <string name="Page1Message">Meet people nearby. Real, and private.</string>
-    <string name="Page2Message">See who\'s around, then say hello.</string>
-    <string name="Page3Message">Switch devices and keep talking.</string>
-    <string name="Page4Message">A conversation that belongs to the two of you.</string>
-    <string name="Page5Message">Share a moment when you\'re ready.</string>
-    <string name="Page6Message">What you say stays between you.</string>
+    <string name="Page1Message">Meet someone nearby.\nReal people, **private** chats.</string>
+    <string name="Page2Message">See who\'s around\nand say hello.</string>
+    <string name="Page3Message">Pick up the same chat\non every device.</string>
+    <string name="Page4Message">A conversation\nthat stays between you two.</string>
+    <string name="Page5Message">Share a moment\nwhen you\'re ready.</string>
+    <string name="Page6Message">Your chats\nstay yours.</string>
     <string name="StartMessaging">Start meeting</string>
     <!-- VoIP -->
     <string name="AccountSettings">Account Settings</string>
