@@ -36,6 +36,7 @@ import org.telegram.messenger.TellomiDefaults;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 public final class TellomiLanguageSheet {
@@ -93,8 +94,39 @@ public final class TellomiLanguageSheet {
         return out;
     }
 
+    /**
+     * Bundled packs, then any extra row {@code langpack.getLanguages} added.
+     * That request uses {@code RequestFlagWithoutLogin}, so this works before sign-in.
+     */
+    public static List<LocaleController.LocaleInfo> loginChoices() {
+        List<LocaleController.LocaleInfo> bundled = bundledChoices();
+        ArrayList<LocaleController.LocaleInfo> out = new ArrayList<>(bundled);
+        HashSet<String> seen = new HashSet<>();
+        for (int i = 0; i < bundled.size(); i++) {
+            LocaleController.LocaleInfo info = bundled.get(i);
+            if (info != null && info.shortName != null) {
+                seen.add(info.shortName.replace('-', '_').toLowerCase());
+            }
+        }
+        ArrayList<LocaleController.LocaleInfo> all = LocaleController.getInstance().languages;
+        for (int i = 0; i < all.size(); i++) {
+            LocaleController.LocaleInfo info = all.get(i);
+            if (info == null || info.shortName == null) {
+                continue;
+            }
+            if (!info.isRemote() && !info.isBuiltIn()) {
+                continue;
+            }
+            String key = info.shortName.replace('-', '_').toLowerCase();
+            if (seen.add(key)) {
+                out.add(info);
+            }
+        }
+        return out;
+    }
+
     public static LocaleController.LocaleInfo[] choices() {
-        List<LocaleController.LocaleInfo> list = bundledChoices();
+        List<LocaleController.LocaleInfo> list = loginChoices();
         return list.toArray(new LocaleController.LocaleInfo[0]);
     }
 

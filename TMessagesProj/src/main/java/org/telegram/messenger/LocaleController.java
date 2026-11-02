@@ -3194,6 +3194,10 @@ public class LocaleController {
         }
     }
 
+    /**
+     * langpack.getLanguages. {@link ConnectionsManager#RequestFlagWithoutLogin} is required:
+     * a signed-out client has no user id, and tgnet otherwise parks the request until login.
+     */
     public void loadRemoteLanguages(final int currentAccount) {
         loadRemoteLanguages(currentAccount, true);
     }
@@ -3276,8 +3280,11 @@ public class LocaleController {
                         applyLanguage(currentLocaleInfo, true, false, currentAccount);
                     }
                 });
+            } else {
+                // A signed-out failure must not stick, or the login picker never retries the catalog.
+                AndroidUtilities.runOnUIThread(() -> loadingRemoteLanguages = false);
             }
-        }, ConnectionsManager.RequestFlagWithoutLogin);
+        }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     private int applyRemoteLanguage(LocaleInfo localeInfo, String langCode, boolean force, final int currentAccount, Runnable onDone) {
@@ -3309,7 +3316,7 @@ public class LocaleController {
                         if (response != null) {
                             AndroidUtilities.runOnUIThread(() -> saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone));
                         }
-                    }, ConnectionsManager.RequestFlagWithoutLogin);
+                    }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
                 }
             } else {
                 FileLog.d("applyRemoteLanguage getLangPack of base");
@@ -3322,7 +3329,7 @@ public class LocaleController {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin);
+                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             }
         }
         if (langCode == null || langCode.equals(localeInfo.shortName)) {
@@ -3339,7 +3346,7 @@ public class LocaleController {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin);
+                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                     ConnectionsManager.setLangCode(localeInfo.getLangCode());
@@ -3354,7 +3361,7 @@ public class LocaleController {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin);
+                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             }
         }
         return 0;

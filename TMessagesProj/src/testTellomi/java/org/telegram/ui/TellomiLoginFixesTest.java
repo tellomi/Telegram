@@ -130,6 +130,34 @@ public class TellomiLoginFixesTest {
     }
 
     @Test
+    public void langpackRequestsRunBeforeLogin() throws Exception {
+        String locale = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getLanguages()", 8000));
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getLangPack()", 1500));
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getDifference()", 1500));
+        String launch = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(flagFollows(launch, "new TLRPC.TL_langpack_getLanguage()", 2500));
+        assertTrue(flagFollows(launch, "new TLRPC.TL_langpack_getStrings()", 2500));
+    }
+
+    private static boolean flagFollows(String text, String needle, int window) {
+        int from = 0;
+        boolean found = false;
+        while (true) {
+            int at = text.indexOf(needle, from);
+            if (at < 0) {
+                return found;
+            }
+            found = true;
+            int flag = text.indexOf("RequestFlagWithoutLogin", at);
+            if (flag < 0 || flag - at > window) {
+                return false;
+            }
+            from = at + needle.length();
+        }
+    }
+
+    @Test
     public void chinesePackIncludesFlavorStrings() throws Exception {
         File plugin = find("buildSrc/src/main/kotlin/org/telegram/plugin/TelegramBuildAppPlugin.kt");
         String source = new String(Files.readAllBytes(plugin.toPath()), StandardCharsets.UTF_8);

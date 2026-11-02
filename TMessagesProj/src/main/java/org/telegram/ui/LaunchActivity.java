@@ -5347,7 +5347,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         showAlertDialog(AlertsCreator.createSimpleAlert(LaunchActivity.this, LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text));
                     }
                 }
-            }));
+            }), ConnectionsManager.RequestFlagWithoutLogin);
         } else if (wallPaper != null) {
             boolean ok = false;
             if (TextUtils.isEmpty(wallPaper.slug)) {

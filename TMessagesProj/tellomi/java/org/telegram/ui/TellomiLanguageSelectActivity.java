@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -40,7 +41,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TellomiLanguageSelectActivity extends BaseFragment {
+public class TellomiLanguageSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface Callback {
         void onLanguage(LocaleController.LocaleInfo info);
@@ -60,8 +61,30 @@ public class TellomiLanguageSelectActivity extends BaseFragment {
     }
 
     @Override
+    public boolean onFragmentCreate() {
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
+        LocaleController.getInstance().loadRemoteLanguages(currentAccount);
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        super.onFragmentDestroy();
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id != NotificationCenter.suggestedLangpack || listAdapter == null) {
+            return;
+        }
+        languages = new ArrayList<>(TellomiLanguageSheet.loginChoices());
+        listAdapter.notifyDataSetChanged();
+    }
+
+    @Override
     public View createView(Context context) {
-        languages = new ArrayList<>(TellomiLanguageSheet.bundledChoices());
+        languages = new ArrayList<>(TellomiLanguageSheet.loginChoices());
         searchWas = false;
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
