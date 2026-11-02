@@ -134,128 +134,6 @@ public final class TellomiLoginChrome {
     }
 
     /**
-     * Apple, Google, password login, and any other method that is not wired up.
-     * Same card as the terms dialog. Copy matches the iOS text alert:
-     * title, one sentence, and a single OK button.
-     */
-    public static void showUnavailable(Context context) {
-        if (context == null) {
-            return;
-        }
-        Dialog dialog = new Dialog(context);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setCanceledOnTouchOutside(true);
-
-        LinearLayout card = new LinearLayout(context);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(22), AndroidUtilities.dp(20), AndroidUtilities.dp(18));
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(pageFill());
-        background.setCornerRadius(AndroidUtilities.dp(16));
-        card.setBackground(background);
-
-        TextView title = new TextView(context);
-        title.setText(LocaleController.getString(R.string.TellomiNotOpen));
-        title.setTextColor(text());
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setGravity(Gravity.CENTER);
-        card.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        TextView body = new TextView(context);
-        body.setText(LocaleController.getString(R.string.TellomiNotOpenBody));
-        body.setTextColor(MUTED);
-        body.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(AndroidUtilities.dp(3), 1f);
-        LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        bodyLp.topMargin = AndroidUtilities.dp(14);
-        bodyLp.bottomMargin = AndroidUtilities.dp(18);
-        card.addView(body, bodyLp);
-
-        ActionButton ok = actionButton(context, LocaleController.getString(R.string.TellomiNotOpenOk), v -> dialog.dismiss());
-        ok.setReady(true);
-        card.addView(ok, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
-
-        FrameLayout wrap = new FrameLayout(context);
-        int side = AndroidUtilities.dp(32);
-        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardLp.leftMargin = side;
-        cardLp.rightMargin = side;
-        wrap.addView(card, cardLp);
-        dialog.setContentView(wrap);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            window.setDimAmount(0.45f);
-        }
-        dialog.show();
-    }
-
-    /**
-     * 「其他登录方式」 and the round ⋯ button. Weibo, WeChat, and QQ stay hidden.
-     * The sheet is only 找回账号 and 取消. There is no pre-login recovery RPC,
-     * so 找回账号 uses the same「暂未开放」card as Apple and Google.
-     */
-    public static void showLoginSheet(Context context) {
-        if (context == null) {
-            return;
-        }
-        Dialog dialog = new Dialog(context);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setCanceledOnTouchOutside(true);
-
-        LinearLayout root = new LinearLayout(context);
-        root.setOrientation(LinearLayout.VERTICAL);
-
-        LinearLayout card = new LinearLayout(context);
-        card.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(pageFill());
-        float r = AndroidUtilities.dp(14);
-        cardBg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
-        card.setBackground(cardBg);
-        card.addView(sheetRow(context, LocaleController.getString(R.string.TellomiRecoverAccount), () -> {
-            dialog.dismiss();
-            showUnavailable(context);
-        }));
-        root.addView(card, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        View gap = new View(context);
-        gap.setBackgroundColor(night() ? 0xFF000000 : 0xFFF2F2F2);
-        root.addView(gap, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(8)));
-
-        LinearLayout cancelCard = new LinearLayout(context);
-        cancelCard.setOrientation(LinearLayout.VERTICAL);
-        cancelCard.setBackgroundColor(pageFill());
-        cancelCard.addView(sheetRow(context, LocaleController.getString(R.string.Cancel), dialog::dismiss));
-        root.addView(cancelCard, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        dialog.setContentView(root);
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setGravity(Gravity.BOTTOM);
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            window.setDimAmount(0.45f);
-        }
-        dialog.show();
-    }
-
-    private static View sheetRow(Context context, String label, Runnable click) {
-        TextView row = new TextView(context);
-        row.setText(label);
-        row.setTextColor(text());
-        row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        row.setGravity(Gravity.CENTER);
-        row.setMinimumHeight(AndroidUtilities.dp(54));
-        row.setOnClickListener(v -> click.run());
-        return row;
-    }
-
-    /**
      * Options under「收不到验证码？」. Help opens {@link BuildVars#HELP_URL}.
      * {@code resend} is the SMS / resend row; null hides it (app-code screen
      * already shows that action on the page).
@@ -368,19 +246,6 @@ public final class TellomiLoginChrome {
         }, 1600);
     }
 
-    public static TextView swapLink(Context context, String label, View.OnClickListener click) {
-        TextView view = new TextView(context);
-        view.setText(label);
-        view.setTextColor(LINK);
-        view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        view.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-        view.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.tellomi_ic_swap, 0, 0, 0);
-        view.setPadding(0, AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
-        view.setOnClickListener(click);
-        return view;
-    }
-
     public static View orDivider(Context context, String label) {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -426,21 +291,6 @@ public final class TellomiLoginChrome {
         return row;
     }
 
-    public static ImageView circleButton(Context context, int iconRes, View.OnClickListener click) {
-        ImageView icon = new ImageView(context);
-        icon.setImageResource(iconRes);
-        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        int pad = AndroidUtilities.dp(12);
-        icon.setPadding(pad, pad, pad, pad);
-        GradientDrawable background = new GradientDrawable();
-        background.setShape(GradientDrawable.OVAL);
-        background.setColor(pageFill());
-        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
-        icon.setBackground(background);
-        icon.setOnClickListener(click);
-        return icon;
-    }
-
     private static View line(Context context) {
         View view = new View(context);
         view.setBackgroundColor(lineColor());
@@ -463,17 +313,6 @@ public final class TellomiLoginChrome {
                     ((TextView) child).setTextColor(text());
                 }
             }
-        }
-
-        public static void restyleCircle(ImageView icon) {
-            if (icon == null) {
-                return;
-            }
-            GradientDrawable background = new GradientDrawable();
-            background.setShape(GradientDrawable.OVAL);
-            background.setColor(pageFill());
-            background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
-            icon.setBackground(background);
         }
 
         public static final class ActionButton extends FrameLayout {
