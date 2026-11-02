@@ -38,6 +38,7 @@ import org.telegram.ui.Components.SlideView;
 
 public class TellomiAuthPage extends SlideView {
 
+    public static final int PHONE_CODE = 0;
     public static final int PHONE_PASSWORD = 1;
     public static final int EMAIL_CODE = 2;
     public static final int EMAIL_PASSWORD = 3;
@@ -66,6 +67,8 @@ public class TellomiAuthPage extends SlideView {
         void cancelAuth();
 
         void setCustomKeyboard(boolean visible);
+
+        void afterIntro(Runnable action);
     }
 
     private final int mode;
@@ -188,7 +191,7 @@ public class TellomiAuthPage extends SlideView {
             addView(passwordOutline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, 0, 10, 0, 0));
         }
 
-        int switchMode = mode == EMAIL_CODE ? EMAIL_PASSWORD : mode == EMAIL_PASSWORD ? EMAIL_CODE : 0;
+        int switchMode = mode == EMAIL_CODE ? EMAIL_PASSWORD : mode == EMAIL_PASSWORD ? EMAIL_CODE : PHONE_CODE;
         boolean switchBack = mode != EMAIL_CODE;
         String switchLabel = LocaleController.getString(mode == PHONE_PASSWORD || mode == EMAIL_PASSWORD ? R.string.TellomiCodeLogin : R.string.TellomiPasswordLogin);
         TextView switchView = TellomiLoginChrome.swapLink(context, switchLabel, v -> host.openMode(switchMode, switchBack));
@@ -210,6 +213,17 @@ public class TellomiAuthPage extends SlideView {
         agreementView.setLineSpacing(AndroidUtilities.dp(2), 1f);
         agreement.install(agreementView, false);
         addView(agreementView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 14, 4, 0));
+
+        if (mode == EMAIL_CODE) {
+            TextView phoneLink = new TextView(context);
+            phoneLink.setText(LocaleController.getString(R.string.TellomiLoginWithPhone));
+            phoneLink.setTextColor(TellomiLoginChrome.LINK);
+            phoneLink.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            phoneLink.setGravity(Gravity.CENTER);
+            phoneLink.setPadding(0, AndroidUtilities.dp(18), 0, AndroidUtilities.dp(4));
+            phoneLink.setOnClickListener(v -> host.openMode(PHONE_CODE, false));
+            addView(phoneLink, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
+        }
 
         LinearLayout circles = new LinearLayout(context);
         circles.setOrientation(HORIZONTAL);
@@ -315,8 +329,10 @@ public class TellomiAuthPage extends SlideView {
                 emailField.setText(email);
             }
             if (mode == EMAIL_CODE) {
-                emailField.requestFocus();
-                AndroidUtilities.showKeyboard(emailField);
+                host.afterIntro(() -> {
+                    emailField.requestFocus();
+                    AndroidUtilities.showKeyboard(emailField);
+                });
             }
         }
         refreshReady();
