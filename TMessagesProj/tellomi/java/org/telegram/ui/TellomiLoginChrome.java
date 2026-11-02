@@ -35,8 +35,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.OutlineTextContainerView;
 
@@ -190,6 +192,87 @@ public final class TellomiLoginChrome {
             window.setDimAmount(0.45f);
         }
         dialog.show();
+    }
+
+    /**
+     * Options under「收不到验证码？」. Help opens {@link BuildVars#HELP_URL}.
+     * {@code resend} is the SMS / resend row; null hides it (app-code screen
+     * already shows that action on the page).
+     */
+    public static void showCodeOptions(Context context, String resendLabel, Runnable resend) {
+        if (context == null) {
+            return;
+        }
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setCanceledOnTouchOutside(true);
+
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(18), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(pageFill());
+        background.setCornerRadius(AndroidUtilities.dp(16));
+        card.setBackground(background);
+
+        TextView title = new TextView(context);
+        title.setText(LocaleController.getString(R.string.TellomiOtpMissing));
+        title.setTextColor(text());
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleLp.leftMargin = AndroidUtilities.dp(12);
+        titleLp.rightMargin = AndroidUtilities.dp(12);
+        titleLp.bottomMargin = AndroidUtilities.dp(8);
+        card.addView(title, titleLp);
+
+        if (resend != null && resendLabel != null && resendLabel.length() > 0) {
+            card.addView(optionRow(context, resendLabel, () -> {
+                dialog.dismiss();
+                resend.run();
+            }));
+        }
+        card.addView(optionRow(context, LocaleController.getString(R.string.TellomiHelp), () -> {
+            dialog.dismiss();
+            Browser.openUrlInSystemBrowser(context, BuildVars.HELP_URL);
+        }));
+
+        TextView cancel = new TextView(context);
+        cancel.setText(LocaleController.getString(R.string.Cancel));
+        cancel.setTextColor(MUTED);
+        cancel.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setMinimumHeight(AndroidUtilities.dp(48));
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        card.addView(cancel, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
+
+        FrameLayout wrap = new FrameLayout(context);
+        int side = AndroidUtilities.dp(32);
+        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardLp.leftMargin = side;
+        cardLp.rightMargin = side;
+        wrap.addView(card, cardLp);
+        dialog.setContentView(wrap);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setDimAmount(0.45f);
+        }
+        dialog.show();
+    }
+
+    private static View optionRow(Context context, String label, Runnable click) {
+        TextView row = new TextView(context);
+        row.setText(label);
+        row.setTextColor(LINK);
+        row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        row.setGravity(Gravity.CENTER);
+        row.setMinimumHeight(AndroidUtilities.dp(48));
+        row.setOnClickListener(v -> click.run());
+        return row;
     }
 
     /** Dark pill used when an SMS code has been sent. Sits in the middle of the screen. */
@@ -378,7 +461,13 @@ public final class TellomiLoginChrome {
         public void setBusy(boolean busy) {
             labelView.setVisibility(busy ? INVISIBLE : VISIBLE);
             progressView.setVisibility(busy ? VISIBLE : GONE);
-            setEnabled(!busy);
+            // Stay enabled. A second tap cancels auth.sendCode instead of
+            // starting another one. Disabling the button left no cancel.
+            setEnabled(true);
+        }
+
+        public boolean isBusy() {
+            return progressView.getVisibility() == VISIBLE;
         }
     }
 }

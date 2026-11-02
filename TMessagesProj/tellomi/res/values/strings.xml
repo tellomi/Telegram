@@ -40,6 +40,10 @@
     <string name="TellomiOtpTitle">Enter the code</string>
     <string name="TellomiOtpSent">Code sent to %1$s</string>
     <string name="TellomiOtpSentSms">SMS sent to %1$s</string>
+    <string name="TellomiOtpSentApp">The code was sent to the Tellomi app on your other devices.</string>
+    <string name="TellomiOtpSentCall">Calling %1$s to dictate the code.</string>
+    <string name="TellomiUseSms">Get the code by SMS</string>
+    <string name="TellomiChooseLanguage">选择语言 / Language</string>
     <string name="TellomiResendIn">Resend in %1$d s</string>
     <string name="TellomiOtpLogin">Log in</string>
     <string name="TellomiOtpMissing">Didn\'t get the code?</string>

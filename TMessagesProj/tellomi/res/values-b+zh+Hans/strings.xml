@@ -42,6 +42,10 @@
     <string name="TellomiOtpTitle">请输入验证码</string>
     <string name="TellomiOtpSent">验证码已发送至 %1$s</string>
     <string name="TellomiOtpSentSms">短信已发送至 %1$s</string>
+    <string name="TellomiOtpSentApp">验证码已发送到你在其他设备上登录的 Tellomi</string>
+    <string name="TellomiOtpSentCall">正在拨打 %1$s 播报验证码</string>
+    <string name="TellomiUseSms">改用短信接收</string>
+    <string name="TellomiChooseLanguage">选择语言 / Language</string>
     <string name="TellomiOtpLogin">登录</string>
     <string name="TellomiOtpMissing">收不到验证码？</string>
     <string name="TellomiResendIn">%1$d 秒后重新发送</string>
