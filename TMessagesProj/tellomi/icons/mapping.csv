@@ -292,7 +292,7 @@ search_music_filled,search-2,line,raster
 search_users_filled,search-2,line,raster
 search_voice_filled,search-2,line,raster
 send_outline,send,line,vector
-send_plane_24,send,line,vector
+send_plane_24,arrow-up,line,vector
 settings_account,settings-3,line,vector
 settings_arrow,arrow-right,line,raster
 settings_ask,settings-3,line,vector

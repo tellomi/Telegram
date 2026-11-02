@@ -15440,16 +15440,24 @@ public class ChatActivityEnterView extends FrameLayout implements
         private int drawableColor;
 
         public void updateColors() {
-            int color = isNewDesignSendButton ? Color.WHITE : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
-            if (color != drawableColor) {
-                drawableColor = color;
-                drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+            final int fill = Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
+            final int glyph;
+            if (isNewDesignSendButton) {
+                final double lum = (0.2126 * Color.red(fill) + 0.7152 * Color.green(fill) + 0.0722 * Color.blue(fill)) / 255.0;
+                glyph = lum > 0.55 ? Color.BLACK : Color.WHITE;
+            } else {
+                glyph = fill;
+            }
+            if (glyph != drawableColor) {
+                drawableColor = glyph;
+                drawable.setColorFilter(new PorterDuffColorFilter(glyph, PorterDuff.Mode.SRC_IN));
                 int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
                 inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
-                drawableInverse.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                drawableInverse.setColorFilter(new PorterDuffColorFilter(isNewDesignSendButton ? glyph : fill, PorterDuff.Mode.SRC_IN));
+                count.setTextColor(glyph);
             }
             if (isNewDesignSendButton) {
-                backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
+                backgroundPaint.setColor(fill);
             } else if (shouldDrawBackground()) {
                 backgroundPaint.setColor(getFillColor());
             } else {
