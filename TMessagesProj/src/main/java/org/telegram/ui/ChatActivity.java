@@ -44453,7 +44453,7 @@ public class ChatActivity extends BaseFragment implements
                 String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
                 Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
                 drawable = settings.wallpaper;
-                drawable = new ColorDrawable(Color.BLACK);
+                drawable = new ColorDrawable(Theme.tellomiDefaultWallpaperColor(isDark));
             } else {
                 int backgroundColor = getColor(Theme.key_chat_wallpaper);
                 int gradientColor1 = getColor(Theme.key_chat_wallpaper_gradient_to1);

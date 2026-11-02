@@ -1581,7 +1581,7 @@ public class Theme {
 
         public int getPreviewBackgroundColor() {
             if (firstAccentIsDefault && currentAccentId == DEFALT_THEME_ACCENT_ID) {
-                return 0xffcfd9e3;
+                return TELLOMI_WALLPAPER_LIGHT;
             }
             return previewBackgroundColor;
         }
@@ -9226,6 +9226,9 @@ public class Theme {
         if (currentTheme.firstAccentIsDefault && currentTheme.currentAccentId == DEFALT_THEME_ACCENT_ID) {
             return false;
         }
+        if (tellomiStockDefaultWallpaper(currentTheme, currentTheme.overrideWallpaper)) {
+            return false;
+        }
         return currentColors.indexOfKey(key_chat_wallpaper) >= 0 || themedWallpaperFileOffset > 0 || !TextUtils.isEmpty(themedWallpaperLink);
     }
 
@@ -9388,6 +9391,13 @@ public class Theme {
     ) {
         BackgroundDrawableSettings settings = new BackgroundDrawableSettings();
         settings.wallpaper = local ? null : wallpaper;
+        if (tellomiStockDefaultWallpaper(currentTheme, overrideWallpaper)) {
+            settings.wallpaper = new ColorDrawable(tellomiDefaultWallpaperColor(currentTheme));
+            settings.isCustomTheme = false;
+            settings.isPatternWallpaper = false;
+            settings.isWallpaperMotion = false;
+            return settings;
+        }
         boolean overrideTheme = (!hasPreviousTheme || isApplyingAccent) && overrideWallpaper != null;
         if (overrideWallpaper != null) {
             settings.isWallpaperMotion = overrideWallpaper.isMotion;
@@ -9450,8 +9460,6 @@ public class Theme {
                         if (wallpaperDocument != null) {
                             File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
                             patternBitmap = SvgHelper.getBitmap(f, w, h, false, SvgHelper.ScaleMode.ByWidth);
-                        } else {
-                            patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.WHITE, 1f, SvgHelper.ScaleMode.ByWidth);
                         }
                         if (patternBitmap != null) {
                             FileOutputStream stream = null;
@@ -9615,19 +9623,46 @@ public class Theme {
         return settings;
     }
 
+    public static final int TELLOMI_WALLPAPER_LIGHT = 0xFFF2F2F2;
+    public static final int TELLOMI_WALLPAPER_DARK = 0xFF000000;
+
+    /**
+     * Day and night defaults are flat colors. A wallpaper the user picked
+     * (anything other than slug {@link #DEFAULT_BACKGROUND_SLUG}) is kept.
+     * Built-in accents other than the home accent of Blue and Dark Blue keep
+     * their own colors; only the unloadable Telegram pattern is omitted.
+     */
+    public static boolean tellomiStockDefaultWallpaper(ThemeInfo theme, OverrideWallpaperInfo overrideWallpaper) {
+        if (overrideWallpaper != null && !overrideWallpaper.isDefault()) {
+            return false;
+        }
+        if (theme == null) {
+            return true;
+        }
+        ThemeAccent accent = theme.getAccent(false);
+        if (accent != null && accent.overrideWallpaper != null && !accent.overrideWallpaper.isDefault()) {
+            return false;
+        }
+        if (theme.firstAccentIsDefault && theme.currentAccentId == DEFALT_THEME_ACCENT_ID) {
+            return true;
+        }
+        return accent != null && isHome(accent) && ("Blue".equals(theme.getKey()) || "Dark Blue".equals(theme.getKey()));
+    }
+
+    public static int tellomiDefaultWallpaperColor(boolean dark) {
+        return dark ? TELLOMI_WALLPAPER_DARK : TELLOMI_WALLPAPER_LIGHT;
+    }
+
+    public static int tellomiDefaultWallpaperColor(ThemeInfo theme) {
+        return tellomiDefaultWallpaperColor(theme != null && theme.isDark());
+    }
+
     public static Drawable createDefaultWallpaper() {
         return createDefaultWallpaper(0, 0);
     }
 
     public static Drawable createDefaultWallpaper(int w, int h) {
-        MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884, w != 0);
-        if (w <= 0 || h <= 0) {
-            w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-            h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
-        }
-        motionBackgroundDrawable.setPatternBitmap(34, SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.BLACK, 1f, SvgHelper.ScaleMode.ByWidth));
-        motionBackgroundDrawable.setPatternColorFilter(motionBackgroundDrawable.getPatternColor());
-        return motionBackgroundDrawable;
+        return new ColorDrawable(tellomiDefaultWallpaperColor(currentTheme));
     }
 
     private static Bitmap loadScreenSizedBitmap(FileInputStream stream, int offset) {
