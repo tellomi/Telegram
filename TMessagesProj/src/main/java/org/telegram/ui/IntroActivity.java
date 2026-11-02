@@ -103,6 +103,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
     private FrameLayout frameContainerView;
+    private TellomiIntroArt introArt;
 
     private RLottieDrawable darkThemeDrawable;
 
@@ -129,19 +130,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
         titles = new CharSequence[]{
-                null,
+                introString(R.string.TellomiIntroPage1Title, R.string.Page1Title),
                 introString(R.string.TellomiIntroPage2Title, R.string.Page2Title),
                 introString(R.string.TellomiIntroPage3Title, R.string.Page3Title),
-                introString(R.string.TellomiIntroPage5Title, R.string.Page5Title),
                 introString(R.string.TellomiIntroPage4Title, R.string.Page4Title),
+                introString(R.string.TellomiIntroPage5Title, R.string.Page5Title),
                 introString(R.string.TellomiIntroPage6Title, R.string.Page6Title)
         };
         messages = new String[]{
                 introString(R.string.TellomiIntroPage1Message, R.string.Page1Message),
                 introString(R.string.TellomiIntroPage2Message, R.string.Page2Message),
                 introString(R.string.TellomiIntroPage3Message, R.string.Page3Message),
-                introString(R.string.TellomiIntroPage5Message, R.string.Page5Message),
                 introString(R.string.TellomiIntroPage4Message, R.string.Page4Message),
+                introString(R.string.TellomiIntroPage5Message, R.string.Page5Message),
                 introString(R.string.TellomiIntroPage6Message, R.string.Page6Message)
         };
         return true;
@@ -177,11 +178,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public View createView(Context context) {
-        // The stock page-1 title is the Telegram wordmark drawable. That image
-        // replaced the string, so the welcome screen kept saying Telegram.
-        titles[0] = introString(R.string.TellomiIntroPage1Title, R.string.Page1Title);
-
-
         actionBar.setAddToContainer(false);
 
         ScrollView scrollView = new ScrollView(context);
@@ -269,50 +265,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         frameLayout2 = new FrameLayout(context);
         frameContainerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
 
-        TextureView textureView = new TextureView(context);
-        frameLayout2.addView(textureView, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
-        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-                if (eglThread == null && surface != null) {
-                    eglThread = new EGLThread(surface);
-                    eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(()->{
-                        float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
-                        Intro.setPage(currentViewPagerPage);
-                        Intro.setDate(time);
-                        Intro.onDrawFrame(0);
-                        if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
-                            try {
-                                eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
-                            } catch (Exception ignored) {} // If display or surface already destroyed
-                        }
-                    });
-                    eglThread.postRunnable(eglThread.drawRunnable);
-                }
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, final int width, final int height) {
-                if (eglThread != null) {
-                    eglThread.setSurfaceTextureSize(width, height);
-                }
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
-                if (eglThread != null) {
-                    eglThread.shutdown();
-                    eglThread = null;
-                }
-                return true;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-
-            }
-        });
+        // The pager still owns the slide. The illustration follows that same offset
+        // instead of the OpenGL paper plane.
+        introArt = new TellomiIntroArt(context);
+        frameLayout2.addView(introArt, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
 
         viewPager = new ViewPager(context);
         viewPager.setAdapter(new IntroAdapter());
@@ -330,6 +286,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
                 float offset = (position * width + positionOffsetPixels - currentViewPagerPage * width) / width;
                 Intro.setScrollOffset(offset);
+                if (introArt != null) {
+                    introArt.setPage(position, positionOffset);
+                }
             }
 
             @Override
@@ -591,13 +550,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
 
-            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            headerTextView.setTextColor(0xFF111111);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));
 
-            messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            messageTextView.setTextColor(0xFF111111);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setLineSpacing(dpf2(2.33f), 1f);
             messageTextView.setGravity(Gravity.CENTER);
@@ -973,12 +932,16 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors(boolean fromTheme) {
-        int tellomiCta = TellomiLoginChrome.ctaFill(true);
-        int tellomiCtaPressed = TellomiLoginChrome.night() ? 0xFFD0D0D0 : 0xFF2A2A2A;
+        int tellomiCta = 0xFF111111;
+        int tellomiCtaPressed = 0xFF2A2A2A;
+        int tellomiInk = 0xFF111111;
         startMessagingButtonBackground.setColors(new int[]{tellomiCta, tellomiCta});
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-        startMessagingButton.setTextColor(TellomiLoginChrome.ctaLabel(true));
+        fragmentView.setBackgroundColor(0xFFFFFFFF);
+        switchLanguageTextView.setTextColor(tellomiInk);
+        startMessagingButton.setTextColor(0xFFFFFFFF);
+        if (introArt != null) {
+            introArt.setTint(tellomiInk);
+        }
         startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, tellomiCtaPressed));
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
@@ -997,9 +960,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < viewPager.getChildCount(); i++) {
                 View ch = viewPager.getChildAt(i);
                 TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
-                headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                headerTextView.setTextColor(0xFF111111);
                 TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
-                messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                messageTextView.setTextColor(0xFF111111);
             }
         } else Intro.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
     }
