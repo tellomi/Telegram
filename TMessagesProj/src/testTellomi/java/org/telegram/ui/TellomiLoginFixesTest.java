@@ -65,6 +65,12 @@ public class TellomiLoginFixesTest {
         for (Map.Entry<String, String> entry : en.entrySet()) {
             String name = entry.getKey();
             assertTrue("missing zh for " + name, zh.containsKey(name));
+            if ("TellomiChooseLanguage".equals(name)) {
+                assertTrue(entry.getValue().contains("选择语言"));
+                assertTrue(entry.getValue().contains("Language"));
+                assertEquals(entry.getValue(), zh.get(name));
+                continue;
+            }
             if (name.startsWith("Tellomi") && !isBrand(entry.getValue())) {
                 assertNotEquals("untranslated " + name, entry.getValue(), zh.get(name));
                 assertTrue("no Chinese in " + name + ": " + zh.get(name), hasCjk(zh.get(name)));
@@ -72,6 +78,40 @@ public class TellomiLoginFixesTest {
         }
         assertTrue(zh.get("TellomiNotOpenBody").contains("即将开放"));
         assertEquals("绑定后可使用手机号登录", zh.get("TellomiBindPhoneHint"));
+        assertEquals("验证码已发送到你在其他设备上登录的 Tellomi", zh.get("TellomiOtpSentApp"));
+        assertEquals("改用短信接收", zh.get("TellomiUseSms"));
+        assertEquals("短信已发送至 %1$s", zh.get("TellomiOtpSentSms"));
+        assertTrue(zh.get("TellomiOtpSentCall").contains("拨打"));
+        assertTrue(zh.get("TellomiEmailOtpSent").contains("邮件已发送"));
+    }
+
+    @Test
+    public void languageButtonNamesTheCurrentLanguage() {
+        assertEquals("简体中文 ▾", TellomiSentCode.languageLabel("简体中文"));
+        assertEquals("繁體中文 ▾", TellomiSentCode.languageLabel("繁體中文"));
+        assertEquals("English ▾", TellomiSentCode.languageLabel("English"));
+        assertEquals("English ▾", TellomiSentCode.languageLabel(""));
+    }
+
+    @Test
+    public void sentCodeCopyFollowsTheDeliveryChannel() {
+        assertEquals(TellomiSentCode.KIND_APP, TellomiSentCode.kind(1, false));
+        assertEquals(TellomiSentCode.KIND_SMS, TellomiSentCode.kind(2, false));
+        assertEquals(TellomiSentCode.KIND_CALL, TellomiSentCode.kind(3, false));
+        assertEquals(TellomiSentCode.KIND_CALL, TellomiSentCode.kind(4, false));
+        assertEquals(TellomiSentCode.KIND_EMAIL, TellomiSentCode.kind(2, true));
+    }
+
+    @Test
+    public void duplicateLoginLogsOutAndSendCodeHasNoClientTimeout() throws Exception {
+        String login = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(login.contains("new TLRPC.TL_auth_logOut()"));
+        assertTrue(login.contains("tellomiLogOutNewSession"));
+        assertFalse(login.contains("tellomiArmAuthTimeout"));
+        assertFalse(login.contains("}, 20000)"));
+        assertTrue(login.contains("showCodeOptions"));
+        String chrome = new String(Files.readAllBytes(find("TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(chrome.contains("BuildVars.HELP_URL"));
     }
 
     @Test
