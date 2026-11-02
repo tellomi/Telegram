@@ -67,7 +67,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -124,7 +123,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -578,13 +576,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (id == -1) {
                     finishFragment();
                 } else if (id == open_in) {
-                    try {
-                        double lat = messageObject.messageOwner.media.geo.lat;
-                        double lon = messageObject.messageOwner.media.geo._long;
-                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+                    openExternalPoint();
                 } else if (id == share_live_location) {
                     openShareLiveLocation(false, 0);
                 } else if (id == get_directions) {
@@ -731,15 +723,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             mapViewClip.addView(searchAreaButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 80, 12, 80, 0));
             if (locationType == 3) {
                 searchAreaButton.setText(getString(R.string.OpenInMaps));
-                searchAreaButton.setOnClickListener(v -> {
-                    try {
-                        double lat = messageObject.messageOwner.media.geo.lat;
-                        double lon = messageObject.messageOwner.media.geo._long;
-                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                });
+                searchAreaButton.setOnClickListener(v -> openExternalPoint());
                 searchAreaButton.setTranslationX(0);
             } else {
                 searchAreaButton.setText(getString(R.string.PlacesInThisArea));
@@ -1584,38 +1568,39 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         return 0;
     }
 
+    private void openExternalPoint() {
+        openExternal(false, null);
+    }
+
     private void openDirections(LiveLocation location) {
-        double daddrLat, daddrLong;
-        if (location != null && location.object != null) {
-            daddrLat = location.object.media.geo.lat;
-            daddrLong = location.object.media.geo._long;
-        } else if (messageObject != null) {
-            daddrLat = messageObject.messageOwner.media.geo.lat;
-            daddrLong = messageObject.messageOwner.media.geo._long;
+        openExternal(true, location);
+    }
+
+    private void openExternal(boolean route, LiveLocation location) {
+        double lat;
+        double lon;
+        String name = null;
+        if (location != null && location.object != null && location.object.media != null && location.object.media.geo != null) {
+            lat = location.object.media.geo.lat;
+            lon = location.object.media.geo._long;
+            name = TellomiMaps.placeName(location.object.media);
+        } else if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.geo != null) {
+            lat = messageObject.messageOwner.media.geo.lat;
+            lon = messageObject.messageOwner.media.geo._long;
+            name = TellomiMaps.placeName(messageObject.messageOwner.media);
+        } else if (chatLocation != null && chatLocation.geo_point != null) {
+            lat = chatLocation.geo_point.lat;
+            lon = chatLocation.geo_point._long;
+            name = chatLocation.address;
         } else {
-            daddrLat = chatLocation.geo_point.lat;
-            daddrLong = chatLocation.geo_point._long;
+            return;
         }
-        String domain;
-        if (BuildVars.isHuaweiStoreApp()) {
-            domain = "mapapp://navigation";
+        if (route) {
+            Double fromLat = myLocation != null ? myLocation.getLatitude() : null;
+            Double fromLon = myLocation != null ? myLocation.getLongitude() : null;
+            TellomiMaps.openRoute(getParentActivity(), this, getResourceProvider(), lat, lon, name, fromLat, fromLon);
         } else {
-            domain = "http://maps.google.com/maps";
-        }
-        if (myLocation != null) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong)));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        } else {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=&daddr=%f,%f", daddrLat, daddrLong)));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            TellomiMaps.openPoint(getParentActivity(), this, getResourceProvider(), lat, lon, name);
         }
     }
 

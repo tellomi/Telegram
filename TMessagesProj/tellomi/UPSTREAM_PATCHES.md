@@ -349,3 +349,28 @@ Signing in an account that is already on the device used to `ConnectionsManager.
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Code-not-received card. Help opens `HELP_URL`. The busy button stays tappable so it can cancel. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml`, `values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Language title, app/call sent-code lines,「改用短信接收」. |
 | `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | Label, sent-code kind, Chinese copy, logout, and the removed timeout. |
+
+## Map apps for mainland China
+
+Tapping a location used to stop in `AndroidUtilities.isMapsInstalled`. That method checks `com.google.android.apps.maps` and, when the package is missing, shows "Install Google Maps?" (`InstallGoogleMaps` via `GoogleMapsProvider.getInstallMapsString`). The alert is built there, not in `AlertsCreator`. `AlertsCreator.showSecretLocationAlert` is only the secret-chat static-preview picker (Telegram / Google / Yandex).
+
+Tellomi no longer asks for the Google Maps package. A point or a route opens a bottom sheet of the map apps that are installed. Coordinates stay WGS-84. Each app gets its documented type flag (`dev=1`, `coord_type=wgs84`, `coord_type=1`) instead of a second GCJ-02 conversion. If nothing is installed, the browser opens the Amap marker page `https://uri.amap.com/marker` with `coordinate=gps` (longitude first). There is no `values-zh-rTW`; 繁體中文 keeps using the simplified pack.
+
+The in-app map is unchanged. See the note under the table.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiMaps.java` | New. Detects 高德 `com.autonavi.minimap`, 百度 `com.baidu.BaiduMap`, 腾讯 `com.tencent.map`, Google `com.google.android.apps.maps`, and any other `geo:` handler. Sheet lists them. Point and route URIs include the place name. Web fallback is the Amap marker. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/AndroidUtilities.java` | `isMapsInstalled` no longer shows the Google Maps install dialog. It returns true so a location picker is not blocked on that package. |
+| `TMessagesProj/src/main/AndroidManifest.xml` | `<queries>` for the three China packages, `geo`, `androidamap`, `baidumap`, and `qqmap`, so Android 11+ can see them. |
+| `TMessagesProj/src/main/res/values/strings.xml`, `values-zh/strings.xml` | Chooser title, the four app names, and "My location". Packed into `localization_en.bin` / `localization_zh.bin`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | A static pin or a poll place opens the chooser when the in-app map cannot draw. A live location still opens `LocationActivity`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java` | Same for a poll place in shared media. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChannelAdminLogActivity.java` | Same for a location in the admin log. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LocationActivity.java` | Open in maps and Get directions use the chooser. The place name is the venue title or the address. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | A business location opens the chooser. The in-app screen is used only when that map can draw. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Business/ProfileLocationCell.java` | The external open uses the chooser. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ArticleViewer.java` | An article map opens the chooser. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/RichMessageLayout.java` | A rich-message map opens the chooser. |
+
+In-app preview, not changed here. `ApplicationLoader.onCreateMapsProvider` returns `GoogleMapsProvider` (`com.google.android.gms.maps`). `LocationActivity` and `ChatAttachAlertLocationLayout` draw that SDK. Without Play services the view stays on `MapPlaceholderDrawable` (the preload thread already swallows the init failure). This tree has no OSM `IMapsProvider`. The Huawei app module is the only other provider (`HuaweiMapsProvider` when Play services are absent). Upstream DrKLO later plugs OSM in through the same `IMapsProvider`; that swap is a separate change. The bubble thumbnail is not the SDK: `WebFile.createWithGeoPoint` asks the server (`mapProvider` 2, `static_maps_provider=telegram`), or the client downloads a Yandex or Google static image when the server config says so (`AndroidUtilities.formapMapUrl`). Default before config loads is `mapProvider` 0, which is the Google static URL.

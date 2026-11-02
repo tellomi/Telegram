@@ -41486,7 +41486,8 @@ public class ChatActivity extends BaseFragment implements
             if (media.webpage != null) {
                 didPressWebPage(cell, media.webpage, media.webpage.url, media.safe);
             } else if (media.geo != null) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                String place = media.address != null ? media.address : (answer != null && answer.text != null ? answer.text.text : "");
+                if (!(media.geo instanceof TLRPC.TL_geoPointEmpty) && TellomiMaps.openReceivedPin(ChatActivity.this, media.geo.lat, media.geo._long, place, false)) {
                     return;
                 }
 
@@ -41891,7 +41892,7 @@ public class ChatActivity extends BaseFragment implements
                     alertUserOpenError(message);
                 }
             } else if (message.type == MessageObject.TYPE_GEO) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                if (TellomiMaps.openReceivedPin(ChatActivity.this, message)) {
                     return;
                 }
                 if (message.isLiveLocation()) {

@@ -3181,7 +3181,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 alertUserOpenError(message);
                             }
                         } else if (message.type == MessageObject.TYPE_GEO) {
-                            if (!AndroidUtilities.isMapsInstalled(ChannelAdminLogActivity.this)) {
+                            if (TellomiMaps.openReceivedPin(ChannelAdminLogActivity.this, message)) {
                                 return;
                             }
                             LocationActivity fragment = new LocationActivity(0);

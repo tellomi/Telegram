@@ -1569,6 +1569,13 @@
     <string name="MapPreviewProviderYandex">Yandex</string>
     <string name="MapPreviewProviderNobody">不使用地图预览</string>
     <string name="InstallGoogleMaps">要安装 Google 地图吗？</string>
+    <string name="TellomiMapChooserPoint">打开地图</string>
+    <string name="TellomiMapChooserRoute">导航</string>
+    <string name="TellomiMapAmap">高德地图</string>
+    <string name="TellomiMapBaidu">百度地图</string>
+    <string name="TellomiMapTencent">腾讯地图</string>
+    <string name="TellomiMapGoogle">Google 地图</string>
+    <string name="TellomiMapCurrentLocation">我的位置</string>
     <string name="InstallHuaweiMaps">是否安装 Petal 地图？</string>
     <string name="ScamMessage">诈骗</string>
     <string name="FakeMessage">假冒</string>
