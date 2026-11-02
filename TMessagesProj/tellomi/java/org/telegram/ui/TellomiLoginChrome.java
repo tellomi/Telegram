@@ -64,7 +64,15 @@ public final class TellomiLoginChrome {
     public static boolean night() {
         try {
             Theme.ThemeInfo theme = Theme.getActiveTheme();
-            return theme != null && theme.isDark();
+            if (theme != null && theme.isDark()) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            int bg = Theme.getColor(Theme.key_windowBackgroundWhite);
+            double lum = (0.2126 * Color.red(bg) + 0.7152 * Color.green(bg) + 0.0722 * Color.blue(bg)) / 255.0;
+            return lum < 0.5;
         } catch (Throwable ignored) {
             return false;
         }
@@ -311,6 +319,8 @@ public final class TellomiLoginChrome {
                 View child = layout.getChildAt(i);
                 if (child instanceof TextView) {
                     ((TextView) child).setTextColor(text());
+                } else if (child instanceof ImageView) {
+                    ((ImageView) child).setColorFilter(new android.graphics.PorterDuffColorFilter(text(), android.graphics.PorterDuff.Mode.SRC_IN));
                 }
             }
         }

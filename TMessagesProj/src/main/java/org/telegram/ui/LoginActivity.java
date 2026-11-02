@@ -2580,6 +2580,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 };
                 tellomiFormScroll.setFillViewport(true);
                 tellomiFormScroll.setVerticalScrollBarEnabled(false);
+                tellomiForm.setOnClickListener(v -> tellomiDismissKeyboard());
+                tellomiForm.setClickable(true);
                 tellomiFormScroll.addView(tellomiForm, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 super.addView(tellomiFormScroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             } else {
@@ -2691,7 +2693,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 emailField.setBackground(null);
                 emailField.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(40), AndroidUtilities.dp(12));
                 emailField.setContentDescription(getString(R.string.TellomiEmail));
-                emailField.setOnFocusChangeListener((v, hasFocus) -> emailOutlineView.animateSelection(hasFocus ? 1f : 0f));
+                emailField.setOnFocusChangeListener((v, hasFocus) -> {
+                    emailOutlineView.animateSelection(hasFocus ? 1f : 0f);
+                    if (hasFocus && activityMode == MODE_LOGIN) {
+                        setCustomKeyboardVisible(false, true);
+                        AndroidUtilities.showKeyboard(emailField);
+                    }
+                });
                 emailField.setOnEditorActionListener((textView, actionId, keyEvent) -> {
                     if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE) {
                         onNextPressed(null);
@@ -2924,7 +2932,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                 @Override
                 public boolean onTouchEvent(MotionEvent event) {
-                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && activityMode == MODE_LOGIN && !tellomiEmailMode) {
+                        requestFocus();
+                        setShowSoftInputOnFocus(false);
+                        keyboardView.setEditText(this);
+                        setCustomKeyboardVisible(true, true);
+                        AndroidUtilities.hideKeyboard(this);
+                    } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
                         if (!showKeyboard(this)) {
                             clearFocus();
                             requestFocus();
@@ -3419,13 +3433,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         TellomiLoginChrome.restyleSocial(tellomiSocialColumn.getChildAt(i));
                     }
                 }
+                tellomiRestyleOr();
             }
         }
 
         @Override
         public boolean hasCustomKeyboard() {
+            // Login opens with no keypad. The phone field shows the numeric keypad itself when tapped.
             if (activityMode == MODE_LOGIN) {
-                return tellomiScreen == TELLOMI_PHONE_CODE;
+                return false;
             }
             return !tellomiEmailMode;
         }
@@ -3614,21 +3630,102 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiPlaceAgreement(home);
                 tellomiSyncBackIcon();
                 tellomiRefreshPrimaryButton();
+                tellomiRefreshCopy();
             }
-            if (!fromUser) {
+            tellomiArmKeyboard();
+            tellomiDismissKeyboard();
+        }
+
+        /** Labels that are built once. Language changes rebuild the screen; this also rewrites them in place, including 或. */
+        private void tellomiRefreshCopy() {
+            if (activityMode != MODE_LOGIN) {
                 return;
             }
-            boolean numeric = hasCustomKeyboard();
-            setCustomKeyboardVisible(numeric, true);
-            if (tellomiEmailMode && emailField != null) {
-                emailField.requestFocus();
-                emailField.setSelection(emailField.length());
-                AndroidUtilities.showKeyboard(emailField);
+            if (titleView != null) {
+                titleView.setText(getString(tellomiEmailMode ? R.string.TellomiEmailTitle : R.string.TellomiLoginTitle));
+            }
+            if (subtitleView != null) {
+                subtitleView.setText(getString(R.string.TellomiEmailSubtitle));
+            }
+            if (tellomiPrimaryButton != null) {
+                tellomiPrimaryButton.setLabel(getString(R.string.TellomiVerifyLogin));
+            }
+            if (phoneField != null && phoneField.length() == 0) {
+                phoneField.setHintText(getString(R.string.TellomiPhoneHint));
+            }
+            if (emailField != null) {
+                emailField.setHint(getString(R.string.TellomiEmailHint));
+            }
+            tellomiSetTexts(tellomiOrRow, getString(R.string.TellomiOr));
+            if (tellomiSocialColumn != null && tellomiSocialColumn.getChildCount() > 0) {
+                tellomiSetTexts(tellomiSocialColumn.getChildAt(0), getString(R.string.TellomiLoginWithEmail));
+            }
+            if (tellomiPhoneAgreementView != null) {
+                tellomiPhoneAgreement.install(tellomiPhoneAgreementView, false);
+            }
+        }
+
+        private void tellomiSetTexts(View root, String text) {
+            if (!(root instanceof ViewGroup)) {
+                return;
+            }
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (child instanceof TextView) {
+                    ((TextView) child).setText(text);
+                }
+            }
+        }
+
+        /** Phone entry uses the numeric keypad. Email uses the system keyboard. Neither opens until the field is tapped. */
+        private void tellomiArmKeyboard() {
+            if (activityMode != MODE_LOGIN) {
+                return;
+            }
+            if (tellomiEmailMode) {
+                if (emailField != null) {
+                    emailField.setShowSoftInputOnFocus(true);
+                }
+                if (phoneField != null) {
+                    phoneField.setShowSoftInputOnFocus(false);
+                }
+                setCustomKeyboardVisible(false, false);
             } else if (phoneField != null) {
-                phoneField.requestFocus();
-                phoneField.setSelection(phoneField.length());
-                if (numeric) {
-                    showKeyboard(phoneField);
+                phoneField.setShowSoftInputOnFocus(false);
+                keyboardView.setEditText(phoneField);
+                keyboardView.setDispatchBackWhenEmpty(true);
+                setCustomKeyboardVisible(false, false);
+            }
+        }
+
+        private void tellomiDismissKeyboard() {
+            if (phoneField != null) {
+                phoneField.clearFocus();
+            }
+            if (emailField != null) {
+                emailField.clearFocus();
+            }
+            if (codeField != null) {
+                codeField.clearFocus();
+            }
+            if (activityMode == MODE_LOGIN) {
+                setCustomKeyboardVisible(false, true);
+            }
+            AndroidUtilities.hideKeyboard(this);
+        }
+
+        private void tellomiRestyleOr() {
+            if (!(tellomiOrRow instanceof ViewGroup)) {
+                return;
+            }
+            ViewGroup row = (ViewGroup) tellomiOrRow;
+            for (int i = 0; i < row.getChildCount(); i++) {
+                View child = row.getChildAt(i);
+                if (child instanceof TextView) {
+                    ((TextView) child).setTextColor(TellomiLoginChrome.MUTED);
+                } else {
+                    child.setBackgroundColor(TellomiLoginChrome.lineColor());
                 }
             }
         }
@@ -4539,14 +4636,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (syncContactsBox != null) {
                 syncContactsBox.setChecked(syncContacts, false);
             }
-            if (tellomiEmailMode) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (emailField != null) {
-                        emailField.requestFocus();
-                        emailField.setSelection(emailField.length());
-                        AndroidUtilities.showKeyboard(emailField);
-                    }
-                }, SHOW_DELAY);
+            if (activityMode == MODE_LOGIN) {
+                if (!tellomiEmailMode) {
+                    fillNumber();
+                }
+                tellomiRefreshCopy();
+                tellomiArmKeyboard();
+                tellomiDismissKeyboard();
+                requestPasskey(false);
                 return;
             }
             fillNumber();
@@ -10227,7 +10324,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors() {
-        fragmentView.setBackgroundColor(activityMode == MODE_LOGIN ? (TellomiLoginChrome.night() ? Color.BLACK : Color.WHITE) : Theme.getColor(Theme.key_windowBackgroundWhite));
+        int tellomiPage = TellomiLoginChrome.night() ? Color.BLACK : Color.WHITE;
+        fragmentView.setBackgroundColor(activityMode == MODE_LOGIN ? tellomiPage : Theme.getColor(Theme.key_windowBackgroundWhite));
+        if (activityMode == MODE_LOGIN && getParentActivity() != null) {
+            AndroidUtilities.setLightStatusBar(getParentActivity(), !TellomiLoginChrome.night());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                getParentActivity().getWindow().setNavigationBarColor(tellomiPage);
+            }
+        }
 
         backButtonView.setColorFilter(new PorterDuffColorFilter(activityMode == MODE_LOGIN || tellomiBindPhone ? TellomiLoginChrome.text() : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
@@ -10253,6 +10357,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         keyboardView.updateColors();
+        if (activityMode == MODE_LOGIN) {
+            keyboardView.setBackgroundColor(tellomiPage);
+        }
         if (phoneNumberConfirmView != null) {
             phoneNumberConfirmView.updateColors();
         }
