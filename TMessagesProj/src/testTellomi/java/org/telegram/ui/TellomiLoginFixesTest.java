@@ -103,15 +103,59 @@ public class TellomiLoginFixesTest {
     }
 
     @Test
-    public void duplicateLoginLogsOutAndSendCodeHasNoClientTimeout() throws Exception {
+    public void duplicateLoginLogsOutAndSendCodeStopsOnTimeout() throws Exception {
         String login = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java").toPath()), StandardCharsets.UTF_8);
         assertTrue(login.contains("new TLRPC.TL_auth_logOut()"));
         assertTrue(login.contains("tellomiLogOutNewSession"));
-        assertFalse(login.contains("tellomiArmAuthTimeout"));
-        assertFalse(login.contains("}, 20000)"));
+        assertTrue(login.contains("tellomiWatchSendCode"));
+        assertTrue(login.contains("TELLOMI_SEND_CODE_TIMEOUT_MS = 20000"));
+        assertTrue(login.contains("TellomiAuthTimeout"));
+        assertTrue(login.contains("tellomiShowSendFailure"));
+        assertTrue(login.contains("VIEW_TELLOMI_EMAIL_CODE"));
+        assertTrue(login.contains("VIEW_TELLOMI_PHONE_PASSWORD"));
+        assertTrue(login.contains("VIEW_TELLOMI_EMAIL_PASSWORD"));
+        assertTrue(login.contains("currentViewNum = VIEW_TELLOMI_EMAIL_CODE"));
+        assertTrue(login.contains("new TellomiLanguageSelectActivity"));
+        assertTrue(login.contains("R.drawable.msg2_language"));
+        assertTrue(login.contains("introView = intro"));
+        assertFalse(login.contains("tellomiLanguageButton.setText"));
         assertTrue(login.contains("showCodeOptions"));
         String chrome = new String(Files.readAllBytes(find("TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java").toPath()), StandardCharsets.UTF_8);
         assertTrue(chrome.contains("BuildVars.HELP_URL"));
+        assertEquals(12, TellomiLanguageSheet.bundledCodes().size());
+        assertTrue(TellomiLanguageSheet.bundledCodes().contains("zh_hans"));
+        assertTrue(TellomiLanguageSheet.bundledCodes().contains("zh_hant"));
+        assertTrue(TellomiLanguageSheet.bundledCodes().contains("en"));
+        assertTrue(TellomiLanguageSheet.bundledCodes().contains("ru"));
+        assertTrue(TellomiLanguageSheet.bundledCodes().contains("pt_br"));
+    }
+
+    @Test
+    public void langpackRequestsRunBeforeLogin() throws Exception {
+        String locale = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getLanguages()", 8000));
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getLangPack()", 1500));
+        assertTrue(flagFollows(locale, "new TLRPC.TL_langpack_getDifference()", 1500));
+        String launch = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java").toPath()), StandardCharsets.UTF_8);
+        assertTrue(flagFollows(launch, "new TLRPC.TL_langpack_getLanguage()", 2500));
+        assertTrue(flagFollows(launch, "new TLRPC.TL_langpack_getStrings()", 2500));
+    }
+
+    private static boolean flagFollows(String text, String needle, int window) {
+        int from = 0;
+        boolean found = false;
+        while (true) {
+            int at = text.indexOf(needle, from);
+            if (at < 0) {
+                return found;
+            }
+            found = true;
+            int flag = text.indexOf("RequestFlagWithoutLogin", at);
+            if (flag < 0 || flag - at > window) {
+                return false;
+            }
+            from = at + needle.length();
+        }
     }
 
     @Test

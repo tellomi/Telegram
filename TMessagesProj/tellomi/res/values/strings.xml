@@ -28,6 +28,10 @@
     <string name="TellomiNotOpen">Not available yet</string>
     <string name="TellomiNotOpenBody">This sign-in method isn\'t open yet. Use a phone number or email.</string>
     <string name="TellomiNotOpenOk">OK</string>
+    <string name="TellomiAgreementPrefix">I have read and agree to the </string>
+    <string name="TellomiAgreementTerms">Terms</string>
+    <string name="TellomiAgreementAnd"> and </string>
+    <string name="TellomiAgreementPrivacy">Privacy Policy</string>
     <string name="TellomiAgreeTitle">Terms and Privacy</string>
     <string name="TellomiAgreeAndLogin">Agree and log in</string>
     <string name="TellomiDisagree">Disagree</string>

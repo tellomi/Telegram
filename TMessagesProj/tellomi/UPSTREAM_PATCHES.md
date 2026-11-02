@@ -374,3 +374,28 @@ The in-app map is unchanged. See the note under the table.
 | `TMessagesProj/src/main/java/org/telegram/messenger/RichMessageLayout.java` | A rich-message map opens the chooser. |
 
 In-app preview, not changed here. `ApplicationLoader.onCreateMapsProvider` returns `GoogleMapsProvider` (`com.google.android.gms.maps`). `LocationActivity` and `ChatAttachAlertLocationLayout` draw that SDK. Without Play services the view stays on `MapPlaceholderDrawable` (the preload thread already swallows the init failure). This tree has no OSM `IMapsProvider`. The Huawei app module is the only other provider (`HuaweiMapsProvider` when Play services are absent). Upstream DrKLO later plugs OSM in through the same `IMapsProvider`; that swap is a separate change. The bubble thumbnail is not the SDK: `WebFile.createWithGeoPoint` asks the server (`mapProvider` 2, `static_maps_provider=telegram`), or the client downloads a Yandex or Google static image when the server config says so (`AndroidUtilities.formapMapUrl`). Default before config loads is `mapProvider` 0, which is the Google static URL.
+
+## Email is the first login page
+
+After 开始使用, `LoginActivity` opens `VIEW_TELLOMI_EMAIL_CODE` (`TellomiAuthPage`) instead of the phone form. 「使用手机号登录」calls `setPage(VIEW_PHONE_INPUT)` with the same 300ms slide as the other login steps. Back on the phone page slides back to email. Back on the email page closes login. A code started from email returns to the email page. Black/white buttons and the shared agreement line are unchanged.
+
+## Login motion matches Telegram
+
+The three-language card was hardcoded in `TellomiLanguageSheet.choices()`. It was not a `langpack.getLanguages` result. The picker now lists every pack this tree ships strings for: en, it, es, de, nl, ar, pt_br, ko, uk, ru, zh_hans, zh_hant. Those bins come from `values/` and `values-ar|de|es|it|ko|nl|pt-rBR|ru|uk|zh`. zh_hant still reads `localization_zh.bin` (simplified). `langpack.getLanguages`, `langpack.getLangPack`, and `langpack.getDifference` in `LocaleController` are sent with `RequestFlagWithoutLogin` (and `RequestFlagFailOnServerErrors`). `langpack.getStrings` and `langpack.getLanguage` in `LaunchActivity` use the same flag. tgnet parks any request that lacks it while `currentUserId` is 0, so a signed-out client can fetch the catalog. A failed `getLanguages` clears `loadingRemoteLanguages` so the login picker can retry. Rows the server returns are appended under the bundled packs when `NotificationCenter.suggestedLangpack` fires. Packs the server does not publish still cannot be translated.
+
+`auth.sendCode`, `auth.resendCode`, and the other login RPCs that call `needShowProgress` arm a 20 second watch. On timeout the request is cancelled, the spinner stops, and `TellomiAuthTimeout` is shown. A second tap on the spinning button still cancels quietly. `-1000` and an empty error text on those paths show the same error instead of leaving the button spinning.
+
+Password login, email code login, and email password login are `TellomiAuthPage` slide views. `LoginActivity.setPage` moves between them (300ms, `AccelerateDecelerateInterpolator`, full display width). The phone form no longer swaps those fields in place. Country selection is still `presentFragment(CountrySelectActivity)`. The language control is `msg2_language` and opens `TellomiLanguageSelectActivity` with the same search field and `TextRadioCell` row as `LanguageSelectActivity`.
+
+`setIntroView` runs Telegram's intro morph again (`onCustomTransitionAnimation`). Code pages stay `GONE` and alpha 0 until `setPage` shows them, so they do not flash under that fade. The welcome button and the login floating button use the black/white CTA (`TellomiLoginChrome.ctaFill` / `ctaLabel`). Every login and sign-up agreement line is `TellomiAgreementPrefix` + terms + `TellomiAgreementAnd` + privacy (`已阅读并同意《用户协议》和《隐私政策》`).
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Send-code watch. Separate slide pages for password and email. Language icon opens the picker. Intro morph restored. Code pages stay hidden until `setPage`. Floating button is black/white. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | New. Phone password, email code, and email password pages. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSelectActivity.java` | New. Searchable bundled language list, `TextRadioCell`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | Bundled code list replaces the three hardcoded rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | One agreement sentence on every login and sign-up screen. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Start button is black with white text, inverted in dark mode. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Spinner on the black button uses the label color. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml`, `values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Shared agreement sentence. |

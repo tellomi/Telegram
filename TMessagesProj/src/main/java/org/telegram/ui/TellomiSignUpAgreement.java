@@ -28,7 +28,6 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TellomiDefaults;
 import org.telegram.messenger.browser.Browser;
 
 /**
@@ -118,7 +117,7 @@ public class TellomiSignUpAgreement {
         card.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView body = new TextView(context);
-        body.setText(bodyText(context, carrier));
+        body.setText(bodyText(context));
         body.setMovementMethod(LinkMovementMethod.getInstance());
         body.setHighlightColor(Color.TRANSPARENT);
         body.setTextSize(14);
@@ -164,64 +163,17 @@ public class TellomiSignUpAgreement {
         dialog.show();
     }
 
-    private static CharSequence bodyText(Context context, boolean carrier) {
-        SpannableStringBuilder sb = new SpannableStringBuilder();
-        boolean chinese = TellomiDefaults.uiIsChinese();
-        if (chinese) {
-            appendPlain(sb, "已阅读并同意 ");
-            appendDoc(sb, context, "用户协议", TERMS_URL);
-            appendPlain(sb, " 和 ");
-            appendDoc(sb, context, "隐私政策", PRIVACY_URL);
-            if (carrier) {
-                appendPlain(sb, " 以及 ");
-                appendDoc(sb, context, LocaleController.getString(R.string.TellomiCarrierAgreement), LEGAL_URL);
-                appendPlain(sb, "，运营商将对你提供的手机号进行验证");
-            }
-        } else {
-            appendPlain(sb, "I have read and agree to the ");
-            appendDoc(sb, context, "Terms", TERMS_URL);
-            appendPlain(sb, " and ");
-            appendDoc(sb, context, "Privacy Policy", PRIVACY_URL);
-            if (carrier) {
-                appendPlain(sb, " and the ");
-                appendDoc(sb, context, LocaleController.getString(R.string.TellomiCarrierAgreement), LEGAL_URL);
-                appendPlain(sb, ". The carrier will verify this phone number.");
-            }
-        }
-        return new SpannableString(sb);
+    private static CharSequence bodyText(Context context) {
+        return agreementLine(context);
     }
 
     private void render() {
         if (view == null) {
             return;
         }
-        boolean chinese = TellomiDefaults.uiIsChinese();
         SpannableStringBuilder sb = new SpannableStringBuilder();
         appendBox(sb);
-        if (chinese) {
-            appendToggle(sb, kind == KIND_SIGN_UP ? "我已阅读并同意 " : "已阅读并同意 ");
-            appendLink(sb, kind == KIND_SIGN_UP ? "《用户服务协议》" : "用户协议", TERMS_URL);
-            appendToggle(sb, " 和 ");
-            appendLink(sb, kind == KIND_SIGN_UP ? "《隐私政策》" : "隐私政策", PRIVACY_URL);
-            if (kind == KIND_PHONE) {
-                appendToggle(sb, " 以及 ");
-                appendLink(sb, LocaleController.getString(R.string.TellomiCarrierAgreement), LEGAL_URL);
-                appendToggle(sb, "，运营商将对你提供的手机号进行验证");
-            }
-        } else if (kind == KIND_PHONE) {
-            appendToggle(sb, "I have read and agree to the ");
-            appendLink(sb, "Terms", TERMS_URL);
-            appendToggle(sb, " and ");
-            appendLink(sb, "Privacy Policy", PRIVACY_URL);
-            appendToggle(sb, " and the ");
-            appendLink(sb, LocaleController.getString(R.string.TellomiCarrierAgreement), LEGAL_URL);
-            appendToggle(sb, ". The carrier will verify this phone number.");
-        } else {
-            appendToggle(sb, "I have read and agree to the ");
-            appendLink(sb, "Terms", TERMS_URL);
-            appendToggle(sb, " and ");
-            appendLink(sb, "Privacy Policy", PRIVACY_URL);
-        }
+        appendAgreementSentence(sb, true);
         view.setTextIsSelectable(false);
         view.setLinksClickable(true);
         view.setHighlightColor(Color.TRANSPARENT);
@@ -267,6 +219,33 @@ public class TellomiSignUpAgreement {
             }
         }, start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         sb.setSpan(toggleSpan(), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    /** Same sentence on every login and sign-up screen. {@code toggle} makes the words check the box. */
+    private void appendAgreementSentence(SpannableStringBuilder sb, boolean toggle) {
+        String prefix = LocaleController.getString(R.string.TellomiAgreementPrefix);
+        String terms = LocaleController.getString(R.string.TellomiAgreementTerms);
+        String and = LocaleController.getString(R.string.TellomiAgreementAnd);
+        String privacy = LocaleController.getString(R.string.TellomiAgreementPrivacy);
+        if (toggle) {
+            appendToggle(sb, prefix);
+            appendLink(sb, terms, TERMS_URL);
+            appendToggle(sb, and);
+            appendLink(sb, privacy, PRIVACY_URL);
+        }
+    }
+
+    private static CharSequence agreementLine(Context context) {
+        SpannableStringBuilder sb = new SpannableStringBuilder();
+        String prefix = LocaleController.getString(R.string.TellomiAgreementPrefix);
+        String terms = LocaleController.getString(R.string.TellomiAgreementTerms);
+        String and = LocaleController.getString(R.string.TellomiAgreementAnd);
+        String privacy = LocaleController.getString(R.string.TellomiAgreementPrivacy);
+        appendPlain(sb, prefix);
+        appendDoc(sb, context, terms, TERMS_URL);
+        appendPlain(sb, and);
+        appendDoc(sb, context, privacy, PRIVACY_URL);
+        return new SpannableString(sb);
     }
 
     private void appendToggle(SpannableStringBuilder sb, String s) {
