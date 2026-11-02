@@ -1969,7 +1969,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     /** The numeric keypad covers this page instead of shrinking it. SMS and email codes keep their bottom row above the keys. */
-    private boolean tellomiKeyboardCovers(View slideView) {
+    private boolean tellomiKeyboardCovers(SlideView slideView) {
         return !slideView.hasCustomKeyboard() || slideView instanceof PhoneView;
     }
 
