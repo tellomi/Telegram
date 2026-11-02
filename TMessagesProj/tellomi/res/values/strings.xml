@@ -26,6 +26,8 @@
     <string name="TellomiOtherLogin">Other ways to sign in</string>
     <string name="TellomiRecoverAccount">Recover account</string>
     <string name="TellomiNotOpen">Not available yet</string>
+    <string name="TellomiNotOpenBody">This sign-in method isn\'t open yet. Use a phone number or email.</string>
+    <string name="TellomiNotOpenOk">OK</string>
     <string name="TellomiAgreeTitle">Terms and Privacy</string>
     <string name="TellomiAgreeAndLogin">Agree and log in</string>
     <string name="TellomiDisagree">Disagree</string>
@@ -66,7 +68,7 @@
     <string name="TellomiIntroPage6Message">**Tellomi** lets you access your messages\nfrom multiple devices.</string>
     <string name="TellomiIntroStart">Get started</string>
     <string name="TellomiBindPhone">Bind phone number</string>
-    <string name="TellomiBindPhoneHint">We will send a verification code to this number.</string>
+    <string name="TellomiBindPhoneHint">You can sign in with this number after linking it.</string>
     <string name="TellomiBindAction">Bind</string>
     <string name="TellomiBindEmail">Bind email</string>
     <string name="TellomiBindEmailHint">We will send a verification code to this address.</string>

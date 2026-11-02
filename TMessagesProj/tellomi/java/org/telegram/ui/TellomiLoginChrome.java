@@ -13,8 +13,10 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,6 +24,8 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -127,12 +131,65 @@ public final class TellomiLoginChrome {
         return button;
     }
 
-    /** Apple, Google, and any other third-party row that is not wired up. */
+    /**
+     * Apple, Google, password login, and any other method that is not wired up.
+     * Same card as the terms dialog. Copy matches the iOS text alert:
+     * title, one sentence, and a single OK button.
+     */
     public static void showUnavailable(Context context) {
         if (context == null) {
             return;
         }
-        Toast.makeText(context, LocaleController.getString(R.string.TellomiNotOpen), Toast.LENGTH_SHORT).show();
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setCanceledOnTouchOutside(true);
+
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(22), AndroidUtilities.dp(20), AndroidUtilities.dp(18));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(pageFill());
+        background.setCornerRadius(AndroidUtilities.dp(16));
+        card.setBackground(background);
+
+        TextView title = new TextView(context);
+        title.setText(LocaleController.getString(R.string.TellomiNotOpen));
+        title.setTextColor(text());
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setGravity(Gravity.CENTER);
+        card.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView body = new TextView(context);
+        body.setText(LocaleController.getString(R.string.TellomiNotOpenBody));
+        body.setTextColor(MUTED);
+        body.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        body.setGravity(Gravity.CENTER);
+        body.setLineSpacing(AndroidUtilities.dp(3), 1f);
+        LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        bodyLp.topMargin = AndroidUtilities.dp(14);
+        bodyLp.bottomMargin = AndroidUtilities.dp(18);
+        card.addView(body, bodyLp);
+
+        ActionButton ok = actionButton(context, LocaleController.getString(R.string.TellomiNotOpenOk), v -> dialog.dismiss());
+        ok.setReady(true);
+        card.addView(ok, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
+
+        FrameLayout wrap = new FrameLayout(context);
+        int side = AndroidUtilities.dp(32);
+        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardLp.leftMargin = side;
+        cardLp.rightMargin = side;
+        wrap.addView(card, cardLp);
+        dialog.setContentView(wrap);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setDimAmount(0.45f);
+        }
+        dialog.show();
     }
 
     /** Dark pill used when an SMS code has been sent. Sits in the middle of the screen. */

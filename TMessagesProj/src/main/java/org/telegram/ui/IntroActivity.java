@@ -148,15 +148,16 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     /**
-     * Chinese UI prefers the flavor TellomiIntro strings. If that lookup is stuck
-     * on the English default, the stock key is already in localization_zh.bin.
-     * Other languages stay on the bin.
+     * Chinese UI reads the Tellomi intro lines from localization_zh.bin.
+     * Other languages stay on the stock key in their own bin.
      */
     private static String introString(int chineseRes, int stockRes) {
         if (TellomiDefaults.uiIsChinese()) {
-            String zh = TellomiDefaults.chineseResource(chineseRes);
-            String en = TellomiDefaults.englishResource(chineseRes);
-            if (zh != null && zh.length() > 0 && (en == null || !zh.equals(en) || hasCjk(zh))) {
+            // Flavor values-zh is not in the APK (localeFilters keeps only "zz").
+            // The Chinese sentence is in localization_zh.bin. The page-1 title is the
+            // brand name, which has no Han characters.
+            String zh = LocaleController.getString(chineseRes);
+            if (zh != null && zh.length() > 0 && !zh.startsWith("LOC_ERR") && (hasCjk(zh) || "Tellomi".equals(zh))) {
                 return zh;
             }
             return LocaleController.getString(stockRes);
