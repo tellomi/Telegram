@@ -424,13 +424,17 @@ Phase 1 swaps the icons on the bottom tabs, the chat input, the chat list and it
 
 Replacements sit in the `tellomi` resource flavor under the same resource name. A drawable that already ships as a density bitmap is a white-on-transparent WebP at that bitmap's pixel size, so the existing tint still applies. A drawable that is only a vector stays a vector. Density bitmaps are not turned into VectorDrawables. `tellomi/icons/mapping.csv` is the sheet (`telegram_resource`, `mingcute_name`, `style` line or fill, `kind`). `tellomi/icons/generate_icons.py` rebuilds it from a MingCute `packages/svg` checkout (`MINGCUTE_SVG`).
 
-331 resource names are replaced (332 rows: `chats_archive` is both the bitmap and the swipe Lottie). Of those, 239 are rasters, 70 are vectors, 15 are one-frame Lotties standing in for swipe/archive raw files, and 8 are the new tab line/fill bitmaps.
+332 resource names are replaced (333 rows: `chats_archive` is both the bitmap and the swipe Lottie). Of those, 240 are rasters, 70 are vectors, 15 are one-frame Lotties standing in for swipe/archive raw files, and 8 are the new tab line/fill bitmaps.
 
 The four main tabs no longer play `R.raw.tab_*`. `GlassTabView` crossfades `tab_chats` / `tab_contacts` / `tab_calls` / `tab_settings` with the matching `_fill` bitmap (scale plus alpha). The emoji, sticker, keyboard, GIF, mic, and camera button uses the same static glyphs with a short scale crossfade instead of the morph Lottie.
 
+The chat input send control draws MingCute `send` (`send_plane_24` and `send_outline`), not the Telegram paper plane and not MingCute `send-plane`. `SendButton` tints that glyph with `key_chat_messagePanelSend` (the theme accent). On the new send button the disk behind the glyph is the input-panel background, so the accent-colored icon stays visible. The record button keeps the accent disk and a white mic.
+
+`msg_inputarrow` is a white chevron the login country row tints, so it is MingCute `arrow-right`. The other login-only icons stay: `tellomi_ic_*` bake `#111111`, `#C7C7CC`, or `#3478F6` and nothing tints them, and `login_arrow1` / `login_phone1` are 128px missed-call drawings.
+
 Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phase):
 
-- Login-only icons: `tellomi_ic_*`, `login_arrow1`, `login_phone1`, `msg_inputarrow`. The shared back, close, and overflow glyphs do change on the login screens because they are the action-bar icons.
+- Login-only icons left as they are: `tellomi_ic_*`, `login_arrow1`, `login_phone1`. The shared back, close, and overflow glyphs do change on the login screens because they are the action-bar icons.
 - Brand marks and the notification silhouette: `telegram_logo*`, `ic_gram`, `outline_gram_24`, `settings_gram_24`, `dialog_gram_transfer`, `filled_gram_earnings`, `notification.webp`.
 - Layered drawings: archive-hint pieces (`chats_archive_arrow`, `_box`, `_muted`, `_pin`), the two-layer calendar (`input_calendar1`, `input_calendar2`), the add-poll pair, the small star pair, `tooltip_arrow`, `redcircle`, `floating_shadow_profile`, `avd_speed`.
 - Colored vectors: `settings_wallet`, `settings_wallet_dark`.
@@ -444,3 +448,4 @@ Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phas
 | `TMessagesProj/tellomi/res/` | Same-name WebP, vector, and raw overlays. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | Main tabs crossfade line and fill. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Input glyphs are static, with a short scale crossfade. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Send glyph is tinted with `key_chat_messagePanelSend`. The new-design disk behind it is the input-panel background. |

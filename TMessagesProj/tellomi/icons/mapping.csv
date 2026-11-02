@@ -1,7 +1,7 @@
 telegram_resource,mingcute_name,style,kind
 arrow_more,arrow-right,line,raster
 arrow_newchat,edit-2,line,raster
-attach_send,send-plane,fill,raster
+attach_send,send,fill,raster
 call,phone,line,vector
 chats_archive,archive,line,raster
 chats_archive,archive,line,raw
@@ -192,6 +192,7 @@ msg_home,home-2,line,raster
 msg_info,information,line,raster
 msg_input_attach2,attachment-2,line,raster
 msg_input_gift,gift,line,raster
+msg_inputarrow,arrow-right,line,raster
 msg_language,translate,line,raster
 msg_leave,exit-door,line,raster
 msg_link,link,line,raster
@@ -291,7 +292,7 @@ search_music_filled,search-2,line,raster
 search_users_filled,search-2,line,raster
 search_voice_filled,search-2,line,raster
 send_outline,send,line,vector
-send_plane_24,send-plane,line,vector
+send_plane_24,send,line,vector
 settings_account,settings-3,line,vector
 settings_arrow,arrow-right,line,raster
 settings_ask,settings-3,line,vector
