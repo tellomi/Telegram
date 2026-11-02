@@ -427,7 +427,7 @@ Replacements sit in the `tellomi` resource flavor under the same resource name. 
 
 The four main tabs no longer play `R.raw.tab_*`. `GlassTabView` crossfades `tab_chats` / `tab_contacts` / `tab_calls` / `tab_settings` with the matching `_fill` bitmap (scale plus alpha). The emoji, sticker, keyboard, GIF, mic, and camera button uses the same static glyphs with a short scale crossfade instead of the morph Lottie.
 
-The chat input send control draws MingCute `send` (`send_plane_24` and `send_outline`), not the Telegram paper plane and not MingCute `send-plane`. `SendButton` tints that glyph with `key_chat_messagePanelSend` (the theme accent). On the new send button the disk behind the glyph is the input-panel background, so the accent-colored icon stays visible. The record button keeps the accent disk and a white mic.
+`send_plane_24` and `send_outline` are MingCute `send` for now, not the Telegram paper plane. `SendButton` colors are unchanged (white glyph on the accent disk). A follow-up replaces that control with a black day / white night circle and MingCute `arrow-up`.
 
 `msg_inputarrow` is a white chevron the login country row tints, so it is MingCute `arrow-right`. The other login-only icons stay: `tellomi_ic_*` bake `#111111`, `#C7C7CC`, or `#3478F6` and nothing tints them, and `login_arrow1` / `login_phone1` are 128px missed-call drawings.
 
@@ -447,4 +447,3 @@ Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phas
 | `TMessagesProj/tellomi/res/` | Same-name WebP, vector, and raw overlays. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | Main tabs crossfade line and fill. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Input glyphs are static, with a short scale crossfade. |
-| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Send glyph is tinted with `key_chat_messagePanelSend`. The new-design disk behind it is the input-panel background. |
