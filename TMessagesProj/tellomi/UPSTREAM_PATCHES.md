@@ -329,6 +329,27 @@ Settings > Account draws the phone row with the upstream `settings_calls` icon. 
 | `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | Phone row uses `settings_calls`. |
 | `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | Ticket, box width, and Chinese string coverage. |
 
+## Login language, sent-code copy, duplicate session, sendCode wait
+
+The top-right Help control on the login screens is a language button. It shows the current built-in name plus ▾ (`简体中文 ▾`, `繁體中文 ▾`, `English ▾`). The card lists those three rows, marks the current one, and Cancel. There is no "Other" row and no `langpack.getStrings` round-trip: `LaunchActivity.showLanguageAlertInternal` loads those strings from the network and its Other row opens `LanguageSelectActivity`, which is not usable before login. The row still applies with `LocaleController.applyLanguage(info, true, false, false, true, account, null)`, the same call the alert's OK button uses, so the choice is stored in the `language` preference and the bundled bins apply with no network. `reloadInterface` does not rebuild the top fragment, so this screen is rebuilt after the apply. The phone, email, password, and code the user already typed are kept in memory for that rebuild. They are not written into `logininfo2`, so a killed process still does not restore a code page.
+
+`values-zh-rTW` is not added. `localeFilters` is `zz`, so a region qualifier never ships in the APK. `LocalizationUtils` only maps language tags that have no hyphen, and both Chinese rows use `localization_zh.bin` (simplified). Choosing 繁體中文 stores `zh_hant` and the button shows 繁體中文. The sentences stay on that simplified pack, which is the same fallback this tree already uses when the server has no `zh-hant` langpack.
+
+Help is no longer the top-right control. `收不到验证码？` opens a card whose Help row opens `BuildVars.HELP_URL` (`https://tellomi.cn/help/`). The email code screen has the same row. An app code (`auth.sentCodeTypeApp`) no longer says the SMS was sent. The line is「验证码已发送到你在其他设备上登录的 Tellomi」, and「改用短信接收」on that screen calls `auth.resendCode`. SMS, call, and email keep their own lines.
+
+Signing in an account that is already on the device used to `ConnectionsManager.cleanup(true)` on the new authorization and leave it on the server. `auth.logOut` is sent on that session first. The local keys are reset when that RPC finishes.
+
+`auth.sendCode` had a 20-second client timeout that cancelled the request and showed an error while the server could still send the SMS. The next tap sent another code. The wait now stays until the server answers. Back, or a tap on the spinning button, cancels that wait and does not show an error.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Language button. Sent-code copy. `auth.logOut` before discarding a duplicate login. No 20-second sendCode timeout. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | New. Offline language card. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSentCode.java` | New. App / SMS / call / email kind, and the button label. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Code-not-received card. Help opens `HELP_URL`. The busy button stays tappable so it can cancel. |
+| `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml`, `values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Language title, app/call sent-code lines,「改用短信接收」. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | Label, sent-code kind, Chinese copy, logout, and the removed timeout. |
+
 ## Map apps for mainland China
 
 Tapping a location used to stop in `AndroidUtilities.isMapsInstalled`. That method checks `com.google.android.apps.maps` and, when the package is missing, shows "Install Google Maps?" (`InstallGoogleMaps` via `GoogleMapsProvider.getInstallMapsString`). The alert is built there, not in `AlertsCreator`. `AlertsCreator.showSecretLocationAlert` is only the secret-chat static-preview picker (Telegram / Google / Yandex).
