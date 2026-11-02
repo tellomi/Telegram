@@ -4,11 +4,10 @@
  *
  * Copyright Nikolai Kudashov, 2013-2020.
  *
- * Pre-login language card. Same three built-in rows Settings already has
- * (简体中文, 繁體中文, English). No "Other" and no langpack.getStrings:
- * those need a network and a signed-in account. Applying the row is
- * LocaleController.applyLanguage, the same call as LaunchActivity's
- * language alert. See UPSTREAM_PATCHES.md.
+ * Bundled language list for the pre-login picker. The old card hardcoded
+ * three rows (简体中文, 繁體中文, English). That was not a langpack result.
+ * The codes below are the packs this tree ships strings for. Applying a
+ * row is LocaleController.applyLanguage. See UPSTREAM_PATCHES.md.
  */
 
 package org.telegram.ui;
@@ -34,6 +33,11 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TellomiDefaults;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public final class TellomiLanguageSheet {
 
     public interface Callback {
@@ -55,19 +59,43 @@ public final class TellomiLanguageSheet {
         return a.shortName.replace('-', '_').equalsIgnoreCase(b.shortName.replace('-', '_'));
     }
 
-    /** 简体中文, 繁體中文, English. Built-in rows, so this works with no network. */
-    public static LocaleController.LocaleInfo[] choices() {
+    /**
+     * Languages this client can show without a server langpack.
+     * values-* folders: ar, de, es, it, ko, nl, pt-rBR, ru, uk, zh.
+     * English is the default values/ pack. zh_hans and zh_hant both read localization_zh.bin.
+     * Anything else needs langpack.getLanguages and langpack.getLangPack on the server.
+     */
+    public static final List<String> BUNDLED_LANG_CODES = Collections.unmodifiableList(Arrays.asList(
+            "en", "it", "es", "de", "nl", "ar", "pt_br", "ko", "uk", "ru", "zh_hans", "zh_hant"
+    ));
+
+    public static List<String> bundledCodes() {
+        return BUNDLED_LANG_CODES;
+    }
+
+    /** Built-in rows for every bundled pack. Works with no network. */
+    public static List<LocaleController.LocaleInfo> bundledChoices() {
         LocaleController controller = LocaleController.getInstance();
-        LocaleController.LocaleInfo hans = controller.getLanguageFromDict(TellomiDefaults.LANG_ZH_HANS.replace('-', '_'));
-        LocaleController.LocaleInfo hant = controller.getLanguageFromDict(TellomiDefaults.LANG_ZH_HANT.replace('-', '_'));
-        LocaleController.LocaleInfo english = controller.getLanguageFromDict("en");
-        if (hans == null) {
-            hans = TellomiDefaults.builtinChinese(false);
+        ArrayList<LocaleController.LocaleInfo> out = new ArrayList<>();
+        for (int i = 0; i < BUNDLED_LANG_CODES.size(); i++) {
+            String code = BUNDLED_LANG_CODES.get(i);
+            LocaleController.LocaleInfo info = controller.getLanguageFromDict(code);
+            if (info == null && "zh_hans".equals(code)) {
+                info = TellomiDefaults.builtinChinese(false);
+            }
+            if (info == null && "zh_hant".equals(code)) {
+                info = TellomiDefaults.builtinChinese(true);
+            }
+            if (info != null) {
+                out.add(info);
+            }
         }
-        if (hant == null) {
-            hant = TellomiDefaults.builtinChinese(true);
-        }
-        return new LocaleController.LocaleInfo[]{hans, hant, english};
+        return out;
+    }
+
+    public static LocaleController.LocaleInfo[] choices() {
+        List<LocaleController.LocaleInfo> list = bundledChoices();
+        return list.toArray(new LocaleController.LocaleInfo[0]);
     }
 
     public static void show(Context context, Callback callback) {

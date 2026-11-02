@@ -440,6 +440,7 @@ public final class TellomiLoginChrome {
             progressView = new ProgressBar(context);
             progressView.setIndeterminate(true);
             progressView.setVisibility(GONE);
+            tintProgress();
             addView(progressView, new FrameLayout.LayoutParams(AndroidUtilities.dp(24), AndroidUtilities.dp(24), Gravity.CENTER));
         }
 
@@ -456,6 +457,13 @@ public final class TellomiLoginChrome {
 
         public void applyTheme() {
             setReady(ready);
+            tintProgress();
+        }
+
+        private void tintProgress() {
+            if (progressView.getIndeterminateDrawable() != null) {
+                progressView.getIndeterminateDrawable().setColorFilter(new android.graphics.PorterDuffColorFilter(ctaLabel(true), android.graphics.PorterDuff.Mode.SRC_IN));
+            }
         }
 
         public void setBusy(boolean busy) {
