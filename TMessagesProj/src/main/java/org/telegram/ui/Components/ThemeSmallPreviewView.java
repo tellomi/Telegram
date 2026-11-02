@@ -36,7 +36,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
@@ -327,22 +326,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
                         });
                         ImageLoader.getInstance().loadImageForImageReceiver(imageReceiver);
                     }
-                } else if (accent != null && accent.info == null) {
-                    int intensity = (int) (accent.patternIntensity * 100);
-                    if (item.previewDrawable instanceof MotionBackgroundDrawable) {
-                        ((MotionBackgroundDrawable) item.previewDrawable).setPatternBitmap(intensity);
-                    }
-                    ChatThemeController.chatThemeQueue.postRunnable(() -> {
-                        Bitmap bitmap = SvgHelper.getBitmap(R.raw.default_pattern, AndroidUtilities.dp(PATTERN_BITMAP_MAXWIDTH), AndroidUtilities.dp(PATTERN_BITMAP_MAXHEIGHT), Color.BLACK, AndroidUtilities.density);
-                        AndroidUtilities.runOnUIThread(() -> {
-                            if (item.previewDrawable instanceof MotionBackgroundDrawable) {
-                                MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) item.previewDrawable;
-                                motionBackgroundDrawable.setPatternBitmap(intensity, prescaleBitmap(bitmap), true);
-                                motionBackgroundDrawable.setPatternColorFilter(patternColor);
-                                invalidate();
-                            }
-                        });
-                    });
+                } else if (accent != null && accent.info == null && item.previewDrawable instanceof MotionBackgroundDrawable) {
+                    ((MotionBackgroundDrawable) item.previewDrawable).setPatternBitmap((int) (accent.patternIntensity * 100));
                 }
             }
         }

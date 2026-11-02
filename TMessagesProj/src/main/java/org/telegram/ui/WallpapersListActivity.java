@@ -1175,12 +1175,14 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             wallPapers.remove(addedFileWallpaper);
             addedFileWallpaper = null;
         }
-        if (catsWallpaper == null) {
-            catsWallpaper = new ColorWallpaper(Theme.DEFAULT_BACKGROUND_SLUG, 0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884);
-            catsWallpaper.intensity = 0.34f;
-            //catsWallpaper.slug = "fqv01SQemVIBAAAApND8LDRUhRU";
-        } else {
+        int tellomiSolid = Theme.tellomiDefaultWallpaperColor(Theme.getActiveTheme());
+        if (catsWallpaper != null) {
             wallPapers.remove(catsWallpaper);
+        }
+        if (catsWallpaper == null || catsWallpaper.color != tellomiSolid || catsWallpaper.gradientColor1 != 0) {
+            catsWallpaper = new ColorWallpaper(Theme.DEFAULT_BACKGROUND_SLUG, tellomiSolid, 0, 0, 0);
+            catsWallpaper.isGradient = false;
+            catsWallpaper.intensity = 0f;
         }
         if (themeWallpaper != null) {
             wallPapers.remove(themeWallpaper);

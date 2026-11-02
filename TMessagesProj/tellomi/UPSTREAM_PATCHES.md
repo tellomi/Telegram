@@ -399,3 +399,20 @@ Password login, email code login, and email password login are `TellomiAuthPage`
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Start button is black with white text, inverted in dark mode. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Spinner on the black button uses the label color. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml`, `values-zh-rCN/strings.xml`, `values-b+zh+Hans/strings.xml` | Shared agreement sentence. |
+
+## Default chat wallpaper
+
+The stock chat background is a flat color. Light (Blue, accent 99) is `#F2F2F2`. Dark (Dark Blue, accent 0) is `#000000`. `createDefaultWallpaper()` no longer builds the four-stop green gradient or draws `R.raw.default_pattern`. `createBackgroundDrawable` takes that path for the stock day and night themes before the accent gradient is painted.
+
+A saved wallpaper whose slug is not `d` is left as the user set it. Other built-in accents keep the colors stored on the accent. Their pattern files are Telegram cloud slugs (`account.getMultiWallPapers`); this server does not have them. When that file is missing the client used to paint and cache `R.raw.default_pattern`. It no longer does. The accent gradient stays; the Telegram pattern does not.
+
+The default accent colors are unchanged. Blue's home accent is `0xFF5890C5` and Dark Blue's home accent is `0xFF3685FA`. `fillAccentColors` recolors the palette by hue. Black and white have no hue, so pointing the default accent at them would flatten links, checks, and bubbles. That swap is not in this change.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Solid default wallpaper. No `default_pattern` fallback. Stock Blue / Dark Blue skip the accent gradient. Theme-list preview of the Blue default is `#F2F2F2`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | The "default" tile is that solid color, not the green gradient at intensity 34. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java` | The default tile is a solid swatch. It does not draw `default_pattern`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Previewing the default slug does not overlay `default_pattern`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ThemeSmallPreviewView.java` | A built-in accent with no downloaded pattern is not filled with `default_pattern`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The default chat-theme stub uses the same light and dark solids. |
