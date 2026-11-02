@@ -622,7 +622,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             }
             if (themeInfo.pathToFile != null) {
                 darkThemes.add(themeInfo);
-            } else {
+            } else if ("Blue".equals(themeInfo.name) || "Dark Blue".equals(themeInfo.name)) {
                 defaultThemes.add(themeInfo);
             }
         }
@@ -636,7 +636,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             themePreviewRow = rowCount++;
             themeHeaderRow = rowCount++;
             themeListRow = rowCount++;
-            hasThemeAccents = Theme.getCurrentTheme().hasAccentColors();
+            hasThemeAccents = false;
             if (themesHorizontalListCell != null) {
                 themesHorizontalListCell.setDrawDivider(hasThemeAccents);
             }
@@ -732,7 +732,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             if (Theme.selectedAutoNightType != Theme.AUTO_NIGHT_TYPE_NONE) {
                 preferedHeaderRow = rowCount++;
                 themeListRow = rowCount++;
-                hasThemeAccents = Theme.getCurrentNightTheme().hasAccentColors();
+                hasThemeAccents = false;
                 if (themesHorizontalListCell != null) {
                     themesHorizontalListCell.setDrawDivider(hasThemeAccents);
                 }

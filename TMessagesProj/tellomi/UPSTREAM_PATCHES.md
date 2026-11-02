@@ -427,7 +427,7 @@ Replacements sit in the `tellomi` resource flavor under the same resource name. 
 
 The four main tabs no longer play `R.raw.tab_*`. `GlassTabView` crossfades `tab_chats` / `tab_contacts` / `tab_calls` / `tab_settings` with the matching `_fill` bitmap (scale plus alpha). The emoji, sticker, keyboard, GIF, mic, and camera button uses the same static glyphs with a short scale crossfade instead of the morph Lottie.
 
-`send_plane_24` and `send_outline` are MingCute `send` for now, not the Telegram paper plane. `SendButton` colors are unchanged (white glyph on the accent disk). A follow-up replaces that control with a black day / white night circle and MingCute `arrow-up`.
+`send_outline` is still MingCute `send`. `send_plane_24` is MingCute `arrow-up` (the `arrow-left` glyph turned to point up). The new send disk is `key_chat_messagePanelSend`: black by day, white at night. The arrow is the opposite color.
 
 `msg_inputarrow` is a white chevron the login country row tints, so it is MingCute `arrow-right`. The other login-only icons stay: `tellomi_ic_*` bake `#111111`, `#C7C7CC`, or `#3478F6` and nothing tints them, and `login_arrow1` / `login_phone1` are 128px missed-call drawings.
 
@@ -447,3 +447,19 @@ Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phas
 | `TMessagesProj/tellomi/res/` | Same-name WebP, vector, and raw overlays. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | Main tabs crossfade line and fill. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Input glyphs are static, with a short scale crossfade. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Send glyph is MingCute arrow-up. The disk is `key_chat_messagePanelSend`: black by day, white at night. The arrow is the opposite color. |
+
+## Monochrome default theme
+
+The default accent (id 99) does not pass through `fillAccentColors`, so the Blue and Dark Blue `.attheme` files and `ThemeColors` defaults are the colors the app actually draws. Day accent is `#111111`. Night accent is white. Outgoing bubbles are `#E0E0E0` on the `#F2F2F2` wallpaper and `#2C2C2E` on black, not Telegram green `#EFFFDE`. Checks, links, switches, checkboxes, the compose FAB, and unread badges follow the same black/white pair. `TELEGRAM_COLOR` is `#111111`. The home accent of Dark Blue and Night no longer paints a blue outgoing gradient. Theme settings lists only Blue and Dark Blue, without the accent swatches. The other built-in theme files are gray too, in case a saved choice still points at them.
+
+The send control is `tellomi/res/drawable/send_plane_24.xml`, an arrow-up, on that disk. `notification.webp` in the flavor is a white Tellomi mark (speech bubble) for the status bar, at mdpi through xxxhdpi.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/assets/bluebubbles.attheme`, `darkblue.attheme`, `day.attheme`, `night.attheme`, `arctic.attheme` | Brand blue and green keys become black, white, or gray. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java` | `TELEGRAM_COLOR` and the fallback bubble, check, link, switch, and FAB colors. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Default accent swatch, preview bubble, and the night outgoing gradient. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list is Blue and Dark Blue. Accent swatches are not shown. |
+| `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Arrow-up instead of the paper plane. |
+| `TMessagesProj/tellomi/res/drawable-*/notification.webp` | White Tellomi silhouette. |
