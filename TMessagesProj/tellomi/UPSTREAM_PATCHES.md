@@ -560,6 +560,14 @@ A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and 
 | `gradle.properties`, `TMessagesProj/build.gradle` | `TELLOMI_CHECK_UPDATES=true`. Fallback if the property is missing is true. |
 | `TMessagesProj/src/test/java/.../TellomiAppUpdateTest.java` | Gate and url-vs-document cases. |
 
+## MTProto server public keys
+
+`TMessagesProj/config/tellomi-server-public.pem` can hold more than one key, newest first. The 2026-11 key is fingerprint `4381149949997195609`. The Teamgram docker key `12240908862933197005` stays as a fallback until the server retires it. Parsing lives in `TellomiNetConfig`. The only upstream edit is the handshake copy.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/jni/tgnet/Handshake.cpp` | On the custom backend, copy every `TellomiNetConfig` public key into `serverPublicKeys` / `serverPublicKeysFingerprints`. The existing match loop still walks the server's fingerprint list first. |
+
 ## Login layout, location without Play services, unsupported mark
 
 Login keeps Tellomi copy and the black/white CTA. The name screen uses Telegram's floating Next again (`LoginActivityRegisterView` no longer replaces it with an in-page button or a `TellomiFormHost`). Avatar selection is `ImageUpdater.openMenu` (camera, gallery, crop). The outer login scroller follows Telegram again except on the phone form, which scrolls itself. 2FA is a page that does not have a custom keypad, so the slide is extended by the keypad height the same way as upstream. Closing login while it is the only fragment finishes the activity and the next launch is the welcome screen; switching to an account that is already on the device uses `showMainTabsReplacingStack` / `switchToAccount` instead of `finishFragment`.
