@@ -316,7 +316,7 @@ android {
         tellomiShippableBuildConfigFields(delegate)
         buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
-        buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "true")
+        buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "false")
         buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
         buildConfigField "boolean", "TELLOMI_CHECK_UPDATES", tellomiProp("TELLOMI_CHECK_UPDATES", "true")
         buildConfigField "boolean", "TELLOMI_BILLING_UNAVAILABLE", tellomiProp("TELLOMI_BILLING_UNAVAILABLE", "true")

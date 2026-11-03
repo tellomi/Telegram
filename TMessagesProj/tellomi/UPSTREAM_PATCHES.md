@@ -597,3 +597,20 @@ The password screen does not call `account.getPasswordSettings` for this flow. T
 | `TMessagesProj/src/main/java/org/telegram/tgnet/tl/TL_account.java` | Optional password on constructor `a2c0cf74`. Legacy constructor unchanged when password is absent. |
 | `TMessagesProj/tellomi/java/.../TellomiDeleteAccount.java` | Confirm, send, errors, logout. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
+
+## DC addresses from help.getConfig (M7 / D-33)
+
+`TELLOMI_LOCK_DC_ADDRESSES` was true, so `help.getConfig` built a `dc_options` map and then skipped `Datacenter::replaceAddresses`. The build-config seed (`TELLOMI_PROFILE_DEV`, `8.137.39.82:10443` for DC 1 and DC 2) and any addresses already stored in `tgnet.dat` stayed until the next app build. Telegram production IPs are still not installed (`TELLOMI_CUSTOM_BACKEND`). DNS bootstrap (`apv3.stel.com`) is still skipped.
+
+The flag now defaults to false. `ConnectionsManager` has one call into `TellomiNetConfig::applyConfigAddresses`. On the custom backend that function keeps a family only when `tellomiAcceptDcAddress` accepts it (`inet_pton` for the family's address type, port 1–65535). A hostname is logged and dropped. If that leaves the family empty, `replaceAddresses` is not called, so the seed or the last good IP remains. An empty `dc_options` list still does nothing (`map.empty()`). The seed is still what `initDatacenters` installs when that DC id is not already saved. A saved id is not rewritten from the seed.
+
+Official Telegram (custom backend off) still replaces all four families, including an empty one. The lock still skips replacement when set back to true.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/jni/tgnet/ConnectionsManager.cpp` | `help.getConfig` calls `TellomiNetConfig::applyConfigAddresses` instead of the locked `replaceAddresses` block. |
+| `TMessagesProj/jni/CMakeLists.txt` | Compiles `tgnet/TellomiDcApply.cpp`. |
+| `gradle.properties`, `TMessagesProj/build.gradle` | `TELLOMI_LOCK_DC_ADDRESSES` default false. |
+| `TMessagesProj/jni/tgnet/TellomiDcAddress.h` | New. `inet_pton` check. Not an upstream file. |
+| `TMessagesProj/jni/tgnet/TellomiDcApply.cpp` | Applies the filtered lists. Not an upstream file. |
+| `TMessagesProj/tellomi/check_dc_address.cpp` | Host check for the `inet_pton` rule. Not linked into the app. |

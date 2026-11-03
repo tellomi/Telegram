@@ -9,12 +9,15 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include "Defines.h"
 
 struct TellomiDcAddress {
     int32_t dcId;
     std::string host;
     uint16_t port;
 };
+
+class Datacenter;
 
 class TellomiNetConfig {
 public:
@@ -27,6 +30,11 @@ public:
     static const std::vector<uint64_t> &publicKeyFingerprints();
     static const std::string &publicKeyPem();
     static uint64_t publicKeyFingerprint();
+    // help.getConfig dc_options. No-op while addresses are locked. On the
+    // custom backend, a family is replaced only when at least one inet_pton
+    // address remains; hostnames are dropped and an empty result keeps the
+    // previous list (the build-config seed, until a good config is saved).
+    static void applyConfigAddresses(Datacenter *datacenter, std::vector<TcpAddress> &ipv4, std::vector<TcpAddress> &ipv6, std::vector<TcpAddress> &ipv4Download, std::vector<TcpAddress> &ipv6Download, bool cdn);
 };
 
 #endif

@@ -3480,12 +3480,7 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround, bool 
                         datacenter = new Datacenter(instanceNum, iter.first);
                         datacenters[iter.first] = datacenter;
                     }
-                    if (!TellomiNetConfig::lockDatacenterAddresses()) {
-                        datacenter->replaceAddresses(info->addressesIpv4, info->isCdn ? 8 : 0);
-                        datacenter->replaceAddresses(info->addressesIpv6, info->isCdn ? 9 : 1);
-                        datacenter->replaceAddresses(info->addressesIpv4Download, info->isCdn ? 10 : 2);
-                        datacenter->replaceAddresses(info->addressesIpv6Download, info->isCdn ? 11 : 3);
-                    }
+                    TellomiNetConfig::applyConfigAddresses(datacenter, info->addressesIpv4, info->addressesIpv6, info->addressesIpv4Download, info->addressesIpv6Download, info->isCdn);
                     if (iter.first == movingToDatacenterId) {
                         movingToDatacenterId = DEFAULT_DATACENTER_ID;
                         moveToDatacenter(iter.first);
