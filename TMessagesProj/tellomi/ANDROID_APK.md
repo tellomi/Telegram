@@ -6,7 +6,7 @@ It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, appli
 
 The workflow runs on:
 
-- every `push`
+- every `push`, except a push whose changed files are all `**/*.md` or under `docs/**`. A `v*` tag push is not path-filtered.
 - every `pull_request`
 - `workflow_dispatch` (Actions → **Android APK** → **Run workflow**)
 
@@ -44,6 +44,16 @@ The workflow page is `https://github.com/tellomi/Telegram/actions/workflows/andr
 **Run workflow** is listed only when this filename exists on the default branch (`master`). The copy on `master` is a registration stub. Choosing another branch runs that branch's `android-apk.yml`.
 
 Install a debug build with `adb install -r tellomi-debug.apk`. The package id is `app.tellomi.chat`.
+
+## Publish to the official download
+
+The `publish` job uploads the signed APK with `Tools/tellomi-publish-installer.sh` to R2 bucket `tellomi-updates`. It runs only when the package job produced a release APK, which requires all four signing secrets above.
+
+- A push to `master` publishes the release channel: `android/<versionName>-<versionCode>/Tellomi.apk`, then `android/latest.json`. That is the same upload as **Run workflow** with `publish=release`. The Chengdu server copies it to https://www.tellomi.cn/dl/ within about 10 minutes. `versionName` is `APP_VERSION_NAME` from `gradle.properties`. `versionCode` is the per-run code from the package job.
+- **Run workflow** still follows the `publish` input: `release`, `test`, or `none` (the default, which does not upload).
+- A push of a `v*` tag still publishes the test channel (`android/test/`), pruned after 14 days.
+
+A master push that only changes markdown or `docs/**` does not run this workflow, so it does not replace `latest.json`. The publish job uses concurrency group `tellomi-installer-publish-android` with `cancel-in-progress: false`, so two uploads do not write `latest.json` at the same time. A newer push to the same ref cancels the older workflow before that upload starts. This workflow does not change the in-app update check.
 
 ## What CI changes in the build
 
