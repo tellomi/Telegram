@@ -87,10 +87,16 @@ RULES = [
     ("input_keyboard", "keyboard", "line"),
     ("input_sticker", "sticker", "line"),
     ("msg_gif", "film", "line"),
-    ("send_plane", "send", "line"),
-    ("send_outline", "send", "line"),
-    ("attach_send", "send", "fill"),
-    ("msg_send", "send", "line"),
+    # MingCute "send" is a paper plane. These names are hand-authored arrow-up
+    # overlays (see HAND_GLYPHS); the rules stay so a later regen does not
+    # match them back onto "send" through a shorter token.
+    ("send_plane", "arrow-up", "line"),
+    ("send_outline", "arrow-up", "line"),
+    ("attach_send", "arrow-up", "line"),
+    ("msg_sendfile", "arrow-up", "line"),
+    ("msg_send", "arrow-up", "line"),
+    ("ic_send", "arrow-up", "line"),
+    ("msg_arrow_back", "arrow-left", "line"),
     ("inputarrow", "arrow-right", "line"),
     ("input_attach", "attachment-2", "line"),
     ("mini_attach", "attachment-2", "line"),
@@ -409,6 +415,8 @@ EXTRAS = [
     "filled_chatlist_mention", "filled_chatlist_reaction", "filled_chatlist_poll",
     "msg_pin_mini",
     "msg_inputarrow",
+    "ic_send",
+    "send_plane_26",
     "tab_chats", "tab_chats_fill", "tab_contacts", "tab_contacts_fill",
     "tab_calls", "tab_calls_fill", "tab_settings", "tab_settings_fill",
     "swipe_mute", "swipe_unmute", "swipe_delete", "swipe_read", "swipe_unread",
@@ -513,7 +521,24 @@ def vector_is_tinted(path):
     return len(chromatic) == 0
 
 
+# Arrow-up / enlarged back glyphs are committed. A full regen must not
+# overwrite them with MingCute "send" (paper plane) or a smaller arrow-left.
+HAND_GLYPHS = {
+    "send_plane_24": ("arrow-up", "line", "vector"),
+    "send_plane_26": ("arrow-up", "line", "vector"),
+    "send_outline": ("arrow-up", "line", "vector"),
+    "attach_send": ("arrow-up", "line", "raster"),
+    "msg_send": ("arrow-up", "line", "raster"),
+    "msg_sendfile": ("arrow-up", "line", "raster"),
+    "ic_send": ("arrow-up", "line", "raster"),
+    "ic_ab_back": ("arrow-left", "line", "raster"),
+    "msg_arrow_back": ("arrow-left", "line", "raster"),
+}
+
+
 def svg_path(icon, style):
+    if icon == "arrow-up":
+        return None
     folder = "core-regular" if style == "line" else "core-filled"
     path = SVG_ROOT / folder / f"{icon}.svg"
     if not path.exists():
@@ -758,6 +783,10 @@ def main():
     remaining = []
     used_svg = []
     for name in sorted(names):
+        if name in HAND_GLYPHS:
+            icon, style, kind = HAND_GLYPHS[name]
+            rows.append((name, icon, style, kind))
+            continue
         if name in SKIP or name.startswith("tellomi_ic_") or name.startswith("login_"):
             remaining.append((name, "skipped"))
             continue
