@@ -365,10 +365,18 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
         } else {
             if (serverPublicKeys.empty()) {
                 if (TellomiNetConfig::customBackend()) {
-                    // TELLOMI: Teamgram (or another private) RSA key from the build config.
-                    if (!TellomiNetConfig::publicKeyPem().empty() && TellomiNetConfig::publicKeyFingerprint() != 0) {
-                        serverPublicKeys.push_back(TellomiNetConfig::publicKeyPem());
-                        serverPublicKeysFingerprints.push_back(TellomiNetConfig::publicKeyFingerprint());
+                    // TELLOMI: server RSA keys from the build config, newest first.
+                    const std::vector<std::string> &pems = TellomiNetConfig::publicKeyPems();
+                    const std::vector<uint64_t> &fingerprints = TellomiNetConfig::publicKeyFingerprints();
+                    size_t count = pems.size();
+                    if (fingerprints.size() < count) {
+                        count = fingerprints.size();
+                    }
+                    for (size_t i = 0; i < count; i++) {
+                        if (!pems[i].empty() && fingerprints[i] != 0) {
+                            serverPublicKeys.push_back(pems[i]);
+                            serverPublicKeysFingerprints.push_back(fingerprints[i]);
+                        }
                     }
                 } else if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
                     serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
