@@ -469,3 +469,20 @@ The send control is `tellomi/res/drawable/send_plane_24.xml`, an arrow-up, on th
 | `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list is Blue and Dark Blue. Accent swatches are not shown. |
 | `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Arrow-up instead of the paper plane. |
 | `TMessagesProj/tellomi/res/drawable-*/notification.webp` | White Tellomi silhouette. |
+
+## Login screens match the 2026-11-03 spec
+
+The first page is the phone form (`PhoneView`). Email entry is the other mode of that form. SMS stays `LoginActivitySmsView`. The email code stays `LoginActivityEmailCodeView`. `auth.sendCode` is unchanged.
+
+Entries with no backend are not shown: Apple, Google, other methods, 找回账号, and password login. The phone page keeps the number field, 验证并登录, the 或 divider, 邮箱登录, and the agreement row. The email page has no password link and no round icon row. Back on email returns to the phone page.
+
+The phone and email pages do not open a keyboard until the field is tapped. A tap on empty space closes it. The phone field uses the numeric keypad, including after returning from email. Light mode is a white page and a black button. Dark mode follows the active theme: black page, white button. Switching language rebuilds the screen and rewrites every label, including 或.
+
+The numeric keypad covers the phone form instead of pushing it. Agreement text is 已阅读并同意 用户协议 和 隐私政策, with no carrier line. SMS boxes use the server length. A wrong SMS code stays in the boxes and the line under them is 验证码错误，请重新输入. The primary button shows ••• while the request is in flight. The top-right control is still the language globe.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home and email entry only. Keypad overlay, clear buttons, code error line. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | Password page, password link, and round icons removed. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | ••• busy state. No unavailable card and no login sheet. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | Agreement sentence without the carrier line. SMS error copy. |

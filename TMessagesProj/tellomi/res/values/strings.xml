@@ -40,6 +40,7 @@
     <string name="TellomiEmailOtpSent">Email sent to %1$s</string>
     <string name="TellomiEmailCodeHint">Verification code</string>
     <string name="TellomiEmailCodeError">Enter the correct code</string>
+    <string name="TellomiSmsCodeError">Wrong code. Enter it again.</string>
     <string name="TellomiResend">Resend</string>
     <string name="TellomiOtpTitle">Enter the code</string>
     <string name="TellomiOtpSent">Code sent to %1$s</string>

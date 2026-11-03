@@ -30,10 +30,10 @@
     <string name="TellomiNotOpen">暂未开放</string>
     <string name="TellomiNotOpenBody">该登录方式即将开放，请先使用手机号或邮箱。</string>
     <string name="TellomiNotOpenOk">好</string>
-    <string name="TellomiAgreementPrefix">已阅读并同意</string>
-    <string name="TellomiAgreementTerms">《用户协议》</string>
-    <string name="TellomiAgreementAnd">和</string>
-    <string name="TellomiAgreementPrivacy">《隐私政策》</string>
+    <string name="TellomiAgreementPrefix">已阅读并同意 </string>
+    <string name="TellomiAgreementTerms">用户协议</string>
+    <string name="TellomiAgreementAnd"> 和 </string>
+    <string name="TellomiAgreementPrivacy">隐私政策</string>
     <string name="TellomiAgreeTitle">用户协议及隐私政策</string>
     <string name="TellomiAgreeAndLogin">同意并登录</string>
     <string name="TellomiDisagree">不同意</string>
@@ -42,6 +42,7 @@
     <string name="TellomiEmailOtpSent">邮件已发送至 %1$s</string>
     <string name="TellomiEmailCodeHint">请输入验证码</string>
     <string name="TellomiEmailCodeError">请输入正确的验证码</string>
+    <string name="TellomiSmsCodeError">验证码错误，请重新输入</string>
     <string name="TellomiResend">重新发送</string>
     <string name="TellomiOtpTitle">请输入验证码</string>
     <string name="TellomiOtpSent">验证码已发送至 %1$s</string>

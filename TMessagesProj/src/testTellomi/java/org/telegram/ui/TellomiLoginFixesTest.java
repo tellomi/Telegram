@@ -114,7 +114,8 @@ public class TellomiLoginFixesTest {
         assertTrue(login.contains("VIEW_TELLOMI_EMAIL_CODE"));
         assertTrue(login.contains("VIEW_TELLOMI_PHONE_PASSWORD"));
         assertTrue(login.contains("VIEW_TELLOMI_EMAIL_PASSWORD"));
-        assertTrue(login.contains("currentViewNum = VIEW_TELLOMI_EMAIL_CODE"));
+        assertTrue(login.contains("tellomiOpenScreen(TELLOMI_EMAIL_CODE"));
+        assertFalse(login.contains("currentViewNum = VIEW_TELLOMI_EMAIL_CODE"));
         assertTrue(login.contains("new TellomiLanguageSelectActivity"));
         assertTrue(login.contains("R.drawable.msg2_language"));
         assertTrue(login.contains("introView = intro"));
