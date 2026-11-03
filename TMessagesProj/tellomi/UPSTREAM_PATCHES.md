@@ -624,3 +624,16 @@ The MingCute pass matched the substring `settings` to `settings-3`, so Account, 
 | `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Removed. `src/main` vectors are used. |
 | `TMessagesProj/tellomi/icons/generate_icons.py` | Those names are not regenerated. |
 | `TMessagesProj/tellomi/icons/mapping.csv` | Rows removed. |
+
+## No language chooser after login
+
+Upstream shows "Choose your language" once per `suggestedLangCode`, and the welcome screen writes `language_showed2` when it offers that language. Tellomi's welcome picker applies the language and never writes that key, and a Chinese phone is already on `zh-hans` without a saved choice. The dialog then opens after the code is accepted.
+
+Picking a language on the login screen writes `language_showed2`. The dialog is skipped when a language was saved (`languageOverride`) or the current language already matches the suggestion (`zh_hans` matches `zh-hans` and `zh`; `zh-hant` does not match `zh-hans`). The shared plural `zh` is not treated as a match, or traditional would count as simplified.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageAlert.java` | New. Records the choice and decides when to skip. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | `showLanguageAlert` returns when that check says so. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | The welcome picker records the choice. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `hasLanguageOverride`. |
