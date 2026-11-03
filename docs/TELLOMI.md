@@ -20,7 +20,7 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 | `TELLOMI_DC_ADDRESSES` | unset | Optional explicit `dcId:host:port` list. When set, it replaces the selected profile. Shippable builds accept it only when every entry is `8.137.39.82:10443`. Bracket IPv6 hosts: `1:[2001:db8::1]:10443`. |
 | `TELLOMI_DEFAULT_DC_ID` | `1` | Datacenter used for a fresh login. Must appear in the address list. |
 | `TELLOMI_CUSTOM_BACKEND` | `true` | When true, Telegram production and test DC IPs are never installed, and the Telegram DNS bootstrap (`apv3.stel.com` / `tapv3.stel.com`) is skipped. |
-| `TELLOMI_LOCK_DC_ADDRESSES` | `true` | When true (and the custom backend is on), `help.getConfig` does not replace the build-config addresses. |
+| `TELLOMI_LOCK_DC_ADDRESSES` | `false` | When true (and the custom backend is on), `help.getConfig` does not replace saved addresses. Default is false (D-33): an `inet_pton` IP from `dc_options` replaces that address family. A hostname is ignored. If a family would otherwise become empty, the previous addresses stay. The build-config list is still the first-run seed. |
 | `TELLOMI_USE_CLOUD_STRINGS` | `false` | Telegram langpack download (`translations.telegram.org` / `langpack.*`). |
 | `TELLOMI_CHECK_UPDATES` | `true` | Automatic `help.getAppUpdate` checks. `-PTELLOMI_CHECK_UPDATES=false` skips them for that build. |
 | `TELLOMI_BILLING_UNAVAILABLE` | `true` | Skips Google Play Billing for Telegram product ids. |
@@ -70,7 +70,9 @@ Teamgram's docker compose publishes gnetway on **TCP 10443** (also 5222 and webs
 
 Both profiles list **DC 1 and DC 2 on the same host and port**. Teamgram's single datacenter is DC 1 (`ThisDC`). The stock client used to assume DC 2 when it had no saved config; registering both ids means a `PHONE_MIGRATE_*` / `USER_MIGRATE_*` to either id still reaches that port.
 
-`TELLOMI_LOCK_DC_ADDRESSES=true` matters for docker. `help.getConfig` often advertises `127.0.0.1` or an in-container address. With the lock on, the client keeps the address from `gradle.properties` after that response. For a real multi-DC deployment, set the lock to `false` and make the server advertise addresses the phone can route to.
+`TELLOMI_LOCK_DC_ADDRESSES` defaults to false (D-33). `help.getConfig` `dc_options` replace a saved address family when at least one entry is an IPv4 or IPv6 literal (`inet_pton`, the same check as `ConnectionSocket::openConnection`). A hostname such as `api.tellomi.cn` is dropped. If every entry in that family is dropped, the previous addresses stay, so a bad config cannot wipe the seed. The seed in `gradle.properties` is still what a first launch uses, and what a later launch uses until a config with a usable IP has been saved. A saved datacenter id is not overwritten by the seed (`initDatacenters` skips an id that is already in `tgnet.dat`).
+
+The checked-in Teamgram `teamgramd/bin/config.json` ships `"dc_options": []`. An empty list does not replace anything, so clients stay on the seed. Do not put `127.0.0.1` or another private address in `dc_options` for a phone build: that string is a valid IP and would be applied. A local server that still advertises loopback can be pinned with `-PTELLOMI_LOCK_DC_ADDRESSES=true`.
 
 The checked-in file holds more than one PKCS#1 public key, newest first. `tellomiPublicKeyPem()` in `TMessagesProj/build.gradle` reads that whole file (comments and every block). `TellomiNetConfig::set` splits the text on `-----BEGIN` and keeps each block whose fingerprint is not 0, in that order. `publicKeyPem()` and `publicKeyFingerprint()` still return the first key. The handshake offers every key. It walks the server's fingerprint list first, so the server's order picks the key when both sides share more than one. The server currently sends `[4381149949997195609, 12240908862933197005]`.
 
@@ -163,7 +165,7 @@ Isolated in `TMessagesProj/jni/tgnet/TellomiNetConfig.cpp`, called from three up
 
 - `ConnectionsManager::initDatacenters` returns after adding only `TELLOMI_DC_ADDRESSES` when the custom backend is on.
 - A fresh `currentDatacenterId` becomes `TELLOMI_DEFAULT_DC_ID` instead of `2`.
-- `help.getConfig` skips `replaceAddresses` while the lock is on.
+- `help.getConfig` calls `TellomiNetConfig::applyConfigAddresses`. The lock skips replacement. Otherwise each address family is replaced only with `inet_pton` literals; a family with none of those keeps its previous list.
 - `Handshake` loads every configured PEM block instead of Telegram's production/test keys. Each fingerprint is computed the same way as the CDN-key path (SHA1 of the TL-encoded modulus and exponent, low 8 bytes as a little-endian `uint64`). A block that does not parse is skipped. PKCS#1 (`BEGIN RSA PUBLIC KEY`) and PKCS#8 (`BEGIN PUBLIC KEY`) are both accepted. The match loop follows the server's fingerprint order.
 
 `ConnectionsManager.onRequestNewServerIpAndPort` returns immediately when the custom backend is on, so a failed connection cannot pull Telegram DC addresses from Google/Mozilla DNS TXT records.
