@@ -142,6 +142,8 @@ In-app alternate icons use the same bubble and @, each at 75–80% of the frame.
 
 `AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep the upstream component names. `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon` are new aliases. Regenerated from `render_launcher_icons.py`. `icon_plane.xml`, `ic_launcher_dr.webp`, and the standalone `*_sa` bitmaps are still the upstream artwork; the standalone manifest points its aliases at the Tellomi mipmaps instead.
 
+Settings-list icon plates are gray. `IconBackgroundColors` holds the pairs, and `SettingCell.Background.setColor` runs `TellomiIconColors.plate` so a leftover Telegram hue on a settings row is drawn as a dark gray. Launcher icons are not part of that remap. Charts, gifts, and avatar gradients stay as they are.
+
 ### Datacenters and RSA key
 
 Isolated in `TMessagesProj/jni/tgnet/TellomiNetConfig.cpp`, called from three upstream sites:

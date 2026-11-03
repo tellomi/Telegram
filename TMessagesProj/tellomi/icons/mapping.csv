@@ -1,7 +1,7 @@
 telegram_resource,mingcute_name,style,kind
 arrow_more,arrow-right,line,raster
 arrow_newchat,edit-2,line,raster
-attach_send,send,fill,raster
+attach_send,arrow-up,line,raster
 call,phone,line,vector
 chats_archive,archive,line,raster
 chats_archive,archive,line,raw
@@ -53,6 +53,7 @@ ic_ab_done,check,line,raster
 ic_ab_other,more-2,line,raster
 ic_ab_reply,corner-up-left,line,raster
 ic_close_white,close,line,raster
+ic_send,arrow-up,line,raster
 input_attach,attachment-2,line,raster
 input_bot1,bot-message-square,line,raster
 input_bot2,bot-message-square,line,raster
@@ -150,7 +151,7 @@ msg_addfolder,folder,line,raster
 msg_addphoto,gallery,line,raster
 msg_admins,user-3,line,raster
 msg_archive,archive,line,raster
-msg_arrow_back,arrow-right,line,raster
+msg_arrow_back,arrow-left,line,raster
 msg_arrowright,arrow-right,line,raster
 msg_autodelete,clock,line,raster
 msg_background,palette,line,raster
@@ -234,8 +235,8 @@ msg_requests,inbox,line,raster
 msg_retry,clockwise,line,raster
 msg_search,search-2,line,raster
 msg_secret,lock,line,raster
-msg_send,send,line,raster
-msg_sendfile,send,line,raster
+msg_send,arrow-up,line,raster
+msg_sendfile,arrow-up,line,raster
 msg_settings_old,settings-3,line,raster
 msg_settings_premium,settings-3,line,raster
 msg_share,share-2,line,raster
@@ -291,7 +292,7 @@ search_media_filled,search-2,line,raster
 search_music_filled,search-2,line,raster
 search_users_filled,search-2,line,raster
 search_voice_filled,search-2,line,raster
-send_outline,send,line,vector
+send_outline,arrow-up,line,vector
 send_plane_24,arrow-up,line,vector
 settings_account,settings-3,line,vector
 settings_arrow,arrow-right,line,raster

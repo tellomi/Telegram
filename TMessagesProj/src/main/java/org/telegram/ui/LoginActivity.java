@@ -645,8 +645,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         loginScroll = new ScrollView(context) {
             @Override
             public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
-                // Login fields stay put when a keyboard opens. Scrolling the
-                // focused line is what made the form jump.
+                // The page scrolls itself. Letting this outer scroller chase the
+                // focused line is what shoved the title under the close button.
                 if (activityMode == MODE_LOGIN) {
                     return false;
                 }
@@ -1968,9 +1968,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         return VIEW_PHONE_INPUT;
     }
 
-    /** The numeric keypad covers this page instead of shrinking it. SMS and email codes keep their bottom row above the keys. */
+    /**
+     * Keep every login page in the area above the numeric keypad. Stretching the
+     * phone form under the keys left the button and the agreement off-screen in
+     * landscape and on a short window. Top gravity keeps the title where it is.
+     */
     private boolean tellomiKeyboardCovers(SlideView slideView) {
-        return !slideView.hasCustomKeyboard() || slideView instanceof PhoneView;
+        return false;
     }
 
     private boolean tellomiLoginRoot(int page) {
@@ -2561,11 +2565,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         // The natural height is what the scroll range is based on.
                         // When the page is taller than the form, fillViewport asks for
                         // an exact height and the bottom spacer can push the agreement down.
+                        int pad = TellomiLoginFit.extraSidePadPx(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(TellomiLoginFit.MAX_CONTENT_DP));
+                        if (getPaddingLeft() != pad || getPaddingRight() != pad) {
+                            setPadding(pad, getPaddingTop(), pad, getPaddingBottom());
+                        }
                         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
                         int content = getMeasuredHeight();
                         int mode = MeasureSpec.getMode(heightMeasureSpec);
                         int size = MeasureSpec.getSize(heightMeasureSpec);
-                        if (mode == MeasureSpec.EXACTLY && size > content) {
+                        if (TellomiLoginFit.expandToViewport(content, mode, size)) {
                             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                         }
                     }
@@ -2575,7 +2583,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiFormScroll = new ScrollView(context) {
                     @Override
                     public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
-                        return false;
+                        // Keep the field and the button above the keyboard on a short window.
+                        rectangle.bottom += AndroidUtilities.dp(120);
+                        return super.requestChildRectangleOnScreen(child, rectangle, immediate);
                     }
                 };
                 tellomiFormScroll.setFillViewport(true);
@@ -2589,7 +2599,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
 
             titleView = new TextView(context);
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, activityMode == MODE_LOGIN ? 22 : 18);
+            if (activityMode == MODE_LOGIN) {
+                TellomiLoginChrome.textSize(titleView, 22);
+            } else {
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            }
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setText(getString(tellomiBindPhone ? R.string.TellomiBindPhone : activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneNewNumber : R.string.YourNumber));
             titleView.setGravity(Gravity.CENTER);
@@ -2685,7 +2699,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 emailField.setCursorSize(AndroidUtilities.dp(20));
                 emailField.setCursorWidth(1.5f);
                 emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                emailField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                TellomiLoginChrome.textSize(emailField, 16);
                 emailField.setMaxLines(1);
                 emailField.setSingleLine(true);
                 emailField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
@@ -2898,7 +2912,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (activityMode == MODE_LOGIN) {
                 TextView codeChevron = new TextView(context);
                 codeChevron.setText("▾");
-                codeChevron.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+                TellomiLoginChrome.textSize(codeChevron, 12);
                 codeChevron.setTextColor(0xFF8E8E93);
                 codeChevron.setGravity(Gravity.CENTER);
                 codeChevron.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(6), 0);
@@ -2982,6 +2996,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
             phoneField.setContentDescription(getString(R.string.PhoneNumber));
             if (activityMode == MODE_LOGIN) {
+                ((LinearLayout.LayoutParams) codeField.getLayoutParams()).width = LayoutHelper.WRAP_CONTENT;
+                codeField.setMinWidth(AndroidUtilities.dp(28));
+                TellomiLoginChrome.textSize(phoneField, 16);
+                TellomiLoginChrome.textSize(codeField, 16);
+                TellomiLoginChrome.textSize(plusTextView, 16);
                 linearLayout.addView(phoneField, LayoutHelper.createLinear(0, 36, 1f));
                 tellomiPhoneClear = tellomiClearButton(() -> phoneField.setText(""));
                 linearLayout.addView(tellomiPhoneClear, LayoutHelper.createLinear(28, 28, 0, 0, 6, 0));
@@ -3522,11 +3541,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 onNextPressed(null);
             });
-            addView(tellomiPrimaryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 12, 0, 0));
+            addView(tellomiPrimaryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
             tellomiPhoneAgreementView = new TextView(context);
             tellomiPhoneAgreementView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
-            tellomiPhoneAgreementView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            TellomiLoginChrome.textSize(tellomiPhoneAgreementView, 12);
             tellomiPhoneAgreementView.setGravity(Gravity.CENTER);
             tellomiPhoneAgreementView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             tellomiPhoneAgreement.install(tellomiPhoneAgreementView, false);
@@ -3557,7 +3576,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) field.getLayoutParams();
             lp.leftMargin = 0;
             lp.rightMargin = 0;
-            lp.height = AndroidUtilities.dp(50);
+            lp.height = TellomiLoginChrome.fieldHeight(field.getContext());
         }
 
         private ImageView tellomiClearButton(Runnable clear) {
@@ -3620,7 +3639,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 titleView.setGravity(home ? Gravity.CENTER : Gravity.LEFT);
                 subtitleView.setGravity(Gravity.LEFT);
                 subtitleView.setTextColor(TellomiLoginChrome.MUTED);
-                subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                TellomiLoginChrome.textSize(subtitleView, 13);
                 subtitleView.setText(getString(R.string.TellomiEmailSubtitle));
                 subtitleView.setVisibility(tellomiEmailMode ? VISIBLE : GONE);
                 if (tellomiPrimaryButton != null) {
@@ -4863,6 +4882,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private LoadingTextView timeText;
         private TellomiLoginChrome.ActionButton tellomiLoginButton;
         private TextView tellomiWrongCode;
+        private TellomiFormHost tellomiPage;
         /** App-code screen. auth.resendCode, kept on the page rather than inside the help sheet. */
         private TextView tellomiUseSmsView;
 
@@ -4937,6 +4957,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             currentType = type;
             setOrientation(VERTICAL);
+            if ((activityMode == MODE_LOGIN || tellomiBindPhone) && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
+                tellomiPage = new TellomiFormHost(context);
+                super.addView(tellomiPage.scroll, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            }
 
             confirmTextView = new TextView(context);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -5076,7 +5100,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 boolean tellomiOtp = (activityMode == MODE_LOGIN || tellomiBindPhone) && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE);
                 if (tellomiOtp) {
                     codeFieldContainer.setTellomiSquares(true);
-                    titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+                    TellomiLoginChrome.textSize(titleTextView, 22);
                     titleTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                     confirmTextView.setGravity(Gravity.LEFT);
                     LinearLayout.LayoutParams titleLp = (LinearLayout.LayoutParams) titleTextView.getLayoutParams();
@@ -5094,7 +5118,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     tellomiWrongCode = new TextView(context);
                     tellomiWrongCode.setText(getString(R.string.TellomiSmsCodeError));
                     tellomiWrongCode.setTextColor(TellomiLoginChrome.ERROR);
-                    tellomiWrongCode.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    TellomiLoginChrome.textSize(tellomiWrongCode, 13);
                     tellomiWrongCode.setVisibility(GONE);
                     addView(tellomiWrongCode, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
                     tellomiLoginButton = TellomiLoginChrome.actionButton(context, getString(tellomiBindPhone ? R.string.TellomiBindAction : R.string.TellomiOtpLogin), v -> {
@@ -5107,11 +5131,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         }
                         onNextPressed(null);
                     });
-                    addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 12, 0, 0));
+                    addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
                     tellomiUseSmsView = new TextView(context);
                     tellomiUseSmsView.setText(getString(R.string.TellomiUseSms));
                     tellomiUseSmsView.setTextColor(TellomiLoginChrome.LINK);
-                    tellomiUseSmsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                    TellomiLoginChrome.textSize(tellomiUseSmsView, 16);
                     tellomiUseSmsView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                     tellomiUseSmsView.setPadding(0, AndroidUtilities.dp(14), 0, AndroidUtilities.dp(4));
                     tellomiUseSmsView.setVisibility(GONE);
@@ -5213,7 +5237,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             errorViewSwitcher = new ViewSwitcher(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
+                    int cap = tellomiPage != null ? AndroidUtilities.dp(180) : AndroidUtilities.dp(100);
+                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(cap, MeasureSpec.AT_MOST));
                 }
             };
 
@@ -5239,6 +5264,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
                 problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 boolean tellomiOtpRow = activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE);
+                if (tellomiOtpRow) {
+                    TellomiLoginChrome.textSize(problemText, 15);
+                }
                 problemText.setGravity(tellomiOtpRow ? (Gravity.LEFT | Gravity.CENTER_VERTICAL) : (Gravity.CENTER_HORIZONTAL | Gravity.TOP));
                 problemText.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(8), AndroidUtilities.dp(14), AndroidUtilities.dp(16));
                 problemFrame.addView(problemText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, tellomiOtpRow ? (Gravity.LEFT | Gravity.CENTER_VERTICAL) : Gravity.CENTER));
@@ -5528,6 +5556,32 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 drawable.setLayerColor("Phone", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 drawable.setLayerColor("Note", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             }
+        }
+
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                tellomiPage.add(child, index, params);
+                return;
+            }
+            super.addView(child, index, params);
+        }
+
+        @Override
+        public void removeView(View view) {
+            if (tellomiPage != null && tellomiPage.contains(view)) {
+                tellomiPage.column.removeView(view);
+                return;
+            }
+            super.removeView(view);
+        }
+
+        @Override
+        public int indexOfChild(View child) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                return tellomiPage.column.indexOfChild(child);
+            }
+            return super.indexOfChild(child);
         }
 
         @Override
@@ -7683,6 +7737,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public class LoginActivityEmailCodeView extends SlideView {
 
         private CodeFieldContainer codeFieldContainer;
+        private TellomiFormHost tellomiPage;
         private TextView titleView;
         private TextView confirmTextView;
         private TellomiLoginChrome.ActionButton tellomiLoginButton;
@@ -7737,6 +7792,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             isSetup = setup;
 
             setOrientation(VERTICAL);
+            if (activityMode == MODE_LOGIN && !setup) {
+                tellomiPage = new TellomiFormHost(context);
+                super.addView(tellomiPage.scroll, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            }
 
             FrameLayout inboxFrameLayout = new FrameLayout(context);
             inboxImageView = new RLottieImageView(context);
@@ -7775,7 +7834,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             boolean tellomiEmailOtp = activityMode == MODE_LOGIN && !setup;
             if (tellomiEmailOtp) {
                 codeFieldContainer.setTellomiSquares(true);
-                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+                TellomiLoginChrome.textSize(titleView, 22);
                 titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                 confirmTextView.setGravity(Gravity.LEFT);
                 confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
@@ -7797,9 +7856,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                     onNextPressed(null);
                 });
-                addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 16, 0, 0));
+                addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
                 tellomiResendView = new TextView(context);
-                tellomiResendView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                TellomiLoginChrome.textSize(tellomiResendView, 14);
                 tellomiResendView.setTextColor(TellomiLoginChrome.MUTED);
                 tellomiResendView.setGravity(Gravity.RIGHT);
                 tellomiResendView.setVisibility(GONE);
@@ -7807,7 +7866,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiMissingView = new TextView(context);
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
                 tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
-                tellomiMissingView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                TellomiLoginChrome.textSize(tellomiMissingView, 15);
                 tellomiMissingView.setGravity(Gravity.LEFT);
                 tellomiMissingView.setPadding(0, AndroidUtilities.dp(8), 0, 0);
                 tellomiMissingView.setOnClickListener(v -> TellomiLoginChrome.showCodeOptions(context, null, null));
@@ -7983,7 +8042,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             errorViewSwitcher = new ViewSwitcher(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
+                    int cap = tellomiPage != null ? AndroidUtilities.dp(180) : AndroidUtilities.dp(100);
+                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(cap, MeasureSpec.AT_MOST));
                 }
             };
             Animation anim = AnimationUtils.loadAnimation(context, R.anim.text_in);
@@ -8025,7 +8085,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             tellomiCodeField.setCursorSize(AndroidUtilities.dp(20));
             tellomiCodeField.setCursorWidth(1.5f);
             tellomiCodeField.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            tellomiCodeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            TellomiLoginChrome.textSize(tellomiCodeField, 16);
             tellomiCodeField.setMaxLines(1);
             tellomiCodeField.setSingleLine(true);
             tellomiCodeField.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -8070,12 +8130,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
             tellomiCodeOutline.addView(tellomiCodeField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
             tellomiCodeOutline.setVisibility(GONE);
-            addView(tellomiCodeOutline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, 0, 16, 0, 0));
+            addView(tellomiCodeOutline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
+            tellomiCodeOutline.setMinimumHeight(TellomiLoginChrome.fieldHeight(context));
 
             tellomiCodeError = new TextView(context);
             tellomiCodeError.setText(getString(R.string.TellomiEmailCodeError));
             tellomiCodeError.setTextColor(TellomiLoginChrome.ERROR);
-            tellomiCodeError.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            TellomiLoginChrome.textSize(tellomiCodeError, 13);
             tellomiCodeError.setVisibility(GONE);
             addView(tellomiCodeError, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
         }
@@ -8230,6 +8291,32 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (tellomiCodeOutline != null) {
                 TellomiLoginChrome.grayField(tellomiCodeOutline);
             }
+        }
+
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                tellomiPage.add(child, index, params);
+                return;
+            }
+            super.addView(child, index, params);
+        }
+
+        @Override
+        public void removeView(View view) {
+            if (tellomiPage != null && tellomiPage.contains(view)) {
+                tellomiPage.column.removeView(view);
+                return;
+            }
+            super.removeView(view);
+        }
+
+        @Override
+        public int indexOfChild(View child) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                return tellomiPage.column.indexOfChild(child);
+            }
+            return super.indexOfChild(child);
         }
 
         @Override
@@ -9477,6 +9564,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private TextView wrongNumber;
         private TextView privacyView;
         private TellomiLoginChrome.ActionButton tellomiRegisterButton;
+        private TellomiFormHost tellomiPage;
         private final TellomiSignUpAgreement tellomiAgreement = new TellomiSignUpAgreement(); // Tellomi
         private TextView titleTextView;
         private FrameLayout editTextContainer;
@@ -9550,6 +9638,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             super(context);
 
             setOrientation(VERTICAL);
+            if (activityMode == MODE_LOGIN) {
+                tellomiPage = new TellomiFormHost(context);
+                super.addView(tellomiPage.scroll, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            }
 
             imageUpdater = new ImageUpdater(false, ImageUpdater.FOR_TYPE_USER, false);
             imageUpdater.setOpenWithFrontfaceCamera(true);
@@ -9559,7 +9651,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             imageUpdater.setDelegate(this);
 
             FrameLayout avatarContainer = new FrameLayout(context);
-            addView(avatarContainer, LayoutHelper.createLinear(78, 78, Gravity.CENTER_HORIZONTAL));
+            addView(avatarContainer, LayoutHelper.createLinear(78, 78, Gravity.CENTER_HORIZONTAL, 0, activityMode == MODE_LOGIN ? 36 : 0, 0, 0));
 
             avatarDrawable = new AvatarDrawable();
 
@@ -9804,20 +9896,26 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 onBackPressed(false);
             });
 
-            FrameLayout privacyLayout = new FrameLayout(context);
-            addView(privacyLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
-
             privacyView = new TextView(context);
             privacyView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
-            privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.isSmallScreen() ? 13 : 14);
             privacyView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            privacyView.setGravity(Gravity.CENTER_VERTICAL);
+            privacyView.setGravity(Gravity.CENTER);
             if (activityMode == MODE_LOGIN) {
+                TellomiLoginChrome.textSize(privacyView, 12);
                 tellomiRegisterButton = TellomiLoginChrome.actionButton(context, getString(R.string.TellomiOtpLogin), v -> onNextPressed(null));
                 tellomiRegisterButton.setReady(false);
-                privacyLayout.addView(tellomiRegisterButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 24, 0, 24, 16));
-                privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 24, 0, 24, 72));
+                Space spacer = new Space(context);
+                addView(spacer, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, 0, 1f));
+                LinearLayout stack = new LinearLayout(context);
+                stack.setOrientation(LinearLayout.VERTICAL);
+                stack.addView(privacyView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 16, 8, 0));
+                stack.addView(tellomiRegisterButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 12, 8, 16));
+                addView(stack, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             } else {
+                privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.isSmallScreen() ? 13 : 14);
+                privacyView.setGravity(Gravity.CENTER_VERTICAL);
+                FrameLayout privacyLayout = new FrameLayout(context);
+                addView(privacyLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
                 privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 14, 0, 70, 32));
             }
             VerticalPositionAutoAnimator.attach(privacyView);
@@ -9853,6 +9951,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             firstNameOutlineView.updateColor();
             lastNameOutlineView.updateColor();
             if (activityMode == MODE_LOGIN) {
+                TellomiLoginChrome.textSize(titleTextView, 22);
+                TellomiLoginChrome.textSize(descriptionTextView, 14);
+                TellomiLoginChrome.textSize(firstNameField, 17);
                 titleTextView.setTextColor(TellomiLoginChrome.text());
                 descriptionTextView.setTextColor(TellomiLoginChrome.night() ? 0xFF8E8E93 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
                 firstNameField.setTextColor(TellomiLoginChrome.text());
@@ -10065,6 +10166,32 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 descriptionTextView.setText(getString("RegisterText2", R.string.RegisterText2));
                 firstNameOutlineView.setText(getString(AndroidUtilities.isSmallScreen() ? R.string.FirstNameSmall : R.string.FirstName));
             }
+        }
+
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                tellomiPage.add(child, index, params);
+                return;
+            }
+            super.addView(child, index, params);
+        }
+
+        @Override
+        public void removeView(View view) {
+            if (tellomiPage != null && tellomiPage.contains(view)) {
+                tellomiPage.column.removeView(view);
+                return;
+            }
+            super.removeView(view);
+        }
+
+        @Override
+        public int indexOfChild(View child) {
+            if (tellomiPage != null && child != tellomiPage.scroll) {
+                return tellomiPage.column.indexOfChild(child);
+            }
+            return super.indexOfChild(child);
         }
 
         @Override

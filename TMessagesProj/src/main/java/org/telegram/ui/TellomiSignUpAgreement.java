@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -18,8 +17,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -111,7 +108,7 @@ public class TellomiSignUpAgreement {
         TextView title = new TextView(context);
         title.setText(LocaleController.getString(R.string.TellomiAgreeTitle));
         title.setTextColor(TellomiLoginChrome.text());
-        title.setTextSize(17);
+        TellomiLoginChrome.textSize(title, 17);
         title.setTypeface(AndroidUtilities.bold());
         title.setGravity(Gravity.CENTER);
         card.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -120,7 +117,7 @@ public class TellomiSignUpAgreement {
         body.setText(bodyText(context));
         body.setMovementMethod(LinkMovementMethod.getInstance());
         body.setHighlightColor(Color.TRANSPARENT);
-        body.setTextSize(14);
+        TellomiLoginChrome.textSize(body, 14);
         body.setGravity(Gravity.CENTER);
         body.setLineSpacing(AndroidUtilities.dp(3), 1f);
         LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -135,31 +132,18 @@ public class TellomiSignUpAgreement {
             }
         });
         agree.setReady(true);
-        card.addView(agree, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
+        card.addView(agree, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView decline = new TextView(context);
         decline.setText(LocaleController.getString(R.string.TellomiDisagree));
         decline.setTextColor(TellomiLoginChrome.MUTED);
-        decline.setTextSize(15);
+        TellomiLoginChrome.textSize(decline, 15);
         decline.setGravity(Gravity.CENTER);
         decline.setPadding(0, AndroidUtilities.dp(14), 0, AndroidUtilities.dp(10));
         decline.setOnClickListener(v -> dialog.dismiss());
         card.addView(decline, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        FrameLayout wrap = new FrameLayout(context);
-        int side = AndroidUtilities.dp(32);
-        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardLp.leftMargin = side;
-        cardLp.rightMargin = side;
-        wrap.addView(card, cardLp);
-        dialog.setContentView(wrap);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            window.setDimAmount(0.45f);
-        }
+        TellomiLoginChrome.presentCard(dialog, card);
         dialog.show();
     }
 
