@@ -15,10 +15,11 @@ import android.content.Context;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -50,6 +51,7 @@ public class TellomiAuthPage extends SlideView {
 
     private final int mode;
     private final Host host;
+    private final TellomiFormHost form;
     private EditTextBoldCursor emailField;
     private OutlineTextContainerView emailOutline;
     private TellomiLoginChrome.ActionButton button;
@@ -60,11 +62,12 @@ public class TellomiAuthPage extends SlideView {
         this.mode = mode;
         this.host = host;
         setOrientation(VERTICAL);
-        setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        form = new TellomiFormHost(context);
+        super.addView(form.scroll, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         TextView title = new TextView(context);
         title.setText(titleText());
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+        TellomiLoginChrome.textSize(title, 22);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(TellomiLoginChrome.text());
         title.setGravity(Gravity.LEFT);
@@ -73,7 +76,7 @@ public class TellomiAuthPage extends SlideView {
         if (mode == EMAIL_CODE) {
             TextView subtitle = new TextView(context);
             subtitle.setText(LocaleController.getString(R.string.TellomiEmailSubtitle));
-            subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            TellomiLoginChrome.textSize(subtitle, 13);
             subtitle.setTextColor(TellomiLoginChrome.MUTED);
             subtitle.setGravity(Gravity.LEFT);
             addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -82,7 +85,7 @@ public class TellomiAuthPage extends SlideView {
         if (mode == EMAIL_CODE || mode == EMAIL_PASSWORD) {
             emailField = field(context, LocaleController.getString(R.string.TellomiEmailHint), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
             emailOutline = outline(context, emailField);
-            addView(emailOutline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, 0, mode == EMAIL_CODE ? 20 : 24, 0, 0));
+            addView(emailOutline, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, mode == EMAIL_CODE ? 20 : 24, 0, 0));
             emailField.addTextChangedListener(after(s -> {
                 host.setEmail(s.toString());
                 refreshReady();
@@ -98,15 +101,24 @@ public class TellomiAuthPage extends SlideView {
             }
             submit();
         });
-        addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 12, 0, 0));
+        addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
         TextView agreementView = new TextView(context);
-        agreementView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        TellomiLoginChrome.textSize(agreementView, 12);
         agreementView.setGravity(Gravity.CENTER);
         agreementView.setLineSpacing(AndroidUtilities.dp(2), 1f);
         agreement.install(agreementView, false);
-        addView(agreementView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 14, 4, 0));
+        addView(agreementView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 14, 4, 12));
 
+    }
+
+    @Override
+    public void addView(View child, int index, ViewGroup.LayoutParams params) {
+        if (form != null && child != form.scroll) {
+            form.add(child, index, params);
+            return;
+        }
+        super.addView(child, index, params);
     }
 
     private String titleText() {
@@ -181,7 +193,7 @@ public class TellomiAuthPage extends SlideView {
         field.setCursorSize(AndroidUtilities.dp(20));
         field.setCursorWidth(1.5f);
         field.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        field.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        TellomiLoginChrome.textSize(field, 16);
         field.setMaxLines(1);
         field.setSingleLine(true);
         field.setInputType(inputType);
@@ -198,6 +210,7 @@ public class TellomiAuthPage extends SlideView {
         TellomiLoginChrome.grayField(outline);
         outline.attachEditText(field);
         outline.addView(field, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        outline.setMinimumHeight(TellomiLoginChrome.fieldHeight(context));
         return outline;
     }
 
