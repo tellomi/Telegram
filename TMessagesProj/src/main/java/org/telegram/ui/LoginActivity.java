@@ -1826,6 +1826,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
         }
         LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, null);
+        TellomiLanguageAlert.rememberUserChoice(info);
         if (getParentLayout() != null) {
             getParentLayout().rebuildAllFragmentViews(true, true);
         }

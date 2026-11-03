@@ -1471,6 +1471,11 @@ public class LocaleController {
         return currentLocaleInfo;
     }
 
+    /** True after the user has saved a language. Unset while Tellomi is only following the phone. */
+    public boolean hasLanguageOverride() {
+        return languageOverride != null;
+    }
+
     public Locale getCurrentLocale() {
         return currentLocale;
     }

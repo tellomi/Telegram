@@ -8216,6 +8216,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             String showedLang = preferences.getString("language_showed2", "");
             final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
+            // TELLOMI: the welcome picker records the choice. An applied language is not asked again.
+            if (TellomiLanguageAlert.suppress(systemLang)) {
+                return;
+            }
             if (!force && showedLang.equals(systemLang)) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("alert already showed for " + showedLang);
