@@ -568,6 +568,22 @@ A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and 
 | --- | --- |
 | `TMessagesProj/jni/tgnet/Handshake.cpp` | On the custom backend, copy every `TellomiNetConfig` public key into `serverPublicKeys` / `serverPublicKeysFingerprints`. The existing match loop still walks the server's fingerprint list first. |
 
+## Login layout, location without Play services, unsupported mark
+
+Login keeps Tellomi copy and the black/white CTA. The name screen uses Telegram's floating Next again (`LoginActivityRegisterView` no longer replaces it with an in-page button or a `TellomiFormHost`). Avatar selection is `ImageUpdater.openMenu` (camera, gallery, crop). The outer login scroller follows Telegram again except on the phone form, which scrolls itself. 2FA is a page that does not have a custom keypad, so the slide is extended by the keypad height the same way as upstream. Closing login while it is the only fragment finishes the activity and the next launch is the welcome screen; switching to an account that is already on the device uses `showMainTabsReplacingStack` / `switchToAccount` instead of `finishFragment`.
+
+Phones without Play services take a fix from `LocationManager` (GPS and network). When `TellomiMaps.canShowInAppMap` is false the Google map view is hidden and the preview is `WebFile.createWithGeoPoint` (map provider 2, the OSM static map). Venue search still runs from that coordinate. If the venue bot cannot be resolved, the loading row stops.
+
+`messageMediaToDo` is layer 232 constructor `0x8a53b014`. A checklist that only fails after a restart is the stored media not deserializing as that object. The unsupported card's plane is the flavor `send_plane_26`, now the white Tellomi mark. Attach gallery and location tabs are the white `tab_gallery` / `tab_location` lotties tinted with `glass_tab*` (`#111111` by day).
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Name screen floating Next. 2FA scroll and keypad height. Existing-account handoff does not finish the activity. |
+| `TMessagesProj/tellomi/java/.../TellomiFrameworkLocation.java` | Framework GPS/network fix and the OSM static preview. |
+| `TMessagesProj/src/main/java/.../ChatAttachAlertLocationLayout.java`, `LocationActivity.java` | Start that fix. Hide the Google map when it cannot draw. Search venues from the fix. |
+| `TMessagesProj/src/main/java/.../BaseLocationAdapter.java` | A failed venue-bot lookup ends the loading row. |
+| `TMessagesProj/tellomi/res/drawable/send_plane_26.xml` | White Tellomi mark on the unsupported card. |
+
 ## Delete account now
 
 Settings → Privacy and Security → Delete my account already set the inactivity TTL. iOS also has a red “Delete Account Now” row under that period. Android now has the same row. It explains that private chats go away for both sides, the account leaves groups and channels, the profile and photos are removed, and messages already sent in groups stay. A second dialog confirms with “Delete my account”. If the account has a cloud password, the existing two-step screen collects it and `account.deleteAccount` is sent with `reason = user_initiated` and `password` set to `InputCheckPasswordSRP` (`account.deleteAccount#a2c0cf74`, flag 0). Without a password the request stays on the legacy constructor `418d4e0b` (reason only), which is what login reset and the terms screen already send. Tellomi’s server accepts both. A correct password deletes immediately; a missing password on a protected account returns `2FA_CONFIRM_WAIT_*` and the account is not logged out. `PASSWORD_HASH_INVALID`, that wait, and `FLOOD_WAIT` use the Tellomi string overlay. Success calls `MessagesController.performLogout(1)`, the same path as Settings → Log out, which returns to the welcome screen.

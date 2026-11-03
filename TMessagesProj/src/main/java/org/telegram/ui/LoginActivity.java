@@ -645,9 +645,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         loginScroll = new ScrollView(context) {
             @Override
             public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
-                // The page scrolls itself. Letting this outer scroller chase the
-                // focused line is what shoved the title under the close button.
-                if (activityMode == MODE_LOGIN) {
+                // The phone form scrolls itself. 2FA and the name screen use Telegram's
+                // own scroll so focusing a field does not pan the whole window.
+                if (activityMode == MODE_LOGIN && currentViewNum == VIEW_PHONE_INPUT) {
                     return false;
                 }
                 if (currentViewNum == VIEW_CODE_MESSAGE || currentViewNum == VIEW_CODE_SMS || currentViewNum == VIEW_CODE_CALL) {
@@ -673,7 +673,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 for (SlideView slideView : views) {
                     MarginLayoutParams params = (MarginLayoutParams) slideView.getLayoutParams();
                     int childBottom = getHeight() + AndroidUtilities.dp(16);
-                    if (keyboardView.getVisibility() == VISIBLE && tellomiKeyboardCovers(slideView)) {
+                    if (!slideView.hasCustomKeyboard() && keyboardView.getVisibility() == VISIBLE) {
                         childBottom += AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP);
                     }
                     slideView.layout(params.leftMargin, params.topMargin, getWidth() - params.rightMargin, childBottom);
@@ -688,7 +688,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 for (SlideView slideView : views) {
                     MarginLayoutParams params = (MarginLayoutParams) slideView.getLayoutParams();
                     int childHeight = height - params.topMargin + AndroidUtilities.dp(16);
-                    if (keyboardView.getVisibility() == VISIBLE && tellomiKeyboardCovers(slideView)) {
+                    if (!slideView.hasCustomKeyboard() && keyboardView.getVisibility() == VISIBLE) {
                         childHeight += AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP);
                     }
                     slideView.measure(MeasureSpec.makeMeasureSpec(width - params.rightMargin - params.leftMargin, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY));
@@ -1262,15 +1262,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             return true;
         } else if (currentViewNum == VIEW_TELLOMI_EMAIL_CODE) {
-            if (invoked) {
-                for (int a = 0; a < views.length; a++) {
-                    if (views[a] != null) {
-                        views[a].onDestroyActivity();
-                    }
-                }
-                clearCurrentState();
+            if (invoked && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiOpenScreen(PhoneView.TELLOMI_PHONE_CODE, true);
             }
-            return true;
+            return false;
         } else if (currentViewNum == VIEW_TELLOMI_EMAIL_PASSWORD || currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD) {
             if (invoked) {
                 setPage(VIEW_PHONE_INPUT, true, null, true);
@@ -1324,10 +1319,30 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
-    /** Login pages that draw a black CTA instead of the floating arrow. */
+    /**
+     * Phone entry keeps its in-page button. The name screen uses Telegram's
+     * floating Next, which stays above the keyboard.
+     */
     private boolean tellomiInlineAction(int page) {
-        return activityMode == MODE_LOGIN && (page == VIEW_PHONE_INPUT || page == VIEW_REGISTER
+        return activityMode == MODE_LOGIN && (page == VIEW_PHONE_INPUT
                 || page == VIEW_TELLOMI_PHONE_PASSWORD || page == VIEW_TELLOMI_EMAIL_CODE || page == VIEW_TELLOMI_EMAIL_PASSWORD);
+    }
+
+    /**
+     * An account that is already on this device. Do not {@code finishFragment}:
+     * login is the only page (intro was removed), and closing it finishes the
+     * activity so the next start is the welcome screen.
+     */
+    private void tellomiOpenExistingAccount(int num) {
+        if (!(getParentActivity() instanceof LaunchActivity)) {
+            return;
+        }
+        LaunchActivity launch = (LaunchActivity) getParentActivity();
+        if (UserConfig.selectedAccount != num) {
+            launch.switchToAccount(num, true);
+        } else {
+            launch.showMainTabsReplacingStack(false);
+        }
     }
 
     /**
@@ -1966,15 +1981,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     /** A code returns to the phone form. Email codes reopen the email fields on that form. */
     private int tellomiLoginFormPage() {
         return VIEW_PHONE_INPUT;
-    }
-
-    /**
-     * Keep every login page in the area above the numeric keypad. Stretching the
-     * phone form under the keys left the button and the agreement off-screen in
-     * landscape and on a short window. Top gravity keeps the title where it is.
-     */
-    private boolean tellomiKeyboardCovers(SlideView slideView) {
-        return false;
     }
 
     private boolean tellomiLoginRoot(int page) {
@@ -3802,12 +3808,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(getString(R.string.AppName));
                         builder.setMessage(getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn));
-                        builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> {
-                            if (UserConfig.selectedAccount != num) {
-                                ((LaunchActivity) getParentActivity()).switchToAccount(num, true);
-                            }
-                            finishFragment();
-                        });
+                        builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> tellomiOpenExistingAccount(num));
                         builder.setNegativeButton(getString("OK", R.string.OK), null);
                         showDialog(builder.create());
                         return;
@@ -4327,12 +4328,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(getString(R.string.AppName));
                             builder.setMessage(getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn));
-                            builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> {
-                                if (UserConfig.selectedAccount != num) {
-                                    ((LaunchActivity) getParentActivity()).switchToAccount(num, true);
-                                }
-                                finishFragment();
-                            });
+                            builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> tellomiOpenExistingAccount(num));
                             builder.setNegativeButton(getString("OK", R.string.OK), null);
                             showDialog(builder.create());
                             needHideProgress(false);
@@ -4727,10 +4723,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             continue;
                         }
                         if (userConfig.getClientUserId() == userId && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
-                            if (UserConfig.selectedAccount != a) {
-                                ((LaunchActivity) getParentActivity()).switchToAccount(a, true);
-                            }
-                            finishFragment();
+                            tellomiOpenExistingAccount(a);
                             needHideProgress(false);
                             return;
                         }
@@ -8352,6 +8345,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public boolean hasCustomKeyboard() {
+            // Email login types into a normal field. The numeric keypad is for a phone code.
+            if (activityMode == MODE_LOGIN && !isSetup && TellomiEmailLogin.isEmailLogin(currentParams)) {
+                return false;
+            }
             return true;
         }
 
@@ -9638,10 +9635,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             super(context);
 
             setOrientation(VERTICAL);
-            if (activityMode == MODE_LOGIN) {
-                tellomiPage = new TellomiFormHost(context);
-                super.addView(tellomiPage.scroll, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            }
 
             imageUpdater = new ImageUpdater(false, ImageUpdater.FOR_TYPE_USER, false);
             imageUpdater.setOpenWithFrontfaceCamera(true);
@@ -9899,25 +9892,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             privacyView = new TextView(context);
             privacyView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
             privacyView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            privacyView.setGravity(Gravity.CENTER);
-            if (activityMode == MODE_LOGIN) {
-                TellomiLoginChrome.textSize(privacyView, 12);
-                tellomiRegisterButton = TellomiLoginChrome.actionButton(context, getString(R.string.TellomiOtpLogin), v -> onNextPressed(null));
-                tellomiRegisterButton.setReady(false);
-                Space spacer = new Space(context);
-                addView(spacer, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, 0, 1f));
-                LinearLayout stack = new LinearLayout(context);
-                stack.setOrientation(LinearLayout.VERTICAL);
-                stack.addView(privacyView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 16, 8, 0));
-                stack.addView(tellomiRegisterButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 12, 8, 16));
-                addView(stack, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            } else {
-                privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.isSmallScreen() ? 13 : 14);
-                privacyView.setGravity(Gravity.CENTER_VERTICAL);
-                FrameLayout privacyLayout = new FrameLayout(context);
-                addView(privacyLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
-                privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 14, 0, 70, 32));
-            }
+            privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.isSmallScreen() ? 13 : 14);
+            privacyView.setGravity(Gravity.CENTER_VERTICAL);
+            FrameLayout privacyLayout = new FrameLayout(context);
+            addView(privacyLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM));
+            privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 14, 0, 70, 32));
             VerticalPositionAutoAnimator.attach(privacyView);
 
             String str = getString("TermsOfServiceLogin", R.string.TermsOfServiceLogin);
@@ -10137,19 +10116,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             applyTellomiRegisterMode();
         }
 
-        /** Login sign-up asks for a nickname and never opens the in-app terms popup. */
+        /** Login sign-up keeps Telegram's name fields and never opens the in-app terms popup. */
         private void applyTellomiRegisterMode() {
             boolean email = TellomiEmailLogin.isEmailLogin(currentParams);
             if (activityMode == MODE_LOGIN) {
                 if (currentTermsOfService != null) {
                     currentTermsOfService.popup = false;
                 }
-                lastNameOutlineView.setVisibility(GONE);
-                lastNameField.setText("");
                 titleTextView.setText(getString(R.string.TellomiNickname));
                 descriptionTextView.setText(getString(R.string.TellomiNicknameHint));
-                firstNameField.setHint(getString(R.string.TellomiNickname));
-                firstNameOutlineView.setText("");
                 return;
             }
             if (email && currentTermsOfService != null) {
@@ -10228,12 +10203,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 // TELLOMI: phone_number is the email. No device SIM number is required.
                 String email = TellomiEmailLogin.normalize(currentParams.getString(TellomiEmailLogin.PARAM_EMAIL));
                 req.phone_number = email.length() > 0 ? email : requestPhone;
-                req.last_name = "";
             } else {
                 req.phone_number = requestPhone;
-                req.last_name = activityMode == MODE_LOGIN ? "" : lastNameField.getText().toString();
             }
             req.first_name = firstNameField.getText().toString();
+            req.last_name = lastNameField.getText().toString();
             needShowProgress(0);
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 nextPressed = false;

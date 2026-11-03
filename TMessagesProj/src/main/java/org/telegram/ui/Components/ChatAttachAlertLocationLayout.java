@@ -82,6 +82,8 @@ import org.telegram.ui.Cells.SendLocationCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.TellomiFrameworkLocation;
+import org.telegram.ui.TellomiMaps;
 import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 
 import java.io.File;
@@ -112,6 +114,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     private boolean scrolling;
 
     private View loadingMapView;
+    private BackupImageView osmPreview;
+    private TellomiFrameworkLocation.Watch frameworkWatch;
+    private boolean frameworkMap;
     private FrameLayout mapViewClip;
     private LocationActivityAdapter adapter;
     private RecyclerListView listView;
@@ -868,6 +873,13 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             });
         }).start();
 
+        if (!TellomiMaps.canShowInAppMap(context)) {
+            frameworkMap = true;
+            osmPreview = new BackupImageView(context);
+            mapViewClip.addView(osmPreview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        startFrameworkFix();
+
         markerImageView = new ImageView(context);
         markerImageView.setImageResource(R.drawable.map_pin2);
         mapViewClip.addView(markerImageView, LayoutHelper.createFrame(28, 48, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
@@ -954,6 +966,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         } catch (Exception e) {
             FileLog.e(e);
         }
+        stopFrameworkFix();
         if (mapView != null) {
             mapView.getView().setTranslationY(-AndroidUtilities.displaySize.y * 3);
         }
@@ -1555,6 +1568,29 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         updateClipView();
     }
 
+    private void startFrameworkFix() {
+        if (locationDenied || frameworkWatch != null) {
+            return;
+        }
+        frameworkWatch = TellomiFrameworkLocation.watch(location -> {
+            positionMarker(location);
+            if (osmPreview != null) {
+                TellomiFrameworkLocation.showOsm(osmPreview, location);
+                if (loadingMapView != null && loadingMapView.getTag() == null) {
+                    loadingMapView.setTag(1);
+                    loadingMapView.animate().alpha(0f).setDuration(180).start();
+                }
+            }
+        });
+    }
+
+    private void stopFrameworkFix() {
+        if (frameworkWatch != null) {
+            frameworkWatch.stop();
+            frameworkWatch = null;
+        }
+    }
+
     @SuppressLint("MissingPermission")
     private Location getLastLocation() {
         LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
@@ -1643,8 +1679,11 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                     map.moveCamera(position);
                 }
             }
-        } else {
+        } else if (adapter != null) {
             adapter.setGpsLocation(myLocation);
+            if (!searchedForCustomLocations && locationType != LOCATION_TYPE_BIZ) {
+                adapter.searchPlacesWithQuery(null, myLocation, true);
+            }
         }
     }
 
@@ -1653,6 +1692,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         if (id == NotificationCenter.locationPermissionGranted) {
             locationDenied = false;
             askedForLocation = false;
+            startFrameworkFix();
             positionMarker();
             if (adapter != null) {
                 adapter.setMyLocationDenied(locationDenied, askedForLocation);
@@ -1698,6 +1738,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         parentAlert.actionBar.setTitle(LocaleController.getString(R.string.ShareLocation));
         if (mapView.getView().getParent() == null) {
             mapViewClip.addView(mapView.getView(), 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
+            if (frameworkMap) {
+                mapView.getView().setVisibility(GONE);
+            }
             mapViewClip.addView(overlayView, 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
             mapViewClip.addView(loadingMapView, 2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }

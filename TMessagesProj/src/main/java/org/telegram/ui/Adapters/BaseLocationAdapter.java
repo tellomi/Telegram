@@ -118,6 +118,18 @@ public abstract class BaseLocationAdapter extends AdapterWithDiffUtils {
                     lastSearchLocation = null;
                     searchPlacesWithQuery(lastSearchQuery, coord, false);
                 });
+            } else {
+                AndroidUtilities.runOnUIThread(() -> {
+                    searchingUser = false;
+                    searching = false;
+                    searched = true;
+                    searchInProgress = false;
+                    places.clear();
+                    notifyDataSetChanged();
+                    if (delegate != null) {
+                        delegate.didLoadSearchResult(places);
+                    }
+                });
             }
         });
     }
