@@ -56,6 +56,54 @@ public class TellomiLoginFixesTest {
     }
 
     @Test
+    public void eightBoxesStayInsideANarrowRow() {
+        int available = 280;
+        int[] sized = TellomiCodeBoxes.fit(available, 8, 52, 36, 8, 4);
+        int used = sized[0] * 8 + sized[1] * 7;
+        assertTrue(used <= available);
+        float digit = TellomiLoginFit.digitPx(sized[0], 20f * TellomiLoginFit.MAX_FONT_SCALE);
+        assertTrue(digit <= sized[0] * 0.62f + 0.01f);
+        assertTrue(digit >= 1f);
+    }
+
+    @Test
+    public void wideWindowCentersTheColumn() {
+        assertEquals(0, TellomiLoginFit.extraSidePadPx(360, 420));
+        assertEquals(0, TellomiLoginFit.extraSidePadPx(420, 420));
+        assertEquals(190, TellomiLoginFit.extraSidePadPx(800, 420));
+    }
+
+    @Test
+    public void dialogStaysInsideAShortLandscapeWindow() {
+        int width = TellomiLoginFit.dialogWidthPx(640, 24, 400);
+        int height = TellomiLoginFit.dialogMaxHeightPx(360, 24 + 48 + 32);
+        assertTrue(width <= 400);
+        assertTrue(height < 360);
+        assertTrue(height > 0);
+        assertEquals(1, TellomiLoginFit.dialogMaxHeightPx(40, 80));
+    }
+
+    @Test
+    public void fontScaleGrowsTextAndThenStops() {
+        assertEquals(16f, TellomiLoginFit.cappedSp(16f, 1f, TellomiLoginFit.MAX_FONT_SCALE), 0.01f);
+        assertEquals(16f * 1.3f / 1.3f, TellomiLoginFit.cappedSp(16f, 1.3f, TellomiLoginFit.MAX_FONT_SCALE), 0.01f);
+        float largest = TellomiLoginFit.cappedSp(16f, 2f, TellomiLoginFit.MAX_FONT_SCALE);
+        assertEquals(16f * TellomiLoginFit.MAX_FONT_SCALE / 2f, largest, 0.01f);
+        assertTrue(TellomiLoginFit.fieldHeightPx(50, 40, 24) >= 50);
+        assertEquals(64, TellomiLoginFit.fieldHeightPx(50, 40, 24));
+    }
+
+    @Test
+    public void landscapeSubmitStaysReachableWhenThePageScrolls() {
+        int visible = 360 - 230;
+        int submitBottom = 24 + 30 + 56 + 30 + 50 + 12 + 48;
+        assertTrue(TellomiLoginFit.submitClipped(submitBottom, visible, false));
+        assertFalse(TellomiLoginFit.submitClipped(submitBottom, visible, true));
+        assertTrue(TellomiLoginFit.expandToViewport(400, TellomiLoginFit.MEASURE_EXACTLY, 800));
+        assertFalse(TellomiLoginFit.expandToViewport(900, TellomiLoginFit.MEASURE_EXACTLY, 800));
+    }
+
+    @Test
     public void flavorStringsHaveSimplifiedChinese() throws Exception {
         File english = find("TMessagesProj/tellomi/res/values/strings.xml");
         File chinese = find("TMessagesProj/tellomi/res/values-zh/strings.xml");

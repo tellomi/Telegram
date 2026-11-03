@@ -51,11 +51,23 @@ public class CodeFieldContainer extends LinearLayout {
         if (tellomiSquares && codeField != null && codeField.length > 0 && MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED) {
             int available = MeasureSpec.getSize(widthMeasureSpec);
             int[] sized = TellomiCodeBoxes.fit(available, codeField.length, AndroidUtilities.dp(52), AndroidUtilities.dp(36), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+            float scale = 1f;
+            if (getResources() != null && getResources().getConfiguration() != null) {
+                scale = getResources().getConfiguration().fontScale;
+            }
+            if (scale <= 0f) {
+                scale = 1f;
+            }
+            float preferred = AndroidUtilities.dp(20) * Math.min(scale, TellomiLoginFit.MAX_FONT_SCALE);
             for (int i = 0; i < codeField.length; i++) {
                 LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) codeField[i].getLayoutParams();
                 lp.width = sized[0];
                 lp.height = sized[0];
                 lp.rightMargin = i == codeField.length - 1 ? 0 : sized[1];
+                float digit = TellomiLoginFit.digitPx(sized[0], preferred);
+                if (Math.abs(codeField[i].getTextSize() - digit) > 0.5f) {
+                    codeField[i].setTextSize(TypedValue.COMPLEX_UNIT_PX, digit);
+                }
             }
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);

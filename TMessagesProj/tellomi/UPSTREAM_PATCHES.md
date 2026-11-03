@@ -478,7 +478,22 @@ Entries with no backend are not shown: Apple, Google, other methods, 找回账�
 
 The phone and email pages do not open a keyboard until the field is tapped. A tap on empty space closes it. The phone field uses the numeric keypad, including after returning from email. Light mode is a white page and a black button. Dark mode follows the active theme: black page, white button. Switching language rebuilds the screen and rewrites every label, including 或.
 
-The numeric keypad covers the phone form instead of pushing it. Agreement text is 已阅读并同意 用户协议 和 隐私政策, with no carrier line. SMS boxes use the server length. A wrong SMS code stays in the boxes and the line under them is 验证码错误，请重新输入. The primary button shows ••• while the request is in flight. The top-right control is still the language globe.
+The numeric keypad used to cover the phone form. On a short window and in landscape that hid the button and the agreement, so the page now stays above the keypad and scrolls. Agreement text is 已阅读并同意 用户协议 和 隐私政策, with no carrier line. SMS boxes use the server length. A wrong SMS code stays in the boxes and the line under them is 验证码错误，请重新输入. The primary button shows ••• while the request is in flight. The top-right control is still the language globe.
+
+## Login layout fit
+
+Phone, email, SMS, email-code, and sign-up scroll inside the page. A wide window (tablet or an unfolded foldable) caps the column at 420dp. System font scale is applied up to 1.6 and the field, button, and code digit grow with it; the digit stays inside a square that had to shrink. Agreement, code-options, and language cards scroll and stay inside the window, including above the navigation bar. Colors are unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginFit.java` | Width, font, dialog, and digit sizes. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiFormHost.java` | Scrolling column for the code and sign-up pages. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Capped text, taller fields, scrolling cards. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | Same scroll and type size. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | The modal scrolls. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | The card scrolls. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login pages scroll. The keypad no longer covers the phone form. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Login digits shrink to the square. |
 
 | File | Change |
 | --- | --- |
