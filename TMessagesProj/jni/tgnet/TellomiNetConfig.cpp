@@ -15,8 +15,8 @@ static bool customBackendFlag = false;
 static bool lockAddressesFlag = false;
 static int32_t defaultDc = 1;
 static std::vector<TellomiDcAddress> datacenterList;
-static std::string serverPublicKeyPem;
-static uint64_t serverPublicKeyFingerprint = 0;
+static std::vector<std::string> serverPublicKeyPems;
+static std::vector<uint64_t> serverPublicKeyFingerprints;
 
 static void appendTlBytes(std::vector<uint8_t> &out, const uint8_t *data, uint32_t length) {
     if (length <= 253) {
@@ -97,6 +97,32 @@ static uint64_t fingerprintPem(const std::string &pem) {
     return fingerprint;
 }
 
+static void storePublicKeys(const std::string &pemText) {
+    serverPublicKeyPems.clear();
+    serverPublicKeyFingerprints.clear();
+    const std::string beginMark = "-----BEGIN";
+    size_t cursor = 0;
+    while (cursor < pemText.size()) {
+        size_t begin = pemText.find(beginMark, cursor);
+        if (begin == std::string::npos) {
+            break;
+        }
+        size_t end = pemText.find("-----END", begin + beginMark.size());
+        if (end == std::string::npos) {
+            break;
+        }
+        size_t lineEnd = pemText.find('\n', end);
+        size_t blockEnd = lineEnd == std::string::npos ? pemText.size() : lineEnd + 1;
+        std::string block = pemText.substr(begin, blockEnd - begin);
+        uint64_t fingerprint = fingerprintPem(block);
+        if (fingerprint != 0) {
+            serverPublicKeyPems.push_back(std::move(block));
+            serverPublicKeyFingerprints.push_back(fingerprint);
+        }
+        cursor = blockEnd;
+    }
+}
+
 static void parseDcSpec(const std::string &dcSpec) {
     datacenterList.clear();
     size_t cursor = 0;
@@ -150,9 +176,13 @@ void TellomiNetConfig::set(const std::string &dcSpec, int32_t defaultDcId, const
     if (defaultDcId <= 0 && !datacenterList.empty()) {
         defaultDc = datacenterList.front().dcId;
     }
-    serverPublicKeyPem = publicKeyPem;
-    serverPublicKeyFingerprint = fingerprintPem(serverPublicKeyPem);
-    if (LOGS_ENABLED) DEBUG_D("tellomi backend custom=%d lock=%d dcs=%u defaultDc=%d fingerprint=0x%" PRIx64, customBackendFlag ? 1 : 0, lockAddressesFlag ? 1 : 0, (uint32_t) datacenterList.size(), defaultDc, serverPublicKeyFingerprint);
+    storePublicKeys(publicKeyPem);
+    if (LOGS_ENABLED) {
+        DEBUG_D("tellomi backend custom=%d lock=%d dcs=%u defaultDc=%d keys=%u", customBackendFlag ? 1 : 0, lockAddressesFlag ? 1 : 0, (uint32_t) datacenterList.size(), defaultDc, (uint32_t) serverPublicKeyFingerprints.size());
+        for (size_t i = 0; i < serverPublicKeyFingerprints.size(); i++) {
+            DEBUG_D("tellomi server public key[%u] fingerprint=0x%" PRIx64, (uint32_t) i, serverPublicKeyFingerprints[i]);
+        }
+    }
 }
 
 bool TellomiNetConfig::customBackend() {
@@ -171,10 +201,25 @@ const std::vector<TellomiDcAddress> &TellomiNetConfig::datacenters() {
     return datacenterList;
 }
 
+const std::vector<std::string> &TellomiNetConfig::publicKeyPems() {
+    return serverPublicKeyPems;
+}
+
+const std::vector<uint64_t> &TellomiNetConfig::publicKeyFingerprints() {
+    return serverPublicKeyFingerprints;
+}
+
 const std::string &TellomiNetConfig::publicKeyPem() {
-    return serverPublicKeyPem;
+    if (serverPublicKeyPems.empty()) {
+        static const std::string empty;
+        return empty;
+    }
+    return serverPublicKeyPems.front();
 }
 
 uint64_t TellomiNetConfig::publicKeyFingerprint() {
-    return serverPublicKeyFingerprint;
+    if (serverPublicKeyFingerprints.empty()) {
+        return 0;
+    }
+    return serverPublicKeyFingerprints.front();
 }

@@ -560,6 +560,14 @@ A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and 
 | `gradle.properties`, `TMessagesProj/build.gradle` | `TELLOMI_CHECK_UPDATES=true`. Fallback if the property is missing is true. |
 | `TMessagesProj/src/test/java/.../TellomiAppUpdateTest.java` | Gate and url-vs-document cases. |
 
+## MTProto server public keys
+
+`TMessagesProj/config/tellomi-server-public.pem` can hold more than one key, newest first. The 2026-11 key is fingerprint `4381149949997195609`. The Teamgram docker key `12240908862933197005` stays as a fallback until the server retires it. Parsing lives in `TellomiNetConfig`. The only upstream edit is the handshake copy.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/jni/tgnet/Handshake.cpp` | On the custom backend, copy every `TellomiNetConfig` public key into `serverPublicKeys` / `serverPublicKeysFingerprints`. The existing match loop still walks the server's fingerprint list first. |
+
 ## Delete account now
 
 Settings → Privacy and Security → Delete my account already set the inactivity TTL. iOS also has a red “Delete Account Now” row under that period. Android now has the same row. It explains that private chats go away for both sides, the account leaves groups and channels, the profile and photos are removed, and messages already sent in groups stay. A second dialog confirms with “Delete my account”. If the account has a cloud password, the existing two-step screen collects it and `account.deleteAccount` is sent with `reason = user_initiated` and `password` set to `InputCheckPasswordSRP` (`account.deleteAccount#a2c0cf74`, flag 0). Without a password the request stays on the legacy constructor `418d4e0b` (reason only), which is what login reset and the terms screen already send. Tellomi’s server accepts both. A correct password deletes immediately; a missing password on a protected account returns `2FA_CONFIRM_WAIT_*` and the account is not logged out. `PASSWORD_HASH_INVALID`, that wait, and `FLOOD_WAIT` use the Tellomi string overlay. Success calls `MessagesController.performLogout(1)`, the same path as Settings → Log out, which returns to the welcome screen.
