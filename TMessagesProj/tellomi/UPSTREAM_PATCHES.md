@@ -637,3 +637,15 @@ Picking a language on the login screen writes `language_showed2`. The dialog is 
 | `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | `showLanguageAlert` returns when that check says so. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | The welcome picker records the choice. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `hasLanguageOverride`. |
+
+## Downloaded languages and the welcome screen
+
+`TELLOMI_USE_CLOUD_STRINGS` stays false. `langpack.getLangPack` still writes the file, and `getStringV2` now reads it for any remote or unofficial language. Japanese and the other packs are no longer stuck on the English bin. Bundled Chinese still uses `localization_zh.bin`. `TellomiBrand.rewrite` still runs on the string that is shown. The Chinese flavor overlay runs only when the active language is `zh*`, not because the phone is Chinese.
+
+The welcome carousel built its six pages once, while that overlay still followed the phone. Picking Italian left those pages in Chinese. A language change (`reloadInterface`) fills them again. Each page view keeps its index so the text already on screen is replaced.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `cloudStringsEnabled` is true for a remote or unofficial pack. `peekCurrentLocaleInfo` for the overlay check. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `uiIsChinese` follows the app language. `readDownloadedPack`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome copy is rebuilt after a language change. |

@@ -128,7 +128,12 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public boolean onFragmentCreate() {
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
+        tellomiFillIntroCopy();
+        return true;
+    }
 
+    /** Page copy for the current app language. Chinese uses the bundled Tellomi lines. */
+    private void tellomiFillIntroCopy() {
         titles = new CharSequence[]{
                 introString(R.string.TellomiIntroPage1Title, R.string.Page1Title),
                 introString(R.string.TellomiIntroPage2Title, R.string.Page2Title),
@@ -145,7 +150,42 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 introString(R.string.TellomiIntroPage5Message, R.string.Page5Message),
                 introString(R.string.TellomiIntroPage6Message, R.string.Page6Message)
         };
-        return true;
+    }
+
+    /**
+     * The carousel is built once. A later language pick has to rewrite the pages
+     * that are already on screen, including the start button.
+     */
+    private void tellomiReloadIntroCopy() {
+        if (titles == null) {
+            return;
+        }
+        tellomiFillIntroCopy();
+        if (startMessagingButton != null) {
+            startMessagingButton.setText(introString(R.string.TellomiIntroStart, R.string.StartMessaging));
+        }
+        if (viewPager == null) {
+            return;
+        }
+        for (int i = 0; i < viewPager.getChildCount(); i++) {
+            View ch = viewPager.getChildAt(i);
+            Object tag = ch.getTag();
+            if (!(tag instanceof Integer)) {
+                continue;
+            }
+            int position = (Integer) tag;
+            if (position < 0 || position >= titles.length) {
+                continue;
+            }
+            TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
+            TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
+            if (headerTextView != null) {
+                headerTextView.setText(titles[position]);
+            }
+            if (messageTextView != null) {
+                messageTextView.setText(AndroidUtilities.replaceTags(messages[position]));
+            }
+        }
     }
 
     /**
@@ -410,6 +450,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         fragmentView = scrollView;
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.configLoaded);
         ConnectionsManager.getInstance(currentAccount).updateDcSettings();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
@@ -457,6 +498,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         super.onFragmentDestroy();
         destroyed = true;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.configLoaded);
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", 0).apply();
     }
@@ -470,6 +512,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.reloadInterface) {
+            tellomiReloadIntroCopy();
+            return;
+        }
         if (id == NotificationCenter.suggestedLangpack || id == NotificationCenter.configLoaded) {
             checkContinueText();
         }
@@ -563,6 +609,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 16, 286, 16, 0));
 
             container.addView(frameLayout, 0);
+            frameLayout.setTag(position);
 
             headerTextView.setText(titles[position]);
             messageTextView.setText(AndroidUtilities.replaceTags(messages[position]));
