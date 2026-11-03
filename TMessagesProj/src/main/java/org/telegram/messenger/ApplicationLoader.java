@@ -149,6 +149,19 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
+    /**
+     * In-app {@code help.getAppUpdate} for the shipped App module.
+     * Standalone and beta keep their own gates. Overriding this does not
+     * turn on the rest of {@link #isStandalone()}.
+     */
+    protected boolean isInAppUpdatesEnabled() {
+        return false;
+    }
+
+    public static boolean supportsInAppUpdates() {
+        return applicationLoaderInstance != null && applicationLoaderInstance.isInAppUpdatesEnabled();
+    }
+
     protected boolean isBeta() {
         return false;
     }

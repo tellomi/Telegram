@@ -123,6 +123,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -6123,10 +6124,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private boolean firstAppUpdateCheck = true;
     public void checkAppUpdate(boolean force, Browser.Progress progress) {
-        if (!ApplicationLoader.isStandaloneBuild() && !ApplicationLoader.isBetaBuild()) {
-            return;
-        }
-        if (!force && !BuildVars.CHECK_UPDATES) {
+        if (!TellomiAppUpdate.shouldRequestUpdate(
+                ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild(),
+                ApplicationLoader.supportsInAppUpdates(),
+                BuildVars.CHECK_UPDATES,
+                force)) {
             return;
         }
         if (ApplicationLoader.applicationLoaderInstance.isCustomUpdate()) {
@@ -6169,14 +6171,18 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (response instanceof TLRPC.TL_help_appUpdate) {
                 final TLRPC.TL_help_appUpdate res = (TLRPC.TL_help_appUpdate) response;
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.version.equals(res.version)) {
-                        return;
+                    if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.version != null && SharedConfig.pendingAppUpdate.version.equals(res.version)) {
+                        // The shipped App module has no side-menu download banner, so a
+                        // saved soft update must not swallow the next check.
+                        if (res.can_not_skip || !ApplicationLoader.supportsInAppUpdates()) {
+                            return;
+                        }
                     }
                     final boolean newVersionAvailable = SharedConfig.setNewAppVersionAvailable(res);
                     if (newVersionAvailable) {
                         if (res.can_not_skip) {
                             showUpdateActivity(accountNum, res, false);
-                        } else if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
+                        } else if (TellomiAppUpdate.shouldShowSoftPopup(ApplicationLoader.isStandaloneBuild(), BuildVars.DEBUG_VERSION, ApplicationLoader.supportsInAppUpdates(), res.can_not_skip)) {
                             ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, res, accountNum);
                         }
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
