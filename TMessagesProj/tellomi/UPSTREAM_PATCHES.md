@@ -583,3 +583,17 @@ Phones without Play services take a fix from `LocationManager` (GPS and network)
 | `TMessagesProj/src/main/java/.../ChatAttachAlertLocationLayout.java`, `LocationActivity.java` | Start that fix. Hide the Google map when it cannot draw. Search venues from the fix. |
 | `TMessagesProj/src/main/java/.../BaseLocationAdapter.java` | A failed venue-bot lookup ends the loading row. |
 | `TMessagesProj/tellomi/res/drawable/send_plane_26.xml` | White Tellomi mark on the unsupported card. |
+
+## Delete account now
+
+Settings → Privacy and Security → Delete my account already set the inactivity TTL. iOS also has a red “Delete Account Now” row under that period. Android now has the same row. It explains that private chats go away for both sides, the account leaves groups and channels, the profile and photos are removed, and messages already sent in groups stay. A second dialog confirms with “Delete my account”. If the account has a cloud password, the existing two-step screen collects it and `account.deleteAccount` is sent with `reason = user_initiated` and `password` set to `InputCheckPasswordSRP` (`account.deleteAccount#a2c0cf74`, flag 0). Without a password the request stays on the legacy constructor `418d4e0b` (reason only), which is what login reset and the terms screen already send. Tellomi’s server accepts both. A correct password deletes immediately; a missing password on a protected account returns `2FA_CONFIRM_WAIT_*` and the account is not logged out. `PASSWORD_HASH_INVALID`, that wait, and `FLOOD_WAIT` use the Tellomi string overlay. Success calls `MessagesController.performLogout(1)`, the same path as Settings → Log out, which returns to the welcome screen.
+
+The password screen does not call `account.getPasswordSettings` for this flow. That check consumes the single-use SRP id, so `account.deleteAccount` would then fail with `SRP_ID_INVALID`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | Red row under the away period. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TwoStepVerificationActivity.java` | Delete-account delegate builds one SRP and does not pre-check it. |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/tl/TL_account.java` | Optional password on constructor `a2c0cf74`. Legacy constructor unchanged when password is absent. |
+| `TMessagesProj/tellomi/java/.../TellomiDeleteAccount.java` | Confirm, send, errors, logout. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
