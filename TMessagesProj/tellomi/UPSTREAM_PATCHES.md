@@ -614,3 +614,13 @@ Official Telegram (custom backend off) still replaces all four families, includi
 | `TMessagesProj/jni/tgnet/TellomiDcAddress.h` | New. `inet_pton` check. Not an upstream file. |
 | `TMessagesProj/jni/tgnet/TellomiDcApply.cpp` | Applies the filtered lists. Not an upstream file. |
 | `TMessagesProj/tellomi/check_dc_address.cpp` | Host check for the `inet_pton` rule. Not linked into the app. |
+
+## Settings row icons
+
+The MingCute pass matched the substring `settings` to `settings-3`, so Account, Chat Settings, Privacy and Security, and the other rows all drew one gear. A later pass swapped in other MingCute glyphs. Those rows are Telegram's own vectors again (white artwork on the gray plate). `settings_arrow` and `settings_gram_24` are unchanged. The generator skips these names so a regen does not paint the gear back.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Removed. `src/main` vectors are used. |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | Those names are not regenerated. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | Rows removed. |
