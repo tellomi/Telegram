@@ -2,12 +2,6 @@ name: Android APK
 
 on:
   push:
-    # A push that only changes markdown or docs/ does not build or publish.
-    # A push that also changes any other file still runs. Path filters are not
-    # applied to tag pushes, so a v* tag still publishes to the test channel.
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -17,9 +11,9 @@ on:
         options: [none, test, release]
         default: none
 
-# A new push to the same ref cancels the run it replaces. On master that
-# stops an older push from publishing android/latest.json after a newer one
-# has started.
+# A new push to the same ref cancels the run it replaces. On release/android
+# that stops an older push from publishing android/latest.json after a newer
+# one has started. A push to master does not publish.
 concurrency:
   group: android-apk-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -563,8 +557,8 @@ jobs:
 
   # Publishes the signed APK to R2 bucket tellomi-updates (backup line dl.tellomi.cn).
   # The Chengdu server pulls it within 10 minutes and serves www.tellomi.cn/dl/.
-  # - push to master: release channel (android/latest.json), the same upload as
-  #   a manual run with publish=release. Docs-only pushes never reach this job.
+  # - push to release/android: release channel (android/latest.json), the same
+  #   upload as a manual run with publish=release. A push to master does not publish.
   # - workflow_dispatch: the publish input (release or test). none skips this job.
   # - v* tag push: test channel (android/test/), pruned after 14 days.
   # versionName is APP_VERSION_NAME from gradle.properties. versionCode is the
@@ -572,13 +566,13 @@ jobs:
   # Needs repo secrets TELLOMI_R2_UPDATES_ACCESS_KEY_ID, TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY,
   # TELLOMI_R2_ENDPOINT (R2 API token with Object Read & Write on tellomi-updates only).
   publish:
-    name: Publish APK (${{ github.event_name == 'workflow_dispatch' && inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/master' && 'release' || 'test') }})
+    name: Publish APK (${{ github.event_name == 'workflow_dispatch' && inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/release/android' && 'release' || 'test') }})
     needs: apk
     if: >-
       needs.apk.outputs.type == 'release' && (
         (github.event_name == 'workflow_dispatch' && inputs.publish != 'none') ||
         (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/master'))
+        (github.event_name == 'push' && github.ref == 'refs/heads/release/android'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     concurrency:
@@ -613,7 +607,7 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.TELLOMI_R2_UPDATES_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.TELLOMI_R2_ENDPOINT }}
-          CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/master' && 'release' || 'test') }}
+          CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || (github.event_name == 'push' && github.ref == 'refs/heads/release/android' && 'release' || 'test') }}
           VERSION_NAME: ${{ needs.apk.outputs.version_name }}
           VERSION_CODE: ${{ needs.apk.outputs.version_code }}
         run: |

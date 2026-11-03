@@ -6,7 +6,7 @@ It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, appli
 
 The workflow runs on:
 
-- every `push`, except a push whose changed files are all `**/*.md` or under `docs/**`. A `v*` tag push is not path-filtered.
+- every `push`
 - every `pull_request`
 - `workflow_dispatch` (Actions → **Android APK** → **Run workflow**)
 
@@ -47,13 +47,22 @@ Install a debug build with `adb install -r tellomi-debug.apk`. The package id is
 
 ## Publish to the official download
 
-The `publish` job uploads the signed APK with `Tools/tellomi-publish-installer.sh` to R2 bucket `tellomi-updates`. It runs only when the package job produced a release APK, which requires all four signing secrets above.
+Merging to `master` does not publish. Work from the v2 requirements can land on `master` without changing https://www.tellomi.cn/dl/.
 
-- A push to `master` publishes the release channel: `android/<versionName>-<versionCode>/Tellomi.apk`, then `android/latest.json`. That is the same upload as **Run workflow** with `publish=release`. The Chengdu server copies it to https://www.tellomi.cn/dl/ within about 10 minutes. `versionName` is `APP_VERSION_NAME` from `gradle.properties`. `versionCode` is the per-run code from the package job.
+To publish, fast-forward or push the commit that should ship onto `release/android`:
+
+```bash
+git push origin <commit>:release/android
+```
+
+If `release/android` already exists, that push has to be a fast-forward. The push builds the signed APK and uploads it with `Tools/tellomi-publish-installer.sh` to R2 bucket `tellomi-updates`, the same upload as **Run workflow** with `publish=release`: `android/<versionName>-<versionCode>/Tellomi.apk`, then `android/latest.json`. The Chengdu server copies that manifest to https://www.tellomi.cn/dl/ within about 10 minutes. `versionName` is `APP_VERSION_NAME` from `gradle.properties`. `versionCode` is the per-run code from the package job.
+
+- A push to `master`, including a merge of new features, builds the APK and does not publish.
+- A push to `release/android` publishes the release channel.
 - **Run workflow** still follows the `publish` input: `release`, `test`, or `none` (the default, which does not upload).
 - A push of a `v*` tag still publishes the test channel (`android/test/`), pruned after 14 days.
 
-A master push that only changes markdown or `docs/**` does not run this workflow, so it does not replace `latest.json`. The publish job uses concurrency group `tellomi-installer-publish-android` with `cancel-in-progress: false`, so two uploads do not write `latest.json` at the same time. A newer push to the same ref cancels the older workflow before that upload starts. This workflow does not change the in-app update check.
+The publish job uses concurrency group `tellomi-installer-publish-android` with `cancel-in-progress: false`, shared with manual and tag uploads, so two runs do not write `latest.json` at the same time. A newer push to the same ref cancels the older workflow before that upload starts. This workflow does not change the in-app update check.
 
 ## What CI changes in the build
 
