@@ -511,3 +511,21 @@ Phone, email, SMS, email-code, and sign-up scroll inside the page. A wide window
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | Password page, password link, and round icons removed. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | ••• busy state. No unavailable card and no login sheet. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | Agreement sentence without the carrier line. SMS error copy. |
+
+## Send glyph, suggested folders, back arrow
+
+The chat field and the media-preview send button already draw `send_plane_24` (arrow-up). The other send controls were still a paper plane: MingCute `send` on `attach_send`, `msg_send`, `msg_sendfile`, and `send_outline`, and the upstream `ic_send` bitmap in the group-call composer. Those are the same arrow-up, white so the existing tint applies. `attach_send` keeps its larger canvas and draws a 24dp arrow in the middle, because that bitmap is shown with `CENTER` inside the round button.
+
+`messages.getSuggestedDialogFilters` returns the folder title and description as server text. On this server that text is English (Unread, Personal, Groups, Channels, Bots). `FiltersSetupActivity` maps those five presets, by flags or by that English copy, onto bundled strings before the row is shown and before the folder is saved. A suggestion that names specific chats is not rewritten.
+
+`msg_arrow_back` had been generated from MingCute `arrow-right`, so menu Back rows pointed the wrong way. It is arrow-left again. `ic_ab_back` and `msg_arrow_back` are scaled so the stroke is about as tall as the upstream back arrow (the first MingCute fit was shorter than the action-bar icons around it). Attach-sheet gallery and location tabs are the same 24dp Lottie slot as the other attach tabs; their artwork fills the canvas about as much as Files, so those two were not enlarged. Launcher icons, the Tellomi wordmark, and night-theme color code are unchanged.
+
+`TellomiBrand.rewrite` already turns the word Telegram in `TelegramVersion` and `TelegramPremium` into the app name when the string is loaded. Those rows were not edited. Premium, gifts, and the wallet stay behind `TellomiFeatures`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable-*/{attach_send,msg_send,msg_sendfile,ic_send,ic_ab_back,msg_arrow_back}.webp` | Arrow-up send glyphs. Back arrows point left and are slightly larger. |
+| `TMessagesProj/tellomi/res/drawable/send_outline.xml` | Ephemeral send outline is the arrow, not the plane. |
+| `TMessagesProj/src/main/java/org/telegram/ui/FiltersSetupActivity.java` | Localize the five suggested folders. |
+| `TMessagesProj/src/main/res/values/strings.xml`, `values-zh/strings.xml` | Suggested-folder name and descriptions. |
+| `TMessagesProj/tellomi/icons/mapping.csv`, `generate_icons.py` | Do not regenerate these glyphs from MingCute `send`. |

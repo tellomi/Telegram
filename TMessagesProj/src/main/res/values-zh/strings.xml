@@ -11478,4 +11478,10 @@
     <string name="Reactions_one">%d 个回应</string>
     <string name="Reactions_other">%d 个回应</string>
     <string name="NotificationsInternal">内部通知</string>
+    <string name="FilterSuggestedPersonal">个人</string>
+    <string name="FilterSuggestedUnreadInfo">所有聊天中的新消息。</string>
+    <string name="FilterSuggestedPersonalInfo">仅显示私聊消息。</string>
+    <string name="FilterSuggestedGroupsInfo">仅显示群组消息。</string>
+    <string name="FilterSuggestedChannelsInfo">仅显示频道消息。</string>
+    <string name="FilterSuggestedBotsInfo">仅显示机器人消息。</string>
 </resources>

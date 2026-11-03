@@ -142,6 +142,133 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         }
     }
 
+    private static final int SUGGEST_UNREAD = 1;
+    private static final int SUGGEST_PERSONAL = 2;
+    private static final int SUGGEST_GROUPS = 3;
+    private static final int SUGGEST_CHANNELS = 4;
+    private static final int SUGGEST_BOTS = 5;
+
+    /**
+     * Suggested folders arrive as server text (Unread / Personal / … plus an
+     * English description). The bundled name strings already exist; the
+     * descriptions are added here so a Chinese UI does not stay in English.
+     * A folder that lists specific chats is left as the server sent it.
+     */
+    static void localizeSuggestedFilter(TLRPC.TL_dialogFilterSuggested suggested) {
+        if (suggested == null || suggested.filter == null) {
+            return;
+        }
+        int preset = suggestedPreset(suggested.filter, suggested.description);
+        int nameId = suggestedName(preset);
+        int infoId = suggestedInfo(preset);
+        if (nameId == 0 || infoId == 0) {
+            return;
+        }
+        if (suggested.filter.title == null) {
+            suggested.filter.title = new TLRPC.TL_textWithEntities();
+        }
+        suggested.filter.title.text = LocaleController.getString(nameId);
+        suggested.filter.title.entities = null;
+        suggested.description = LocaleController.getString(infoId);
+    }
+
+    private static int suggestedPreset(TLRPC.DialogFilter filter, String description) {
+        boolean peers = filter.include_peers != null && !filter.include_peers.isEmpty()
+                || filter.exclude_peers != null && !filter.exclude_peers.isEmpty();
+        if (!peers) {
+            boolean contacts = filter.contacts;
+            boolean nonContacts = filter.non_contacts;
+            boolean groups = filter.groups;
+            boolean channels = filter.broadcasts;
+            boolean bots = filter.bots;
+            boolean allTypes = contacts && nonContacts && groups && channels && bots;
+            boolean personal = contacts && nonContacts && !groups && !channels && !bots;
+            if (filter.exclude_read && (allTypes || (!contacts && !nonContacts && !groups && !channels && !bots))) {
+                return SUGGEST_UNREAD;
+            }
+            if (!filter.exclude_read && personal) {
+                return SUGGEST_PERSONAL;
+            }
+            if (!filter.exclude_read && groups && !contacts && !nonContacts && !channels && !bots) {
+                return SUGGEST_GROUPS;
+            }
+            if (!filter.exclude_read && channels && !contacts && !nonContacts && !groups && !bots) {
+                return SUGGEST_CHANNELS;
+            }
+            if (!filter.exclude_read && bots && !contacts && !nonContacts && !groups && !channels) {
+                return SUGGEST_BOTS;
+            }
+        } else {
+            return 0;
+        }
+        String title = filter.title != null ? filter.title.text : null;
+        int fromTitle = suggestedFromText(title);
+        if (fromTitle != 0) {
+            return fromTitle;
+        }
+        return suggestedFromText(description);
+    }
+
+    private static int suggestedFromText(String raw) {
+        if (raw == null) {
+            return 0;
+        }
+        String text = raw.trim();
+        if (text.endsWith(".")) {
+            text = text.substring(0, text.length() - 1).trim();
+        }
+        if (text.equalsIgnoreCase("Unread") || text.equals("未读") || text.equalsIgnoreCase("New messages from all chats") || text.equalsIgnoreCase("New messages from all your chats")) {
+            return SUGGEST_UNREAD;
+        }
+        if (text.equalsIgnoreCase("Personal") || text.equals("个人") || text.equalsIgnoreCase("Only messages from personal chats")) {
+            return SUGGEST_PERSONAL;
+        }
+        if (text.equalsIgnoreCase("Groups") || text.equals("群组") || text.equalsIgnoreCase("Only messages from groups")) {
+            return SUGGEST_GROUPS;
+        }
+        if (text.equalsIgnoreCase("Channels") || text.equals("频道") || text.equalsIgnoreCase("Only messages from channels")) {
+            return SUGGEST_CHANNELS;
+        }
+        if (text.equalsIgnoreCase("Bots") || text.equals("机器人") || text.equalsIgnoreCase("Only messages from bots")) {
+            return SUGGEST_BOTS;
+        }
+        return 0;
+    }
+
+    private static int suggestedName(int preset) {
+        switch (preset) {
+            case SUGGEST_UNREAD:
+                return R.string.FilterNameUnread;
+            case SUGGEST_PERSONAL:
+                return R.string.FilterSuggestedPersonal;
+            case SUGGEST_GROUPS:
+                return R.string.FilterGroups;
+            case SUGGEST_CHANNELS:
+                return R.string.FilterChannels;
+            case SUGGEST_BOTS:
+                return R.string.FilterBots;
+            default:
+                return 0;
+        }
+    }
+
+    private static int suggestedInfo(int preset) {
+        switch (preset) {
+            case SUGGEST_UNREAD:
+                return R.string.FilterSuggestedUnreadInfo;
+            case SUGGEST_PERSONAL:
+                return R.string.FilterSuggestedPersonalInfo;
+            case SUGGEST_GROUPS:
+                return R.string.FilterSuggestedGroupsInfo;
+            case SUGGEST_CHANNELS:
+                return R.string.FilterSuggestedChannelsInfo;
+            case SUGGEST_BOTS:
+                return R.string.FilterSuggestedBotsInfo;
+            default:
+                return 0;
+        }
+    }
+
     public static class SuggestedFilterCell extends FrameLayout {
 
         private TextView textView;
@@ -193,8 +320,9 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             needDivider = divider;
             suggestedFilter = filter;
             setWillNotDraw(!needDivider);
+            localizeSuggestedFilter(filter);
 
-            textView.setText(filter.filter.title.text);
+            textView.setText(filter.filter != null && filter.filter.title != null ? filter.filter.title.text : "");
             valueTextView.setText(filter.description);
         }
 
