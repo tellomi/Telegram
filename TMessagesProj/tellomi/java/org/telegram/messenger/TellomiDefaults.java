@@ -146,11 +146,19 @@ public final class TellomiDefaults {
     }
 
     /**
-     * True when auth chrome and bundled flavor strings should be Simplified Chinese.
-     * A language the user saved in settings wins. Until then, a Chinese phone wins
-     * even if the activity configuration is still English.
+     * True when the active app language is Chinese ({@code zh}, {@code zh-hans}, {@code zh-hant}).
+     * The in-memory language wins, then a language saved in settings. The phone locale
+     * is used only until a language has been applied, so Italian on a Chinese phone
+     * does not keep the Chinese string overlay.
      */
     public static boolean uiIsChinese() {
+        try {
+            LocaleController.LocaleInfo info = LocaleController.peekCurrentLocaleInfo();
+            if (info != null && info.shortName != null && info.shortName.length() > 0) {
+                return info.shortName.toLowerCase(Locale.US).startsWith("zh");
+            }
+        } catch (Throwable ignored) {
+        }
         try {
             String saved = MessagesController.getGlobalMainSettings().getString("language", null);
             if (saved != null && saved.length() > 0) {
@@ -158,15 +166,7 @@ public final class TellomiDefaults {
             }
         } catch (Throwable ignored) {
         }
-        if (systemChineseLangCode(deviceLocale()) != null) {
-            return true;
-        }
-        try {
-            Locale locale = LocaleController.getInstance().getCurrentLocale();
-            return locale != null && "zh".equalsIgnoreCase(locale.getLanguage());
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return systemChineseLangCode(deviceLocale()) != null;
     }
 
     /**
@@ -227,6 +227,14 @@ public final class TellomiDefaults {
         }
         String code = info.shortName.replace('_', '-').toLowerCase(Locale.US);
         return LANG_ZH_HANS.equals(code) || LANG_ZH_HANT.equals(code);
+    }
+
+    /**
+     * A remote or unofficial row has a langpack file from {@code langpack.getLangPack}.
+     * Those strings are used for every language, not only Chinese.
+     */
+    public static boolean readDownloadedPack(boolean remote, boolean unofficial) {
+        return remote || unofficial;
     }
 
     /** True when this locale's strings should be read from the downloaded android langpack. */

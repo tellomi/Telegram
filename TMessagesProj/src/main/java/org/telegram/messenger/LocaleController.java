@@ -1480,6 +1480,12 @@ public class LocaleController {
         return currentLocale;
     }
 
+    /** Active language, or null while this controller is still constructing. */
+    public static LocaleInfo peekCurrentLocaleInfo() {
+        LocaleController controller = Instance;
+        return controller == null ? null : controller.currentLocaleInfo;
+    }
+
     public static String getCurrentLanguageName() {
         LocaleInfo localeInfo = getInstance().currentLocaleInfo;
         return localeInfo == null || TextUtils.isEmpty(localeInfo.name) ? getString("LanguageName", R.string.LanguageName) : localeInfo.name;
@@ -4554,14 +4560,18 @@ public class LocaleController {
         return name.length() == 0 ? null : name;
     }
 
-    // TELLOMI: zh-hans / zh-hant are server langpacks. Other languages stay on bundled strings
-    // while TELLOMI_USE_CLOUD_STRINGS is false.
+    // TELLOMI: a downloaded langpack (remote or unofficial) is read for every language.
+    // Bundled zh-hans / zh-hant still prefer localization_zh.bin, with the Chinese overlay below.
     private static boolean cloudStringsEnabled() {
         if (BuildVars.USE_CLOUD_STRINGS) {
             return true;
         }
         LocaleController controller = Instance;
-        return TellomiDefaults.useCloudStrings(controller != null ? controller.currentLocaleInfo : null);
+        LocaleInfo info = controller == null ? null : controller.currentLocaleInfo;
+        if (info != null && TellomiDefaults.readDownloadedPack(info.isRemote(), info.isUnofficial())) {
+            return true;
+        }
+        return TellomiDefaults.useCloudStrings(info);
     }
 
     /** @return a zh-hans / zh-hant locale for this system locale, or null. */
@@ -4644,9 +4654,9 @@ public class LocaleController {
             } catch (Throwable ignored) {
             }
         }
-        // Flavor values-zh is not in localization_*.bin. On a Chinese phone the English
-        // bin (or the English resource) used to win for every key it contained, so
-        // welcome, login, and OTP stayed English until a langpack was saved in Settings.
+        // Flavor values-zh is not in localization_*.bin. When the active language is
+        // Chinese, a bundled Chinese string that differs from English replaces the bin.
+        // This follows the app language, not the phone locale.
         if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
             String zh = TellomiDefaults.chineseResource(stringRes);
             String en = TellomiDefaults.englishResource(stringRes);
