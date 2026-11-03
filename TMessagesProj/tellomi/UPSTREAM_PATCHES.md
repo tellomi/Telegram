@@ -538,3 +538,24 @@ The voice-to-text button is still the upstream 20-frame trim morph (`transcribe_
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/TranscribeButton.java` | Language suffix and drawable reload. |
 | `TMessagesProj/tellomi/res/raw/transcribe_in_*.json`, `transcribe_out_*.json` | A-stroke replacements. Upstream `transcribe_in.json` / `transcribe_out.json` are unchanged. |
+
+## Soft update on the shipped App module
+
+`:TMessagesProj_App:assembleAfatRelease` is the APK that ships. Its `ApplicationLoaderImpl` only used to override `onGetApplicationId`, so `isStandalone()` stayed false and `LaunchActivity.checkAppUpdate` returned before `help.getAppUpdate`. Flipping `isStandalone()` would also change billing, premium links, and the SMS-job build, so the App module overrides `isInAppUpdatesEnabled()` instead.
+
+`TELLOMI_CHECK_UPDATES` was false, and `checkAppUpdate` returns before the request when that flag is off and the call is not forced. It is now true. `-PTELLOMI_CHECK_UPDATES=false` still skips the automatic check. The 24-hour `updateCheckDelay` is unchanged.
+
+A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and white card, close control, swipe-to-update. Day is a gray card, black type, white track, black thumb. Night keeps the same layout with the dialog background and inverted ink. A completed swipe opens `appUpdate.url` through `Browser.openUrl`. A document with an empty url uses `TellomiApkInstall`. Neither path opens a store listing. Dismissing clears that pending soft update so a later check can show it again. Force updates stay on `BlockingUpdateView`. That button prefers `url`, then the APK when this module can install it. The button label contrasts with `featuredStickers_addButton` so a white night button does not keep white type.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj_App/.../ApplicationLoaderImpl.java` | Enables in-app updates and shows the soft-update dialog. APK permission and install delegate to `TellomiApkInstall`. |
+| `TMessagesProj/tellomi/java/.../TellomiAppUpdate.java` | Request gate, soft-popup gate, and url-over-document action. |
+| `TMessagesProj/tellomi/java/.../TellomiApkInstall.java` | Unknown-sources check and APK intent. |
+| `TMessagesProj/tellomi/java/.../TellomiSoftUpdateDialog.java` | Dismissible swipe card. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | Title, body, slide label, and download label. |
+| `TMessagesProj/src/main/java/.../ApplicationLoader.java` | `supportsInAppUpdates()` / `isInAppUpdatesEnabled()`. Default false. |
+| `TMessagesProj/src/main/java/.../LaunchActivity.java` | `checkAppUpdate` uses the gate above. Soft popup includes the App module. A saved soft update does not skip the next check on this module, because there is no side-menu banner to fall back on. |
+| `TMessagesProj/src/main/java/.../BlockingUpdateView.java` | Force button opens `url` first. App module can install a document. Label contrast. |
+| `gradle.properties`, `TMessagesProj/build.gradle` | `TELLOMI_CHECK_UPDATES=true`. Fallback if the property is missing is true. |
+| `TMessagesProj/src/test/java/.../TellomiAppUpdateTest.java` | Gate and url-vs-document cases. |

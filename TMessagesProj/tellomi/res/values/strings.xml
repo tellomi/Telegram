@@ -84,4 +84,10 @@
     <string name="TellomiChangeEmail">Change email</string>
     <string name="TellomiAuthTimeout">Could not reach the server. Check the network and try again.</string>
     <string name="AccountAlreadyLoggedIn">This account is already signed in on this device.</string>
+    <string name="TellomiSoftUpdateTitle">Update the app,\ntry the latest version</string>
+    <string name="TellomiSoftUpdateBody">We improved performance and fixed some issues. Update Tellomi to keep up with what\'s new.</string>
+    <string name="TellomiSoftUpdateSlide">Slide to update</string>
+    <string name="TellomiSoftUpdateGo">Update</string>
+    <string name="TellomiSoftUpdateDownloading">Downloading %1$d%%</string>
+    <string name="TellomiSoftUpdateClose">Close</string>
 </resources>

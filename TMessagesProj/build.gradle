@@ -318,7 +318,7 @@ android {
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
         buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "true")
         buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
-        buildConfigField "boolean", "TELLOMI_CHECK_UPDATES", tellomiProp("TELLOMI_CHECK_UPDATES", "false")
+        buildConfigField "boolean", "TELLOMI_CHECK_UPDATES", tellomiProp("TELLOMI_CHECK_UPDATES", "true")
         buildConfigField "boolean", "TELLOMI_BILLING_UNAVAILABLE", tellomiProp("TELLOMI_BILLING_UNAVAILABLE", "true")
         buildConfigField "boolean", "TELLOMI_REBRAND_STRINGS", tellomiProp("TELLOMI_REBRAND_STRINGS", "true")
         buildConfigField "String", "TELLOMI_DOWNLOAD_URL", tellomiJavaString(tellomiProp("TELLOMI_DOWNLOAD_URL", "https://tellomi.app"))

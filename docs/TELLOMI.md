@@ -22,7 +22,7 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 | `TELLOMI_CUSTOM_BACKEND` | `true` | When true, Telegram production and test DC IPs are never installed, and the Telegram DNS bootstrap (`apv3.stel.com` / `tapv3.stel.com`) is skipped. |
 | `TELLOMI_LOCK_DC_ADDRESSES` | `true` | When true (and the custom backend is on), `help.getConfig` does not replace the build-config addresses. |
 | `TELLOMI_USE_CLOUD_STRINGS` | `false` | Telegram langpack download (`translations.telegram.org` / `langpack.*`). |
-| `TELLOMI_CHECK_UPDATES` | `false` | Automatic `help.getAppUpdate` checks. |
+| `TELLOMI_CHECK_UPDATES` | `true` | Automatic `help.getAppUpdate` checks. `-PTELLOMI_CHECK_UPDATES=false` skips them for that build. |
 | `TELLOMI_BILLING_UNAVAILABLE` | `true` | Skips Google Play Billing for Telegram product ids. |
 | `TELLOMI_REBRAND_STRINGS` | `true` | Rewrites the word "Telegram" (and a few translated forms) inside `LocaleController` strings. |
 | `TELLOMI_DOWNLOAD_URL` | `https://tellomi.app` | Invite-SMS fallback and the store buttons that used to open Telegram's Play / AppGallery listings. |
@@ -163,11 +163,19 @@ In `BuildVars`:
 - `SAFETYNET_KEY` is empty, which is the existing switch that skips Play Integrity / SafetyNet during login.
 - `SUPPORTS_PASSKEYS` is false (passkeys are limited to official application ids).
 - `IS_BILLING_UNAVAILABLE` defaults to true.
-- `USE_CLOUD_STRINGS` and `CHECK_UPDATES` default to false.
+- `USE_CLOUD_STRINGS` defaults to false. `CHECK_UPDATES` defaults to true. `-PTELLOMI_CHECK_UPDATES=false` turns the automatic check off.
 - `PLAYSTORE_APP_URL`, `HUAWEI_STORE_URL`, and the invite-SMS fallback (`ContactsController`, `NewContactBottomSheet`) use `TELLOMI_DOWNLOAD_URL` instead of `play.google.com` / `telegram.org/dl`.
 - `GOOGLE_AUTH_CLIENT_ID` is a non-functional placeholder (`000000000000-tellomi.apps.googleusercontent.com`). The server can still overwrite it from config. Apple, Google, and「其他登录方式」on the login screen toast「暂未开放」. They do not start a sign-in.
 
 `google-services.json` in each app module gained client entries for the Tellomi package names so the Google Services plugin can configure the build. The Firebase project id, API key, and OAuth client inside those entries are still the ones upstream ships for `org.telegram.messenger`. **FCM push will not arrive** until you replace `google-services.json` with one from a project that contains `app.tellomi.chat`. The old `org.telegram.messenger` clients were left in the file so the library module's plugin still matches namespace `org.telegram.messenger`.
+
+### In-app updates
+
+`TMessagesProj_App` (the APK CI builds with `:TMessagesProj_App:assembleAfatRelease`) calls `help.getAppUpdate` on launch. The check still waits `updateCheckDelay` (default 24 hours) after the previous check. `-PTELLOMI_CHECK_UPDATES=false` skips the automatic request. `isStandalone()` stays false on this module. `ApplicationLoaderImpl.isInAppUpdatesEnabled()` is the only new gate.
+
+A soft update (`can_not_skip=false`) is a dismissible card: close, or tap outside. The action is a swipe. When `url` is set, the completed swipe opens that URL with `Browser.openUrl` (the official site or APK link the server sends). A document with no url uses the existing APK install path. The card does not open Google Play. Dismissing clears the pending soft update. On this module a saved soft update also does not skip the next check, because there is no side-menu download banner. The 24-hour delay still applies. A force update (`can_not_skip=true`) still uses `BlockingUpdateView`. Its button opens `url` when the server set one, and otherwise installs the document on this module. The label color follows the black/white button so night mode stays readable.
+
+The server has to send a `version` string newer than the installed `versionName` (`APP_VERSION_NAME`, currently 14.0.4). The version code is not what the popup compares. This tree does not change `TELLOMI_APP_UPDATE_*` on the server.
 
 ## What still points at Telegram
 
