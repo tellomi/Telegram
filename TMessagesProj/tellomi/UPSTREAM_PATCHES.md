@@ -103,6 +103,16 @@ Checked against `docs/brand/logo.svg` from Telegram-iOS `tellomi-brand-assets` @
 | `TMessagesProj/src/main/AndroidManifest.xml` | New disabled aliases `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon`. |
 | `TMessagesProj/config/release/AndroidManifest_standalone.xml` | Standalone application icon and the five replaced aliases use the Tellomi mipmaps (`ic_launcher`, `icon_2_launcher` … `icon_6_launcher`) instead of the `*_sa` paper-plane bitmaps. |
 
+## Settings icon plates
+
+List icons that used Telegram's colored rounded plates are black, white, or gray. `IconBackgroundColors` holds the neutral pairs. `SettingCell.Background.setColor` also runs `TellomiIconColors.plate`, so a hardcoded blue, green, orange, red, or purple passed from a settings row is drawn as a dark gray. A color that is already neutral, and a fully transparent color, is left as-is. Charts, gifts, and avatar gradients are not remapped.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/IconBackgroundColors.java` | Named plate colors are gray. Enum names are unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `SettingCell.Background.setColor` calls `TellomiIconColors.plate`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiIconColors.java` | The plate remap. Flavor source only. |
+
 ## CI APK
 
 GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these.
@@ -469,6 +479,56 @@ The send control is `tellomi/res/drawable/send_plane_24.xml`, an arrow-up, on th
 | `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list is Blue and Dark Blue. Accent swatches are not shown. |
 | `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Arrow-up instead of the paper plane. |
 | `TMessagesProj/tellomi/res/drawable-*/notification.webp` | White Tellomi silhouette. |
+
+## Login screens match the 2026-11-03 spec
+
+The first page is the phone form (`PhoneView`). Email entry is the other mode of that form. SMS stays `LoginActivitySmsView`. The email code stays `LoginActivityEmailCodeView`. `auth.sendCode` is unchanged.
+
+Entries with no backend are not shown: Apple, Google, other methods, 找回账号, and password login. The phone page keeps the number field, 验证并登录, the 或 divider, 邮箱登录, and the agreement row. The email page has no password link and no round icon row. Back on email returns to the phone page.
+
+The phone and email pages do not open a keyboard until the field is tapped. A tap on empty space closes it. The phone field uses the numeric keypad, including after returning from email. Light mode is a white page and a black button. Dark mode follows the active theme: black page, white button. Switching language rebuilds the screen and rewrites every label, including 或.
+
+The numeric keypad used to cover the phone form. On a short window and in landscape that hid the button and the agreement, so the page now stays above the keypad and scrolls. Agreement text is 已阅读并同意 用户协议 和 隐私政策, with no carrier line. SMS boxes use the server length. A wrong SMS code stays in the boxes and the line under them is 验证码错误，请重新输入. The primary button shows ••• while the request is in flight. The top-right control is still the language globe.
+
+## Login layout fit
+
+Phone, email, SMS, email-code, and sign-up scroll inside the page. A wide window (tablet or an unfolded foldable) caps the column at 420dp. System font scale is applied up to 1.6 and the field, button, and code digit grow with it; the digit stays inside a square that had to shrink. Agreement, code-options, and language cards scroll and stay inside the window, including above the navigation bar. Colors are unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginFit.java` | Width, font, dialog, and digit sizes. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiFormHost.java` | Scrolling column for the code and sign-up pages. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Capped text, taller fields, scrolling cards. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | Same scroll and type size. |
+| `TMessagesProj/src/main/java/org/telegram/ui/TellomiSignUpAgreement.java` | The modal scrolls. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | The card scrolls. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login pages scroll. The keypad no longer covers the phone form. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Login digits shrink to the square. |
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone home and email entry only. Keypad overlay, clear buttons, code error line. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | Password page, password link, and round icons removed. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | ••• busy state. No unavailable card and no login sheet. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | Agreement sentence without the carrier line. SMS error copy. |
+
+## Send glyph, suggested folders, back arrow
+
+The chat field and the media-preview send button already draw `send_plane_24` (arrow-up). The other send controls were still a paper plane: MingCute `send` on `attach_send`, `msg_send`, `msg_sendfile`, and `send_outline`, and the upstream `ic_send` bitmap in the group-call composer. Those are the same arrow-up, white so the existing tint applies. `attach_send` keeps its larger canvas and draws a 24dp arrow in the middle, because that bitmap is shown with `CENTER` inside the round button.
+
+`messages.getSuggestedDialogFilters` returns the folder title and description as server text. On this server that text is English (Unread, Personal, Groups, Channels, Bots). `FiltersSetupActivity` maps those five presets, by flags or by that English copy, onto bundled strings before the row is shown and before the folder is saved. A suggestion that names specific chats is not rewritten.
+
+`msg_arrow_back` had been generated from MingCute `arrow-right`, so menu Back rows pointed the wrong way. It is arrow-left again. `ic_ab_back` and `msg_arrow_back` are scaled so the stroke is about as tall as the upstream back arrow (the first MingCute fit was shorter than the action-bar icons around it). Attach-sheet gallery and location tabs are the same 24dp Lottie slot as the other attach tabs; their artwork fills the canvas about as much as Files, so those two were not enlarged. Launcher icons, the Tellomi wordmark, and night-theme color code are unchanged.
+
+`TellomiBrand.rewrite` already turns the word Telegram in `TelegramVersion` and `TelegramPremium` into the app name when the string is loaded. Those rows were not edited. Premium, gifts, and the wallet stay behind `TellomiFeatures`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable-*/{attach_send,msg_send,msg_sendfile,ic_send,ic_ab_back,msg_arrow_back}.webp` | Arrow-up send glyphs. Back arrows point left and are slightly larger. |
+| `TMessagesProj/tellomi/res/drawable/send_outline.xml` | Ephemeral send outline is the arrow, not the plane. |
+| `TMessagesProj/src/main/java/org/telegram/ui/FiltersSetupActivity.java` | Localize the five suggested folders. |
+| `TMessagesProj/src/main/res/values/strings.xml`, `values-zh/strings.xml` | Suggested-folder name and descriptions. |
+| `TMessagesProj/tellomi/icons/mapping.csv`, `generate_icons.py` | Do not regenerate these glyphs from MingCute `send`. |
 
 ## Transcribe button script glyphs
 

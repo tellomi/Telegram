@@ -14,17 +14,12 @@ package org.telegram.ui;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -149,7 +144,7 @@ public final class TellomiLanguageSheet {
         TextView title = new TextView(context);
         title.setText(LocaleController.getString(R.string.TellomiChooseLanguage));
         title.setTextColor(TellomiLoginChrome.text());
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        TellomiLoginChrome.textSize(title, 17);
         title.setTypeface(AndroidUtilities.bold());
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -176,7 +171,7 @@ public final class TellomiLanguageSheet {
         TextView cancel = new TextView(context);
         cancel.setText(LocaleController.getString(R.string.Cancel));
         cancel.setTextColor(TellomiLoginChrome.MUTED);
-        cancel.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        TellomiLoginChrome.textSize(cancel, 16);
         cancel.setGravity(Gravity.CENTER);
         cancel.setMinimumHeight(AndroidUtilities.dp(48));
         cancel.setOnClickListener(v -> dialog.dismiss());
@@ -184,20 +179,7 @@ public final class TellomiLanguageSheet {
         cancelLp.topMargin = AndroidUtilities.dp(4);
         card.addView(cancel, cancelLp);
 
-        FrameLayout wrap = new FrameLayout(context);
-        int side = AndroidUtilities.dp(32);
-        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardLp.leftMargin = side;
-        cardLp.rightMargin = side;
-        wrap.addView(card, cardLp);
-        dialog.setContentView(wrap);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            window.setDimAmount(0.45f);
-        }
+        TellomiLoginChrome.presentCard(dialog, card);
         dialog.show();
     }
 
@@ -211,7 +193,8 @@ public final class TellomiLanguageSheet {
         TextView label = new TextView(context);
         label.setText(name);
         label.setTextColor(TellomiLoginChrome.text());
-        label.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        TellomiLoginChrome.textSize(label, 16);
+        label.setMaxLines(2);
         if (checked) {
             label.setTypeface(AndroidUtilities.bold());
         }
@@ -220,7 +203,7 @@ public final class TellomiLanguageSheet {
         TextView mark = new TextView(context);
         mark.setText("\u2713");
         mark.setTextColor(TellomiLoginChrome.text());
-        mark.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        TellomiLoginChrome.textSize(mark, 18);
         mark.setTypeface(Typeface.DEFAULT_BOLD);
         mark.setVisibility(checked ? View.VISIBLE : View.INVISIBLE);
         row.addView(mark, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));

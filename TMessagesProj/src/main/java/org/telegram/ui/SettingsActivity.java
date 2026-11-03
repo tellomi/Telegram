@@ -1299,6 +1299,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
 
             public void setColor(int topColor, int bottomColor) {
+                // TELLOMI: settings-style icon plates are black, white, or gray.
+                topColor = TellomiIconColors.plate(topColor);
+                bottomColor = TellomiIconColors.plate(bottomColor);
                 gradient = new LinearGradient(0, 0, 0, dp(28), new int[] { topColor, bottomColor }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
                 paint.setShader(gradient);
             }

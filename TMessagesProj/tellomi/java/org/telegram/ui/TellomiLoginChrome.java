@@ -23,6 +23,7 @@ import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -30,6 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,7 +66,15 @@ public final class TellomiLoginChrome {
     public static boolean night() {
         try {
             Theme.ThemeInfo theme = Theme.getActiveTheme();
-            return theme != null && theme.isDark();
+            if (theme != null && theme.isDark()) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            int bg = Theme.getColor(Theme.key_windowBackgroundWhite);
+            double lum = (0.2126 * Color.red(bg) + 0.7152 * Color.green(bg) + 0.0722 * Color.blue(bg)) / 255.0;
+            return lum < 0.5;
         } catch (Throwable ignored) {
             return false;
         }
@@ -134,64 +144,74 @@ public final class TellomiLoginChrome {
     }
 
     /**
-     * Apple, Google, password login, and any other method that is not wired up.
-     * Same card as the terms dialog. Copy matches the iOS text alert:
-     * title, one sentence, and a single OK button.
+     * Login copy follows the system font, capped so a 16sp label does not become
+     * a 32sp label at the largest setting. Pass the design size in sp.
      */
-    public static void showUnavailable(Context context) {
-        if (context == null) {
+    public static void textSize(TextView view, float baseSp) {
+        if (view == null) {
             return;
         }
-        Dialog dialog = new Dialog(context);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setCanceledOnTouchOutside(true);
+        float scale = 1f;
+        if (view.getResources() != null && view.getResources().getConfiguration() != null) {
+            scale = view.getResources().getConfiguration().fontScale;
+        }
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, TellomiLoginFit.cappedSp(baseSp, scale, TellomiLoginFit.MAX_FONT_SCALE));
+    }
 
-        LinearLayout card = new LinearLayout(context);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(22), AndroidUtilities.dp(20), AndroidUtilities.dp(18));
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(pageFill());
-        background.setCornerRadius(AndroidUtilities.dp(16));
-        card.setBackground(background);
+    /** Outline around a single-line field. Taller when the font no longer fits 50dp. */
+    public static int fieldHeight(Context context) {
+        float scale = 1f;
+        if (context != null && context.getResources() != null && context.getResources().getConfiguration() != null) {
+            scale = context.getResources().getConfiguration().fontScale;
+        }
+        if (scale <= 0f) {
+            scale = 1f;
+        }
+        int text = Math.round(AndroidUtilities.dp(16) * Math.min(scale, TellomiLoginFit.MAX_FONT_SCALE));
+        return TellomiLoginFit.fieldHeightPx(AndroidUtilities.dp(50), text, AndroidUtilities.dp(24));
+    }
 
-        TextView title = new TextView(context);
-        title.setText(LocaleController.getString(R.string.TellomiNotOpen));
-        title.setTextColor(text());
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setGravity(Gravity.CENTER);
-        card.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        TextView body = new TextView(context);
-        body.setText(LocaleController.getString(R.string.TellomiNotOpenBody));
-        body.setTextColor(MUTED);
-        body.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(AndroidUtilities.dp(3), 1f);
-        LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        bodyLp.topMargin = AndroidUtilities.dp(14);
-        bodyLp.bottomMargin = AndroidUtilities.dp(18);
-        card.addView(body, bodyLp);
-
-        ActionButton ok = actionButton(context, LocaleController.getString(R.string.TellomiNotOpenOk), v -> dialog.dismiss());
-        ok.setReady(true);
-        card.addView(ok, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
+    /**
+     * Card dialog that scrolls and stays inside the window. A language list or a
+     * large font otherwise runs off a short or landscape screen, including under
+     * the navigation bar.
+     */
+    public static void presentCard(Dialog dialog, View card) {
+        if (dialog == null || card == null) {
+            return;
+        }
+        Context context = card.getContext();
+        int screenW = context.getResources().getDisplayMetrics().widthPixels;
+        int screenH = context.getResources().getDisplayMetrics().heightPixels;
+        int side = AndroidUtilities.dp(24);
+        int width = TellomiLoginFit.dialogWidthPx(screenW, side, AndroidUtilities.dp(TellomiLoginFit.DIALOG_MAX_DP));
+        int reserved = AndroidUtilities.statusBarHeight
+                + Math.max(AndroidUtilities.navigationBarHeight, AndroidUtilities.dp(24))
+                + AndroidUtilities.dp(32);
+        final int maxHeight = TellomiLoginFit.dialogMaxHeightPx(screenH, reserved);
+        ScrollView scroll = new ScrollView(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST));
+            }
+        };
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.addView(card, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         FrameLayout wrap = new FrameLayout(context);
-        int side = AndroidUtilities.dp(32);
-        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardLp.leftMargin = side;
-        cardLp.rightMargin = side;
-        wrap.addView(card, cardLp);
+        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        wrap.addView(scroll, cardLp);
         dialog.setContentView(wrap);
 
         Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setGravity(Gravity.CENTER);
             window.setDimAmount(0.45f);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
-        dialog.show();
     }
 
     /**
@@ -218,7 +238,7 @@ public final class TellomiLoginChrome {
         TextView title = new TextView(context);
         title.setText(LocaleController.getString(R.string.TellomiOtpMissing));
         title.setTextColor(text());
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        textSize(title, 17);
         title.setTypeface(AndroidUtilities.bold());
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -241,26 +261,13 @@ public final class TellomiLoginChrome {
         TextView cancel = new TextView(context);
         cancel.setText(LocaleController.getString(R.string.Cancel));
         cancel.setTextColor(MUTED);
-        cancel.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textSize(cancel, 16);
         cancel.setGravity(Gravity.CENTER);
         cancel.setMinimumHeight(AndroidUtilities.dp(48));
         cancel.setOnClickListener(v -> dialog.dismiss());
         card.addView(cancel, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(48)));
 
-        FrameLayout wrap = new FrameLayout(context);
-        int side = AndroidUtilities.dp(32);
-        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardLp.leftMargin = side;
-        cardLp.rightMargin = side;
-        wrap.addView(card, cardLp);
-        dialog.setContentView(wrap);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            window.setDimAmount(0.45f);
-        }
+        presentCard(dialog, card);
         dialog.show();
     }
 
@@ -268,7 +275,8 @@ public final class TellomiLoginChrome {
         TextView row = new TextView(context);
         row.setText(label);
         row.setTextColor(LINK);
-        row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textSize(row, 16);
+        row.setMaxLines(3);
         row.setGravity(Gravity.CENTER);
         row.setMinimumHeight(AndroidUtilities.dp(48));
         row.setOnClickListener(v -> click.run());
@@ -290,7 +298,8 @@ public final class TellomiLoginChrome {
         TextView pill = new TextView(context);
         pill.setText(text);
         pill.setTextColor(Color.WHITE);
-        pill.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textSize(pill, 14);
+        pill.setMaxLines(3);
         int padH = AndroidUtilities.dp(16);
         int padV = AndroidUtilities.dp(10);
         pill.setPadding(padH, padV, padH, padV);
@@ -307,19 +316,6 @@ public final class TellomiLoginChrome {
         }, 1600);
     }
 
-    public static TextView swapLink(Context context, String label, View.OnClickListener click) {
-        TextView view = new TextView(context);
-        view.setText(label);
-        view.setTextColor(LINK);
-        view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        view.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-        view.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.tellomi_ic_swap, 0, 0, 0);
-        view.setPadding(0, AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
-        view.setOnClickListener(click);
-        return view;
-    }
-
     public static View orDivider(Context context, String label) {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -329,7 +325,7 @@ public final class TellomiLoginChrome {
         TextView text = new TextView(context);
         text.setText(label);
         text.setTextColor(MUTED);
-        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textSize(text, 13);
         text.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
         row.addView(left, new LinearLayout.LayoutParams(0, AndroidUtilities.dp(1), 1f));
         row.addView(text, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -357,27 +353,13 @@ public final class TellomiLoginChrome {
         TextView text = new TextView(context);
         text.setText(label);
         text.setTextColor(text());
-        text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textSize(text, 16);
         text.setGravity(Gravity.CENTER);
+        text.setMaxLines(2);
         row.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         row.addView(new Space(context), new LinearLayout.LayoutParams(AndroidUtilities.dp(38), 1));
         row.setOnClickListener(click);
         return row;
-    }
-
-    public static ImageView circleButton(Context context, int iconRes, View.OnClickListener click) {
-        ImageView icon = new ImageView(context);
-        icon.setImageResource(iconRes);
-        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        int pad = AndroidUtilities.dp(12);
-        icon.setPadding(pad, pad, pad, pad);
-        GradientDrawable background = new GradientDrawable();
-        background.setShape(GradientDrawable.OVAL);
-        background.setColor(pageFill());
-        background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
-        icon.setBackground(background);
-        icon.setOnClickListener(click);
-        return icon;
     }
 
     private static View line(Context context) {
@@ -400,23 +382,15 @@ public final class TellomiLoginChrome {
                 View child = layout.getChildAt(i);
                 if (child instanceof TextView) {
                     ((TextView) child).setTextColor(text());
+                } else if (child instanceof ImageView) {
+                    ((ImageView) child).setColorFilter(new android.graphics.PorterDuffColorFilter(text(), android.graphics.PorterDuff.Mode.SRC_IN));
                 }
             }
         }
 
-        public static void restyleCircle(ImageView icon) {
-            if (icon == null) {
-                return;
-            }
-            GradientDrawable background = new GradientDrawable();
-            background.setShape(GradientDrawable.OVAL);
-            background.setColor(pageFill());
-            background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
-            icon.setBackground(background);
-        }
-
         public static final class ActionButton extends FrameLayout {
         private final TextView labelView;
+        private final TextView dotsView;
         private final ProgressBar progressView;
         private final GradientDrawable background;
         private boolean ready;
@@ -432,10 +406,24 @@ public final class TellomiLoginChrome {
             labelView = new TextView(context);
             labelView.setText(label);
             labelView.setTextColor(ctaLabel(false));
-            labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            textSize(labelView, 16);
             labelView.setTypeface(AndroidUtilities.bold());
             labelView.setGravity(Gravity.CENTER);
-            addView(labelView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER));
+            labelView.setMaxLines(2);
+            int padH = AndroidUtilities.dp(16);
+            int padV = AndroidUtilities.dp(12);
+            labelView.setPadding(padH, padV, padH, padV);
+            addView(labelView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+            dotsView = new TextView(context);
+            dotsView.setText("•••");
+            dotsView.setTextColor(ctaLabel(true));
+            textSize(dotsView, 22);
+            dotsView.setTypeface(AndroidUtilities.bold());
+            dotsView.setLetterSpacing(0.35f);
+            dotsView.setGravity(Gravity.CENTER);
+            dotsView.setVisibility(GONE);
+            addView(dotsView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
             progressView = new ProgressBar(context);
             progressView.setIndeterminate(true);
@@ -449,8 +437,16 @@ public final class TellomiLoginChrome {
         }
 
         /** Black (or white in dark mode) when the form can be submitted. Still clickable while empty. */
+        public boolean isReady() {
+            return ready;
+        }
+
         public void setReady(boolean ready) {
             this.ready = ready;
+            if (dotsView.getVisibility() == VISIBLE) {
+                background.setColor(ctaFill(true));
+                return;
+            }
             background.setColor(ctaFill(ready));
             labelView.setTextColor(ctaLabel(ready));
         }
@@ -468,14 +464,20 @@ public final class TellomiLoginChrome {
 
         public void setBusy(boolean busy) {
             labelView.setVisibility(busy ? INVISIBLE : VISIBLE);
-            progressView.setVisibility(busy ? VISIBLE : GONE);
+            dotsView.setVisibility(busy ? VISIBLE : GONE);
+            dotsView.setTextColor(ctaLabel(true));
+            progressView.setVisibility(GONE);
+            background.setColor(ctaFill(busy || ready));
+            if (!busy) {
+                labelView.setTextColor(ctaLabel(ready));
+            }
             // Stay enabled. A second tap cancels auth.sendCode instead of
             // starting another one. Disabling the button left no cancel.
             setEnabled(true);
         }
 
         public boolean isBusy() {
-            return progressView.getVisibility() == VISIBLE;
+            return dotsView.getVisibility() == VISIBLE;
         }
     }
 }

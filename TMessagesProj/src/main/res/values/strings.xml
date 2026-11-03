@@ -11638,4 +11638,10 @@
     <string name="NoPaidMessagesTokenUsed">un1 used your QR code and can message you for free</string>
     <string name="NoPaidMessagesTokenUsedOut">You used the QR code of un1 and can message them for free</string>
     <string name="NoPaidMessagesTokenImported">You can now message **%1$s** for free.</string>
+    <string name="FilterSuggestedPersonal">Personal</string>
+    <string name="FilterSuggestedUnreadInfo">New messages from all chats.</string>
+    <string name="FilterSuggestedPersonalInfo">Only messages from personal chats.</string>
+    <string name="FilterSuggestedGroupsInfo">Only messages from groups.</string>
+    <string name="FilterSuggestedChannelsInfo">Only messages from channels.</string>
+    <string name="FilterSuggestedBotsInfo">Only messages from bots.</string>
 </resources>
