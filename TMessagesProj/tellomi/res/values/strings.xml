@@ -90,4 +90,14 @@
     <string name="TellomiSoftUpdateGo">Update</string>
     <string name="TellomiSoftUpdateDownloading">Downloading %1$d%%</string>
     <string name="TellomiSoftUpdateClose">Close</string>
+    <string name="TellomiDeleteAccountNow">Delete account now</string>
+    <string name="TellomiDeleteAccountConsequences">Deleting this account:\n• Private chats are deleted for both sides.\n• You leave your groups and channels.\n• Your profile and photos are removed.\n• Messages you already sent in groups stay.</string>
+    <string name="TellomiDeleteAccountConfirmTitle">Delete your account?</string>
+    <string name="TellomiDeleteAccountConfirmText">This permanently erases your account. You can\'t undo it.</string>
+    <string name="TellomiDeleteAccountConfirmButton">Delete my account</string>
+    <string name="TellomiDeleteAccountPasswordHint">Enter your two-step verification password to delete this account.</string>
+    <string name="TellomiDeleteAccountPasswordInvalid">Wrong password. Enter it again.</string>
+    <string name="TellomiDeleteAccountConfirmWait">This account has a password, so it will not be deleted yet. Try again in %1$s, or enter the correct two-step verification password.</string>
+    <string name="TellomiDeleteAccountFloodWait">Too many attempts. Try again in %1$s.</string>
+    <string name="TellomiDeleteAccountFailed">Couldn\'t delete the account. Try again later.</string>
 </resources>

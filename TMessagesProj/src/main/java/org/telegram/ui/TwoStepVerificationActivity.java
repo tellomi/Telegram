@@ -142,6 +142,13 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         void didEnterPassword(TLRPC.InputCheckPasswordSRP password);
     }
 
+    /**
+     * The caller sends the SRP itself. {@code account.getPasswordSettings} is skipped:
+     * Tellomi's server takes the SRP id on the first check, so a second check in
+     * {@code account.deleteAccount} would see {@code SRP_ID_INVALID}.
+     */
+    public static final int DELEGATE_DELETE_ACCOUNT = 4;
+
     public TwoStepVerificationActivity() {
         super();
 
@@ -428,6 +435,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             titleTextView.setText(getString(R.string.YourPassword));
             if (delegateType == 1) {
                 subtitleTextView.setText(getString(R.string.PleaseEnterCurrentPasswordWithdraw));
+            } else if (delegateType == DELEGATE_DELETE_ACCOUNT) {
+                subtitleTextView.setText(getString(R.string.TellomiDeleteAccountPasswordHint));
             } else if (delegateType == 2) {
                 subtitleTextView.setText(AndroidUtilities.replaceTags(formatString(R.string.PleaseEnterCurrentPasswordGiftTransfer, delegateTypeString)));
             } else if (delegateType == 3) {
@@ -1043,6 +1052,26 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
             needShowProgress();
             Utilities.globalQueue.postRunnable(() -> {
+                if (delegateType == DELEGATE_DELETE_ACCOUNT && delegate != null) {
+                    TLRPC.TL_inputCheckPasswordSRP srp = null;
+                    if (currentPassword != null && currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                        TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                        byte[] xBytes = SRPHelper.getX(oldPasswordBytes, algo);
+                        srp = SRPHelper.startCheck(xBytes, currentPassword.srp_id, currentPassword.srp_B, algo);
+                    }
+                    final TLRPC.TL_inputCheckPasswordSRP proof = srp;
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (proof == null) {
+                            needHideProgress();
+                            onFieldError(passwordOutlineView, passwordEditText, true);
+                            showAlertWithText(getString(R.string.TellomiDeleteAccountNow), getString(R.string.TellomiDeleteAccountPasswordInvalid));
+                            return;
+                        }
+                        AndroidUtilities.hideKeyboard(passwordEditText);
+                        delegate.didEnterPassword(proof);
+                    });
+                    return;
+                }
                 final TL_account.getPasswordSettings req = new TL_account.getPasswordSettings();
                 final byte[] x_bytes;
                 if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
@@ -1137,6 +1166,39 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 }
             });
         }
+    }
+
+    /** Clears a rejected password and loads a fresh SRP challenge for the next try. */
+    public void rejectEnteredPassword() {
+        needHideProgress();
+        if (passwordOutlineView != null && passwordEditText != null) {
+            onFieldError(passwordOutlineView, passwordEditText, true);
+        }
+        reloadPasswordChallenge(false);
+    }
+
+    /** The previous SRP id was already used. Load a new one and submit the same password again. */
+    public void retryAfterStaleChallenge() {
+        reloadPasswordChallenge(true);
+    }
+
+    private void reloadPasswordChallenge(boolean retry) {
+        TL_account.getPassword req = new TL_account.getPassword();
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (destroyed) {
+                return;
+            }
+            if (error == null && response instanceof TL_account.Password) {
+                currentPassword = (TL_account.Password) response;
+                initPasswordNewAlgo(currentPassword);
+                if (retry) {
+                    processDone();
+                }
+            } else if (retry) {
+                needHideProgress();
+                showAlertWithText(getString(R.string.TellomiDeleteAccountNow), getString(R.string.TellomiDeleteAccountFailed));
+            }
+        }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     private void onFieldError(OutlineTextContainerView outlineView, TextView field, boolean clear) {

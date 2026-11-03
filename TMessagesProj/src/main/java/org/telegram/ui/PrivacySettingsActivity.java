@@ -137,6 +137,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int advancedSectionRow;
     @Keep
     private int deleteAccountRow;
+    private int deleteAccountNowRow;
     private int deleteAccountDetailRow;
     private int botsSectionRow;
     private int passportRow;
@@ -410,6 +411,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 }
                 builder.setNegativeButton(getString(R.string.Cancel), null);
                 showDialog(builder.create());
+            } else if (position == deleteAccountNowRow) {
+                TellomiDeleteAccount.start(this, currentPassword);
             } else if (position == lastSeenRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_LASTSEEN));
             } else if (position == phoneNumberRow) {
@@ -767,6 +770,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
         advancedSectionRow = rowCount++;
         deleteAccountRow = rowCount++;
+        deleteAccountNowRow = rowCount++;
         deleteAccountDetailRow = rowCount++;
         botsSectionRow = rowCount++;
         if (TellomiFeatures.passportEnabled(currentAccount) && getUserConfig().hasSecureData) {
@@ -1037,6 +1041,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == voicesRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES) ||
                     position == noncontactsRow ||
                     position == deleteAccountRow && !getContactsController().getLoadingDeleteInfo() ||
+                    position == deleteAccountNowRow ||
                     position == newChatsRow && !getContactsController().getLoadingGlobalSettings() ||
                     position == emailLoginRow || position == paymentsClearRow || position == secretMapRow ||
                     position == contactsSyncRow || position == passportRow || position == contactsDeleteRow ||
@@ -1086,6 +1091,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     holder.itemView.setTag(position);
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     textCell.setBetterLayout(true);
+                    if (position == deleteAccountNowRow) {
+                        textCell.getTextView().setTag(Theme.key_text_RedRegular);
+                        textCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    } else {
+                        textCell.getTextView().setTag(null);
+                        textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
                     if (position == webSessionsRow) {
                         textCell.setText(getString("WebSessionsTitle", R.string.WebSessionsTitle), false);
                     } else if (position == phoneNumberRow) {
@@ -1204,8 +1216,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                                 value = formatPluralString("Days", ttl);
                             }
                         }
-                        textCell.setTextAndValue(getString("DeleteAccountIfAwayFor3", R.string.DeleteAccountIfAwayFor3), value, deleteAccountUpdate, false);
+                        textCell.setTextAndValue(getString("DeleteAccountIfAwayFor3", R.string.DeleteAccountIfAwayFor3), value, deleteAccountUpdate, true);
                         deleteAccountUpdate = false;
+                    } else if (position == deleteAccountNowRow) {
+                        textCell.setText(getString(R.string.TellomiDeleteAccountNow), false);
                     } else if (position == paymentsClearRow) {
                         textCell.setText(getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), true);
                     } else if (position == botsBiometryRow) {
@@ -1393,7 +1407,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         @Override
         public int getItemViewType(int position) {
             if (position == passportRow || position == lastSeenRow || position == phoneNumberRow ||
-                    position == deleteAccountRow || position == webSessionsRow || position == groupsRow || position == paymentsClearRow ||
+                    position == deleteAccountRow || position == deleteAccountNowRow || position == webSessionsRow || position == groupsRow || position == paymentsClearRow ||
                     position == secretMapRow || position == contactsDeleteRow || position == botsBiometryRow) {
                 return 0;
             } else if (position == privacyShadowRow || position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == contactsDetailRow || position == newChatsSectionRow) {
@@ -1443,6 +1457,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));

@@ -150,6 +150,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private IMapsProvider.IMap map;
     private IMapsProvider.ICameraUpdate moveToBounds;
     private IMapsProvider.IMapView mapView;
+    private BackupImageView osmPreview;
+    private TellomiFrameworkLocation.Watch frameworkWatch;
+    private boolean frameworkMap;
     private IMapsProvider.ICameraUpdate forceUpdate;
     private boolean hasScreenshot;
     private float yOffset;
@@ -482,6 +485,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         } catch (Exception e) {
             FileLog.e(e);
         }
+        stopFrameworkFix();
         try {
             if (mapView != null) {
                 mapView.onDestroy();
@@ -1306,6 +1310,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             });
         }).start();
+
+        if (!TellomiMaps.canShowInAppMap(context)) {
+            frameworkMap = true;
+            osmPreview = new BackupImageView(context);
+            mapViewClip.addView(osmPreview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            if (mapView != null) {
+                mapView.getView().setVisibility(View.GONE);
+            }
+        }
+        startFrameworkFix();
 
         if (messageObject == null && chatLocation == null) {
             if (chat != null && locationType == LOCATION_TYPE_GROUP && dialogId != 0) {
@@ -2464,6 +2478,25 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private void startFrameworkFix() {
+        if (locationDenied || frameworkWatch != null) {
+            return;
+        }
+        frameworkWatch = TellomiFrameworkLocation.watch(location -> {
+            positionMarker(location);
+            if (osmPreview != null) {
+                TellomiFrameworkLocation.showOsm(osmPreview, location);
+            }
+        });
+    }
+
+    private void stopFrameworkFix() {
+        if (frameworkWatch != null) {
+            frameworkWatch.stop();
+            frameworkWatch = null;
+        }
+    }
+
     @SuppressLint("MissingPermission")
     private Location getLastLocation() {
         LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
@@ -2514,8 +2547,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     map.moveCamera(position);
                 }
             }
-        } else {
+        } else if (adapter != null) {
             adapter.setGpsLocation(myLocation);
+            if (!searchedForCustomLocations && locationType != LOCATION_TYPE_GROUP && locationType != ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
+                adapter.searchPlacesWithQuery(null, myLocation, true);
+            }
         }
         if (proximitySheet != null) {
             proximitySheet.updateText(true, true);
@@ -2758,6 +2794,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             removeSelfFromStack(true);
         } else if (id == NotificationCenter.locationPermissionGranted) {
             locationDenied = false;
+            startFrameworkFix();
             if (adapter != null) {
                 adapter.setMyLocationDenied(locationDenied, false);
             }
