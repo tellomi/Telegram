@@ -530,6 +530,15 @@ The chat field and the media-preview send button already draw `send_plane_24` (a
 | `TMessagesProj/src/main/res/values/strings.xml`, `values-zh/strings.xml` | Suggested-folder name and descriptions. |
 | `TMessagesProj/tellomi/icons/mapping.csv`, `generate_icons.py` | Do not regenerate these glyphs from MingCute `send`. |
 
+## Transcribe button script glyphs
+
+The voice-to-text button is still the upstream 20-frame trim morph (`transcribe_in` / `transcribe_out`): an arrow plus a capital A that becomes the collapse chevron. Latin, Cyrillic, and Greek keep that A. Chinese, Japanese, Korean, Arabic, Persian, Hebrew, Hindi, and Thai replace only the A strokes (groups 3 and 4) with 文, あ, 가, ع, ا, א, अ, and ก. Same layer name (`Artboard Outlines`), so `setLayerColor` still paints the icon black or white. The new files live in the tellomi raw flavor. `TranscribeButton` picks the suffix from `LocaleController` (`zh`, `zh-Hans`, `zh_TW`, `ja`, `ko`, `ar`, `fa`, `he`/`iw`, `hi`, `th`) and reloads the drawables when the cell rebinds or the next draw sees a language change. The glyphs are not mirrored in RTL.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranscribeButton.java` | Language suffix and drawable reload. |
+| `TMessagesProj/tellomi/res/raw/transcribe_in_*.json`, `transcribe_out_*.json` | A-stroke replacements. Upstream `transcribe_in.json` / `transcribe_out.json` are unchanged. |
+
 ## Soft update on the shipped App module
 
 `:TMessagesProj_App:assembleAfatRelease` is the APK that ships. Its `ApplicationLoaderImpl` only used to override `onGetApplicationId`, so `isStandalone()` stayed false and `LaunchActivity.checkAppUpdate` returned before `help.getAppUpdate`. Flipping `isStandalone()` would also change billing, premium links, and the SMS-job build, so the App module overrides `isInAppUpdatesEnabled()` instead.
