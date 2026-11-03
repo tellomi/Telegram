@@ -103,6 +103,16 @@ Checked against `docs/brand/logo.svg` from Telegram-iOS `tellomi-brand-assets` @
 | `TMessagesProj/src/main/AndroidManifest.xml` | New disabled aliases `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon`. |
 | `TMessagesProj/config/release/AndroidManifest_standalone.xml` | Standalone application icon and the five replaced aliases use the Tellomi mipmaps (`ic_launcher`, `icon_2_launcher` … `icon_6_launcher`) instead of the `*_sa` paper-plane bitmaps. |
 
+## Settings icon plates
+
+List icons that used Telegram's colored rounded plates are black, white, or gray. `IconBackgroundColors` holds the neutral pairs. `SettingCell.Background.setColor` also runs `TellomiIconColors.plate`, so a hardcoded blue, green, orange, red, or purple passed from a settings row is drawn as a dark gray. A color that is already neutral, and a fully transparent color, is left as-is. Charts, gifts, and avatar gradients are not remapped.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/IconBackgroundColors.java` | Named plate colors are gray. Enum names are unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `SettingCell.Background.setColor` calls `TellomiIconColors.plate`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiIconColors.java` | The plate remap. Flavor source only. |
+
 ## CI APK
 
 GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these.
