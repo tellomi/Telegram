@@ -426,36 +426,34 @@ EXTRAS = [
 ]
 
 
-# Main settings rows. The generic "settings" rule is a substring match, so
-# every settings_* name would otherwise become settings-3. Each glyph follows
-# the same meaning as tellomi/Telegram-iOS Tellomi/Icons/mapping.csv.
-# Stars uses the filled star: iOS draws Premium and Stars from the same line
-# star, and the fill keeps that glyph while the drawable file is not a copy.
-SETTINGS_ROWS = {
-    "settings_account": ("user-3", "line"),  # Item List/Icons/Profile
-    "settings_ask": ("message-circle-question-mark", "line"),  # Item List/Icons/Support
-    "settings_business": ("announcement", "line"),  # Item List/Icons/Business
-    "settings_chat": ("chat-1", "line"),  # Item List/Icons/Chat
-    "settings_data": ("chart-bar", "line"),  # Item List/Icons/Data
-    "settings_devices": ("cellphone", "line"),  # Item List/Icons/Devices
-    "settings_faq": ("question", "line"),  # Item List/Icons/Faq
-    "settings_features": ("bulb", "line"),  # Item List/Icons/Tips
-    "settings_folders": ("folder", "line"),  # Item List/Icons/Folder
-    "settings_gift": ("gift", "line"),  # Item List/Icons/Gift
-    "settings_policy": ("shield", "line"),  # no iOS row; shield, distinct from Privacy
-    "settings_power": ("battery", "line"),  # Item List/Icons/PowerSaving
-    "settings_premium": ("star", "line"),  # Item List/Icons/Premium
-    "settings_privacy": ("lock", "line"),  # Item List/Icons/Privacy
-    "settings_sounds": ("bell-ringing", "line"),  # Item List/Icons/Notifications
-    "settings_stars": ("star", "fill"),  # Item List/Icons/Stars
+# Settings rows keep Telegram's own vectors. The "settings" substring rule
+# paints every settings_* name as settings-3 (one gear). These names are
+# skipped so a later regen does not put that gear back.
+SETTINGS_KEEP_UPSTREAM = {
+    "settings_account",
+    "settings_ask",
+    "settings_business",
+    "settings_chat",
+    "settings_data",
+    "settings_devices",
+    "settings_faq",
+    "settings_features",
+    "settings_folders",
+    "settings_gift",
+    "settings_language",
+    "settings_policy",
+    "settings_power",
+    "settings_premium",
+    "settings_privacy",
+    "settings_sounds",
+    "settings_stars",
 }
 
 
 def match(name):
     low = name.lower()
-    row = SETTINGS_ROWS.get(low)
-    if row:
-        return row
+    if low in SETTINGS_KEEP_UPSTREAM:
+        return None
     tokens = low.split("_")
     if "gram" in tokens or low.startswith("tellomi_ic_") or low.startswith("login_"):
         return None
