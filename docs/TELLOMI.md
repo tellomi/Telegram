@@ -131,16 +131,16 @@ In-app alternate icons use the same bubble and @, each at 75–80% of the frame.
 | Slot | Alias | Look |
 | --- | --- | --- |
 | Default | `DefaultIcon` | White outline on `#17171A` |
-| Water | `AquaIcon` | White outline on a teal–cyan gradient |
-| Sunset | `VintageIcon` | White outline on an orange–rose–violet gradient |
+| Water | `AquaIcon` | White outline on a gray gradient |
+| Sunset | `VintageIcon` | Dark outline on a white–gray gradient |
 | Classic | `ClassicIcon` | Dark outline on a white round disc |
 | Classic black | `ClassicBlackIcon` | White outline on a black round disc |
-| Filled | `TurboIcon` | Solid white bubble, larger (80%), on blue |
+| Filled | `TurboIcon` | Solid black bubble, larger (80%), on white |
 | Filled black | `FilledBlackIcon` | Solid white bubble, larger (80%), on black |
-| Starry | `NoxIcon` | White outline on a night field with stars |
-| Premium | `PremiumIcon` | Navy bubble and @ on a gold star |
+| Starry | `NoxIcon` | White outline on black, with white stars |
+| Premium | `PremiumIcon` | Black bubble and @ on a white star |
 
-`AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep the upstream component names. `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon` are new aliases. Regenerated from `render_launcher_icons.py`. `icon_plane.xml`, `ic_launcher_dr.webp`, and the standalone `*_sa` bitmaps are still the upstream artwork; the standalone manifest points its aliases at the Tellomi mipmaps instead.
+`AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep the upstream component names. `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon` are new aliases. Regenerated from `render_launcher_icons.py`. The mark is still `logo.svg`; only the fills are black, white, or gray. `icon_plane.xml`, `ic_launcher_dr.webp`, and the standalone `*_sa` bitmaps are still the upstream artwork; the standalone manifest points its aliases at the Tellomi mipmaps instead. Settings-style icon plates (`IconBackgroundColors`, and any hue passed into `SettingCell.Background`) are the same neutral range.
 
 ### Datacenters and RSA key
 

@@ -95,13 +95,23 @@ Client-side minimum is 3 characters. The old check rejected `length() < 4`, and 
 
 The default launcher is the Tellomi flavor `mipmap/ic_launcher` (adaptive icon, monochrome, legacy pngs, and `drawable-*/notification.webp` under `TMessagesProj/tellomi/res`). `config/*/AndroidManifest.xml` still points at `@mipmap/ic_launcher`; the flavor wins at merge. Alternate aliases (`VintageIcon` and the rest) stay upstream.
 
-Checked against `docs/brand/logo.svg` from Telegram-iOS `tellomi-brand-assets` @ `181d02d`. The foreground, monochrome, and notification marks already used that path data, centered on the painted bounds. The launcher ground was `#FFFFFF` / `#111113`; the official app-icon ground is `#17171A`, so those bitmaps and color resources were regenerated. The QR badge was viewBox-centered; it was regenerated from the same paths, centered on the painted bounds. The default mark is 77% of the icon frame (`LEGACY_FRACTION` in `render_launcher_icons.py`); adaptive layers use the same optical size inside the 72dp-of-108dp visible region. Alternate icons are the same mark at 75–80%. Filled is a solid bubble at 80%. Classic puts the mark on a round disc. Starry adds a star field. Premium puts the bubble and @ on a gold star. New drawables and mipmaps live in `TMessagesProj/tellomi/res`. These upstream files point at them:
+Checked against `docs/brand/logo.svg` from Telegram-iOS `tellomi-brand-assets` @ `181d02d`. The foreground, monochrome, and notification marks already used that path data, centered on the painted bounds. The launcher ground was `#FFFFFF` / `#111113`; the official app-icon ground is `#17171A`, so those bitmaps and color resources were regenerated. The QR badge was viewBox-centered; it was regenerated from the same paths, centered on the painted bounds. The default mark is 77% of the icon frame (`LEGACY_FRACTION` in `render_launcher_icons.py`); adaptive layers use the same optical size inside the 72dp-of-108dp visible region. Alternate icons are the same mark at 75–80%, in black, white, and gray only. Filled is a solid bubble at 80% (black on white, and white on black). Classic puts the mark on a round disc. Starry adds a white star field on black. Premium puts the bubble and @ on a white star. New drawables and mipmaps live in `TMessagesProj/tellomi/res`. These upstream files point at them:
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/ui/LauncherIconController.java` | Picker entries are Default, Water, Sunset, Classic, Classic black, Filled, Filled black, Starry, and Premium. `AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep their component names. None of the entries are premium-gated. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LauncherIconController.java` | Picker entries are Default, Water, Sunset, Classic, Classic black, Filled, Filled black, Starry, and Premium. `AquaIcon`, `VintageIcon`, `TurboIcon`, `NoxIcon`, and `PremiumIcon` keep their component names. None of the entries are premium-gated. Sunset's foreground is `tellomi_fg_mark_dark` so the dark mark sits on the light plate. |
 | `TMessagesProj/src/main/AndroidManifest.xml` | New disabled aliases `ClassicIcon`, `ClassicBlackIcon`, and `FilledBlackIcon`. |
 | `TMessagesProj/config/release/AndroidManifest_standalone.xml` | Standalone application icon and the five replaced aliases use the Tellomi mipmaps (`ic_launcher`, `icon_2_launcher` … `icon_6_launcher`) instead of the `*_sa` paper-plane bitmaps. |
+
+## Settings icon plates
+
+List icons that used Telegram's colored rounded plates are black, white, or gray. `IconBackgroundColors` holds the neutral pairs. `SettingCell.Background.setColor` also runs `TellomiIconColors.plate`, so a hardcoded blue, green, orange, red, or purple passed from a settings row is drawn as a dark gray. A color that is already neutral, and a fully transparent color, is left as-is. Charts, gifts, and avatar gradients are not remapped.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/IconBackgroundColors.java` | Named plate colors are gray. Enum names are unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `SettingCell.Background.setColor` calls `TellomiIconColors.plate`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiIconColors.java` | The plate remap. Flavor source only. |
 
 ## CI APK
 

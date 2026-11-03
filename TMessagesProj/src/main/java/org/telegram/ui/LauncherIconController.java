@@ -39,7 +39,7 @@ public class LauncherIconController {
         // Order is daily, then structure, then the two specials. None are premium-gated.
         DEFAULT("DefaultIcon", R.color.tellomi_launcher_background, R.drawable.tellomi_launcher_foreground, R.string.AppIconDefault),
         WATER("AquaIcon", R.drawable.tellomi_bg_water, R.drawable.tellomi_launcher_foreground, R.string.AppIconWater),
-        SUNSET("VintageIcon", R.drawable.tellomi_bg_sunset, R.drawable.tellomi_launcher_foreground, R.string.AppIconSunset),
+        SUNSET("VintageIcon", R.drawable.tellomi_bg_sunset, R.drawable.tellomi_fg_mark_dark, R.string.AppIconSunset),
         CLASSIC("ClassicIcon", R.drawable.tellomi_bg_classic, R.drawable.tellomi_fg_mark_dark, R.string.AppIconClassic),
         CLASSIC_BLACK("ClassicBlackIcon", R.drawable.tellomi_bg_classic_black, R.drawable.tellomi_launcher_foreground, R.string.AppIconClassicBlack),
         FILLED("TurboIcon", R.drawable.tellomi_bg_filled, R.drawable.tellomi_fg_filled, R.string.AppIconFilled),
