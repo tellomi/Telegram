@@ -2,7 +2,7 @@
 
 Tellomi is this fork of the official Telegram Android client (DrKLO/Telegram, layer 232). It keeps every Telegram feature, including Stories. Nothing in the UI feature set is removed. The app is meant to talk to a [Teamgram](https://github.com/teamgram/teamgram-server) server upgraded to layer 232 ([tellomi/teamgram-server#1](https://github.com/tellomi/teamgram-server/pull/1)), not to Telegram's datacenters.
 
-Protocol types, Java package `org.telegram.*`, and MTProto class names are unchanged so upstream merges stay small. User-visible product name, application id, launcher icon, API credentials, datacenter list, and server RSA key are isolated in the build config below.
+Protocol types, Java package `org.telegram.*`, and MTProto class names are unchanged so upstream merges stay small. User-visible product name, application id, launcher icon, API credentials, datacenter list, and server RSA keys are isolated in the build config below.
 
 ## Configure the server
 
@@ -26,7 +26,7 @@ All of the knobs live in the root `gradle.properties`. They are copied into `org
 | `TELLOMI_BILLING_UNAVAILABLE` | `true` | Skips Google Play Billing for Telegram product ids. |
 | `TELLOMI_REBRAND_STRINGS` | `true` | Rewrites the word "Telegram" (and a few translated forms) inside `LocaleController` strings. |
 | `TELLOMI_DOWNLOAD_URL` | `https://tellomi.app` | Invite-SMS fallback and the store buttons that used to open Telegram's Play / AppGallery listings. |
-| `TELLOMI_SERVER_PUBLIC_KEY` | unset | Optional one-line PKCS#1 (or PKCS#8) PEM. In `gradle.properties`, write newlines as `\\n`. When unset, the build reads `TMessagesProj/config/tellomi-server-public.pem`. |
+| `TELLOMI_SERVER_PUBLIC_KEY` | unset | Optional PEM text: one key, or several PKCS#1 / PKCS#8 blocks concatenated, newest first. In `gradle.properties`, write newlines as `\\n`. When unset, the build reads the whole `TMessagesProj/config/tellomi-server-public.pem` file. |
 
 Set `TELLOMI_CUSTOM_BACKEND=false` only if you intentionally want the official Telegram DCs and RSA keys again.
 
@@ -72,12 +72,25 @@ Both profiles list **DC 1 and DC 2 on the same host and port**. Teamgram's singl
 
 `TELLOMI_LOCK_DC_ADDRESSES=true` matters for docker. `help.getConfig` often advertises `127.0.0.1` or an in-container address. With the lock on, the client keeps the address from `gradle.properties` after that response. For a real multi-DC deployment, set the lock to `false` and make the server advertise addresses the phone can route to.
 
-The checked-in PEM is the **Teamgram docker dev public key**, the PKCS#1 form of `teamgramd/bin/server_pkcs1.key`. Fingerprint `12240908862933197005` (`0xa9e071c1771060cd`), which is the `KeyFingerprint` in Teamgram's `gnetway.yaml`. Replace it for any server that generated its own key:
+The checked-in file holds more than one PKCS#1 public key, newest first. `tellomiPublicKeyPem()` in `TMessagesProj/build.gradle` reads that whole file (comments and every block). `TellomiNetConfig::set` splits the text on `-----BEGIN` and keeps each block whose fingerprint is not 0, in that order. `publicKeyPem()` and `publicKeyFingerprint()` still return the first key. The handshake offers every key. It walks the server's fingerprint list first, so the server's order picks the key when both sides share more than one. The server currently sends `[4381149949997195609, 12240908862933197005]`.
+
+| Key | Fingerprint | Hex |
+| --- | --- | --- |
+| 2026-11 (preferred) | `4381149949997195609` | `0x3cccf8aacd4da159` |
+| Teamgram docker fallback | `12240908862933197005` | `0xa9e071c1771060cd` |
+
+The fallback is the PKCS#1 form of `teamgramd/bin/server_pkcs1.key`, the `KeyFingerprint` in Teamgram's `gnetway.yaml`. It stays so a client that has not picked up the 2026-11 key can still handshake. The old key will be retired on the server after clients update.
+
+The private keys are not in this repository. On the Chengdu server they live in `/opt/tellomi/secrets/mtproto/`. The team key vault copy of the 2026-11 key is under `成都服务器-运行时/mtproto-rsa-2026-11/`.
+
+To write a single key:
 
 ```bash
 openssl rsa -in server_pkcs1.key -pubout -outform PEM -RSAPublicKey_out \
   -out TMessagesProj/config/tellomi-server-public.pem
 ```
+
+Append another `-----BEGIN RSA PUBLIC KEY-----` block after that file to keep a fallback. Put the newest key first. `TMessagesProj/tellomi/check_mtproto_keys.cpp` is a host program (not linked into the app) that feeds the PEM file through `TellomiNetConfig::set` and checks both fingerprints.
 
 Dev sign-in on that Teamgram build uses the fixed SMS code **12345**. That is server behavior; the client does not special-case it. The SMS Retriever hash in `BuildVars.getSmsHash()` is still Telegram's and will not match `app.tellomi.chat`, so autofill of the code will not work until you register a hash for this application id.
 
@@ -151,7 +164,7 @@ Isolated in `TMessagesProj/jni/tgnet/TellomiNetConfig.cpp`, called from three up
 - `ConnectionsManager::initDatacenters` returns after adding only `TELLOMI_DC_ADDRESSES` when the custom backend is on.
 - A fresh `currentDatacenterId` becomes `TELLOMI_DEFAULT_DC_ID` instead of `2`.
 - `help.getConfig` skips `replaceAddresses` while the lock is on.
-- `Handshake` loads the configured PEM instead of Telegram's production/test keys, and computes the fingerprint the same way as the CDN-key path (SHA1 of the TL-encoded modulus and exponent, low 8 bytes as a little-endian `uint64`). PKCS#1 (`BEGIN RSA PUBLIC KEY`) and PKCS#8 (`BEGIN PUBLIC KEY`) are both accepted.
+- `Handshake` loads every configured PEM block instead of Telegram's production/test keys. Each fingerprint is computed the same way as the CDN-key path (SHA1 of the TL-encoded modulus and exponent, low 8 bytes as a little-endian `uint64`). A block that does not parse is skipped. PKCS#1 (`BEGIN RSA PUBLIC KEY`) and PKCS#8 (`BEGIN PUBLIC KEY`) are both accepted. The match loop follows the server's fingerprint order.
 
 `ConnectionsManager.onRequestNewServerIpAndPort` returns immediately when the custom backend is on, so a failed connection cannot pull Telegram DC addresses from Google/Mozilla DNS TXT records.
 

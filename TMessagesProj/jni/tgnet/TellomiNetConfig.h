@@ -23,6 +23,8 @@ public:
     static bool lockDatacenterAddresses();
     static int32_t defaultDcId();
     static const std::vector<TellomiDcAddress> &datacenters();
+    static const std::vector<std::string> &publicKeyPems();
+    static const std::vector<uint64_t> &publicKeyFingerprints();
     static const std::string &publicKeyPem();
     static uint64_t publicKeyFingerprint();
 };
