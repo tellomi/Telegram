@@ -617,13 +617,16 @@ Official Telegram (custom backend off) still replaces all four families, includi
 
 ## Settings row icons
 
-The MingCute pass matched the substring `settings` to `settings-3`, so Account, Chat Settings, Privacy and Security, and the other rows all drew one gear. A later pass swapped in other MingCute glyphs. Those rows are Telegram's own vectors again (white artwork on the gray plate). `settings_arrow` and `settings_gram_24` are unchanged. The generator skips these names so a regen does not paint the gear back.
+The MingCute pass matched the substring `settings` to `settings-3`, so the main settings rows all drew one gear. Those rows are MingCute glyphs again, the same meanings as iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`). The art stays white on the gray plate. `src/main` vectors are unchanged; the `tellomi` flavor overlays them. `settings_arrow` and `settings_gram_24` are unchanged. `settings_wallet` stays the colored upstream vector.
+
+Stars uses the filled star. iOS draws Premium and Stars from the same line star; the fill keeps that glyph and the two files are not copies. Language is `globe` (`Item List/Icons/Language`), not `translate` (`Item List/Icons/Translation`). Privacy Policy has no iOS row; it uses the shield, distinct from Privacy (`lock`).
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Removed. `src/main` vectors are used. |
-| `TMessagesProj/tellomi/icons/generate_icons.py` | Those names are not regenerated. |
-| `TMessagesProj/tellomi/icons/mapping.csv` | Rows removed. |
+| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Flavor vectors. One MingCute glyph each. |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | `SETTINGS_ROWS` wins over the `settings` substring rule. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | Those rows. |
+| `TMessagesProj/tellomi/icons/test_settings_rows.py` | Locks the mapping, the distinct files, and the generated vectors. |
 
 ## No language chooser after login
 

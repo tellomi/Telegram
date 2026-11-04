@@ -426,34 +426,38 @@ EXTRAS = [
 ]
 
 
-# Settings rows keep Telegram's own vectors. The "settings" substring rule
-# paints every settings_* name as settings-3 (one gear). These names are
-# skipped so a later regen does not put that gear back.
-SETTINGS_KEEP_UPSTREAM = {
-    "settings_account",
-    "settings_ask",
-    "settings_business",
-    "settings_chat",
-    "settings_data",
-    "settings_devices",
-    "settings_faq",
-    "settings_features",
-    "settings_folders",
-    "settings_gift",
-    "settings_language",
-    "settings_policy",
-    "settings_power",
-    "settings_premium",
-    "settings_privacy",
-    "settings_sounds",
-    "settings_stars",
+# Main settings rows. The "settings" substring rule paints every settings_*
+# name as settings-3 (one gear). Each glyph follows tellomi/Telegram-iOS
+# Tellomi/Icons/mapping.csv. Stars is the filled star: iOS draws Premium and
+# Stars from the same line star, and the fill keeps that meaning while the
+# drawable is not a byte copy. Privacy Policy has no iOS row; the shield is
+# Item List/Icons/Proxy and stays distinct from Privacy (lock).
+SETTINGS_ROWS = {
+    "settings_account": ("user-3", "line"),  # Item List/Icons/Profile
+    "settings_ask": ("message-circle-question-mark", "line"),  # Item List/Icons/Support
+    "settings_business": ("announcement", "line"),  # Item List/Icons/Business
+    "settings_chat": ("chat-1", "line"),  # Item List/Icons/Chat
+    "settings_data": ("chart-bar", "line"),  # Item List/Icons/Data
+    "settings_devices": ("cellphone", "line"),  # Item List/Icons/Devices
+    "settings_faq": ("question", "line"),  # Item List/Icons/Faq
+    "settings_features": ("bulb", "line"),  # Item List/Icons/Tips
+    "settings_folders": ("folder", "line"),  # Item List/Icons/Folder
+    "settings_gift": ("gift", "line"),  # Item List/Icons/Gift
+    "settings_language": ("globe", "line"),  # Item List/Icons/Language
+    "settings_policy": ("shield", "line"),  # no iOS row; shield, distinct from Privacy
+    "settings_power": ("battery", "line"),  # Item List/Icons/PowerSaving
+    "settings_premium": ("star", "line"),  # Item List/Icons/Premium
+    "settings_privacy": ("lock", "line"),  # Item List/Icons/Privacy
+    "settings_sounds": ("bell-ringing", "line"),  # Item List/Icons/Notifications
+    "settings_stars": ("star", "fill"),  # Item List/Icons/Stars
 }
 
 
 def match(name):
     low = name.lower()
-    if low in SETTINGS_KEEP_UPSTREAM:
-        return None
+    row = SETTINGS_ROWS.get(low)
+    if row:
+        return row
     tokens = low.split("_")
     if "gram" in tokens or low.startswith("tellomi_ic_") or low.startswith("login_"):
         return None
@@ -562,15 +566,26 @@ HAND_GLYPHS = {
 }
 
 
+def vendored_svg(icon, style):
+    bucket = "line" if style == "line" else "fill"
+    path = ICONS / "mingcute" / "svg" / bucket / f"{icon}.svg"
+    if not path.exists():
+        return None
+    return path
+
+
 def svg_path(icon, style):
     if icon == "arrow-up":
         return None
     folder = "core-regular" if style == "line" else "core-filled"
     path = SVG_ROOT / folder / f"{icon}.svg"
-    if not path.exists():
-        # a few names in the rules are guesses; try without a trailing variant
-        return None
-    return path
+    if path.exists():
+        return path
+    # Settings rows are regenerated from the committed MingCute copies when
+    # the checkout is absent, so a later regen cannot drop them.
+    if (icon, style) in {(n, s) for n, s in SETTINGS_ROWS.values()}:
+        return vendored_svg(icon, style)
+    return None
 
 
 def render_webp(svg, width, height, dest):
@@ -643,6 +658,28 @@ def android_vector(svg, width_dp, height_dp):
         lines.append("    <path " + " ".join(attrs) + " />")
     lines.append("</vector>")
     return "\n".join(lines) + "\n", len(paths)
+
+
+def settings_row_vector(name):
+    icon, style = SETTINGS_ROWS[name]
+    svg = vendored_svg(icon, style)
+    if svg is None:
+        raise FileNotFoundError(f"missing vendored MingCute {style}/{icon}.svg for {name}")
+    body, npaths = android_vector(svg, "24", "24")
+    if npaths == 0:
+        raise ValueError(f"{name} svg has no path")
+    return body
+
+
+def write_settings_row_drawables():
+    dest_dir = RES_OUT / "drawable"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    for name in sorted(SETTINGS_ROWS):
+        dest = dest_dir / f"{name}.xml"
+        dest.write_text(settings_row_vector(name))
+        written.append(dest)
+    return written
 
 
 def vector_dp(path):
