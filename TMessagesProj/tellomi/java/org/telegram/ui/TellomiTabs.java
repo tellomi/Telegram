@@ -1,15 +1,21 @@
 package org.telegram.ui;
 
 import android.content.SharedPreferences;
+import android.graphics.drawable.ShapeDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.SparseArray;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.tellomi.feed.FeedActivity;
 
@@ -205,6 +211,9 @@ public final class TellomiTabs {
         }
         ensureFeedTab(activity);
         applyChrome(activity, false);
+        if (FeedActivity.peekPendingPostId() != null) {
+            AndroidUtilities.runOnUIThread(() -> selectFeed(activity));
+        }
         return true;
     }
 
@@ -249,6 +258,10 @@ public final class TellomiTabs {
     private static BaseFragment newFeed() {
         Bundle args = new Bundle();
         args.putBoolean("hasMainTabs", true);
+        String pending = FeedActivity.takePendingPostId();
+        if (pending != null) {
+            args.putString(FeedActivity.ARG_POST_ID, pending);
+        }
         return new FeedActivity(args);
     }
 
@@ -297,6 +310,7 @@ public final class TellomiTabs {
             R.string.TellomiTabFeed
         );
         feed.setOnClickListener(v -> activity.tellomiTabClicked(VISUAL_FEED));
+        feed.setOnLongClickListener(v -> hideTab(activity, v, Tab.FEED));
         next[VISUAL_FEED] = feed;
         activity.tabs = next;
         activity.tabsView.addTabToIgnoreClick(feed);
@@ -431,6 +445,141 @@ public final class TellomiTabs {
             return Tab.PROFILE;
         }
         return null;
+    }
+
+    public static TellomiTabNavigation.Copy currentCopy() {
+        String code = "";
+        try {
+            LocaleController.LocaleInfo info = LocaleController.getInstance().getCurrentLocaleInfo();
+            if (info != null && info.shortName != null) {
+                code = info.shortName;
+            }
+        } catch (Throwable ignored) {
+        }
+        return TellomiTabNavigation.Copy.resolve(code);
+    }
+
+    /** Writes Discover, Calls, and Contacts, then refreshes the bar. */
+    public static void commit(int account, Visibility visibility) {
+        Visibility value = visibility == null ? Visibility.fresh() : visibility;
+        MessagesController.getMainSettings(account).edit()
+            .putBoolean(PREF_SHOW_FEED, value.feed)
+            .putBoolean(PREF_SHOW_CONTACTS, value.contacts)
+            .apply();
+        UserConfig.getInstance(account).setShowCallsTab(value.calls);
+        NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.callTabsVisibleToggled);
+    }
+
+    /** One extra row on the contacts long-press, same shape as Hide Calls (D-38). */
+    public static void appendHideContacts(MainTabsActivity activity, ItemOptions options) {
+        if (!enabled() || activity == null || options == null || !read(activity.getCurrentAccount()).contacts) {
+            return;
+        }
+        options.add(R.drawable.msg_archive_hide, currentCopy().hideContacts, () ->
+            commit(activity.getCurrentAccount(), TellomiTabNavigation.hide(read(activity.getCurrentAccount()), Tab.CONTACTS))
+        );
+    }
+
+    /**
+     * {@code https://tell.cc/m#<id>} (D-57). Returns false when the bar is off
+     * or the link is not a post, so {@link LaunchActivity} keeps it.
+     * {@code /m/<slug>} is still a message link.
+     */
+    public static boolean consumeFeedPostLink(LaunchActivity activity, Uri uri, int account) {
+        if (uri == null) {
+            return false;
+        }
+        boolean barOn = enabled();
+        String postId = TellomiTabNavigation.feedPostIdIfHandled(uri.getHost(), uri.getPath(), uri.getEncodedFragment(), barOn);
+        if (postId == null) {
+            postId = TellomiTabNavigation.feedPostIdIfHandled(uri.toString(), barOn);
+        }
+        if (postId == null) {
+            return false;
+        }
+        FeedActivity.setPendingPostId(postId);
+        revealFeed(activity, account);
+        return true;
+    }
+
+    private static void revealFeed(LaunchActivity activity, int account) {
+        MainTabsActivity tabs = popToMainTabs(activity);
+        Visibility current = read(account);
+        commit(account, new Visibility(true, current.calls, current.contacts));
+        selectFeed(tabs);
+    }
+
+    private static void selectFeed(MainTabsActivity activity) {
+        if (activity == null || activity.viewPager == null) {
+            return;
+        }
+        int position = indexOf(visible(read(activity.getCurrentAccount())), Tab.FEED);
+        if (position < 0) {
+            return;
+        }
+        activity.selectTab(position, false);
+        activity.viewPager.scrollToPosition(position);
+        FeedActivity feed = findFeed(activity);
+        String pending = FeedActivity.peekPendingPostId();
+        if (feed != null && pending != null) {
+            feed.openPost(pending);
+            FeedActivity.setPendingPostId(null);
+        }
+    }
+
+    private static FeedActivity findFeed(MainTabsActivity activity) {
+        if (activity == null || activity.fragmentsArr == null) {
+            return null;
+        }
+        for (int i = 0; i < activity.fragmentsArr.size(); i++) {
+            ViewPagerActivity.FragmentState state = activity.fragmentsArr.valueAt(i);
+            if (state != null && state.fragment instanceof FeedActivity) {
+                return (FeedActivity) state.fragment;
+            }
+        }
+        return null;
+    }
+
+    private static MainTabsActivity popToMainTabs(LaunchActivity activity) {
+        if (activity == null || activity.actionBarLayout == null) {
+            return null;
+        }
+        java.util.List<BaseFragment> stack = activity.actionBarLayout.getFragmentStack();
+        if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+        MainTabsActivity tabs = null;
+        for (int i = stack.size() - 1; i >= 0; i--) {
+            if (stack.get(i) instanceof MainTabsActivity) {
+                tabs = (MainTabsActivity) stack.get(i);
+                break;
+            }
+            if (i > 0) {
+                activity.actionBarLayout.removeFragmentFromStack(i);
+            }
+        }
+        return tabs;
+    }
+
+    private static boolean hideTab(MainTabsActivity activity, View anchor, Tab tab) {
+        if (!enabled() || !TellomiTabNavigation.canLongPressHide(tab) || activity == null || anchor == null) {
+            return false;
+        }
+        if (activity.getContext() == null || activity.getParentActivity() == null) {
+            return false;
+        }
+        String title = tab == Tab.CONTACTS ? currentCopy().hideContacts : currentCopy().hideFeed;
+        ItemOptions options = ItemOptions.makeOptions(activity, anchor);
+        options.add(R.drawable.msg_archive_hide, title, () ->
+            commit(activity.getCurrentAccount(), TellomiTabNavigation.hide(read(activity.getCurrentAccount()), tab))
+        );
+        options.setBlur(true);
+        options.translate(0, -AndroidUtilities.dp(4));
+        ShapeDrawable bg = Theme.createRoundRectDrawable(AndroidUtilities.dp(28), activity.getThemedColor(Theme.key_windowBackgroundWhite));
+        bg.getPaint().setShadowLayer(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(1), Theme.multAlpha(0xFF000000, 0.15f));
+        options.setScrimViewBackground(bg);
+        options.show();
+        return true;
     }
 
     private static Tab tabForVisual(int visualIndex) {

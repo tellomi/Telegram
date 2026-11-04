@@ -21,6 +21,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsActivity;
+import org.telegram.ui.TellomiTabNavigation;
+import org.telegram.ui.TellomiTabs;
 
 import java.util.ArrayList;
 
@@ -52,6 +54,10 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         pendingPostId = postId;
     }
 
+    public static String peekPendingPostId() {
+        return pendingPostId;
+    }
+
     public static String takePendingPostId() {
         String id = pendingPostId;
         pendingPostId = null;
@@ -67,6 +73,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         if (getArguments() != null) {
             getArguments().putString(ARG_POST_ID, postId);
         }
+        bindEmptyCopy();
     }
 
     @Override
@@ -100,7 +107,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         column.setGravity(Gravity.CENTER_HORIZONTAL);
 
         titleView = new TextView(context);
-        titleView.setText(LocaleController.getString(R.string.TellomiTabFeed));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setGravity(Gravity.CENTER);
@@ -108,7 +114,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         column.addView(titleView, LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT));
 
         messageView = new TextView(context);
-        messageView.setText(LocaleController.getString(R.string.TellomiFeedEmptyMessage));
         messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         messageView.setGravity(Gravity.CENTER);
         messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
@@ -125,7 +130,24 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             FrameLayout.LayoutParams.WRAP_CONTENT,
             Gravity.CENTER
         ));
+        bindEmptyCopy();
         return fragmentView = root;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        bindEmptyCopy();
+    }
+
+    /** Empty state, or the M3 placeholder when a post link was opened (D-37, D-57). */
+    private void bindEmptyCopy() {
+        if (titleView == null || messageView == null) {
+            return;
+        }
+        TellomiTabNavigation.Copy copy = TellomiTabs.currentCopy();
+        titleView.setText(copy.feedEmptyTitle);
+        messageView.setText(openedPostId == null ? copy.feedEmptyText : copy.feedPostUnavailable);
     }
 
     private static LinearLayout.LayoutParams LayoutParams(int width) {

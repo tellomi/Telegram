@@ -407,6 +407,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("needFinishFragment", false);
             presentFragment(new CallLogActivity(args));
         });
+        TellomiTabs.appendHideContacts(this, o);
         o.setBlur(true);
         o.translate(0, -dp(4));
         o.setGravity(Gravity.LEFT);
