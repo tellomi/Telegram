@@ -333,6 +333,9 @@ public class SharedConfig {
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
     public static long lastUpdateCheckTime;
+    /** Installed {@code versionCode} recorded the last time an update check was sent. */
+    public static int lastUpdateCheckVersion;
+    public static boolean hasLastUpdateCheckVersion;
 
     public static boolean hasEmailLogin;
 
@@ -488,6 +491,9 @@ public class SharedConfig {
                     editor.remove("appUpdate");
                 }
                 editor.putLong("appUpdateCheckTime", lastUpdateCheckTime);
+                if (hasLastUpdateCheckVersion) {
+                    editor.putInt("appUpdateCheckVersion", lastUpdateCheckVersion);
+                }
 
                 editor.apply();
 
@@ -555,7 +561,11 @@ public class SharedConfig {
             } else {
                 passcodeSalt = new byte[0];
             }
-            lastUpdateCheckTime = preferences.getLong("appUpdateCheckTime", System.currentTimeMillis());
+            hasLastUpdateCheckVersion = preferences.contains("appUpdateCheckVersion");
+            lastUpdateCheckVersion = preferences.getInt("appUpdateCheckVersion", 0);
+            lastUpdateCheckTime = TellomiAppUpdate.lastCheckTimeOrFresh(
+                    preferences.contains("appUpdateCheckTime"),
+                    preferences.getLong("appUpdateCheckTime", 0L));
             try {
                 String update = preferences.getString("appUpdate", null);
                 if (update != null) {
@@ -693,6 +703,16 @@ public class SharedConfig {
 
             configLoaded = true;
         }
+    }
+
+    /** Records the installed version code once a check is sent, so the next launch does not force again. */
+    public static void rememberUpdateCheckVersion(int versionCode) {
+        if (hasLastUpdateCheckVersion && lastUpdateCheckVersion == versionCode) {
+            return;
+        }
+        lastUpdateCheckVersion = versionCode;
+        hasLastUpdateCheckVersion = true;
+        saveConfig();
     }
 
     public static int buildVersion() {
