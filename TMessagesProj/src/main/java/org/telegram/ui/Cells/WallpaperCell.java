@@ -38,6 +38,8 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.TellomiWallpaperCatalog;
+import org.telegram.ui.TellomiWallpaperDraw;
 import org.telegram.ui.WallpapersListActivity;
 
 public class WallpaperCell extends FrameLayout {
@@ -162,7 +164,11 @@ public class WallpaperCell extends FrameLayout {
                 }
             } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
                 WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
-                if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
+                if (wallPaper.builtinId != null) {
+                    imageView.setImageBitmap(null);
+                    imageView.getImageReceiver().setColorFilter(null);
+                    imageView.setBackground(TellomiWallpaperDraw.create(TellomiWallpaperCatalog.byId(wallPaper.builtinId), Theme.isCurrentThemeDark()));
+                } else if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                     imageView.setImageBitmap(null);
                     imageView.getImageReceiver().setColorFilter(null);
                     imageView.setBackgroundColor(wallPaper.color);

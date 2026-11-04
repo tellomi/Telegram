@@ -451,6 +451,7 @@ android {
     sourceSets.tellomi {
         res.srcDirs = ['tellomi/res']
         java.srcDirs = ['tellomi/java']
+        assets.srcDirs = ['tellomi/assets']
     }
     if (findProperty("TELLOMI_PREBUILT_JNI")) {
         sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()

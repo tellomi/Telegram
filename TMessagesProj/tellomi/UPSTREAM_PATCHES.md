@@ -688,3 +688,25 @@ The Discover tab stays on the empty screen until `help.getAppConfig` includes `t
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | After the emoji-blocklist hook, `TellomiDiscoverFlags.capture` reads `tellomi_discover_feed_enabled` and `tellomi_discover_feed_base_url` from the same `help.getAppConfig` object. |
+
+## Chat wallpaper and accent colors
+
+The server `account.getWallPapers` result stays empty. Wallpapers are bundled. The default chat background is a doodle on a gradient (light `#EFE7DD`, dark `#0B141A` to `#16232B`), not a flat color. The wallpaper screen shows those ten built-in backgrounds plus one solid (`#F0F2F5` / `#101418`). Incoming bubbles are `#FFFFFF` / `#202C33`. On a solid wallpaper the bubble draws a 0.5dp shadow and the date chip is a translucent black. Built-in theme accents are the twelve shared hex values, default `#3390EC`. Pattern art is Tabler and Lucide icons plus Pattern Monster dots and Hero Patterns topography. Settings → Open-source licenses names them. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiWallpaperCatalog.java` | New. Color table, the ten wallpapers, the solid preset, bubble colors, and the license text. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiWallpaperDraw.java` | New. Builds the pattern drawable from `tellomi/assets/wallpapers`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLicensesActivity.java` | New. The open-source license page. |
+| `TMessagesProj/tellomi/assets/wallpapers/` | `doodle.png`, `dots.png`, `waves.png`, `WallpaperCatalog.json`, and the license notices. |
+| `TMessagesProj/tellomi/wallpapers/generate_patterns.py` | Regenerates those bitmaps from the named open-source icons. |
+| `TMessagesProj/build.gradle` | The tellomi flavor assets directory is `tellomi/assets`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Default wallpaper loads the doodle. Accent lists are the twelve colors. Incoming and outgoing bubbles follow the catalog. Solid wallpapers use the translucent date chip. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/MessageDrawable.java` | Solid wallpaper bubbles draw the 0.5dp shadow. |
+| `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | Color presets are the one solid. The list starts with the bundled wallpapers. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java` | A bundled row draws its pattern locally. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Preview and save keep a bundled wallpaper's id. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The default theme stub uses the doodle. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | Help section opens the license page. |
+| `TMessagesProj/src/main/res/values/strings.xml` | `TellomiOpenSourceLicenses`. |
+| `TMessagesProj/src/main/res/values-zh/strings.xml` | Same string in Chinese. |

@@ -2488,6 +2488,7 @@
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the <![CDATA[<a href=\"https://tellomi.cn/help/">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://tellomi.cn/help/">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
     <string name="TelegramFAQ">Telegram FAQ</string>
+    <string name="TellomiOpenSourceLicenses">Open-source licenses</string>
     <string name="TelegramFaq">Telegram FAQ</string>
     <string name="TelegramFeatures">Telegram Features</string>
     <string name="TelegramFeaturesUrl">https://tell.cc/TelegramTips</string>
