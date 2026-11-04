@@ -596,6 +596,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         CALLS(TabAnimationType.PAIR, R.drawable.tab_calls, R.drawable.tab_calls_fill),
         CHATS(TabAnimationType.PAIR, R.drawable.tab_chats, R.drawable.tab_chats_fill),
         SETTINGS(TabAnimationType.PAIR, R.drawable.tab_settings, R.drawable.tab_settings_fill),
+        FEED(TabAnimationType.PAIR, R.drawable.tellomi_tab_feed, R.drawable.tellomi_tab_feed_fill),
 
         CHECKLIST(R.raw.tab_checklist, R.raw.tab_checklist_reverse),
         COLORS(R.raw.tab_colors, R.raw.tab_colors_reverse),
@@ -693,6 +694,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public void setText(CharSequence text) {
         textView.setText(text);
+    }
+
+    public void setLabelHorizontalPadding(int px) {
+        textView.setPadding(px, textView.getPaddingTop(), px, textView.getPaddingBottom());
     }
 
 

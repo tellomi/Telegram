@@ -103,4 +103,6 @@
     <string name="TellomiDeleteAccountConfirmWait">此账号已开启两步验证，现在还不能删除。请在 %1$s 后再试，或输入正确的两步验证密码。</string>
     <string name="TellomiDeleteAccountFloodWait">操作太频繁，请在 %1$s 后再试。</string>
     <string name="TellomiDeleteAccountFailed">暂时无法删除账号，请稍后再试。</string>
+    <string name="TellomiTabFeed">发现</string>
+    <string name="TellomiFeedEmptyMessage">还没有内容</string>
 </resources>
