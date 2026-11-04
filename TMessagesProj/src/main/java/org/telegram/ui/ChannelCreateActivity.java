@@ -53,6 +53,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.TellomiFeatures;
+import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -1297,7 +1298,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             }
         }
-        if (name == null || name.length() < 3) {
+        if (TellomiUsername.isTooShort(name)) {
             checkTextView.setText(LocaleController.getString(R.string.LinkInvalidShort));
             checkTextView.setTag(Theme.key_text_RedRegular);
             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
@@ -1327,11 +1328,11 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
                         lastNameAvailable = true;
                     } else {
-                        if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() < 3) {
+                        if (error != null && "USERNAME_INVALID".equals(error.text) && TellomiUsername.isTooShort(req.username)) {
                             checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                            if (req.username.length() < 3) {
+                            if (TellomiUsername.isTooShort(req.username)) {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                             } else {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));

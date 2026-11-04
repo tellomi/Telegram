@@ -253,11 +253,11 @@
     <string name="UsernameInUse">Este nombre de usuario ya está ocupado.</string>
     <string name="UsernameInUsePurchase">Este enlace ya está ocupado.\nSin embargo, está disponible para su compra. **Saber más…**</string>
     <string name="UsernameInvalid">Este nombre de usuario no es válido.</string>
-    <string name="UsernameInvalidShort">Un nombre de usuario debe tener al menos 3 caracteres.</string>
-    <string name="UsernameInvalidShortPurchase">Un nombre de usuario básico debe tener al menos 3 caracteres.\nSin embargo, los nombres de usuario cortos y coleccionables están disponibles para su compra, incluido este. **Saber más…**</string>
+    <string name="UsernameInvalidShort">Un nombre de usuario debe tener al menos 4 caracteres.</string>
+    <string name="UsernameInvalidShortPurchase">Un nombre de usuario básico debe tener al menos 4 caracteres.\nSin embargo, los nombres de usuario cortos y coleccionables están disponibles para su compra, incluido este. **Saber más…**</string>
     <string name="UsernameInvalidLong">Un nombre de usuario no puede exceder los 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Los nombres de usuario no pueden comenzar con un número.</string>
-    <string name="UsernameHelp">Puedes elegir un nombre de usuario en **Telegram**. Los usuarios podrán encontrarte por ese nombre y contactarte sin saber tu número de teléfono.\n\nPuedes usar **a–z**, **0–9** y guiones bajos.\nLa longitud mínima es de **3** caracteres.</string>
+    <string name="UsernameHelp">Puedes elegir un nombre de usuario en **Telegram**. Los usuarios podrán encontrarte por ese nombre y contactarte sin saber tu número de teléfono.\n\nPuedes usar **a–z**, **0–9** y guiones bajos.\nLa longitud mínima es de **4** caracteres.</string>
     <string name="UsernameHelpLink">Este enlace abre un chat contigo:\n%1$s</string>
     <string name="UsernameChecking">Verificando nombre de usuario...</string>
     <string name="UsernameAvailable">%1$s está disponible.</string>

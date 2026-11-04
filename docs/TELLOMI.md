@@ -207,7 +207,7 @@ These were left in place on purpose. They are either in-app deep links (resolved
 
 Bundled `strings.xml` copies show `tell.cc` for public links and `tellomi.cn` for help, privacy, terms, download, and support. `TellomiBrand.rewrite` applies the same mapping to any string that still contains the old hosts, including cloud langpack text. Link parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Internal `tg://telegram.org` rewrites are a URI-parser stand-in, not a page the user opens. The YouTube embed referer `https://messenger.telegram.org/` is unchanged.
 
-Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 3 characters. The English and bundled locale strings that said “at least 5 characters” now say 3.
+Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 4 characters (`TellomiUsername.MIN_LENGTH`, teamgram #182). The English and bundled locale strings that said “at least 5 characters” now say 4.
 
 ### Emoji blocklist
 

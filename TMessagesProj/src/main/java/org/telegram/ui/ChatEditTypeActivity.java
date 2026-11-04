@@ -49,6 +49,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.TellomiFeatures;
+import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
@@ -1489,7 +1490,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 }
             }
         }
-        if (name == null || name.length() < 3) {
+        if (TellomiUsername.isTooShort(name)) {
             if (isChannel) {
                 checkTextView.setText(LocaleController.getString(R.string.LinkInvalidShort));
             } else {
@@ -1519,11 +1520,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                         checkTextView.setTextColorByKey(Theme.key_windowBackgroundWhiteGreenText);
                         lastNameAvailable = true;
                     } else {
-                        if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() < 3) {
+                        if (error != null && "USERNAME_INVALID".equals(error.text) && TellomiUsername.isTooShort(req.username)) {
                             checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                            if (req.username.length() < 3) {
+                            if (TellomiUsername.isTooShort(req.username)) {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                             } else {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));
