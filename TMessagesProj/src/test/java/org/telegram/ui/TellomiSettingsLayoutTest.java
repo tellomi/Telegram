@@ -159,6 +159,7 @@ public class TellomiSettingsLayoutTest {
     @Test
     public void helpUrlUsesAppConfigOrTheHelpCenter() {
         assertEquals("https://tellomi.cn/help", TellomiSettingsModel.DEFAULT_HELP_URL);
+        assertFalse(TellomiSettingsModel.DEFAULT_HELP_URL.endsWith("/"));
         assertEquals("tellomi_help_url", TellomiSettingsModel.HELP_CONFIG_KEY);
         assertEquals("https://tellomi.cn/help", TellomiSettingsModel.normalizeHelpUrl(null));
         assertEquals("https://tellomi.cn/help", TellomiSettingsModel.normalizeHelpUrl("  "));
@@ -217,12 +218,19 @@ public class TellomiSettingsLayoutTest {
         String links = read("TMessagesProj/src/main/java/org/telegram/ui/LinkManager.java");
         String login = read("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java");
         String layout = read("TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java");
+        String buildVars = read("TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java");
+        String help = read("TMessagesProj/tellomi/java/org/telegram/messenger/TellomiHelp.java");
         assertTrue(settings.contains("TellomiSettingsLayout.arrange(items)"));
         assertTrue(settings.contains("TellomiSettingsLayout.applyCard(currentAccount, user, titleView, subtitleView, topView)"));
         assertTrue(settings.contains("TellomiSettingsLayout.section(item.id, this::openTellomiSettingsRow)"));
         assertTrue(settings.contains("TellomiSettingsLayout.helpUrl(currentAccount)"));
-        assertTrue(config.contains("ofString(\"tellomi_help_url\", \"https://tellomi.cn/help\")"));
+        assertTrue(config.contains("ofString(\"tellomi_help_url\", TellomiHelp.URL)"));
+        assertTrue(buildVars.contains("HELP_URL = TellomiHelp.URL"));
+        assertTrue(help.contains("https://tellomi.cn/help"));
+        assertFalse(help.contains("https://tellomi.cn/help/"));
         assertTrue(profile.contains("TellomiSettingsLayout.helpUrl(currentAccount)"));
+        assertTrue(profile.contains("req2.url = TellomiSettingsLayout.helpUrl(currentAccount)"));
+        assertFalse(profile.contains("TelegramFaqUrl"));
         assertTrue(links.contains("TellomiSettingsLayout.helpUrl(currentAccount)"));
         assertFalse(login.contains("TellomiSettingsLayout"));
         assertFalse(login.contains("TellomiSettingsModel"));

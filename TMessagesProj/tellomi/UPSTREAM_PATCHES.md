@@ -346,7 +346,7 @@ The top-right Help control on the login screens is a language button. It shows t
 
 `values-zh-rTW` is not added. `localeFilters` is `zz`, so a region qualifier never ships in the APK. `LocalizationUtils` only maps language tags that have no hyphen, and both Chinese rows use `localization_zh.bin` (simplified). Choosing 繁體中文 stores `zh_hant` and the button shows 繁體中文. The sentences stay on that simplified pack, which is the same fallback this tree already uses when the server has no `zh-hant` langpack.
 
-Help is no longer the top-right control. `收不到验证码？` opens a card whose Help row opens `BuildVars.HELP_URL` (`https://tellomi.cn/help/`). The email code screen has the same row. An app code (`auth.sentCodeTypeApp`) no longer says the SMS was sent. The line is「验证码已发送到你在其他设备上登录的 Tellomi」, and「改用短信接收」on that screen calls `auth.resendCode`. SMS, call, and email keep their own lines.
+Help is no longer the top-right control. `收不到验证码？` opens a card whose Help row opens `BuildVars.HELP_URL` (`https://tellomi.cn/help`, no trailing slash). The email code screen has the same row. An app code (`auth.sentCodeTypeApp`) no longer says the SMS was sent. The line is「验证码已发送到你在其他设备上登录的 Tellomi」, and「改用短信接收」on that screen calls `auth.resendCode`. SMS, call, and email keep their own lines.
 
 Signing in an account that is already on the device used to `ConnectionsManager.cleanup(true)` on the new authorization and leave it on the server. `auth.logOut` is sent on that session first. The local keys are reset when that RPC finishes.
 
@@ -803,17 +803,19 @@ The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds t
 
 The top block is a card. It shows the display name, and when the account has them, the phone, the email, and the public username. Phone and email are both shown. The email is the saved sign-in address, not the masked switcher label.
 
-Help Center, the old FAQ row, `tg://settings/faq`, and `tg://settings/features` open `help.getAppConfig` `tellomi_help_url`. A missing, blank, or non-http value is `https://tellomi.cn/help`. Login and the session are not involved.
+Help Center, the old FAQ row, the settings-search FAQ webpage (`messages.getWebPage`), `tg://settings/faq`, and `tg://settings/features` open `help.getAppConfig` `tellomi_help_url`. A missing, blank, or non-http value is `TellomiHelp.URL` (`https://tellomi.cn/help`, no trailing slash). `BuildVars.HELP_URL` is that same constant, so login opens it too. The search index does not read `TelegramFaqUrl`. Login and the session are otherwise unchanged.
 
 New lookup keys use only letters, digits, `.`, and `_`: `Tellomi.Settings.Group.Account`, `Tellomi.Settings.Group.General`, `Tellomi.Settings.Group.Support`, `Tellomi.Settings.Help`, `Tellomi.Settings.Card.Phone`, `Tellomi.Settings.Card.Email`, `Tellomi.Settings.Card.Username`.
 
 | File | Change |
 | --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiHelp.java` | The one help-center URL, `https://tellomi.cn/help`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java` | `HELP_URL` is `TellomiHelp.URL`. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsModel.java` | Group order, the card lines, and the help URL. No Android types. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java` | Draws that model: the card (12dp side inset once the header is attached), the three rows (General uses `msg_settings`), and the secondary pages. The update row stays on the home list. |
 | `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `arrange` after the list is built, `applyCard` on the header, the group tap, and the two help opens. The header is 36dp taller so the card can show three lines. |
-| `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `tellomi_help_url`, default `https://tellomi.cn/help`. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The FAQ row and the settings search hit use the same help URL. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `tellomi_help_url`, default `TellomiHelp.URL`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The FAQ row, the settings search hit, and the FAQ webpage index use the same help URL. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LinkManager.java` | `tg://settings/faq` and `tg://settings/features` use the same help URL. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The seven `Tellomi.Settings.*` keys. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |

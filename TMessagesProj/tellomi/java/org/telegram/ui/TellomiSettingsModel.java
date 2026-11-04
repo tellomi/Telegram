@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.telegram.messenger.TellomiHelp;
+
 /**
  * Settings groups for M1, shared with the iOS layout of the same name.
  * No Android types: the screen in {@link TellomiSettingsLayout} only draws this.
@@ -13,7 +15,7 @@ import java.util.Map;
 public final class TellomiSettingsModel {
 
     public static final String HELP_CONFIG_KEY = "tellomi_help_url";
-    public static final String DEFAULT_HELP_URL = "https://tellomi.cn/help";
+    public static final String DEFAULT_HELP_URL = TellomiHelp.URL;
 
     public static final int ROW_ACCOUNT = 50;
     public static final int ROW_GENERAL = 51;
