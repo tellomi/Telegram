@@ -1809,27 +1809,31 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     /**
-     * Persists the built-in language and redraws login. reloadInterface does not
-     * rebuild the top fragment, so this screen is rebuilt here. Typed phone,
-     * email, and code stay in {@link #tellomiLanguageRestore}.
+     * Persists the chosen language and redraws login once the strings are in
+     * memory. Built-in rows other than English and Chinese download
+     * {@code langpack.getLangPack} before that. reloadInterface does not rebuild
+     * this top fragment, so the redraw is here. Typed phone, email, and code
+     * stay in {@link #tellomiLanguageRestore}.
      */
     private void tellomiApplyInterfaceLanguage(LocaleController.LocaleInfo info) {
         if (info == null || TellomiLanguageSheet.sameLanguage(info, LocaleController.getInstance().getCurrentLocaleInfo())) {
             return;
         }
-        tellomiLanguageRestore = tellomiCaptureLoginState();
-        if (views != null) {
-            for (int a = 0; a < views.length; a++) {
-                if (views[a] != null) {
-                    views[a].onDestroyActivity();
+        LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(() -> {
+            if (getParentLayout() == null) {
+                return;
+            }
+            tellomiLanguageRestore = tellomiCaptureLoginState();
+            if (views != null) {
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] != null) {
+                        views[a].onDestroyActivity();
+                    }
                 }
             }
-        }
-        LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, null);
-        TellomiLanguageAlert.rememberUserChoice(info);
-        if (getParentLayout() != null) {
             getParentLayout().rebuildAllFragmentViews(true, true);
-        }
+        }));
+        TellomiLanguageAlert.rememberUserChoice(info);
     }
 
     /**
