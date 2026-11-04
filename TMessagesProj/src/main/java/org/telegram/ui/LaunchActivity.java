@@ -6159,9 +6159,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             });
             return;
         }
-        if (!force && Math.abs(System.currentTimeMillis() - SharedConfig.lastUpdateCheckTime) < MessagesController.getInstance(0).updateCheckDelay * 1000) {
+        final int installedVersion = SharedConfig.buildVersion();
+        if (!force && TellomiAppUpdate.shouldSkipAutomaticCheck(
+                System.currentTimeMillis(),
+                SharedConfig.lastUpdateCheckTime,
+                MessagesController.getInstance(0).updateCheckDelay,
+                installedVersion,
+                SharedConfig.hasLastUpdateCheckVersion,
+                SharedConfig.lastUpdateCheckVersion)) {
             return;
         }
+        SharedConfig.rememberUpdateCheckVersion(installedVersion);
         final TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
         try {
             req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
