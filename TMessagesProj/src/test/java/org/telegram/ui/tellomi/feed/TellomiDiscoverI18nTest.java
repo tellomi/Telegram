@@ -68,12 +68,14 @@ public class TellomiDiscoverI18nTest {
             assertEquals(row[1], hans.get(name));
             assertEquals(row[1], cn.get(name));
         }
-        assertEquals("Tellomi.Discover.City.cn_hong-kong", TellomiDiscoverCity.displayKey("cn:hong-kong"));
-        assertEquals("Tellomi.Discover.City.us_new-york", TellomiDiscoverCity.displayKey("us:new-york"));
-        assertEquals("Tellomi.Discover.City.us_los-angeles", TellomiDiscoverCity.displayKey("us:los-angeles"));
-        assertEquals("Tellomi.Discover.City.us_san-francisco", TellomiDiscoverCity.displayKey("us:san-francisco"));
-        assertEquals("Tellomi_Discover_City_cn_hong_kong", TellomiPack.resourceName("Tellomi.Discover.City.cn_hong-kong"));
-        assertEquals("Tellomi_Discover_City_us_new_york", TellomiPack.resourceName("Tellomi.Discover.City.us_new-york"));
+        assertEquals("Tellomi.Discover.City.cn_hong_kong", TellomiDiscoverCity.displayKey("cn:hong-kong"));
+        assertEquals("Tellomi.Discover.City.us_new_york", TellomiDiscoverCity.displayKey("us:new-york"));
+        assertEquals("Tellomi.Discover.City.us_los_angeles", TellomiDiscoverCity.displayKey("us:los-angeles"));
+        assertEquals("Tellomi.Discover.City.us_san_francisco", TellomiDiscoverCity.displayKey("us:san-francisco"));
+        assertEquals("Tellomi_Discover_City_cn_hong_kong", TellomiPack.resourceName("Tellomi.Discover.City.cn_hong_kong"));
+        assertEquals("Tellomi_Discover_City_us_new_york", TellomiPack.resourceName("Tellomi.Discover.City.us_new_york"));
+        assertEquals("Tellomi_Discover_City_us_los_angeles", TellomiPack.resourceName("Tellomi.Discover.City.us_los_angeles"));
+        assertEquals("Tellomi_Discover_City_us_san_francisco", TellomiPack.resourceName("Tellomi.Discover.City.us_san_francisco"));
         assertNull(TellomiPack.find("Tellomi.Discover.Tab.Feed"));
         assertNull(TellomiPack.find("Tellomi.Discover.LegacyEmptyTitle"));
         assertNull(TellomiPack.find("Tellomi.Signup.AvatarFailed"));
