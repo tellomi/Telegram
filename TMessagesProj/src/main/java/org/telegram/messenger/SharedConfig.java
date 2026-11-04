@@ -332,6 +332,8 @@ public class SharedConfig {
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
+    /** Remote {@code versionCode} of {@link #pendingAppUpdate}. Zero when the offer came from a version string only. */
+    public static int pendingAppUpdateVersionCode;
     public static long lastUpdateCheckTime;
     /** Installed {@code versionCode} recorded the last time an update check was sent. */
     public static int lastUpdateCheckVersion;
@@ -483,12 +485,19 @@ public class SharedConfig {
                         String str = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
                         editor.putString("appUpdate", str);
                         editor.putInt("appUpdateBuild", pendingAppUpdateBuildVersion);
+                        if (pendingAppUpdateVersionCode > 0) {
+                            editor.putInt("appUpdateVersionCode", pendingAppUpdateVersionCode);
+                        } else {
+                            editor.remove("appUpdateVersionCode");
+                        }
                         data.cleanup();
                     } catch (Exception ignore) {
 
                     }
                 } else {
                     editor.remove("appUpdate");
+                    editor.remove("appUpdateVersionCode");
+                    pendingAppUpdateVersionCode = 0;
                 }
                 editor.putLong("appUpdateCheckTime", lastUpdateCheckTime);
                 if (hasLastUpdateCheckVersion) {
@@ -563,6 +572,7 @@ public class SharedConfig {
             }
             hasLastUpdateCheckVersion = preferences.contains("appUpdateCheckVersion");
             lastUpdateCheckVersion = preferences.getInt("appUpdateCheckVersion", 0);
+            pendingAppUpdateVersionCode = preferences.getInt("appUpdateVersionCode", 0);
             lastUpdateCheckTime = TellomiAppUpdate.lastCheckTimeOrFresh(
                     preferences.contains("appUpdateCheckTime"),
                     preferences.getLong("appUpdateCheckTime", 0L));
@@ -594,8 +604,15 @@ public class SharedConfig {
                     if (updateVersionString == null) {
                         updateVersionString = BuildVars.BUILD_VERSION_STRING;
                     }
-                    if (pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0 || BuildVars.DEBUG_PRIVATE_VERSION) {
+                    boolean dropPending;
+                    if (pendingAppUpdateVersionCode > 0) {
+                        dropPending = !TellomiReleaseUpdate.keepPendingForVersionCode(updateVersion, pendingAppUpdateVersionCode, pendingAppUpdateBuildVersion) || BuildVars.DEBUG_PRIVATE_VERSION;
+                    } else {
+                        dropPending = pendingAppUpdateBuildVersion != updateVersion || pendingAppUpdate.version == null || updateVersionString.compareTo(pendingAppUpdate.version) >= 0 || BuildVars.DEBUG_PRIVATE_VERSION;
+                    }
+                    if (dropPending) {
                         pendingAppUpdate = null;
+                        pendingAppUpdateVersionCode = 0;
                         AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
                     }
                 }
@@ -813,6 +830,15 @@ public class SharedConfig {
     }
 
     public static boolean setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update) {
+        return setNewAppVersionAvailable(update, 0);
+    }
+
+    /**
+     * {@code remoteVersionCode} above the installed version code is a newer build,
+     * including when both sides use the same {@code versionName}. A zero code keeps
+     * the version-string comparison.
+     */
+    public static boolean setNewAppVersionAvailable(TLRPC.TL_help_appUpdate update, int remoteVersionCode) {
         String updateVersionString = null;
         int versionCode = 0;
         try {
@@ -828,11 +854,18 @@ public class SharedConfig {
         if (updateVersionString == null) {
             updateVersionString = BuildVars.BUILD_VERSION_STRING;
         }
-        if (update.version == null || versionBiggerOrEqual(updateVersionString, update.version)) {
+        boolean newer;
+        if (remoteVersionCode > 0 && versionCode > 0) {
+            newer = remoteVersionCode > versionCode;
+        } else {
+            newer = update != null && update.version != null && !versionBiggerOrEqual(updateVersionString, update.version);
+        }
+        if (!newer) {
             return false;
         }
         pendingAppUpdate = update;
         pendingAppUpdateBuildVersion = versionCode;
+        pendingAppUpdateVersionCode = remoteVersionCode > 0 ? remoteVersionCode : 0;
         saveConfig();
         return true;
     }

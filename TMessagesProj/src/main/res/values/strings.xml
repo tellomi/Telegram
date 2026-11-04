@@ -3917,6 +3917,7 @@
     <string name="ActionChangeCreator">un1 has transferred ownership of the group to un2.</string>
     <string name="UnsupportedMedia2">This message is not supported on your version of Telegram. Please update to the latest version.</string>
     <string name="YourVersionIsLatest">Your version is up to date.</string>
+    <string name="TellomiCheckForUpdatesFailed">Could not check for updates. Try again.</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLivePhoto">Motion Photo</string>

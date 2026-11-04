@@ -1,8 +1,11 @@
 package org.telegram.messenger;
 
+import java.util.Locale;
+
 /**
- * Gates for the shipped App module's {@code help.getAppUpdate} flow.
- * Standalone and beta builds keep their existing checks. The App module
+ * Gates for the shipped App module's update check.
+ * That module reads the release feeds in {@link TellomiReleaseUpdate}.
+ * Standalone and beta builds keep {@code help.getAppUpdate}. The App module
  * opts in with {@link ApplicationLoader#supportsInAppUpdates()} and still
  * honors {@code TELLOMI_CHECK_UPDATES} so {@code -PTELLOMI_CHECK_UPDATES=false}
  * skips the automatic request.
@@ -91,5 +94,22 @@ public final class TellomiAppUpdate {
             return INSTALL_APK;
         }
         return NONE;
+    }
+
+    /** A direct APK link is handed to the system browser so it can download and install. */
+    public static boolean preferSystemBrowser(String url) {
+        if (url == null) {
+            return false;
+        }
+        String path = url.trim().toLowerCase(Locale.US);
+        int query = path.indexOf('?');
+        if (query >= 0) {
+            path = path.substring(0, query);
+        }
+        int fragment = path.indexOf('#');
+        if (fragment >= 0) {
+            path = path.substring(0, fragment);
+        }
+        return path.endsWith(".apk");
     }
 }

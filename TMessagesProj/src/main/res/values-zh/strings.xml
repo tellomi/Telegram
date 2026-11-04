@@ -3876,6 +3876,7 @@
     <string name="ActionChangeCreator">un1 已将此群组的所有权转让给 un2。</string>
     <string name="UnsupportedMedia2">您当前的 Telegram 版本不支持此消息。请更新至最新版本。</string>
     <string name="YourVersionIsLatest">您的版本是最新的。</string>
+    <string name="TellomiCheckForUpdatesFailed">暂时无法检查更新，请稍后再试。</string>
     <string name="AttachPhoto">图片</string>
     <string name="AttachVideo">视频</string>
     <string name="AttachLivePhoto">动态照片</string>
