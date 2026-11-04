@@ -544,7 +544,7 @@ The voice-to-text button is still the upstream 20-frame trim morph (`transcribe_
 
 `:TMessagesProj_App:assembleAfatRelease` is the APK that ships. Its `ApplicationLoaderImpl` only used to override `onGetApplicationId`, so `isStandalone()` stayed false and `LaunchActivity.checkAppUpdate` returned before `help.getAppUpdate`. Flipping `isStandalone()` would also change billing, premium links, and the SMS-job build, so the App module overrides `isInAppUpdatesEnabled()` instead.
 
-`TELLOMI_CHECK_UPDATES` was false, and `checkAppUpdate` returns before the request when that flag is off and the call is not forced. It is now true. `-PTELLOMI_CHECK_UPDATES=false` still skips the automatic check. The 24-hour `updateCheckDelay` is unchanged.
+`TELLOMI_CHECK_UPDATES` was false, and `checkAppUpdate` returns before the request when that flag is off and the call is not forced. It is now true. `-PTELLOMI_CHECK_UPDATES=false` still skips the automatic check. The delay default is changed in "Faster in-app update checks" below.
 
 A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and white card, close control, swipe-to-update. Day is a gray card, black type, white track, black thumb. Night keeps the same layout with the dialog background and inverted ink. A completed swipe opens `appUpdate.url` through `Browser.openUrl`. A document with an empty url uses `TellomiApkInstall`. Neither path opens a store listing. Dismissing clears that pending soft update so a later check can show it again. Force updates stay on `BlockingUpdateView`. That button prefers `url`, then the APK when this module can install it. The button label contrasts with `featuredStickers_addButton` so a white night button does not keep white type.
 
@@ -747,3 +747,18 @@ Reverted to the upstream drawable, because a MingCute stand-in lost the drawing:
 | `TMessagesProj/tellomi/icons/test_icon_meanings.py` | Single check, distinct pairs, no overflow fallback, white Gram mark. |
 | `TMessagesProj/tellomi/icons/test_settings_rows.py` | Business is not a flavor gear. Gram is the Tellomi mark. |
 | `TMessagesProj/tellomi/res/` | The redrawn overlays. Reverted names are deleted here so `src/main` wins. |
+
+## Faster in-app update checks
+
+`checkAppUpdate(false)` still runs from `LaunchActivity` when the UI returns to the foreground. Three things kept that request from ever showing the popup. A missing `appUpdateCheckTime` used `System.currentTimeMillis()` as the last check, so a fresh install (and any install that had never finished a check) started a new 24-hour window on every cold start. A finished check inside that window was skipped, including the first launch after an upgrade. The fallback delay was 24 hours.
+
+A missing check time is now 0, so the next resume checks. The installed `versionCode` is stored in `appUpdateCheckVersion` when a check is sent. No stored code, or a code that differs from this run, skips the delay once. The next launch of the same code uses the delay again. The fallback is 6 hours. `help.getAppConfig` `inapp_update_check_delay` still writes `updateCheckDelay` and that saved value wins. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiAppUpdate.java` | Fresh-install check time, 6-hour default, version-change force, and the skip decision. |
+| `TMessagesProj/src/main/java/.../SharedConfig.java` | Load the check time through that helper. Remember the version code after a check is sent. |
+| `TMessagesProj/src/main/java/.../MessagesController.java` | `updateCheckDelay` falls back to 6 hours. The `inapp_update_check_delay` write is unchanged. |
+| `TMessagesProj/src/main/java/.../LaunchActivity.java` | The foreground check uses the skip helper, then records the version code. |
+| `TMessagesProj/src/test/java/.../TellomiAppUpdateTest.java` | Fresh install, upgrade, and the 6-hour / app-config delay. |
+| `docs/TELLOMI.md` | The in-app update section matches this schedule. |
