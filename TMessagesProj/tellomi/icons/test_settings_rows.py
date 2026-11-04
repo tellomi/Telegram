@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Lock the main settings-row icons to the iOS MingCute mapping.
 
-The substring rule in generate_icons.py maps every name containing
-"settings" to settings-3. These rows must stay on the glyphs in
-tellomi/Telegram-iOS Tellomi/Icons/mapping.csv, and the seventeen
-flavor drawables must not be copies of each other.
+The old substring rule mapped every name containing "settings" to one
+gear. These rows stay on the iOS glyphs, except Business, which keeps
+the upstream Android briefcase. The flavor drawables must not be copies
+of each other.
 
     python3 TMessagesProj/tellomi/icons/test_settings_rows.py
 """
@@ -22,7 +22,6 @@ import generate_icons
 EXPECTED = (
     ("settings_account", "user-3", "line", "Profile"),
     ("settings_ask", "message-circle-question-mark", "line", "Support"),
-    ("settings_business", "announcement", "line", "Business"),
     ("settings_chat", "chat-1", "line", "Chat"),
     ("settings_data", "chart-bar", "line", "Data"),
     ("settings_devices", "cellphone", "line", "Devices"),
@@ -58,14 +57,15 @@ class SettingsRowIconsTest(unittest.TestCase):
             self.assertNotEqual((icon, style), ("settings-3", "line"), name)
         # The substring rule is still there. Names outside this list keep it.
         self.assertEqual(generate_icons.match("msg_settings_old"), ("settings-3", "line"))
-        self.assertIsNone(generate_icons.match("settings_gram_24"))
+        self.assertEqual(generate_icons.match("settings_gram_24"), ("tellomi-mark", "line"))
+        self.assertIsNone(generate_icons.match("settings_business"))
 
     def test_mapping_csv_lists_each_row(self):
         rows = {}
         with MAPPING.open(newline="") as f:
             for row in csv.DictReader(f):
                 rows[row["telegram_resource"]] = row
-        self.assertEqual(rows["settings_arrow"]["mingcute_name"], "arrow-right")
+        self.assertEqual(rows["settings_arrow"]["mingcute_name"], "chevron-right")
         for name, icon, style, _ios in EXPECTED:
             self.assertIn(name, rows, name)
             self.assertEqual(rows[name]["mingcute_name"], icon, name)
@@ -93,6 +93,7 @@ class SettingsRowIconsTest(unittest.TestCase):
         self.assertNotEqual(bodies["settings_premium"], bodies["settings_stars"])
         self.assertFalse((DRAWABLE / "settings_wallet.xml").exists())
         self.assertFalse((DRAWABLE / "settings_wallet_dark.xml").exists())
+        self.assertFalse((DRAWABLE / "settings_business.xml").exists())
 
 
 if __name__ == "__main__":
