@@ -789,7 +789,53 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(SettingCell.Factory.of(22, 0xFFF45255, 0xFFDF3955, 0, getString(R.string.DebugClearLogs)));
         }
 
+        if (TellomiSettingsUpdate.rowVisible()) {
+            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
+                items.add(UItem.asShadow(null));
+            }
+            items.add(SettingCell.Factory.of(TellomiSettingsUpdate.ROW_ID, 0, 0, 0, getString(R.string.TellomiCheckForUpdates)));
+        }
         items.add(UItem.asCustomShadow(versionView));
+    }
+
+    private void checkForAppUpdate() {
+        Activity activity = getParentActivity();
+        if (!(activity instanceof LaunchActivity)) {
+            return;
+        }
+        Browser.Progress progress = TellomiSettingsUpdate.attachProgressOnManualCheck() ? newManualUpdateProgress(activity) : null;
+        ((LaunchActivity) activity).checkAppUpdate(true, progress);
+    }
+
+    private Browser.Progress newManualUpdateProgress(Activity activity) {
+        final AlertDialog spinner = new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER);
+        spinner.setCanCancel(true);
+        final boolean[] closed = new boolean[]{false};
+        final Browser.Progress[] holder = new Browser.Progress[1];
+        holder[0] = new Browser.Progress(() -> {
+            if (activity.isFinishing() || closed[0]) {
+                return;
+            }
+            try {
+                spinner.show();
+            } catch (Exception ignored) {
+            }
+        }, () -> {
+            if (closed[0]) {
+                return;
+            }
+            closed[0] = true;
+            try {
+                spinner.dismiss();
+            } catch (Exception ignored) {
+            }
+        });
+        spinner.setOnCancelListener(dialog -> {
+            if (!closed[0] && holder[0] != null) {
+                holder[0].cancel();
+            }
+        });
+        return holder[0];
     }
 
     private void presentSettingFragment(BaseFragment fragment) {
@@ -950,6 +996,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new AudioRecorderSettingsActivity());
                 break;
             }
+            case TellomiSettingsUpdate.ROW_ID:
+                checkForAppUpdate();
+                break;
         }
     }
 
@@ -1504,7 +1553,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                 getString(R.string.DebugMenuCallSettings),
                 null,
-                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                TellomiSettingsUpdate.debugMenuCheckVisible(BuildVars.DEBUG_PRIVATE_VERSION, ApplicationLoader.isStandaloneBuild(), ApplicationLoader.isBetaBuild()) ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
@@ -1614,7 +1663,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (which == 8) { // ?
                 SharedConfig.toggleRoundCamera16to9();
             } else if (which == 9) { // Check app update
-                ((LaunchActivity) getParentActivity()).checkAppUpdate(true, null);
+                checkForAppUpdate();
             } else if (which == 10) { // Read all chats
                 getMessagesStorage().readAllDialogs(-1);
             } else if (which == 11) { // Voip audio effects

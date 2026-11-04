@@ -681,6 +681,19 @@ New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It p
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. The live feed (below) replaces that screen only when `tellomi_discover_feed_enabled` is on. |
 
+## Check for updates on the settings screen
+
+A normal account could only start a check from the debug menu (`SettingsActivity` item index 9), and that item is hidden unless the build is standalone, beta, or a private debug build. The menu also passed a null progress, so a response with no newer build said nothing.
+
+Settings now has a row directly above the version footer. It is shown for every account. The tap calls `LaunchActivity.checkAppUpdate(true, progress)`. The request, the soft-update popup, and the force-update screen are unchanged. Progress is a spinner the user can cancel. When the response is not a newer build, the existing bulletin uses `YourVersionIsLatest`: "Already the latest version" / "已是最新版本". The debug menu uses the same tap.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsUpdate.java` | New. The row stays visible. The debug-menu item stays gated. The tap attaches progress. English and Chinese copy. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | The row above the version. Both taps call `checkAppUpdate(true, progress)`. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | `TellomiCheckForUpdates`. `YourVersionIsLatest` overlay. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSettingsUpdateTest.java` | Row visibility, copy, and the existing `help.getAppUpdate` call. |
+
 ## Discover feed client (M3 / C-M3b)
 
 The Discover tab stays on the empty screen until `help.getAppConfig` includes `tellomi_discover_feed_enabled`. A missing key is off, including after the key was previously on. An `http` base URL does not turn the client on. While the flag is off, or the account is logged out, the client does not call `discover.getEngineCredential` and does not open an engine URL. The credential is teamgram's `discover.getEngineCredential` (the Signal-Server `GET /v1/tellomi/feed/auth` note in the engine doc is stale). `discover.getAudienceToken` supplies `audience.audience_token` for include and exclude. Tabs come from `GET /v1/feed/config`; an unknown name is ignored. Nearby is `GET /v1/feed/nearby?city=`. The city code is `<iso>:<slug>`. Hong Kong, Macau, and Taiwan use the `cn:` prefix. Only `Address.getLocality()` is kept; `Geocoder` is the lookup when Play services are absent, and a failure stays on the manual list. Location is requested the first time the nearby tab is opened with no city, and only at coarse accuracy. Visibility is `StoryPrivacyBottomSheet`. Login and the session are untouched.
