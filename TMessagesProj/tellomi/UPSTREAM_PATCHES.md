@@ -618,15 +618,19 @@ Official Telegram (custom backend off) still replaces all four families, includi
 
 ## Settings row icons
 
-The MingCute pass matched the substring `settings` to `settings-3`, so the main settings rows all drew one gear. Those rows are MingCute glyphs again, the same meanings as iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`). The art stays white on the gray plate. `src/main` vectors are unchanged; the `tellomi` flavor overlays them. `settings_arrow` and `settings_gram_24` are unchanged. `settings_wallet` stays the colored upstream vector.
+The MingCute pass matched the substring `settings` to `settings-3`, so the main settings rows all drew one gear. Those rows now use one glyph each, the same meanings as iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`). Stars is the iOS semantic coin, not a MingCute star. The art stays white on the gray plate. `src/main` vectors are unchanged; the `tellomi` flavor overlays them. `settings_arrow` and `settings_gram_24` are unchanged. `settings_wallet` stays the colored upstream vector.
 
-Stars uses the filled star. iOS draws Premium and Stars from the same line star; the fill keeps that glyph and the two files are not copies. Language is `globe` (`Item List/Icons/Language`), not `translate` (`Item List/Icons/Translation`). Privacy Policy has no iOS row; it uses the shield, distinct from Privacy (`lock`).
+Language is `globe` (`Item List/Icons/Language`), not `translate` (`Item List/Icons/Translation`). Privacy Policy has no iOS row; it uses the shield, distinct from Privacy (`lock`). iOS Proxy is `semantic/proxy` and is not this row.
+
+M6 reads iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`, tellomi/Telegram-iOS @ `6966e7ce`). Three rows still used the previous glyphs: Data is `cylinder`, Devices is `device`, Stars is `semantic/star-coin`. Premium stays the line `star`. The star sits in the coin through the same nested-svg viewport as iOS (`x=4.4`, `y=4.4`, `15.2` inside viewBox `24`). `settings_business` stays the upstream briefcase. `settings_arrow` and `settings_gram_24` are unchanged. No settings-screen Java.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Flavor vectors. One MingCute glyph each. |
-| `TMessagesProj/tellomi/icons/generate_icons.py` | `SETTINGS_ROWS` wins over the `settings` substring rule. |
-| `TMessagesProj/tellomi/icons/mapping.csv` | Those rows. |
+| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Flavor vectors. One glyph each. Data, Devices, and Stars were regenerated for M6. |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | `SETTINGS_ROWS` wins over the `settings` substring rule. A nested svg viewport becomes a vector group. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | Those rows. Data, Devices, and Stars follow the current iOS names. |
+| `TMessagesProj/tellomi/icons/mingcute/svg/line/cylinder.svg` | MingCute cylinder for `Item List/Icons/Data`. |
+| `TMessagesProj/tellomi/icons/semantic/star-coin.svg` | iOS `semantic/star-coin` for `Item List/Icons/Stars`. Not a MingCute glyph. |
 | `TMessagesProj/tellomi/icons/test_settings_rows.py` | Locks the mapping, the distinct files, and the generated vectors. |
 
 ## No language chooser after login
