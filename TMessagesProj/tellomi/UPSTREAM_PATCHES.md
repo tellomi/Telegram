@@ -661,3 +661,21 @@ The welcome carousel built its six pages once, while that overlay still followed
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `indexToPosition`, `getFragmentsCount`, `getStartPosition`, `createBaseFragmentAt`, `prepareDialogsActivity`, folder scroll, profile fade, and the calls-tab notification call `TellomiTabs`. `tabsView` and `dialogsActivity` are package-visible so that class can reach them. `install` runs once from `createView` and skips the calls/settings swap. Tab clicks resolve the position when they fire. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `TabAnimation.FEED` and `setLabelHorizontalPadding`. |
+
+## Navigation bar, long-press hide, post links (M2 / D-6, D-38, D-57)
+
+Settings → Navigation Bar sits after Language. Discover, Calls, and Contacts are switches. Chats and Settings are on and cannot be turned off. Calls writes `UserConfig.showCallsTab`, so Settings and the calls list keep the old Show Calls Tab switch. Long-press Discover or Contacts and choose Hide. Calls already had that menu. A hidden tab comes back from Navigation Bar.
+
+`https://tell.cc/m#<id>` turns Discover back on, selects it, and stores the id (`FeedActivity.setPendingPostId`). The post body is M3; until then the empty screen says the post cannot be opened. `https://tell.cc/m/<slug>` is still a message link. `TellomiTabs.enabled()` false does not consume the post link: `consumeFeedPostLink` returns false and `LaunchActivity` keeps the original parser. `t.me` is not a post host.
+
+New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It presents its own `ContactsActivity` picker and does not use the contacts tab, so hiding Contacts leaves that list in place. A lookup of the contacts tab does not create a page.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | After Language, `TellomiNavigationSettings.appendRow`. One `case` opens the page. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | At the start of the http(s) branch, `TellomiTabs.consumeFeedPostLink`. False leaves the link alone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `TellomiTabs.appendHideContacts` on the existing contacts long-press. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | New. Copy, row rules, long-press hide, the post id, and the contacts lookup. Not an upstream file. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | New. The Navigation Bar page. Not an upstream file. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. |

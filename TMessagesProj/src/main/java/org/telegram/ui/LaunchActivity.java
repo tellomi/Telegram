@@ -2018,6 +2018,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     return false;
                                 case "http":
                                 case "https": {
+                                    if (TellomiTabs.consumeFeedPostLink(this, data, intentAccount[0])) {
+                                        intent.setAction(null);
+                                        if (progress != null) {
+                                            progress.end();
+                                        }
+                                        return true;
+                                    }
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
