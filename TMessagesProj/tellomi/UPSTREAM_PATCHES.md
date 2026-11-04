@@ -796,3 +796,25 @@ The shared language pack cannot put a hyphen in a key. The iOS string generator 
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | `displayKey` replaces both `:` and `-`, so the lookup keys are `Tellomi.Discover.City.cn_hong_kong`, `us_new_york`, `us_los_angeles`, and `us_san_francisco`. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The resource-name note matches those underscore lookup keys. `resourceName` still turns a leftover `-` into `_`. |
 | `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverI18nTest.java` | The four lookup keys, and the resource names they already map to. |
+
+## Settings home (M1)
+
+The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds that list into the same three groups iOS uses: Account, General, and Support. The home screen shows those three titles. Each opens a secondary page with the rows that used to sit on the home list. Tips (`Telegram Features`, row 23) and Apple Watch (row 28, or a row titled Apple Watch) are left off. Suggestions, other accounts, the experimental block, and the debug block stay on the home screen.
+
+The top block is a card. It shows the display name, and when the account has them, the phone, the email, and the public username. Phone and email are both shown. The email is the saved sign-in address, not the masked switcher label.
+
+Help Center, the old FAQ row, `tg://settings/faq`, and `tg://settings/features` open `help.getAppConfig` `tellomi_help_url`. A missing, blank, or non-http value is `https://tellomi.cn/help`. Login and the session are not involved.
+
+New lookup keys use only letters, digits, `.`, and `_`: `Tellomi.Settings.Group.Account`, `Tellomi.Settings.Group.General`, `Tellomi.Settings.Group.Support`, `Tellomi.Settings.Help`, `Tellomi.Settings.Card.Phone`, `Tellomi.Settings.Card.Email`, `Tellomi.Settings.Card.Username`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsModel.java` | Group order, the card lines, and the help URL. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java` | Draws that model: the card, the three rows, and the secondary pages. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `arrange` after the list is built, `applyCard` on the header, the group tap, and the two help opens. The header is 36dp taller so the card can show three lines. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `tellomi_help_url`, default `https://tellomi.cn/help`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The FAQ row and the settings search hit use the same help URL. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LinkManager.java` | `tg://settings/faq` and `tg://settings/features` use the same help URL. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The seven `Tellomi.Settings.*` keys. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSettingsLayoutTest.java` | Groups, pages, the card, the help URL, and the lookup keys. |

@@ -1250,11 +1250,11 @@ public class LinkManager {
             return true;
         }
         if ("faq".equalsIgnoreCase(first)) {
-            Browser.openUrl(activity, LocaleController.getString(R.string.TelegramFaqUrl));
+            Browser.openUrl(activity, TellomiSettingsLayout.helpUrl(currentAccount));
             return true;
         }
         if ("features".equalsIgnoreCase(first)) {
-            Browser.openUrl(activity, LocaleController.getString(R.string.TelegramFeaturesUrl));
+            Browser.openUrl(activity, TellomiSettingsLayout.helpUrl(currentAccount));
             return true;
         }
         if ("privacy-policy".equalsIgnoreCase(first)) {

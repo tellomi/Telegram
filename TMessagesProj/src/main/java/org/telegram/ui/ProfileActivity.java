@@ -4579,7 +4579,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (position == questionRow) {
                 showDialog(AlertsCreator.createSupportAlert(ProfileActivity.this, resourcesProvider));
             } else if (position == faqRow) {
-                Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.TelegramFaqUrl));
+                Browser.openUrl(getParentActivity(), TellomiSettingsLayout.helpUrl(currentAccount));
             } else if (position == policyRow) {
                 Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.PrivacyPolicyUrl));
             } else if (position == sendLogsRow) {
@@ -14851,7 +14851,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled() ? new SearchResult(406, getString(R.string.DoNotTranslate), getString(R.string.Language), R.drawable.msg2_language, () -> f.presentFragment(new LanguageSelectActivity())).withLink("tg://settings/language/do-not-translate") : null,
 
                     new SearchResult(402, getString(R.string.AskAQuestion), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> f.showDialog(AlertsCreator.createSupportAlert(f, null))).withLink("tg://settings/ask-question"),
-                    new SearchResult(403, getString(R.string.TelegramFAQ), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> Browser.openUrl(f.getParentActivity(), getString(R.string.TelegramFaqUrl))).withLink("tg://settings/faq"),
+                    new SearchResult(403, TellomiSettingsLayout.currentCopy().help, getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> Browser.openUrl(f.getParentActivity(), TellomiSettingsLayout.helpUrl(f.getCurrentAccount()))).withLink("tg://settings/faq"),
                     new SearchResult(404, getString(R.string.PrivacyPolicy), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> Browser.openUrl(f.getParentActivity(), getString(R.string.PrivacyPolicyUrl))).withLink("tg://settings/privacy-policy"),
             };
         }

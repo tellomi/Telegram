@@ -115,6 +115,9 @@ public class AppGlobalConfig {
     /** TELLOMI: help.getAppConfig emoji_blocklist. Merged onto EmojiBlocklist's built-in default. */
     public final ConfigStringSet emojiBlocklist = ofStringSet("emoji_blocklist", Collections.emptySet());
 
+    /** TELLOMI: settings help center. A missing value stays https://tellomi.cn/help. */
+    public final ConfigString tellomiHelpUrl = ofString("tellomi_help_url", "https://tellomi.cn/help");
+
     /** Missing key stays off. A debug build must not surface the TON wallet. */
     public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", false);
 

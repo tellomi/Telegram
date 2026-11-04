@@ -565,6 +565,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         subtitleView.setText(sb);
 
         versionView.setText(getVersionName());
+        TellomiSettingsLayout.applyCard(currentAccount, user, titleView, subtitleView, topView);
     }
 
 
@@ -649,7 +650,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 200 - 12));
+        items.add(UItem.asCustomShadow(topView, 236 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -796,6 +797,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(SettingCell.Factory.of(TellomiSettingsUpdate.ROW_ID, 0, 0, 0, getString(R.string.TellomiCheckForUpdates)));
         }
         items.add(UItem.asCustomShadow(versionView));
+        TellomiSettingsLayout.arrange(items);
     }
 
     private void checkForAppUpdate() {
@@ -854,6 +856,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private void openTellomiSettingsRow(int id) { onClick(UItem.asHeader(id, ""), null, 0, 0, 0); }
+
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.object instanceof TLRPC.TL_attachMenuBot) {
             TLRPC.TL_attachMenuBot attachMenuBot = (TLRPC.TL_attachMenuBot) item.object;
@@ -893,6 +897,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             return;
         }
+        if (TellomiSettingsLayout.isGroup(item.id)) { presentSettingFragment(TellomiSettingsLayout.section(item.id, this::openTellomiSettingsRow)); return; }
         switch (item.id) {
             case 1:
                 presentSettingFragment(new UserInfoActivity());
@@ -962,7 +967,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 showDialog(AlertsCreator.createSupportAlert(this, resourceProvider));
                 break;
             case 18:
-                Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.TelegramFaqUrl));
+                Browser.openUrl(getParentActivity(), TellomiSettingsLayout.helpUrl(currentAccount));
                 break;
             case 19:
                 Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.PrivacyPolicyUrl));
@@ -984,7 +989,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 if (MessagesController.getInstance(currentAccount).isFrozen()) {
                     AccountFrozenAlert.show(currentAccount);
                 } else {
-                    Browser.openUrl(getContext(), LocaleController.getString(R.string.TelegramFeaturesUrl));
+                    Browser.openUrl(getContext(), TellomiSettingsLayout.helpUrl(currentAccount));
                 }
                 break;
             }
