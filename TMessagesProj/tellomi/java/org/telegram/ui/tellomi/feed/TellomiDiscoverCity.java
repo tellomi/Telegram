@@ -1,5 +1,7 @@
 package org.telegram.ui.tellomi.feed;
 
+import org.telegram.ui.TellomiPack;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -115,10 +117,35 @@ public final class TellomiDiscoverCity {
         return codeFromLocality(city, null);
     }
 
-    public static String name(String code, String languageCode) {
+    public static String displayKey(String code) {
         String value = code(code);
         if (value == null) {
             return null;
+        }
+        return "Tellomi.Discover.City." + value.replace(':', '_');
+    }
+
+    static List<String[]> displayRows() {
+        List<String[]> rows = new ArrayList<>();
+        for (int i = 0; i < CATALOG.size(); i++) {
+            Record record = CATALOG.get(i);
+            rows.add(new String[] { record.code, record.zh, record.en });
+        }
+        return rows;
+    }
+
+    public static String name(String code, String languageCode) {
+        return name(code, languageCode, null);
+    }
+
+    public static String name(String code, String languageCode, TellomiPack.Source source) {
+        String value = code(code);
+        if (value == null) {
+            return null;
+        }
+        String packed = TellomiPack.override(source, displayKey(value));
+        if (packed != null) {
+            return packed;
         }
         for (int i = 0; i < CATALOG.size(); i++) {
             Record record = CATALOG.get(i);
@@ -146,11 +173,15 @@ public final class TellomiDiscoverCity {
     }
 
     public static List<City> cities(String languageCode) {
+        return cities(languageCode, null);
+    }
+
+    public static List<City> cities(String languageCode, TellomiPack.Source source) {
         boolean zh = chinese(languageCode);
         List<City> cities = new ArrayList<>();
         for (int i = 0; i < CATALOG.size(); i++) {
             Record record = CATALOG.get(i);
-            cities.add(new City(record.code, zh ? record.zh : record.en));
+            cities.add(new City(record.code, name(record.code, languageCode, source)));
         }
         final Locale locale = zh ? Locale.CHINA : Locale.ENGLISH;
         Collections.sort(cities, new Comparator<City>() {

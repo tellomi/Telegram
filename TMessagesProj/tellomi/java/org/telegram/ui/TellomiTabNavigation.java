@@ -37,27 +37,19 @@ public final class TellomiTabNavigation {
         }
 
         public static Copy resolve(String languageCode) {
-            if (chinese(languageCode)) {
-                return new Copy(
-                    "发现",
-                    "隐藏发现",
-                    "隐藏联系人",
-                    "导航栏",
-                    "聊天和设置始终显示，不能关闭。",
-                    "还没有内容",
-                    "帖子会显示在这里。",
-                    "这条帖子暂时无法打开。"
-                );
-            }
+            return resolve(languageCode, null);
+        }
+
+        public static Copy resolve(String languageCode, TellomiPack.Source source) {
             return new Copy(
-                "Discover",
-                "Hide Discover",
-                "Hide Contacts",
-                "Navigation Bar",
-                "Chats and Settings always stay in the bar.",
-                "Nothing here yet",
-                "Posts will show up here.",
-                "This post can't be opened yet."
+                TellomiPack.text("Tellomi.Discover.Feed", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.HideFeed", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.HideContacts", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.NavigationTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.NavigationFooter", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyText", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedPostUnavailable", languageCode, source)
             );
         }
     }

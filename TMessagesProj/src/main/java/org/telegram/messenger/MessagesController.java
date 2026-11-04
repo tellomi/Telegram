@@ -104,6 +104,7 @@ import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.TellomiSignUpAvatarPrompt;
 import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
@@ -6100,7 +6101,15 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
                 req.file = file;
                 req.flags |= 1;
+                final String avatarPath = uploadingAvatar;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
+                    if (error != null || !(response instanceof TLRPC.TL_photos_photo)) {
+                        TellomiSignUpAvatarPrompt.show(error == null ? null : error.text, error == null ? 0 : error.code, () -> {
+                            uploadingAvatar = avatarPath;
+                            getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
+                        });
+                        return;
+                    }
                     if (error == null) {
                         TLRPC.User user = getUser(getUserConfig().getClientUserId());
                         if (user == null) {
@@ -6362,7 +6371,12 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (id == NotificationCenter.fileUploadFailed) {
             String location = (String) args[0];
             if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
+                final String avatarPath = uploadingAvatar;
                 uploadingAvatar = null;
+                TellomiSignUpAvatarPrompt.show(null, 0, () -> {
+                    uploadingAvatar = avatarPath;
+                    getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
+                });
             } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
                 uploadingWallpaper = null;
                 uploadingWallpaperInfo = null;

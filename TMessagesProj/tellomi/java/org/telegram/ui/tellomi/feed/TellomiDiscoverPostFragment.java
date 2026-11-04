@@ -8,6 +8,9 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.LocaleController;
@@ -15,15 +18,20 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TellomiDiscoverFlags;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 
 /** One post, loaded with POST /v1/feed/cards. Signed out does not send. */
 public class TellomiDiscoverPostFragment extends BaseFragment {
 
+    private static final int MENU_OTHER = 1;
+    private static final int MENU_REPORT = 2;
+
     private final String postId;
     private TellomiDiscover.Loader loader;
     private TextView bodyView;
+    private LinearLayout column;
     private boolean started;
 
     public TellomiDiscoverPostFragment(String postId) {
@@ -43,21 +51,32 @@ public class TellomiDiscoverPostFragment extends BaseFragment {
     public View createView(Context context) {
         actionBar.setTitle(LocaleController.getString(R.string.TellomiTabFeed));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        if (!TellomiDiscoverReport.menuActions(UserConfig.getInstance(currentAccount).isClientActivated()).isEmpty()) {
+            ActionBarMenuItem other = actionBar.createMenu().addItem(MENU_OTHER, R.drawable.ic_ab_other);
+            other.addSubItem(MENU_REPORT, R.drawable.msg_report, org.telegram.ui.TellomiPack.text("Tellomi.Discover.Report", copy().languageCode, org.telegram.ui.TellomiPack.device()));
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
+                } else if (id == MENU_REPORT) {
+                    TellomiDiscoverReport.open(TellomiDiscoverPostFragment.this, postId, null);
                 }
             }
         });
         FrameLayout root = new FrameLayout(context);
         root.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
         bodyView = new TextView(context);
         bodyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         bodyView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
-        root.setPadding(dp(16), dp(12), dp(16), dp(12));
-        root.addView(bodyView, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+        column.addView(bodyView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        ScrollView scroll = new ScrollView(context);
+        scroll.setPadding(dp(16), dp(12), dp(16), dp(12));
+        scroll.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        root.addView(scroll, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.TOP));
         fragmentView = root;
         loadIfAllowed();
         return fragmentView;
@@ -106,8 +125,41 @@ public class TellomiDiscoverPostFragment extends BaseFragment {
                     text.append(summary.meta);
                 }
                 bodyView.setText(text.toString());
+                addComments(post);
             }
         });
+    }
+
+    private void addComments(TellomiDiscover.Post post) {
+        if (column == null || post.comments == null || post.comments.isEmpty()) {
+            return;
+        }
+        boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
+        for (int i = 0; i < post.comments.size(); i++) {
+            final TellomiDiscover.Comment comment = post.comments.get(i);
+            LinearLayout line = new LinearLayout(column.getContext());
+            line.setOrientation(LinearLayout.HORIZONTAL);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            TextView text = new TextView(column.getContext());
+            text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            text.setText(comment.text == null ? "" : comment.text);
+            text.setPadding(0, dp(8), 0, dp(8));
+            line.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            if (!TellomiDiscoverReport.menuActions(loggedIn).isEmpty()) {
+                ImageView more = new ImageView(column.getContext());
+                more.setImageResource(R.drawable.ic_ab_other);
+                more.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+                more.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        TellomiDiscoverReport.showMenu(TellomiDiscoverPostFragment.this, more, postId, comment.id);
+                    }
+                });
+                line.addView(more, new LinearLayout.LayoutParams(dp(40), dp(40)));
+            }
+            column.addView(line, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
     }
 
     private void showUnavailable() {
@@ -125,6 +177,6 @@ public class TellomiDiscoverPostFragment extends BaseFragment {
             }
         } catch (Throwable ignored) {
         }
-        return TellomiDiscover.Copy.resolve(language);
+        return TellomiDiscover.Copy.resolve(language, org.telegram.ui.TellomiPack.device());
     }
 }
