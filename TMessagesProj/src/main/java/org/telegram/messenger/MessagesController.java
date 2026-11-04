@@ -2650,6 +2650,10 @@ public class MessagesController extends BaseController implements NotificationCe
             changed = true;
             Emoji.applyBlocklistToRecent();
         }
+        // TELLOMI: discover feed. A missing tellomi_discover_feed_enabled key stays off.
+        if (TellomiDiscoverFlags.capture(currentAccount, editor, mainPreferences, object)) {
+            changed = true;
+        }
 
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);
