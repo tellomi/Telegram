@@ -157,7 +157,7 @@ public final class TellomiDiscoverParse {
     }
 
     public static TellomiDiscover.Post displayPost(TellomiDiscover.Card card) {
-        return new TellomiDiscover.Post(
+        TellomiDiscover.Post post = new TellomiDiscover.Post(
             card.id,
             card.text,
             card.authorName,
@@ -175,6 +175,8 @@ public final class TellomiDiscoverParse {
             card.ipRegionLabel,
             card.city
         );
+        post.comments = card.comments == null ? java.util.Collections.emptyList() : card.comments;
+        return post;
     }
 
     private static TellomiDiscover.Card card(TellomiJson json) {
@@ -201,7 +203,7 @@ public final class TellomiDiscoverParse {
         Boolean ai = body == null ? null : boolValue(body.objectValue.get("ai_generated"));
         Boolean edited = body == null ? null : boolValue(body.objectValue.get("edited"));
         Boolean shareable = boolValue(json.objectValue.get("shareable"));
-        return new TellomiDiscover.Card(
+        TellomiDiscover.Card card = new TellomiDiscover.Card(
             id,
             state,
             intValue(json.objectValue.get("version")),
@@ -225,6 +227,28 @@ public final class TellomiDiscoverParse {
             body == null ? null : stringValue(body.objectValue.get("ip_region_label")),
             city
         );
+        card.comments = comments(json.objectValue.get("comments"));
+        return card;
+    }
+
+    private static java.util.List<TellomiDiscover.Comment> comments(TellomiJson json) {
+        if (json == null || json.type != TellomiJson.Type.ARRAY) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.List<TellomiDiscover.Comment> list = new java.util.ArrayList<>();
+        for (int i = 0; i < json.arrayValue.size(); i++) {
+            TellomiJson item = objectValue(json.arrayValue.get(i));
+            if (item == null) {
+                continue;
+            }
+            String id = TellomiDiscover.postId(stringValue(item.objectValue.get("id")));
+            if (id == null) {
+                continue;
+            }
+            String text = stringValue(item.objectValue.get("text"));
+            list.add(new TellomiDiscover.Comment(id, text == null ? "" : text));
+        }
+        return list;
     }
 
     private static int imageCount(TellomiJson json) {

@@ -747,3 +747,27 @@ Reverted to the upstream drawable, because a MingCute stand-in lost the drawing:
 | `TMessagesProj/tellomi/icons/test_icon_meanings.py` | Single check, distinct pairs, no overflow fallback, white Gram mark. |
 | `TMessagesProj/tellomi/icons/test_settings_rows.py` | Business is not a flavor gear. Gram is the Tellomi mark. |
 | `TMessagesProj/tellomi/res/` | The redrawn overlays. Reverted names are deleted here so `src/main` wins. |
+
+## Discover report, signup avatar, and langpack keys
+
+Discover posts and comments use the `…` menu. The reason list is `ReportBottomSheet` (the same sheet as a chat report). The chosen official option id (`spam`, `violence`, `pornography`, `child`, `drugs`, `personal`, `other`) is sent as `POST /v1/feed/reports` with `detail`. `other` asks for a comment before that request. A signed-out account does not open the sheet and does not send. Success and failure show the existing bulletin. This client does not call `messages.report` for a Discover post.
+
+`auth.signUp` still finishes the account before any avatar upload. `photos.uploadProfilePhoto` failure (including HTTP 500) leaves the account in place, shows 「头像上传失败」 with the server error code, and can retry the upload. The same prompt is used for a profile photo. Login and the session are otherwise unchanged.
+
+Discover, tab, and city copy is read from langpack keys `Tellomi.Discover.*` and `Tellomi.Signup.*`. `values` and `values-zh` (and the zh-Hans / zh-CN copies) hold the bundled English and Chinese. A downloaded pack value for the active language, including Japanese, replaces those.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/ReportBottomSheet.java` | `openLocal` shows the native sheet without sending `messages.report`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | After a successful `auth.signUp`, the avatar upload is scheduled only when `TellomiSignUpAvatar.afterSignUp` says the account is already created. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | A failed signup or profile avatar upload shows the server code and can retry. It does not clear the session. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/utils/PhotoUtilities.java` | Profile photo RPC errors use the same prompt. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | Langpack keys and the bundled English and Chinese. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSignUpAvatar.java` | The non-blocking avatar decision and the real error code. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSignUpAvatarPrompt.java` | The dialog. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverReport.java` | The `…` menu and the sheet, then `POST /v1/feed/reports`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | Copy comes from the pack. Report is an engine operation. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | Display names use `Tellomi.Discover.City.*`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | Tab copy uses `Tellomi.Discover.Tab.*`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | The bar reads the pack for the active language. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The new keys. |

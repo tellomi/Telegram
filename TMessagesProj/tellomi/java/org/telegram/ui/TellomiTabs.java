@@ -456,7 +456,7 @@ public final class TellomiTabs {
             }
         } catch (Throwable ignored) {
         }
-        return TellomiTabNavigation.Copy.resolve(code);
+        return TellomiTabNavigation.Copy.resolve(code, TellomiPack.device());
     }
 
     /** Writes Discover, Calls, and Contacts, then refreshes the bar. */

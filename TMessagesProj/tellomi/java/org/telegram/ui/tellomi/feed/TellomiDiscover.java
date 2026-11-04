@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import org.telegram.ui.TellomiPack;
 
 /**
  * Discover feed client (M3 / C-M3b), aligned with the iOS TellomiDiscover module.
@@ -458,7 +461,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Operation {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH, REPORT }
 
         public final Kind kind;
         public final FeedKind feedKind;
@@ -471,8 +474,15 @@ public final class TellomiDiscover {
         public final String audienceToken;
         public final String clientNonce;
         public final int textLimit;
+        public final String reportOption;
+        public final String reportDetail;
+        public final String commentId;
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit) {
+            this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, null, null, null);
+        }
+
+        private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId) {
             this.kind = kind;
             this.feedKind = feedKind;
             this.cursor = cursor;
@@ -484,6 +494,9 @@ public final class TellomiDiscover {
             this.audienceToken = audienceToken;
             this.clientNonce = clientNonce;
             this.textLimit = textLimit;
+            this.reportOption = reportOption;
+            this.reportDetail = reportDetail;
+            this.commentId = commentId;
         }
 
         public static Operation capabilities() {
@@ -512,6 +525,14 @@ public final class TellomiDiscover {
 
         public static Operation publish(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city) {
             return new Operation(Kind.PUBLISH, null, null, false, city, null, text, visibility, audienceToken, clientNonce, textLimit);
+        }
+
+        public static Operation report(String postId, String commentId, String optionId, String detail) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(Kind.REPORT, null, null, false, null, ids, null, null, null, null, 0, optionId, detail, commentId);
         }
     }
 
@@ -632,12 +653,49 @@ public final class TellomiDiscover {
             String url = nearbyUrl(base, operation.city, operation.cursor);
             return url == null ? null : new HttpCall("GET", url, null, trimmed, true, null);
         }
+        if (operation.kind == Operation.Kind.REPORT) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            byte[] report = reportBody(postId, operation.commentId, operation.reportOption, operation.reportDetail);
+            if (report == null) {
+                return null;
+            }
+            String reportUrl = url(base, "/v1/feed/reports", null);
+            return reportUrl == null ? null : new HttpCall("POST", reportUrl, report, trimmed, true, "application/json");
+        }
         byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city);
         if (body == null) {
             return null;
         }
         String url = url(base, "/v1/feed/posts", null);
         return url == null ? null : new HttpCall("POST", url, body, trimmed, true, "application/json");
+    }
+
+    /** Official option id plus detail. Not a TL messages.report body. */
+    public static byte[] reportBody(String postId, String commentId, String optionId, String detail) {
+        String post = postId(postId);
+        if (post == null || !TellomiDiscoverReport.officialOption(optionId)) {
+            return null;
+        }
+        String comment = null;
+        if (commentId != null && !trim(commentId).isEmpty()) {
+            comment = postId(commentId);
+            if (comment == null) {
+                return null;
+            }
+        }
+        String extra = detail == null ? "" : detail;
+        if ("other".equals(optionId) && trim(extra).isEmpty()) {
+            return null;
+        }
+        Map<String, Object> object = new LinkedHashMap<>();
+        object.put("target_type", "content");
+        object.put("target_id", post);
+        if (comment != null) {
+            object.put("comment_id", comment);
+        }
+        object.put("option_id", optionId);
+        object.put("detail", extra);
+        return TellomiJson.write(object);
     }
 
     public static String nearbyUrl(String base, String city, String cursor) {
@@ -860,6 +918,7 @@ public final class TellomiDiscover {
         public final String quoteText;
         public final String ipRegionLabel;
         public final String city;
+        public List<Comment> comments = Collections.emptyList();
 
         public Card(String id, String state, Integer version, String text, String authorName, String authorHandle, String tellomiNumber, String authorId, String badge, boolean aiGenerated, boolean edited, boolean shareable, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -928,6 +987,7 @@ public final class TellomiDiscover {
         public final String quoteText;
         public final String ipRegionLabel;
         public final String city;
+        public List<Comment> comments = Collections.emptyList();
 
         public Post(String id, String text, String authorName, String authorHandle, String tellomiNumber, boolean unavailable, boolean aiGenerated, String badge, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -946,6 +1006,16 @@ public final class TellomiDiscover {
             this.quoteText = quoteText;
             this.ipRegionLabel = ipRegionLabel;
             this.city = city;
+        }
+    }
+
+    public static final class Comment {
+        public final String id;
+        public final String text;
+
+        public Comment(String id, String text) {
+            this.id = id;
+            this.text = text;
         }
     }
 
@@ -968,7 +1038,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Decoded {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED }
 
         public final Kind kind;
         public final Capabilities capabilities;
@@ -1010,6 +1080,10 @@ public final class TellomiDiscover {
 
         static Decoded created(CreatedPost value) {
             return new Decoded(Kind.CREATED, null, false, null, null, null, value);
+        }
+
+        static Decoded reported() {
+            return new Decoded(Kind.REPORTED, null, false, null, null, null, null);
         }
     }
 
@@ -1181,6 +1255,10 @@ public final class TellomiDiscover {
         if (operation.kind == Operation.Kind.CARDS) {
             return cardsBody(operation.ids) == null ? ClientError.NOT_FOUND : null;
         }
+        if (operation.kind == Operation.Kind.REPORT) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            return reportBody(postId, operation.commentId, operation.reportOption, operation.reportDetail) == null ? ClientError.NOT_PUBLISHABLE : null;
+        }
         if (operation.city != null && !trim(operation.city).isEmpty() && TellomiDiscoverCity.knownCode(operation.city) == null) {
             return ClientError.INVALID_CITY;
         }
@@ -1226,6 +1304,9 @@ public final class TellomiDiscover {
             List<Card> value = TellomiDiscoverParse.cards(result.body);
             return value == null ? Outcome.failure(ClientError.UNREADABLE) : Outcome.success(Decoded.cards(value));
         }
+        if (operation.kind == Operation.Kind.REPORT) {
+            return Outcome.success(Decoded.reported());
+        }
         CreatedPost value = TellomiDiscoverParse.createdPost(result.body);
         return value == null ? Outcome.failure(ClientError.UNREADABLE) : Outcome.success(Decoded.created(value));
     }
@@ -1262,8 +1343,14 @@ public final class TellomiDiscover {
         public final String legacyEmptyTitle;
         public final String legacyEmptyText;
         public final String legacyPostUnavailable;
+        public final String likes;
+        public final String comments;
+        public final String photos;
+        public final String tellomiId;
+        public final String languageCode;
+        final TellomiPack.Source source;
 
-        private Copy(String recommend, String following, String nearby, String compose, String emptyTitle, String emptyText, String unavailable, String failed, String cityPrompt, String cityPlaceholder, String useLocation, String confirmCity, String cityDenied, String visibility, String everyone, String contacts, String closeFriends, String selected, String exclude, String audienceInvalid, String userInvalid, String userBlocked, String discoverDisabled, String nearbyEmpty, String invalidCity, String aiGenerated, String quoteDeleted, String publish, String legacyEmptyTitle, String legacyEmptyText, String legacyPostUnavailable) {
+        private Copy(String recommend, String following, String nearby, String compose, String emptyTitle, String emptyText, String unavailable, String failed, String cityPrompt, String cityPlaceholder, String useLocation, String confirmCity, String cityDenied, String visibility, String everyone, String contacts, String closeFriends, String selected, String exclude, String audienceInvalid, String userInvalid, String userBlocked, String discoverDisabled, String nearbyEmpty, String invalidCity, String aiGenerated, String quoteDeleted, String publish, String legacyEmptyTitle, String legacyEmptyText, String legacyPostUnavailable, String likes, String comments, String photos, String tellomiId, String languageCode, TellomiPack.Source source) {
             this.recommend = recommend;
             this.following = following;
             this.nearby = nearby;
@@ -1295,34 +1382,57 @@ public final class TellomiDiscover {
             this.legacyEmptyTitle = legacyEmptyTitle;
             this.legacyEmptyText = legacyEmptyText;
             this.legacyPostUnavailable = legacyPostUnavailable;
+            this.likes = likes;
+            this.comments = comments;
+            this.photos = photos;
+            this.tellomiId = tellomiId;
+            this.languageCode = languageCode;
+            this.source = source;
         }
 
         public static Copy resolve(String languageCode) {
-            if (TellomiDiscoverCity.chinese(languageCode)) {
-                return new Copy(
-                    "推荐", "关注", "同城", "发布",
-                    "还没有帖子", "关注的人和推荐会显示在这里。",
-                    "这条动态已不可见", "暂时打不开，下拉再试一次。",
-                    "选择城市", "输入城市", "使用当前位置", "确定",
-                    "可以不定位，直接从列表里选。只保存城市，不保存坐标。",
-                    "谁可以看", "所有人", "我的联系人", "密友", "选定的用户", "不给谁看",
-                    "名单无效，请重新选择。", "名单里有人无法使用。", "名单里有人已互相拉黑。",
-                    "发现暂时不可用。", "这个城市还没有帖子。", "这个城市不能用，请重新选择。",
-                    "AI 生成", "原动态已被作者删除", "发布",
-                    "还没有内容", "帖子会显示在这里。", "这条帖子暂时无法打开。"
-                );
-            }
+            return resolve(languageCode, null);
+        }
+
+        public static Copy resolve(String languageCode, TellomiPack.Source source) {
             return new Copy(
-                "For You", "Following", "Nearby", "Post",
-                "No posts yet", "Posts from people you follow, and recommendations, show up here.",
-                "This post isn't available", "Couldn't load this. Pull to try again.",
-                "Choose a city", "City", "Use current location", "Done",
-                "You can pick a city without location. Only the city is kept.",
-                "Who can see this", "Everyone", "My Contacts", "Close Friends", "Selected People", "Exclude",
-                "That list can't be used. Choose again.", "Someone on the list can't be added.", "Someone on the list is blocked.",
-                "Discover isn't available right now.", "No posts in this city yet.", "That city can't be used. Choose another.",
-                "AI generated", "The original post was deleted by its author", "Post",
-                "Nothing here yet", "Posts will show up here.", "This post can't be opened yet."
+                TellomiPack.text("Tellomi.Discover.Recommend", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Following", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Nearby", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Compose", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.EmptyTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.EmptyText", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Unavailable", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Failed", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.CityPrompt", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.CityPlaceholder", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.UseLocation", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.ConfirmCity", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.CityDenied", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Visibility", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Everyone", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Contacts", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.CloseFriends", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Selected", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Exclude", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.AudienceInvalid", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.UserInvalid", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.UserBlocked", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Disabled", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.NearbyEmpty", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.InvalidCity", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.AiGenerated", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.QuoteDeleted", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Publish", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.LegacyEmptyTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.LegacyEmptyText", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.LegacyPostUnavailable", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Likes", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Comments", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.Photos", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.TellomiId", languageCode, source),
+                languageCode,
+                source
             );
         }
 
@@ -1390,7 +1500,7 @@ public final class TellomiDiscover {
                 title = title + " @" + post.authorHandle;
             }
         } else if (post.tellomiNumber != null && !post.tellomiNumber.isEmpty()) {
-            String label = "推荐".equals(copy.recommend) ? "Tellomi 号：" + post.tellomiNumber : "Tellomi ID: " + post.tellomiNumber;
+            String label = formatCount(copy.tellomiId, post.tellomiNumber);
             title = title.isEmpty() ? label : title + " · " + label;
         }
         String body;
@@ -1415,10 +1525,9 @@ public final class TellomiDiscover {
                 body = body + "\n" + post.quoteText;
             }
         }
-        boolean chinese = "推荐".equals(copy.recommend);
         List<String> meta = new ArrayList<>();
         if (post.city != null) {
-            String cityName = TellomiDiscoverCity.name(post.city, chinese ? "zh" : "en");
+            String cityName = TellomiDiscoverCity.name(post.city, copy.languageCode, copy.source);
             if (cityName != null) {
                 meta.add(cityName);
             }
@@ -1427,13 +1536,13 @@ public final class TellomiDiscover {
             meta.add(post.ipRegionLabel);
         }
         if (post.likeCount > 0) {
-            meta.add(chinese ? post.likeCount + " 赞" : post.likeCount + " likes");
+            meta.add(formatCount(copy.likes, post.likeCount));
         }
         if (post.commentCount > 0) {
-            meta.add(chinese ? post.commentCount + " 评论" : post.commentCount + " comments");
+            meta.add(formatCount(copy.comments, post.commentCount));
         }
         if (post.imageCount > 0) {
-            meta.add(chinese ? post.imageCount + " 张图片" : post.imageCount + " photos");
+            meta.add(formatCount(copy.photos, post.imageCount));
         }
         String badge = visibleBadge(post.badge, post.aiGenerated, copy);
         if (badge != null) {
@@ -1447,6 +1556,21 @@ public final class TellomiDiscover {
             joined.append(meta.get(i));
         }
         return new PostSummary(title, body, joined.toString());
+    }
+
+    private static String formatCount(String pattern, int count) {
+        return formatCount(pattern, Integer.valueOf(count));
+    }
+
+    private static String formatCount(String pattern, Object value) {
+        if (pattern == null || pattern.isEmpty()) {
+            return String.valueOf(value);
+        }
+        try {
+            return String.format(Locale.US, pattern, value);
+        } catch (RuntimeException ignored) {
+            return String.valueOf(value);
+        }
     }
 
     public static String visibleBadge(String badge, boolean aiGenerated, Copy copy) {

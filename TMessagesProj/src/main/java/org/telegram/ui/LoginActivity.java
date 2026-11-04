@@ -10218,8 +10218,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     postDelayed(() -> {
                         needHideProgress(false, false);
                         AndroidUtilities.hideKeyboard(fragmentView.findFocus());
+                        TellomiSignUpAvatar.Outcome tellomiAvatar = TellomiSignUpAvatar.afterSignUp(avatarBig != null);
                         onAuthSuccess((TLRPC.TL_auth_authorization) response, true);
-                        if (avatarBig != null) {
+                        if (tellomiAvatar.accountCreated && tellomiAvatar.uploadAvatar && avatarBig != null) {
                             TLRPC.FileLocation avatar = avatarBig;
                             Utilities.cacheClearQueue.postRunnable(()-> MessagesController.getInstance(currentAccount).uploadAndApplyUserAvatar(avatar));
                         }

@@ -11,6 +11,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -556,7 +557,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             filter.requestFocus();
             filter.setSelection(filter.getText() == null ? 0 : filter.getText().length());
         }
-        List<TellomiDiscoverCity.City> cities = TellomiDiscoverCity.cities(language());
+        List<TellomiDiscoverCity.City> cities = TellomiDiscoverCity.cities(language(), org.telegram.ui.TellomiPack.device());
         String needle = cityFilter.trim().toLowerCase(java.util.Locale.US);
         for (int i = 0; i < cities.size(); i++) {
             final TellomiDiscoverCity.City city = cities.get(i);
@@ -634,7 +635,25 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                         activity.presentFragment(new TellomiDiscoverPostFragment(post.id));
                     }
                 });
-                column.addView(row, layout(LinearLayout.LayoutParams.MATCH_PARENT));
+                LinearLayout line = new LinearLayout(context);
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                line.setGravity(Gravity.CENTER_VERTICAL);
+                row.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                line.addView(row);
+                if (!TellomiDiscoverReport.menuActions(loggedIn()).isEmpty()) {
+                    ImageView more = new ImageView(context);
+                    more.setImageResource(R.drawable.ic_ab_other);
+                    more.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, activity.getResourceProvider()));
+                    more.setPadding(dp(8), dp(12), 0, dp(12));
+                    more.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            TellomiDiscoverReport.showMenu(activity, more, post.id, null);
+                        }
+                    });
+                    line.addView(more, new LinearLayout.LayoutParams(dp(40), dp(40)));
+                }
+                column.addView(line, layout(LinearLayout.LayoutParams.MATCH_PARENT));
             }
         }
         ScrollView scroll = scroll(column);
@@ -717,7 +736,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private TellomiDiscover.Copy copy() {
-        return TellomiDiscover.Copy.resolve(language());
+        return TellomiDiscover.Copy.resolve(language(), org.telegram.ui.TellomiPack.device());
     }
 
     private String language() {

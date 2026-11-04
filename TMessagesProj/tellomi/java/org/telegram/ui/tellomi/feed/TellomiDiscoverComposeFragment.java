@@ -244,6 +244,6 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             }
         } catch (Throwable ignored) {
         }
-        return TellomiDiscover.Copy.resolve(language);
+        return TellomiDiscover.Copy.resolve(language, org.telegram.ui.TellomiPack.device());
     }
 }
