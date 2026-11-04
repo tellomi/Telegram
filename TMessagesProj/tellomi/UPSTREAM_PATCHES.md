@@ -769,7 +769,7 @@ Discover posts and comments use the `…` menu. The reason list is `ReportBottom
 
 `auth.signUp` still finishes the account before any avatar upload. `photos.uploadProfilePhoto` failure (including HTTP 500) leaves the account in place, shows 「头像上传失败」 with the server error code, and can retry the upload. The same prompt is used for a profile photo. Login and the session are otherwise unchanged.
 
-Discover, tab, and city copy is read from the same langpack keys as iOS (`Tellomi.Discover.Feed`, `Tellomi.Discover.City.cn_hong-kong`, `Tellomi.SignUp.AvatarFailed`, and the rest of that list). Android resource names replace `.` and `-` with `_`. A downloaded pack value for the active language, including Japanese, replaces the bundle. `Tellomi.Discover.Report*` is Android-only.
+Discover, tab, and city copy is read from the same langpack keys as iOS (`Tellomi.Discover.Feed`, `Tellomi.Discover.City.cn_hong_kong`, `Tellomi.SignUp.AvatarFailed`, and the rest of that list). Android resource names replace `.` and `-` with `_`. A downloaded pack value for the active language, including Japanese, replaces the bundle. `Tellomi.Discover.Report*` is Android-only.
 
 | File | Change |
 | --- | --- |
@@ -786,3 +786,13 @@ Discover, tab, and city copy is read from the same langpack keys as iOS (`Tellom
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | Tab copy uses the iOS keys `Tellomi.Discover.Feed`, `HideFeed`, `HideContacts`, `NavigationTitle`, `NavigationFooter`, `FeedEmptyTitle`, `FeedEmptyText`, and `FeedPostUnavailable`. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | The bar reads the pack for the active language. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The new keys. |
+
+## Discover city lookup keys
+
+The shared language pack cannot put a hyphen in a key. The iOS string generator rejects it. Four Discover city lookup keys therefore use an underscore. The city code on a post is unchanged (`cn:hong-kong`, `us:new-york`, `us:los-angeles`, `us:san-francisco`). Bundled resource names were already `Tellomi_Discover_City_cn_hong_kong`, `Tellomi_Discover_City_us_new_york`, `Tellomi_Discover_City_us_los_angeles`, and `Tellomi_Discover_City_us_san_francisco`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | `displayKey` replaces both `:` and `-`, so the lookup keys are `Tellomi.Discover.City.cn_hong_kong`, `us_new_york`, `us_los_angeles`, and `us_san_francisco`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The resource-name note matches those underscore lookup keys. `resourceName` still turns a leftover `-` into `_`. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverI18nTest.java` | The four lookup keys, and the resource names they already map to. |

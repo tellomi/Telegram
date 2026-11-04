@@ -108,8 +108,9 @@ public final class TellomiPack {
     }
 
     /**
-     * Android resource name for a langpack key. The lookup key keeps iOS hyphens
-     * ({@code cn_hong-kong}); the resource name turns those into underscores.
+     * Android resource name for a langpack key. {@code .}, {@code -}, and
+     * {@code :} become {@code _}. City lookup keys already use underscores
+     * ({@code Tellomi.Discover.City.cn_hong_kong}).
      */
     public static String resourceName(String key) {
         if (key == null) {
