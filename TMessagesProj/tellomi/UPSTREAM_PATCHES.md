@@ -81,15 +81,16 @@ Public links are generated and shown as `tell.cc` (`BuildVars.LINK_HOST`). `t.me
 
 ## Username length
 
-Client-side minimum is 3 characters. The old check rejected `length() < 4`, and a server `USERNAME_INVALID` on a 4-character name was shown as too short, so the effective minimum was 5.
+Public usernames are at least 4 characters, the same minimum teamgram #182 accepts. Upstream rejected `length() < 4` locally and also labeled a 4-character name too short when the server returned `USERNAME_INVALID`, so the effective minimum was 5. A 4-character name now passes the local check. A shorter name is still too short. Theme links and sticker-pack links keep their own 5-character check.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChangeUsernameActivity.java` | Local check is `length() < 3`. A 3- or 4-character name is no longer labeled too short when the server returns `USERNAME_INVALID`. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChannelCreateActivity.java` | Same for a new channel or group username. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChatEditTypeActivity.java` | Same for an existing channel or group username. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiUsername.java` | `MIN_LENGTH` is 4. `isTooShort` is the shared check. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChangeUsernameActivity.java` | The local check and the `USERNAME_INVALID` / purchase short copy use `TellomiUsername.isTooShort`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChannelCreateActivity.java` | Same for a new channel or group public link. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatEditTypeActivity.java` | Same for an existing channel or group public link. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/CreateBotAlert.java` | Same for a bot username. |
-| `TMessagesProj/src/main/res/values*/strings.xml` | `UsernameHelp`, `UsernameInvalidShort`, `UsernameInvalidShortPurchase`, `ChannelUsernameHelp`, `MegaUsernameHelp`, `LinkInvalidShort`, and `LinkInvalidShortMega` say 3 where they said 5. |
+| `TMessagesProj/src/main/res/values*/strings.xml` | `UsernameHelp`, `UsernameInvalidShort`, `UsernameInvalidShortPurchase`, `ChannelUsernameHelp`, `MegaUsernameHelp`, `LinkInvalidShort`, and `LinkInvalidShortMega` say 4 where they said 5. Bundled copies that had already been edited to 3 say 4 as well. |
 
 ## Launcher icon
 

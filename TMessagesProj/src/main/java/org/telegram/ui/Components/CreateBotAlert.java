@@ -32,6 +32,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -270,8 +271,8 @@ public class CreateBotAlert {
                 showUsernameHint.run();
                 return;
             }
-            if (username.length() < 3 || username.length() > 32) {
-                usernameEditInfo.setText(getString(username.length() < 3 ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
+            if (TellomiUsername.isTooShort(username) || username.length() > 32) {
+                usernameEditInfo.setText(getString(TellomiUsername.isTooShort(username) ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
                 usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
                 return;
             }
