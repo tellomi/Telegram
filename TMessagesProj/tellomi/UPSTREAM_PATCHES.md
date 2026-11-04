@@ -649,3 +649,12 @@ The welcome carousel built its six pages once, while that overlay still followed
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `cloudStringsEnabled` is true for a remote or unofficial pack. `peekCurrentLocaleInfo` for the overlay check. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `uiIsChinese` follows the app language. `readDownloadedPack`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome copy is rebuilt after a language change. |
+
+## Bottom tabs (M2 / D-4, D-5, D-7, D-8, D-36, D-37)
+
+`TellomiTabs` (tellomi flavor) builds the visible list: Discover, Chats, Calls, Contacts, Settings, Profile. Chats and Settings stay. Profile stays last. A fresh install is Discover, Chats, Settings, Profile (`showCallsTab` is already false; `tellomi_show_feed_tab` defaults true; `tellomi_show_contacts_tab` defaults false). The pager opens on Chats. `TellomiTabs.enabled()` is the flag; when it is false the four upstream positions are unchanged. Discover is an empty screen until the feed client (M3). Six tabs use a wider bar so a 360dp screen does not ellipsize the labels. The night theme is unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `indexToPosition`, `getFragmentsCount`, `getStartPosition`, `createBaseFragmentAt`, `prepareDialogsActivity`, folder scroll, profile fade, and the calls-tab notification call `TellomiTabs`. `tabsView` and `dialogsActivity` are package-visible so that class can reach them. `install` runs once from `createView` and skips the calls/settings swap. Tab clicks resolve the position when they fire. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `TabAnimation.FEED` and `setLabelHorizontalPadding`. |

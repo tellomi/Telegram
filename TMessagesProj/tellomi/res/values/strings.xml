@@ -100,4 +100,6 @@
     <string name="TellomiDeleteAccountConfirmWait">This account has a password, so it will not be deleted yet. Try again in %1$s, or enter the correct two-step verification password.</string>
     <string name="TellomiDeleteAccountFloodWait">Too many attempts. Try again in %1$s.</string>
     <string name="TellomiDeleteAccountFailed">Couldn\'t delete the account. Try again later.</string>
+    <string name="TellomiTabFeed">Discover</string>
+    <string name="TellomiFeedEmptyMessage">Nothing here yet</string>
 </resources>
