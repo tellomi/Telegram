@@ -9383,6 +9383,7 @@ public class Theme {
     ) {
         BackgroundDrawableSettings settings = new BackgroundDrawableSettings();
         settings.wallpaper = local ? null : wallpaper;
+        overrideWallpaper = preferUserWallpaper(currentTheme, overrideWallpaper);
         if (tellomiStockDefaultWallpaper(currentTheme, overrideWallpaper)) {
             boolean dark = currentTheme != null && currentTheme.isDark();
             settings.wallpaper = TellomiWallpaperDraw.createDefault(dark);
@@ -9536,7 +9537,7 @@ public class Theme {
         if (settings.wallpaper == null) {
             int selectedColor = overrideWallpaper != null ? overrideWallpaper.color : 0;
             try {
-                if (overrideWallpaper == null || overrideWallpaper.isDefault()) {
+                if (isStockOverride(overrideWallpaper)) {
                     settings.wallpaper = createDefaultWallpaper();
                     settings.isCustomTheme = false;
                 } else if (!overrideWallpaper.isColor() || overrideWallpaper.gradientColor1 != 0) {
@@ -9591,7 +9592,7 @@ public class Theme {
                                 settings.isCustomTheme = true;
                             }
                         }
-                        if (settings.wallpaper == null) {
+                        if (settings.wallpaper == null && isStockOverride(overrideWallpaper)) {
                             settings.wallpaper = createDefaultWallpaper();
                             settings.isCustomTheme = false;
                         }
@@ -9637,25 +9638,51 @@ public class Theme {
 
     /**
      * Day and night defaults are the bundled doodle. A wallpaper the user picked
-     * (anything other than slug {@link #DEFAULT_BACKGROUND_SLUG}) is kept.
-     * Built-in accents other than the home accent of Blue and Dark Blue keep
-     * their own colors.
+     * (a color including black, a file, a theme wallpaper, or any other slug)
+     * is kept. Built-in accents other than the home accent of Blue and Dark Blue
+     * keep their own colors.
      */
     public static boolean tellomiStockDefaultWallpaper(ThemeInfo theme, OverrideWallpaperInfo overrideWallpaper) {
-        if (overrideWallpaper != null && !overrideWallpaper.isDefault()) {
+        if (!isStockOverride(overrideWallpaper)) {
             return false;
         }
         if (theme == null) {
             return true;
         }
         ThemeAccent accent = theme.getAccent(false);
-        if (accent != null && accent.overrideWallpaper != null && !accent.overrideWallpaper.isDefault()) {
+        if (accent != null && !isStockOverride(accent.overrideWallpaper)) {
             return false;
         }
         if (theme.firstAccentIsDefault && theme.currentAccentId == DEFALT_THEME_ACCENT_ID) {
             return true;
         }
         return accent != null && isHome(accent) && ("Blue".equals(theme.getKey()) || "Dark Blue".equals(theme.getKey()));
+    }
+
+    private static boolean isStockOverride(OverrideWallpaperInfo overrideWallpaper) {
+        if (overrideWallpaper == null) {
+            return true;
+        }
+        return TellomiWallpaperCatalog.isStockWallpaperChoice(
+                overrideWallpaper.slug,
+                overrideWallpaper.color,
+                overrideWallpaper.gradientColor1,
+                overrideWallpaper.gradientColor2,
+                overrideWallpaper.gradientColor3,
+                overrideWallpaper.fileName
+        );
+    }
+
+    /** A choice saved on the accent wins over a missing or stock override. */
+    private static OverrideWallpaperInfo preferUserWallpaper(ThemeInfo theme, OverrideWallpaperInfo overrideWallpaper) {
+        if (!isStockOverride(overrideWallpaper) || theme == null) {
+            return overrideWallpaper;
+        }
+        ThemeAccent accent = theme.getAccent(false);
+        if (accent != null && !isStockOverride(accent.overrideWallpaper)) {
+            return accent.overrideWallpaper;
+        }
+        return overrideWallpaper;
     }
 
     public static int tellomiDefaultWallpaperColor(boolean dark) {

@@ -701,7 +701,7 @@ The server `account.getWallPapers` result stays empty. Wallpapers are bundled. T
 | `TMessagesProj/tellomi/assets/wallpapers/` | `doodle.png`, `dots.png`, `waves.png`, `WallpaperCatalog.json`, and the license notices. |
 | `TMessagesProj/tellomi/wallpapers/generate_patterns.py` | Regenerates those bitmaps from the named open-source icons. |
 | `TMessagesProj/build.gradle` | The tellomi flavor assets directory is `tellomi/assets`. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Default wallpaper loads the doodle. Accent lists are the twelve colors. Incoming and outgoing bubbles follow the catalog. Solid wallpapers use the translucent date chip. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Default wallpaper loads the doodle only when the saved choice is the stock slug `d` with no color and no file. A chosen color (including black), gallery file, theme wallpaper, or other slug is left in place. Accent lists are the twelve colors. Incoming and outgoing bubbles follow the catalog. Solid wallpapers use the translucent date chip. |
 | `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/MessageDrawable.java` | Solid wallpaper bubbles draw the 0.5dp shadow. |
 | `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | Color presets are the one solid. The list starts with the bundled wallpapers. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java` | A bundled row draws its pattern locally. |

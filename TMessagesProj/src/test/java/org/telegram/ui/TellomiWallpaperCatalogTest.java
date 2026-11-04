@@ -111,6 +111,19 @@ public class TellomiWallpaperCatalogTest {
     }
 
     @Test
+    public void bundledDefaultDoesNotReplaceAChosenWallpaper() {
+        assertTrue(TellomiWallpaperCatalog.isStockWallpaperChoice(null, 0, 0, 0, 0, null));
+        assertTrue(TellomiWallpaperCatalog.isStockWallpaperChoice("d", 0, 0, 0, 0, ""));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("c", 0xFF000000, 0, 0, 0, ""));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("d", 0xFF000000, 0, 0, 0, ""));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("c", 0xFFF0F2F5, 0, 0, 0, null));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("", 0, 0, 0, 0, "wallpaper.jpg"));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("t", 0, 0, 0, 0, null));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("tm_solid", 0xFF101418, 0, 0, 0, null));
+        assertFalse(TellomiWallpaperCatalog.isStockWallpaperChoice("tm_doodle_dark", 0, 0, 0, 0, null));
+    }
+
+    @Test
     public void bubblesAndSolidShadow() {
         assertEquals(0xFFFFFFFF, TellomiWallpaperCatalog.inBubble(false));
         assertEquals(0xFF202C33, TellomiWallpaperCatalog.inBubble(true));

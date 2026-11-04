@@ -129,6 +129,22 @@ public final class TellomiWallpaperCatalog {
         return byId(slug) != null;
     }
 
+    /**
+     * The bundled doodle is only the wallpaper a person never chose.
+     * Slug {@code d} with no color and no file is that stock default.
+     * A color (including pure black), a gallery file, a theme wallpaper,
+     * or any other slug is a choice and must be left in place.
+     */
+    public static boolean isStockWallpaperChoice(String slug, int color, int gradient1, int gradient2, int gradient3, String fileName) {
+        if (slug != null && !"d".equals(slug)) {
+            return false;
+        }
+        if (color != 0 || gradient1 != 0 || gradient2 != 0 || gradient3 != 0) {
+            return false;
+        }
+        return fileName == null || fileName.isEmpty();
+    }
+
     public static boolean isDefaultId(String id, boolean dark) {
         return dark ? DEFAULT_DARK_ID.equals(id) : DEFAULT_LIGHT_ID.equals(id);
     }
