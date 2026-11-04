@@ -102,4 +102,6 @@
     <string name="TellomiDeleteAccountFailed">Couldn\'t delete the account. Try again later.</string>
     <string name="TellomiTabFeed">Discover</string>
     <string name="TellomiFeedEmptyMessage">Nothing here yet</string>
+    <string name="TellomiCheckForUpdates">Check for updates</string>
+    <string name="YourVersionIsLatest">Already the latest version</string>
 </resources>

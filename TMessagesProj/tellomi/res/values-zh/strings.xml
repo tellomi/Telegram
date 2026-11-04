@@ -105,4 +105,6 @@
     <string name="TellomiDeleteAccountFailed">暂时无法删除账号，请稍后再试。</string>
     <string name="TellomiTabFeed">发现</string>
     <string name="TellomiFeedEmptyMessage">还没有内容</string>
+    <string name="TellomiCheckForUpdates">检查更新</string>
+    <string name="YourVersionIsLatest">已是最新版本</string>
 </resources>
