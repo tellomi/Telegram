@@ -723,3 +723,27 @@ The server `account.getWallPapers` result stays empty. Wallpapers are bundled. T
 | `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | Help section opens the license page. |
 | `TMessagesProj/src/main/res/values/strings.xml` | `TellomiOpenSourceLicenses`. |
 | `TMessagesProj/src/main/res/values-zh/strings.xml` | Same string in Chinese. |
+
+## Icon meanings
+
+The MingCute pass matched short substrings, so `gift` became the GIF film, every search filter became a magnifying glass, and an unmatched `menu_*` name became the overflow dots. `list_check` was the double-check glyph. Chat list then drew that plus `list_halfcheck`, which was a full single check, and a sent message showed two ticks while a read one showed three.
+
+`match()` now takes an exact override, then the longest rule whose key is a whole run of underscore-separated tokens and at least 8 characters. Short tokens (`gif`, `menu`, `search`, `video`, `photo`, and the rest of that list) do not match. A miss keeps the upstream drawable. Nothing falls through to `more-2`.
+
+Slash, plus, minus, and call-direction arrows are MingCute glyphs with a second path. The half-check is the rising arm of MingCute `check`, placed in the same box as the upstream bitmap so the existing 5.5dp offset still makes one double check. GIF is the word in a rounded rect. The sticker is a folded sheet with a face cut out of the fill. Gram vectors are the full Tellomi mark in white, including `mini_gram_72_white`.
+
+Send arrows (`send_plane_24`, `attach_send`, `msg_send`, `msg_sendfile`, `ic_send`) and the unsupported-card mark (`send_plane_26`) are unchanged. `send_outline` is the dashed ring on an ephemeral send button again. Login and the session are untouched.
+
+Reverted to the upstream drawable, because a MingCute stand-in lost the drawing:
+
+- Premium and star art: `filled_giveaway_premium`, `filled_gift_premium`, `filled_premium_away`, `filled_premium_bots`, `filled_premium_business`, `filled_premium_chatlink`, `filled_premium_hours`, `filled_premium_intro`, `filled_premium_status2`, `menu_feature_premium`, `menu_premium_away`, `menu_premium_chatbot`, `menu_premium_chatlink`, `menu_premium_clock`, `menu_premium_clock_add`, `menu_premium_effects`, `menu_premium_location`, `menu_premium_seen`, `menu_premium_tools`, `msg_mini_premiumlock`, `msg_premium_ads`, `msg_premium_avatar`, `msg_premium_badge`, `msg_premium_icons`, `msg_premium_limits`, `msg_premium_lock2`, `msg_premium_normal`, `msg_premium_reactions`, `msg_premium_speed`, `msg_premium_stickers`, `msg_premium_translate`, `msg_premium_uploads`, `msg_premium_voice`, `premium_ai_editor`, `premium_colors`, `premium_rich_editor`, `premium_status`, `premium_tags`, `premium_wallpaper`, `star_premium`, `star_premium_cutout`
+- `settings_business` (briefcase), `send_outline` (dashed ring), `community_cards`, `msg_speed`, `msg_voicechat`, `msg_voicechat2`, `msg_stories_saved`, `menu_clear_cookies`, `msg_filled_sdcard`, `filled_requests_24`
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | Exact override, then longest token-bounded rule. No short substring. No `more-2` fallback. Small bitmaps are drawn larger and scaled down. |
+| `TMessagesProj/tellomi/icons/icon_fixes.py` | Composites, the half-check, GIF, sticker, white Gram mark, and the upstream reverts. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | The resolved names. Reverted rows are gone. |
+| `TMessagesProj/tellomi/icons/test_icon_meanings.py` | Single check, distinct pairs, no overflow fallback, white Gram mark. |
+| `TMessagesProj/tellomi/icons/test_settings_rows.py` | Business is not a flavor gear. Gram is the Tellomi mark. |
+| `TMessagesProj/tellomi/res/` | The redrawn overlays. Reverted names are deleted here so `src/main` wins. |

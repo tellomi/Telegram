@@ -304,8 +304,8 @@ RULES = [
     ("list_mute", "notification-off", "line"),
     ("list_unmute", "notification", "line"),
     ("list_pin", "pin", "line"),
-    ("list_check", "checks", "line"),
-    ("list_halfcheck", "check", "line"),
+    # list_check / list_halfcheck are exact overrides in icon_fixes.py.
+    # A full "checks" glyph here is what drew two ticks for one sent message.
     ("list_reorder", "menu", "line"),
     ("list_warning", "alert", "line"),
     ("list_secret", "lock", "line"),
@@ -435,7 +435,8 @@ EXTRAS = [
 SETTINGS_ROWS = {
     "settings_account": ("user-3", "line"),  # Item List/Icons/Profile
     "settings_ask": ("message-circle-question-mark", "line"),  # Item List/Icons/Support
-    "settings_business": ("announcement", "line"),  # Item List/Icons/Business
+    # settings_business stays the upstream briefcase. The announcement glyph
+    # was the iOS row, and it read as a channel megaphone on Android.
     "settings_chat": ("chat-1", "line"),  # Item List/Icons/Chat
     "settings_data": ("chart-bar", "line"),  # Item List/Icons/Data
     "settings_devices": ("cellphone", "line"),  # Item List/Icons/Devices
@@ -453,24 +454,58 @@ SETTINGS_ROWS = {
 }
 
 
+# Whole tokens only. A key shorter than this matched "gif" inside "gift",
+# "menu" on every menu row, and "search" on every search filter.
+MIN_RULE_KEY = 8
+# These tokens are too generic to select a glyph by themselves.
+BANNED_RULE_KEYS = {
+    "gif", "menu", "more", "photo", "video", "search", "check", "pin",
+    "star", "user", "call", "gift", "file", "lock", "eye", "add", "tag",
+    "data", "chat", "link", "bot", "mic", "paid", "phone", "group",
+}
+
+
+def _bounded_key(name, key):
+    """True when key is the name or a run of its underscore-separated tokens."""
+    if name == key:
+        return True
+    return f"_{key}_" in f"_{name}_"
+
+
 def match(name):
+    """Exact name, then the longest safe token-bounded rule.
+
+    A miss returns None. Callers keep the upstream drawable. Nothing falls
+    through to the overflow glyph.
+    """
     low = name.lower()
+    # Imported lazily: icon_fixes imports this module.
+    from icon_fixes import GRAM_MARKS, REVERT_NAMES, glyph_override
+
+    if low in REVERT_NAMES:
+        return None
+    override = glyph_override(low)
+    if override:
+        return override
     row = SETTINGS_ROWS.get(low)
     if row:
         return row
     tokens = low.split("_")
+    if low in GRAM_MARKS:
+        return ("tellomi-mark", "line")
     if "gram" in tokens or low.startswith("tellomi_ic_") or low.startswith("login_"):
         return None
-    rules = sorted(RULES, key=lambda r: len(r[0]), reverse=True)
-    for key, icon, style in rules:
-        if "_" in key or len(key) >= 7:
-            if key in low:
-                return icon, style
+    best = None
+    best_len = 0
+    for key, icon, style in RULES:
+        if key in BANNED_RULE_KEYS or len(key) < MIN_RULE_KEY:
             continue
-        for token in tokens:
-            if token == key or (token.startswith(key) and token[len(key):] in {"s", "es", "ed", "ing", "d", "2"}):
-                return icon, style
-    return None
+        if icon == "more-2":
+            continue
+        if _bounded_key(low, key) and len(key) > best_len:
+            best = (icon, style)
+            best_len = len(key)
+    return best
 
 
 def resources_on_disk():
@@ -556,7 +591,8 @@ def vector_is_tinted(path):
 HAND_GLYPHS = {
     "send_plane_24": ("arrow-up", "line", "vector"),
     "send_plane_26": ("arrow-up", "line", "vector"),
-    "send_outline": ("arrow-up", "line", "vector"),
+    # send_outline is the dashed ring around an ephemeral send button.
+    # It is not a send glyph. icon_fixes.py drops the overlay.
     "attach_send": ("arrow-up", "line", "raster"),
     "msg_send": ("arrow-up", "line", "raster"),
     "msg_sendfile": ("arrow-up", "line", "raster"),
@@ -589,15 +625,26 @@ def svg_path(icon, style):
 
 
 def render_webp(svg, width, height, dest):
-    import subprocess
+    import io
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".png")
     svg_text = svg.read_text().replace("currentColor", "#FFFFFF")
-    painted = tmp.with_suffix(".src.svg")
-    painted.write_text(svg_text)
-    subprocess.check_call(["rsvg-convert", "-w", str(width), "-h", str(height), "-o", str(tmp), str(painted)])
-    painted.unlink(missing_ok=True)
-    im = Image.open(tmp).convert("RGBA")
+    # Hairline strokes disappear when a 24px glyph is drawn into a 6px bitmap.
+    scale = 4 if min(width, height) < 28 else 1
+    rw, rh = width * scale, height * scale
+    try:
+        import cairosvg
+        png = cairosvg.svg2png(bytestring=svg_text.encode(), output_width=rw, output_height=rh)
+        im = Image.open(io.BytesIO(png)).convert("RGBA")
+    except Exception:
+        import subprocess
+        painted = tmp.with_suffix(".src.svg")
+        painted.write_text(svg_text)
+        subprocess.check_call(["rsvg-convert", "-w", str(rw), "-h", str(rh), "-o", str(tmp), str(painted)])
+        painted.unlink(missing_ok=True)
+        im = Image.open(tmp).convert("RGBA")
+    if scale != 1:
+        im = im.resize((width, height), Image.Resampling.LANCZOS)
     # Force white RGB, keep coverage in alpha. rsvg paints #fff already;
     # re-stamp so a black fallback still tints.
     pixels = []
@@ -846,6 +893,10 @@ def main():
     remaining = []
     used_svg = []
     for name in sorted(names):
+        from icon_fixes import REVERT_NAMES, is_hand_drawn
+        if name in REVERT_NAMES or is_hand_drawn(name):
+            remaining.append((name, "meaning fix, not a plain MingCute fit"))
+            continue
         if name in HAND_GLYPHS:
             icon, style, kind = HAND_GLYPHS[name]
             rows.append((name, icon, style, kind))
