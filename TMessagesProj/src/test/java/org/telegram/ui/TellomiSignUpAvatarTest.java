@@ -28,14 +28,15 @@ public class TellomiSignUpAvatarTest {
         assertTrue(failed.accountCreated);
         assertFalse(failed.uploadAvatar);
         assertTrue(failed.canRetry);
-        assertEquals("Tellomi.Signup.AvatarFailed", failed.titleKey);
-        assertEquals("INTERNAL_SERVER_ERROR", failed.errorCode);
-        assertEquals("头像上传失败", TellomiPack.bundled(failed.titleKey, "zh-Hans"));
-        assertEquals("Couldn't upload the profile photo", TellomiPack.bundled(failed.titleKey, "en"));
-        assertEquals("头像上传失败\nINTERNAL_SERVER_ERROR", TellomiSignUpAvatar.message("头像上传失败", failed.errorCode));
+        assertEquals("Tellomi.SignUp.AvatarFailed", failed.titleKey);
+        assertEquals("500 INTERNAL_SERVER_ERROR", failed.errorCode);
+        assertEquals("头像上传失败（%s）", TellomiPack.bundled(failed.titleKey, "zh-Hans"));
+        assertEquals("Couldn't upload the profile photo (%s)", TellomiPack.bundled(failed.titleKey, "en"));
+        assertEquals("头像上传失败（500 INTERNAL_SERVER_ERROR）", TellomiSignUpAvatar.message(TellomiPack.bundled(failed.titleKey, "zh"), failed.errorCode));
+        assertEquals("Couldn't upload the profile photo (500 INTERNAL_SERVER_ERROR)", TellomiSignUpAvatar.message("Couldn't upload the profile photo (%@)", failed.errorCode));
 
         assertEquals("500", TellomiSignUpAvatar.afterUpload(500, "  ").errorCode);
-        assertEquals("PHOTO_INVALID", TellomiSignUpAvatar.afterUpload(400, "PHOTO_INVALID").errorCode);
+        assertEquals("400 PHOTO_INVALID", TellomiSignUpAvatar.afterUpload(400, "PHOTO_INVALID").errorCode);
         assertNull(TellomiSignUpAvatar.afterUpload(0, null).errorCode);
         assertTrue(TellomiSignUpAvatar.afterUpload(0, null).accountCreated);
         assertTrue(TellomiSignUpAvatar.afterUploadSuccess().accountCreated);

@@ -47,8 +47,8 @@ public final class TellomiSignUpAvatarPrompt {
                     return;
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                builder.setTitle(title);
-                builder.setMessage(outcome.errorCode == null ? title : outcome.errorCode);
+                builder.setTitle(message);
+                builder.setMessage(message);
                 if (retry != null) {
                     builder.setPositiveButton(retryLabel, (dialog, which) -> retry.run());
                 }

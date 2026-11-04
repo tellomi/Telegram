@@ -132,9 +132,6 @@
     <string name="Tellomi_Discover_AiGenerated">AI generated</string>
     <string name="Tellomi_Discover_QuoteDeleted">The original post was deleted by its author</string>
     <string name="Tellomi_Discover_Publish">Post</string>
-    <string name="Tellomi_Discover_LegacyEmptyTitle">Nothing here yet</string>
-    <string name="Tellomi_Discover_LegacyEmptyText">Posts will show up here.</string>
-    <string name="Tellomi_Discover_LegacyPostUnavailable">This post can\'t be opened yet.</string>
     <string name="Tellomi_Discover_Likes">%d likes</string>
     <string name="Tellomi_Discover_Comments">%d comments</string>
     <string name="Tellomi_Discover_Photos">%d photos</string>
@@ -149,16 +146,6 @@
     <string name="Tellomi_Discover_Report_Drugs">Illegal drugs</string>
     <string name="Tellomi_Discover_Report_Personal">Personal details</string>
     <string name="Tellomi_Discover_Report_Other">Other</string>
-    <string name="Tellomi_Discover_Tab_Feed">Discover</string>
-    <string name="Tellomi_Discover_Tab_HideFeed">Hide Discover</string>
-    <string name="Tellomi_Discover_Tab_HideContacts">Hide Contacts</string>
-    <string name="Tellomi_Discover_Tab_Navigation">Navigation Bar</string>
-    <string name="Tellomi_Discover_Tab_NavigationFooter">Chats and Settings always stay in the bar.</string>
-    <string name="Tellomi_Discover_Tab_EmptyTitle">Nothing here yet</string>
-    <string name="Tellomi_Discover_Tab_EmptyText">Posts will show up here.</string>
-    <string name="Tellomi_Discover_Tab_PostUnavailable">This post can\'t be opened yet.</string>
-    <string name="Tellomi_Signup_AvatarFailed">Couldn\'t upload the profile photo</string>
-    <string name="Tellomi_Signup_AvatarRetry">Retry</string>
     <string name="Tellomi_Discover_City_cn_beijing">Beijing</string>
     <string name="Tellomi_Discover_City_cn_shanghai">Shanghai</string>
     <string name="Tellomi_Discover_City_cn_tianjin">Tianjin</string>
@@ -220,4 +207,14 @@
     <string name="Tellomi_Discover_City_au_sydney">Sydney</string>
     <string name="Tellomi_Discover_City_ca_toronto">Toronto</string>
     <string name="Tellomi_Discover_City_th_bangkok">Bangkok</string>
+    <string name="Tellomi_Discover_Feed">Discover</string>
+    <string name="Tellomi_Discover_HideFeed">Hide Discover</string>
+    <string name="Tellomi_Discover_HideContacts">Hide Contacts</string>
+    <string name="Tellomi_Discover_NavigationTitle">Navigation Bar</string>
+    <string name="Tellomi_Discover_NavigationFooter">Chats and Settings always stay in the bar.</string>
+    <string name="Tellomi_Discover_FeedEmptyTitle">Nothing here yet</string>
+    <string name="Tellomi_Discover_FeedEmptyText">Posts will show up here.</string>
+    <string name="Tellomi_Discover_FeedPostUnavailable">This post can\'t be opened yet.</string>
+    <string name="Tellomi_SignUp_AvatarFailed">Couldn\'t upload the profile photo (%s)</string>
+    <string name="Tellomi_SignUp_AvatarRetry">Retry</string>
 </resources>

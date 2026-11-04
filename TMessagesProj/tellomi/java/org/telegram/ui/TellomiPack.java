@@ -60,9 +60,14 @@ public final class TellomiPack {
         entry("Tellomi.Discover.AiGenerated", "AI generated", "AI 生成"),
         entry("Tellomi.Discover.QuoteDeleted", "The original post was deleted by its author", "原动态已被作者删除"),
         entry("Tellomi.Discover.Publish", "Post", "发布"),
-        entry("Tellomi.Discover.LegacyEmptyTitle", "Nothing here yet", "还没有内容"),
-        entry("Tellomi.Discover.LegacyEmptyText", "Posts will show up here.", "帖子会显示在这里。"),
-        entry("Tellomi.Discover.LegacyPostUnavailable", "This post can't be opened yet.", "这条帖子暂时无法打开。"),
+        entry("Tellomi.Discover.Feed", "Discover", "发现"),
+        entry("Tellomi.Discover.HideFeed", "Hide Discover", "隐藏发现"),
+        entry("Tellomi.Discover.HideContacts", "Hide Contacts", "隐藏联系人"),
+        entry("Tellomi.Discover.NavigationTitle", "Navigation Bar", "导航栏"),
+        entry("Tellomi.Discover.NavigationFooter", "Chats and Settings always stay in the bar.", "聊天和设置始终显示，不能关闭。"),
+        entry("Tellomi.Discover.FeedEmptyTitle", "Nothing here yet", "还没有内容"),
+        entry("Tellomi.Discover.FeedEmptyText", "Posts will show up here.", "帖子会显示在这里。"),
+        entry("Tellomi.Discover.FeedPostUnavailable", "This post can't be opened yet.", "这条帖子暂时无法打开。"),
         entry("Tellomi.Discover.Likes", "%d likes", "%d 赞"),
         entry("Tellomi.Discover.Comments", "%d comments", "%d 评论"),
         entry("Tellomi.Discover.Photos", "%d photos", "%d 张图片"),
@@ -77,16 +82,8 @@ public final class TellomiPack {
         entry("Tellomi.Discover.Report.Drugs", "Illegal drugs", "毒品"),
         entry("Tellomi.Discover.Report.Personal", "Personal details", "侵犯隐私"),
         entry("Tellomi.Discover.Report.Other", "Other", "其他"),
-        entry("Tellomi.Discover.Tab.Feed", "Discover", "发现"),
-        entry("Tellomi.Discover.Tab.HideFeed", "Hide Discover", "隐藏发现"),
-        entry("Tellomi.Discover.Tab.HideContacts", "Hide Contacts", "隐藏联系人"),
-        entry("Tellomi.Discover.Tab.Navigation", "Navigation Bar", "导航栏"),
-        entry("Tellomi.Discover.Tab.NavigationFooter", "Chats and Settings always stay in the bar.", "聊天和设置始终显示，不能关闭。"),
-        entry("Tellomi.Discover.Tab.EmptyTitle", "Nothing here yet", "还没有内容"),
-        entry("Tellomi.Discover.Tab.EmptyText", "Posts will show up here.", "帖子会显示在这里。"),
-        entry("Tellomi.Discover.Tab.PostUnavailable", "This post can't be opened yet.", "这条帖子暂时无法打开。"),
-        entry("Tellomi.Signup.AvatarFailed", "Couldn't upload the profile photo", "头像上传失败"),
-        entry("Tellomi.Signup.AvatarRetry", "Retry", "重试")
+        entry("Tellomi.SignUp.AvatarFailed", "Couldn't upload the profile photo (%s)", "头像上传失败（%s）"),
+        entry("Tellomi.SignUp.AvatarRetry", "Retry", "重试")
     };
 
     private TellomiPack() {
@@ -110,7 +107,10 @@ public final class TellomiPack {
         return null;
     }
 
-    /** Android resource name for a langpack key. Dots and hyphens are not legal in {@code strings.xml}. */
+    /**
+     * Android resource name for a langpack key. The lookup key keeps iOS hyphens
+     * ({@code cn_hong-kong}); the resource name turns those into underscores.
+     */
     public static String resourceName(String key) {
         if (key == null) {
             return "";

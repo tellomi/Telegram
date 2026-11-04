@@ -754,7 +754,7 @@ Discover posts and comments use the `…` menu. The reason list is `ReportBottom
 
 `auth.signUp` still finishes the account before any avatar upload. `photos.uploadProfilePhoto` failure (including HTTP 500) leaves the account in place, shows 「头像上传失败」 with the server error code, and can retry the upload. The same prompt is used for a profile photo. Login and the session are otherwise unchanged.
 
-Discover, tab, and city copy is read from langpack keys `Tellomi.Discover.*` and `Tellomi.Signup.*`. `values` and `values-zh` (and the zh-Hans / zh-CN copies) hold the bundled English and Chinese. A downloaded pack value for the active language, including Japanese, replaces those.
+Discover, tab, and city copy is read from the same langpack keys as iOS (`Tellomi.Discover.Feed`, `Tellomi.Discover.City.cn_hong-kong`, `Tellomi.SignUp.AvatarFailed`, and the rest of that list). Android resource names replace `.` and `-` with `_`. A downloaded pack value for the active language, including Japanese, replaces the bundle. `Tellomi.Discover.Report*` is Android-only.
 
 | File | Change |
 | --- | --- |
@@ -768,6 +768,6 @@ Discover, tab, and city copy is read from langpack keys `Tellomi.Discover.*` and
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverReport.java` | The `…` menu and the sheet, then `POST /v1/feed/reports`. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | Copy comes from the pack. Report is an engine operation. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | Display names use `Tellomi.Discover.City.*`. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | Tab copy uses `Tellomi.Discover.Tab.*`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | Tab copy uses the iOS keys `Tellomi.Discover.Feed`, `HideFeed`, `HideContacts`, `NavigationTitle`, `NavigationFooter`, `FeedEmptyTitle`, `FeedEmptyText`, and `FeedPostUnavailable`. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | The bar reads the pack for the active language. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The new keys. |

@@ -1424,9 +1424,9 @@ public final class TellomiDiscover {
                 TellomiPack.text("Tellomi.Discover.AiGenerated", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.QuoteDeleted", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.Publish", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.LegacyEmptyTitle", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.LegacyEmptyText", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.LegacyPostUnavailable", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyText", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedPostUnavailable", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.Likes", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.Comments", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.Photos", languageCode, source),
@@ -1567,7 +1567,7 @@ public final class TellomiDiscover {
             return String.valueOf(value);
         }
         try {
-            return String.format(Locale.US, pattern, value);
+            return String.format(Locale.US, pattern.replace("%@", "%s"), value);
         } catch (RuntimeException ignored) {
             return String.valueOf(value);
         }

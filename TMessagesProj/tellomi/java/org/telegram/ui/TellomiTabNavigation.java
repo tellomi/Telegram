@@ -42,14 +42,14 @@ public final class TellomiTabNavigation {
 
         public static Copy resolve(String languageCode, TellomiPack.Source source) {
             return new Copy(
-                TellomiPack.text("Tellomi.Discover.Tab.Feed", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.HideFeed", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.HideContacts", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.Navigation", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.NavigationFooter", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.EmptyTitle", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.EmptyText", languageCode, source),
-                TellomiPack.text("Tellomi.Discover.Tab.PostUnavailable", languageCode, source)
+                TellomiPack.text("Tellomi.Discover.Feed", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.HideFeed", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.HideContacts", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.NavigationTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.NavigationFooter", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyTitle", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedEmptyText", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.FeedPostUnavailable", languageCode, source)
             );
         }
     }

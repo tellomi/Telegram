@@ -1,14 +1,17 @@
 package org.telegram.ui;
 
+import java.util.Locale;
+
 /**
  * Sign-up finishes when {@code auth.signUp} succeeds. A later
  * {@code photos.uploadProfilePhoto} failure does not undo the account.
- * The text shown with 「头像上传失败」 is the server error code.
+ * The alert is {@code Tellomi.SignUp.AvatarFailed}, for example
+ * 「头像上传失败（500 INTERNAL_SERVER_ERROR）」.
  */
 public final class TellomiSignUpAvatar {
 
-    public static final String TITLE_KEY = "Tellomi.Signup.AvatarFailed";
-    public static final String RETRY_KEY = "Tellomi.Signup.AvatarRetry";
+    public static final String TITLE_KEY = "Tellomi.SignUp.AvatarFailed";
+    public static final String RETRY_KEY = "Tellomi.SignUp.AvatarRetry";
 
     public static final class Outcome {
         public final boolean accountCreated;
@@ -38,31 +41,39 @@ public final class TellomiSignUpAvatar {
         return new Outcome(true, false, false, null, null);
     }
 
-    /** The account stays created. {@code errorCode} is the server text, or the numeric code when the text is empty. */
+    /**
+     * The account stays created. {@code errorCode} is the numeric code and the
+     * server text together, for example {@code 500 INTERNAL_SERVER_ERROR}.
+     */
     public static Outcome afterUpload(int errorCode, String errorText) {
         return new Outcome(true, false, true, TITLE_KEY, realCode(errorText, errorCode));
     }
 
     public static String realCode(String errorText, int errorCode) {
-        if (errorText != null) {
-            String trimmed = errorText.trim();
-            if (!trimmed.isEmpty()) {
-                return trimmed;
-            }
-        }
-        if (errorCode != 0) {
+        String text = errorText == null ? "" : errorText.trim();
+        if (errorCode != 0 && text.isEmpty()) {
             return Integer.toString(errorCode);
         }
-        return null;
+        if (text.isEmpty()) {
+            return null;
+        }
+        String prefix = errorCode == 0 ? "" : Integer.toString(errorCode);
+        if (prefix.isEmpty() || text.equals(prefix) || text.startsWith(prefix + " ")) {
+            return text;
+        }
+        return prefix + " " + text;
     }
 
-    public static String message(String title, String errorCode) {
-        if (title == null || title.isEmpty()) {
-            return errorCode == null ? "" : errorCode;
+    /** {@code pattern} is the langpack value. {@code %@} is accepted so an iOS pack formats here. */
+    public static String message(String pattern, String detail) {
+        String format = pattern == null ? "" : pattern.replace("%@", "%s");
+        if (detail == null || detail.isEmpty()) {
+            return format.replace("（%s）", "").replace(" (%s)", "").replace("(%s)", "").trim();
         }
-        if (errorCode == null || errorCode.isEmpty()) {
-            return title;
+        try {
+            return String.format(Locale.US, format, detail);
+        } catch (RuntimeException ignored) {
+            return detail;
         }
-        return title + "\n" + errorCode;
     }
 }

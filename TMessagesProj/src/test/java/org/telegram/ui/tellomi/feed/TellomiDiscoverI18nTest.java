@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class TellomiDiscoverI18nTest {
@@ -26,7 +27,7 @@ public class TellomiDiscoverI18nTest {
                 if ("Tellomi.Discover.Recommend".equals(key)) {
                     return "おすすめ";
                 }
-                if ("Tellomi.Discover.Tab.Feed".equals(key)) {
+                if ("Tellomi.Discover.Feed".equals(key)) {
                     return "発見";
                 }
                 if ("Tellomi.Discover.City.cn_chengdu".equals(key)) {
@@ -67,6 +68,17 @@ public class TellomiDiscoverI18nTest {
             assertEquals(row[1], hans.get(name));
             assertEquals(row[1], cn.get(name));
         }
+        assertEquals("Tellomi.Discover.City.cn_hong-kong", TellomiDiscoverCity.displayKey("cn:hong-kong"));
+        assertEquals("Tellomi.Discover.City.us_new-york", TellomiDiscoverCity.displayKey("us:new-york"));
+        assertEquals("Tellomi.Discover.City.us_los-angeles", TellomiDiscoverCity.displayKey("us:los-angeles"));
+        assertEquals("Tellomi.Discover.City.us_san-francisco", TellomiDiscoverCity.displayKey("us:san-francisco"));
+        assertEquals("Tellomi_Discover_City_cn_hong_kong", TellomiPack.resourceName("Tellomi.Discover.City.cn_hong-kong"));
+        assertEquals("Tellomi_Discover_City_us_new_york", TellomiPack.resourceName("Tellomi.Discover.City.us_new-york"));
+        assertNull(TellomiPack.find("Tellomi.Discover.Tab.Feed"));
+        assertNull(TellomiPack.find("Tellomi.Discover.LegacyEmptyTitle"));
+        assertNull(TellomiPack.find("Tellomi.Signup.AvatarFailed"));
+        assertEquals("Discover", TellomiPack.bundled("Tellomi.Discover.Feed", "en"));
+        assertEquals("发现", TellomiPack.bundled("Tellomi.Discover.Feed", "zh-Hant"));
     }
 
     private static Map<String, String> load(String relative) throws Exception {

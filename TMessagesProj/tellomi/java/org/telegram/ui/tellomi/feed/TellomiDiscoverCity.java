@@ -122,7 +122,7 @@ public final class TellomiDiscoverCity {
         if (value == null) {
             return null;
         }
-        return "Tellomi.Discover.City." + value.replace(':', '_').replace('-', '_');
+        return "Tellomi.Discover.City." + value.replace(':', '_');
     }
 
     static List<String[]> displayRows() {
