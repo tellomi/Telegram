@@ -1,45 +1,40 @@
 package org.telegram.ui.tellomi.feed;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
 import android.content.Context;
 import android.os.Bundle;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsActivity;
-import org.telegram.ui.TellomiTabNavigation;
-import org.telegram.ui.TellomiTabs;
 
 import java.util.ArrayList;
 
 /**
- * Placeholder for the Discover tab. The feed client arrives with M3.
- * The tab stays visible and shows an empty state when there is nothing to load (D-37).
+ * Discover tab. The live feed stays on the empty state until
+ * {@code tellomi_discover_feed_enabled} is on and the account is logged in.
+ * {@link #setPendingPostId} is the post-link hook used by the navigation work.
  */
-public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFragmentDelegate {
+public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFragmentDelegate, NotificationCenter.NotificationCenterDelegate {
 
     public static final String ARG_POST_ID = "tellomi_post_id";
+    static final int MENU_COMPOSE = 1;
 
     private static String pendingPostId;
 
-    private TextView titleView;
-    private TextView messageView;
+    TextView titleView;
+    TextView messageView;
     private String openedPostId;
     private boolean hasMainTabs;
+    private TellomiDiscoverScreen screen;
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -49,7 +44,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         }
     }
 
-    /** A post link arrived before this screen existed. M3 reads it from the fragment. */
+    /** A post link arrived before this screen existed. The feed reads it when the flag is on. */
     public static void setPendingPostId(String postId) {
         pendingPostId = postId;
     }
@@ -71,9 +66,70 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     public void openPost(String postId) {
         openedPostId = postId;
         if (getArguments() != null) {
-            getArguments().putString(ARG_POST_ID, postId);
+            if (postId == null) {
+                getArguments().remove(ARG_POST_ID);
+            } else {
+                getArguments().putString(ARG_POST_ID, postId);
+            }
         }
-        bindEmptyCopy();
+        if (postId != null && screen != null) {
+            screen.sync(false);
+        }
+    }
+
+    void clearOpenedPost() {
+        openedPostId = null;
+        if (getArguments() != null) {
+            getArguments().remove(ARG_POST_ID);
+        }
+    }
+
+    void showComposeButton(boolean show, String title) {
+        if (actionBar == null) {
+            return;
+        }
+        actionBar.createMenu().clearItems();
+        if (show) {
+            actionBar.createMenu().addItem(MENU_COMPOSE, title);
+        }
+    }
+
+    @Override
+    public boolean onFragmentCreate() {
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
+        if (screen != null) {
+            screen.destroy();
+        }
+        super.onFragmentDestroy();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (screen != null) {
+            screen.sync(false);
+        }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.appConfigUpdated && screen != null) {
+            screen.sync(false);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
+        if (screen != null) {
+            screen.onLocationPermission(requestCode, grantResults);
+        }
     }
 
     @Override
@@ -89,77 +145,42 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         actionBar.setCastShadows(false);
         if (!hasMainTabs) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    }
-                }
-            });
         }
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1 && !hasMainTabs) {
+                    finishFragment();
+                } else if (id == MENU_COMPOSE && screen != null) {
+                    screen.compose();
+                }
+            }
+        });
 
         FrameLayout root = new FrameLayout(context);
         root.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
-
-        LinearLayout column = new LinearLayout(context);
-        column.setOrientation(LinearLayout.VERTICAL);
-        column.setGravity(Gravity.CENTER_HORIZONTAL);
-
-        titleView = new TextView(context);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setGravity(Gravity.CENTER);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
-        column.addView(titleView, LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT));
-
-        messageView = new TextView(context);
-        messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        messageView.setGravity(Gravity.CENTER);
-        messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
-        LinearLayout.LayoutParams messageLp = LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT);
-        messageLp.topMargin = dp(8);
-        column.addView(messageView, messageLp);
-
-        int top = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
-        int bottom = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-        column.setPadding(dp(32), 0, dp(32), 0);
+        int top = ActionBar.getCurrentActionBarHeight() + org.telegram.messenger.AndroidUtilities.statusBarHeight;
+        int bottom = hasMainTabs ? org.telegram.messenger.AndroidUtilities.dp(org.telegram.ui.DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
         root.setPadding(0, top, 0, bottom);
-        root.addView(column, new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.CENTER
-        ));
-        bindEmptyCopy();
-        return fragmentView = root;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        bindEmptyCopy();
-    }
-
-    /** Empty state, or the M3 placeholder when a post link was opened (D-37, D-57). */
-    private void bindEmptyCopy() {
-        if (titleView == null || messageView == null) {
-            return;
+        fragmentView = root;
+        if (screen != null) {
+            screen.destroy();
         }
-        TellomiTabNavigation.Copy copy = TellomiTabs.currentCopy();
-        titleView.setText(copy.feedEmptyTitle);
-        messageView.setText(openedPostId == null ? copy.feedEmptyText : copy.feedPostUnavailable);
-    }
-
-    private static LinearLayout.LayoutParams LayoutParams(int width) {
-        return new LinearLayout.LayoutParams(width, LinearLayout.LayoutParams.WRAP_CONTENT);
+        screen = new TellomiDiscoverScreen(this, root, context);
+        screen.sync(true);
+        return fragmentView;
     }
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> list = new ArrayList<>();
         list.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        list.add(new ThemeDescription(titleView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        list.add(new ThemeDescription(messageView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
+        if (titleView != null) {
+            list.add(new ThemeDescription(titleView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        }
+        if (messageView != null) {
+            list.add(new ThemeDescription(messageView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
+        }
         return list;
     }
 }
