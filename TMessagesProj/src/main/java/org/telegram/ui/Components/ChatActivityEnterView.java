@@ -15438,22 +15438,28 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         private int drawableColor;
+        private int drawableInverseColor;
 
         public void updateColors() {
             final int fill = Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
             final int glyph;
+            final int legacyGlyph;
             if (isNewDesignSendButton) {
-                final double lum = (0.2126 * Color.red(fill) + 0.7152 * Color.green(fill) + 0.0722 * Color.blue(fill)) / 255.0;
-                glyph = lum > 0.55 ? Color.BLACK : Color.WHITE;
+                glyph = SendButtonColors.contrastGlyph(fill);
+                legacyGlyph = glyph;
             } else {
                 glyph = fill;
+                // Legacy-style button (e.g. attach panel) draws drawableInverse on getFillColor();
+                // in Tellomi both colors are #111111, so pick a contrasting glyph.
+                legacyGlyph = SendButtonColors.contrastGlyph(getFillColor());
             }
-            if (glyph != drawableColor) {
+            if (glyph != drawableColor || legacyGlyph != drawableInverseColor) {
                 drawableColor = glyph;
+                drawableInverseColor = legacyGlyph;
                 drawable.setColorFilter(new PorterDuffColorFilter(glyph, PorterDuff.Mode.SRC_IN));
                 int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
                 inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
-                drawableInverse.setColorFilter(new PorterDuffColorFilter(isNewDesignSendButton ? glyph : fill, PorterDuff.Mode.SRC_IN));
+                drawableInverse.setColorFilter(new PorterDuffColorFilter(legacyGlyph, PorterDuff.Mode.SRC_IN));
                 count.setTextColor(glyph);
             }
             if (isNewDesignSendButton) {
