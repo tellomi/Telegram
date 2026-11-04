@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -28,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Draws {@link TellomiSettingsModel} on the settings tab.
@@ -43,6 +46,8 @@ public final class TellomiSettingsLayout {
     public static final int ROW_SUPPORT = TellomiSettingsModel.ROW_SUPPORT;
 
     private static volatile Map<Integer, List<UItem>> pages = Collections.emptyMap();
+    /** Header views that already watch attach, so bind can reapply the card inset. */
+    private static final Set<View> sideMarginHooks = Collections.newSetFromMap(new WeakHashMap<>());
 
     private TellomiSettingsLayout() {
     }
@@ -107,6 +112,9 @@ public final class TellomiSettingsLayout {
         if (subtitle != null) {
             subtitle.setSingleLine(false);
             subtitle.setMaxLines(3);
+            subtitle.setEllipsize(TextUtils.TruncateAt.END);
+            int pad = AndroidUtilities.dp(16);
+            subtitle.setPadding(pad, subtitle.getPaddingTop(), pad, subtitle.getPaddingBottom());
             subtitle.setText(card.subtitle);
         }
         decorate(cardView);
@@ -118,16 +126,50 @@ public final class TellomiSettingsLayout {
         }
         try {
             card.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_windowBackgroundWhite)));
-            ViewGroup.LayoutParams lp = card.getLayoutParams();
-            if (lp instanceof ViewGroup.MarginLayoutParams) {
-                int margin = AndroidUtilities.dp(12);
-                ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
-                mlp.leftMargin = margin;
-                mlp.rightMargin = margin;
-                card.setLayoutParams(mlp);
-            }
+            applySideMargins(card);
+            watchSideMargins(card);
         } catch (Throwable ignored) {
         }
+    }
+
+    /**
+     * The header is bound with match-parent layout params and no inset.
+     * Those params do not exist until the row is attached, so the first
+     * {@link #decorate} call cannot see them. Without the inset the rounded
+     * rect sits on the screen edge and the corners disappear.
+     */
+    static void applySideMargins(View card) {
+        if (card == null) {
+            return;
+        }
+        ViewGroup.LayoutParams lp = card.getLayoutParams();
+        if (!(lp instanceof ViewGroup.MarginLayoutParams)) {
+            return;
+        }
+        int margin = AndroidUtilities.dp(12);
+        ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
+        if (mlp.leftMargin == margin && mlp.rightMargin == margin) {
+            return;
+        }
+        mlp.leftMargin = margin;
+        mlp.rightMargin = margin;
+        card.setLayoutParams(mlp);
+    }
+
+    private static void watchSideMargins(View card) {
+        if (!sideMarginHooks.add(card)) {
+            return;
+        }
+        card.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View v) {
+                applySideMargins(v);
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(View v) {
+            }
+        });
     }
 
     /** Rebuilds the settings list into the three group rows and remembers each page. */
@@ -192,7 +234,7 @@ public final class TellomiSettingsLayout {
     }
 
     private static UItem groupRow(int id, String title) {
-        int icon = R.drawable.settings_chat;
+        int icon = R.drawable.msg_settings;
         if (id == ROW_ACCOUNT) {
             icon = R.drawable.settings_account;
         } else if (id == ROW_SUPPORT) {

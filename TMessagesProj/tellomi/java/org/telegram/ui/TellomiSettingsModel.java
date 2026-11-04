@@ -33,7 +33,8 @@ public final class TellomiSettingsModel {
 
     public static final int[] ACCOUNT_IDS = {1, 3, 8};
     public static final int[] GENERAL_IDS = {5, 2, 6, 7, 9, 10, 40, 25, 11, 12, 13, 15, 16};
-    public static final int[] SUPPORT_IDS = {18, 17, 19, 27, 41};
+    /** FAQ, ask, privacy policy, licenses. The update row stays on the home footer. */
+    public static final int[] SUPPORT_IDS = {18, 17, 19, 27};
 
     private static final int[] TAIL_IDS = {20, 21, 22, 24, 26};
 

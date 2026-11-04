@@ -799,7 +799,7 @@ The shared language pack cannot put a hyphen in a key. The iOS string generator 
 
 ## Settings home (M1)
 
-The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds that list into the same three groups iOS uses: Account, General, and Support. The home screen shows those three titles. Each opens a secondary page with the rows that used to sit on the home list. Tips (`Telegram Features`, row 23) and Apple Watch (row 28, or a row titled Apple Watch) are left off. Suggestions, other accounts, the experimental block, and the debug block stay on the home screen.
+The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds that list into the same three groups iOS uses: Account, General, and Support. The home screen shows those three titles. Each opens a secondary page with the rows that used to sit on the home list. Tips (`Telegram Features`, row 23) and Apple Watch (row 28, or a row titled Apple Watch) are left off. Suggestions, other accounts, the experimental block, and the debug block stay on the home screen. The check-for-updates row (`TellomiSettingsUpdate.ROW_ID`, 41) stays on the home screen, directly above the version footer, and still calls `checkAppUpdate` with progress. It is not a Support page row. The General group uses the white gear `msg_settings`. The header card gets a 12dp side inset when it is attached, because the list binds it with match-parent params and no margins.
 
 The top block is a card. It shows the display name, and when the account has them, the phone, the email, and the public username. Phone and email are both shown. The email is the saved sign-in address, not the masked switcher label.
 
@@ -810,7 +810,7 @@ New lookup keys use only letters, digits, `.`, and `_`: `Tellomi.Settings.Group.
 | File | Change |
 | --- | --- |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsModel.java` | Group order, the card lines, and the help URL. No Android types. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java` | Draws that model: the card, the three rows, and the secondary pages. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java` | Draws that model: the card (12dp side inset once the header is attached), the three rows (General uses `msg_settings`), and the secondary pages. The update row stays on the home list. |
 | `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `arrange` after the list is built, `applyCard` on the header, the group tap, and the two help opens. The header is 36dp taller so the card can show three lines. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `tellomi_help_url`, default `https://tellomi.cn/help`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The FAQ row and the settings search hit use the same help URL. |

@@ -40,6 +40,7 @@ public class TellomiSettingsLayoutTest {
         assertFalse(rows.contains(18));
         assertTrue(rows.contains(24));
         assertTrue(rows.contains(20));
+        assertEquals(Integer.valueOf(41), rows.get(rows.size() - 1));
         assertEquals("page.account", TellomiSettingsModel.destination(TellomiSettingsModel.ROW_ACCOUNT));
         assertEquals("page.general", TellomiSettingsModel.destination(TellomiSettingsModel.ROW_GENERAL));
         assertEquals("page.support", TellomiSettingsModel.destination(TellomiSettingsModel.ROW_SUPPORT));
@@ -52,7 +53,8 @@ public class TellomiSettingsLayoutTest {
         assertEquals(Arrays.asList(1, 3, 8), rowIds(TellomiSettingsModel.pageEntries(TellomiSettingsModel.ROW_ACCOUNT, source, zh)));
         assertEquals(Arrays.asList(5, 2, 6, 7, 9, 10, 40, 25, 11, 12, 13, 15, 16), rowIds(TellomiSettingsModel.pageEntries(TellomiSettingsModel.ROW_GENERAL, source, zh)));
         List<TellomiSettingsModel.Entry> support = TellomiSettingsModel.pageEntries(TellomiSettingsModel.ROW_SUPPORT, source, zh);
-        assertEquals(Arrays.asList(18, 17, 19, 27, 41), rowIds(support));
+        assertEquals(Arrays.asList(18, 17, 19, 27), rowIds(support));
+        assertFalse(rowIds(support).contains(41));
         assertEquals("帮助中心", textOf(support, 18));
         assertEquals("账号", TellomiSettingsModel.pageTitle(TellomiSettingsModel.ROW_ACCOUNT, zh));
         assertEquals("通用", TellomiSettingsModel.pageTitle(TellomiSettingsModel.ROW_GENERAL, zh));
@@ -69,6 +71,46 @@ public class TellomiSettingsLayoutTest {
         assertEquals("", TellomiSettingsModel.destination(TellomiSettingsModel.TIPS_ID));
         assertEquals("", TellomiSettingsModel.destination(TellomiSettingsModel.WATCH_ID));
         assertEquals("help", TellomiSettingsModel.destination(TellomiSettingsModel.FAQ_ID));
+    }
+
+    @Test
+    public void releaseHomeKeepsTheUpdateRowAboveTheVersion() {
+        List<TellomiSettingsModel.Entry> source = new ArrayList<>();
+        source.add(custom(0));
+        source.add(row(1, "Account"));
+        source.add(row(2, "Chat"));
+        source.add(row(3, "Privacy"));
+        source.add(row(5, "Notifications"));
+        source.add(row(6, "Data"));
+        source.add(row(7, "Folders"));
+        source.add(row(8, "Devices"));
+        source.add(row(9, "Power"));
+        source.add(row(10, "Language"));
+        source.add(row(40, "Navigation"));
+        source.add(shadow());
+        source.add(header("Help"));
+        source.add(row(17, "Ask"));
+        source.add(row(18, "FAQ"));
+        source.add(row(23, "Tips"));
+        source.add(row(19, "Policy"));
+        source.add(row(27, "Licenses"));
+        source.add(shadow());
+        source.add(row(41, "Updates"));
+        source.add(custom(1));
+
+        List<TellomiSettingsModel.Entry> home = TellomiSettingsModel.arrangeEntries(source, TellomiSettingsModel.Copy.resolve("en"));
+        assertEquals(Arrays.asList(
+            TellomiSettingsModel.ROW_ACCOUNT,
+            TellomiSettingsModel.ROW_GENERAL,
+            TellomiSettingsModel.ROW_SUPPORT,
+            41
+        ), rowIds(home));
+        int update = indexOf(home, 41);
+        assertTrue(update > 0);
+        assertEquals(TellomiSettingsModel.KIND_SHADOW, home.get(update - 1).kind);
+        assertEquals(TellomiSettingsModel.KIND_CUSTOM, home.get(home.size() - 1).kind);
+        assertEquals(Arrays.asList(18, 17, 19, 27), rowIds(TellomiSettingsModel.pageEntries(TellomiSettingsModel.ROW_SUPPORT, source, TellomiSettingsModel.Copy.resolve("zh"))));
+        assertEquals("updates", TellomiSettingsModel.destination(41));
     }
 
     @Test
@@ -186,6 +228,12 @@ public class TellomiSettingsLayoutTest {
         assertFalse(login.contains("TellomiSettingsModel"));
         assertTrue(layout.contains("finishFragment()"));
         assertTrue(layout.contains("dispatch(opener::open, item.id)"));
+        assertTrue(layout.contains("R.drawable.msg_settings"));
+        assertTrue(layout.contains("R.drawable.settings_account"));
+        assertTrue(layout.contains("R.drawable.settings_faq"));
+        assertFalse(layout.contains("settings_chat"));
+        assertTrue(layout.contains("addOnAttachStateChangeListener"));
+        assertTrue(layout.contains("applySideMargins"));
         assertTrue(count("TellomiSettingsLayout", settings) <= 6);
     }
 
@@ -250,6 +298,15 @@ public class TellomiSettingsLayoutTest {
             }
         }
         return ids;
+    }
+
+    private static int indexOf(List<TellomiSettingsModel.Entry> items, int id) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).id == id && items.get(i).kind == TellomiSettingsModel.KIND_ROW) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static String textOf(List<TellomiSettingsModel.Entry> items, int id) {
