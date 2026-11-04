@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Langpack keys for Tellomi Discover, tabs, and sign-up.
+ * Langpack keys for Tellomi Discover, settings, tabs, and sign-up.
  * A downloaded pack is read by key ({@code Tellomi.Discover.*}). The bundled
  * English and Chinese values match {@code tellomi/res/values} and {@code values-zh}.
  */
@@ -83,7 +83,14 @@ public final class TellomiPack {
         entry("Tellomi.Discover.Report.Personal", "Personal details", "侵犯隐私"),
         entry("Tellomi.Discover.Report.Other", "Other", "其他"),
         entry("Tellomi.SignUp.AvatarFailed", "Couldn't upload the profile photo (%s)", "头像上传失败（%s）"),
-        entry("Tellomi.SignUp.AvatarRetry", "Retry", "重试")
+        entry("Tellomi.SignUp.AvatarRetry", "Retry", "重试"),
+        entry("Tellomi.Settings.Group.Account", "Account", "账号"),
+        entry("Tellomi.Settings.Group.General", "General", "通用"),
+        entry("Tellomi.Settings.Group.Support", "Support", "支持"),
+        entry("Tellomi.Settings.Help", "Help Center", "帮助中心"),
+        entry("Tellomi.Settings.Card.Phone", "Phone", "手机号"),
+        entry("Tellomi.Settings.Card.Email", "Email", "邮箱"),
+        entry("Tellomi.Settings.Card.Username", "Username", "用户名")
     };
 
     private TellomiPack() {

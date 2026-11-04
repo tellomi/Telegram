@@ -217,4 +217,11 @@
     <string name="Tellomi_Discover_FeedPostUnavailable">This post can\'t be opened yet.</string>
     <string name="Tellomi_SignUp_AvatarFailed">Couldn\'t upload the profile photo (%s)</string>
     <string name="Tellomi_SignUp_AvatarRetry">Retry</string>
+    <string name="Tellomi_Settings_Group_Account">Account</string>
+    <string name="Tellomi_Settings_Group_General">General</string>
+    <string name="Tellomi_Settings_Group_Support">Support</string>
+    <string name="Tellomi_Settings_Help">Help Center</string>
+    <string name="Tellomi_Settings_Card_Phone">Phone</string>
+    <string name="Tellomi_Settings_Card_Email">Email</string>
+    <string name="Tellomi_Settings_Card_Username">Username</string>
 </resources>

@@ -218,4 +218,11 @@
     <string name="Tellomi_Discover_FeedPostUnavailable">这条帖子暂时无法打开。</string>
     <string name="Tellomi_SignUp_AvatarFailed">头像上传失败（%s）</string>
     <string name="Tellomi_SignUp_AvatarRetry">重试</string>
+    <string name="Tellomi_Settings_Group_Account">账号</string>
+    <string name="Tellomi_Settings_Group_General">通用</string>
+    <string name="Tellomi_Settings_Group_Support">支持</string>
+    <string name="Tellomi_Settings_Help">帮助中心</string>
+    <string name="Tellomi_Settings_Card_Phone">手机号</string>
+    <string name="Tellomi_Settings_Card_Email">邮箱</string>
+    <string name="Tellomi_Settings_Card_Username">用户名</string>
 </resources>
