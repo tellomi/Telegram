@@ -16,15 +16,15 @@ from pathlib import Path
 
 import generate_icons
 
-# Android resource, MingCute name, style, iOS Item List/Icons name.
-# Privacy Policy has no iOS settings row. Stars is fill so it is not a
-# byte copy of Premium; iOS draws both from the line star.
+# Android resource, glyph, style, iOS Item List/Icons name.
+# Privacy Policy has no iOS settings row. Stars is semantic/star-coin
+# (Item List/Icons/Stars), not the Premium line star.
 EXPECTED = (
     ("settings_account", "user-3", "line", "Profile"),
     ("settings_ask", "message-circle-question-mark", "line", "Support"),
     ("settings_chat", "chat-1", "line", "Chat"),
-    ("settings_data", "chart-bar", "line", "Data"),
-    ("settings_devices", "cellphone", "line", "Devices"),
+    ("settings_data", "cylinder", "line", "Data"),
+    ("settings_devices", "device", "line", "Devices"),
     ("settings_faq", "question", "line", "Faq"),
     ("settings_features", "bulb", "line", "Tips"),
     ("settings_folders", "folder", "line", "Folder"),
@@ -35,7 +35,7 @@ EXPECTED = (
     ("settings_premium", "star", "line", "Premium"),
     ("settings_privacy", "lock", "line", "Privacy"),
     ("settings_sounds", "bell-ringing", "line", "Notifications"),
-    ("settings_stars", "star", "fill", "Stars"),
+    ("settings_stars", "semantic/star-coin", "line", "Stars"),
 )
 
 ROOT = Path(__file__).resolve().parents[2]

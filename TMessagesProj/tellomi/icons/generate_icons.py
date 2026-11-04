@@ -428,18 +428,17 @@ EXTRAS = [
 
 # Main settings rows. The "settings" substring rule paints every settings_*
 # name as settings-3 (one gear). Each glyph follows tellomi/Telegram-iOS
-# Tellomi/Icons/mapping.csv. Stars is the filled star: iOS draws Premium and
-# Stars from the same line star, and the fill keeps that meaning while the
-# drawable is not a byte copy. Privacy Policy has no iOS row; the shield is
-# Item List/Icons/Proxy and stays distinct from Privacy (lock).
+# Tellomi/Icons/mapping.csv (Item List/Icons/*). Stars is semantic/star-coin,
+# not the Premium line star. Privacy Policy has no iOS row; the shield stays
+# distinct from Privacy (lock). iOS Proxy is semantic/proxy and is not this row.
 SETTINGS_ROWS = {
     "settings_account": ("user-3", "line"),  # Item List/Icons/Profile
     "settings_ask": ("message-circle-question-mark", "line"),  # Item List/Icons/Support
     # settings_business stays the upstream briefcase. The announcement glyph
     # was the iOS row, and it read as a channel megaphone on Android.
     "settings_chat": ("chat-1", "line"),  # Item List/Icons/Chat
-    "settings_data": ("chart-bar", "line"),  # Item List/Icons/Data
-    "settings_devices": ("cellphone", "line"),  # Item List/Icons/Devices
+    "settings_data": ("cylinder", "line"),  # Item List/Icons/Data
+    "settings_devices": ("device", "line"),  # Item List/Icons/Devices
     "settings_faq": ("question", "line"),  # Item List/Icons/Faq
     "settings_features": ("bulb", "line"),  # Item List/Icons/Tips
     "settings_folders": ("folder", "line"),  # Item List/Icons/Folder
@@ -450,7 +449,7 @@ SETTINGS_ROWS = {
     "settings_premium": ("star", "line"),  # Item List/Icons/Premium
     "settings_privacy": ("lock", "line"),  # Item List/Icons/Privacy
     "settings_sounds": ("bell-ringing", "line"),  # Item List/Icons/Notifications
-    "settings_stars": ("star", "fill"),  # Item List/Icons/Stars
+    "settings_stars": ("semantic/star-coin", "line"),  # Item List/Icons/Stars
 }
 
 
@@ -603,6 +602,9 @@ HAND_GLYPHS = {
 
 
 def vendored_svg(icon, style):
+    if icon.startswith("semantic/"):
+        path = ICONS / "semantic" / f"{icon.split('/', 1)[1]}.svg"
+        return path if path.exists() else None
     bucket = "line" if style == "line" else "fill"
     path = ICONS / "mingcute" / "svg" / bucket / f"{icon}.svg"
     if not path.exists():
@@ -659,32 +661,121 @@ def render_webp(svg, width, height, dest):
     tmp.unlink(missing_ok=True)
 
 
+def _local_tag(tag):
+    if not isinstance(tag, str):
+        return ""
+    return tag.split("}")[-1]
+
+
+def _fmt_num(n):
+    text = f"{n:.6f}".rstrip("0").rstrip(".")
+    if text in ("", "-0"):
+        return "0"
+    return text
+
+
+def _svg_float(el, key, default):
+    raw = el.attrib.get(key)
+    if raw is None:
+        return default
+    return float(raw.strip().rstrip("px"))
+
+
+def _nested_svg_transform(el):
+    """Map a nested <svg> viewport into its parent. None when it is not placed."""
+    vb = el.attrib.get("viewBox")
+    if not vb:
+        return None
+    minx, miny, vbw, vbh = [float(p) for p in vb.replace(",", " ").split()]
+    if vbw == 0 or vbh == 0:
+        return None
+    x = _svg_float(el, "x", 0.0)
+    y = _svg_float(el, "y", 0.0)
+    w = _svg_float(el, "width", vbw)
+    h = _svg_float(el, "height", vbh)
+    sx = w / vbw
+    sy = h / vbh
+    tx = x - minx * sx
+    ty = y - miny * sy
+    return sx, sy, tx, ty
+
+
+def _path_item(el):
+    d = el.attrib.get("d")
+    if not d:
+        return None
+    fill = el.attrib.get("fill", "currentColor")
+    stroke = el.attrib.get("stroke")
+    sw = el.attrib.get("stroke-width")
+    item = {"d": d}
+    if fill and fill != "none":
+        item["fill"] = "#FFFFFF"
+    if stroke and stroke != "none":
+        item["stroke"] = "#FFFFFF"
+        if sw:
+            item["sw"] = sw
+    if el.attrib.get("fill-rule") == "evenodd":
+        item["even"] = True
+    return item
+
+
+def _append_path(lines, item, indent):
+    attrs = [f'android:pathData="{item["d"]}"']
+    if item.get("fill"):
+        attrs.append('android:fillColor="#FFFFFF"')
+    if item.get("stroke"):
+        attrs.append('android:strokeColor="#FFFFFF"')
+        attrs.append(f'android:strokeWidth="{item.get("sw", "1")}"')
+    if item.get("even"):
+        attrs.append('android:fillType="evenOdd"')
+    lines.append(indent + "<path " + " ".join(attrs) + " />")
+
+
+def _append_svg_children(el, lines, indent):
+    """Emit path elements. A nested svg viewport becomes a vector group.
+
+    Root paths stay a verbatim copy of `d`, so a flat MingCute glyph does not
+    change when this walks the tree. semantic/star-coin places the star with
+    the same x/y/width/height/viewBox as the iOS svg.
+    """
+    count = 0
+    for child in list(el):
+        tag = _local_tag(child.tag)
+        if tag == "path":
+            item = _path_item(child)
+            if item:
+                _append_path(lines, item, indent)
+                count += 1
+            continue
+        if tag == "svg":
+            mapped = _nested_svg_transform(child)
+            if mapped is None:
+                count += _append_svg_children(child, lines, indent)
+                continue
+            sx, sy, tx, ty = mapped
+            identity = (
+                abs(sx - 1) < 1e-9 and abs(sy - 1) < 1e-9
+                and abs(tx) < 1e-9 and abs(ty) < 1e-9
+            )
+            if identity:
+                count += _append_svg_children(child, lines, indent)
+                continue
+            lines.append(
+                f'{indent}<group android:scaleX="{_fmt_num(sx)}" android:scaleY="{_fmt_num(sy)}" '
+                f'android:translateX="{_fmt_num(tx)}" android:translateY="{_fmt_num(ty)}">'
+            )
+            count += _append_svg_children(child, lines, indent + "    ")
+            lines.append(f"{indent}</group>")
+            continue
+        count += _append_svg_children(child, lines, indent)
+    return count
+
+
 def android_vector(svg, width_dp, height_dp):
     tree = ET.parse(svg)
     root = tree.getroot()
     vb = root.attrib.get("viewBox", "0 0 24 24").split()
     vw, vh = vb[-2], vb[-1]
-    paths = []
-    for el in root.iter():
-        tag = el.tag.split("}")[-1]
-        if tag != "path":
-            continue
-        d = el.attrib.get("d")
-        if not d:
-            continue
-        fill = el.attrib.get("fill", "currentColor")
-        stroke = el.attrib.get("stroke")
-        sw = el.attrib.get("stroke-width")
-        item = {"d": d}
-        if fill and fill != "none":
-            item["fill"] = "#FFFFFF"
-        if stroke and stroke != "none":
-            item["stroke"] = "#FFFFFF"
-            if sw:
-                item["sw"] = sw
-        if el.attrib.get("fill-rule") == "evenodd":
-            item["even"] = True
-        paths.append(item)
     lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
         '<vector xmlns:android="http://schemas.android.com/apk/res/android"',
@@ -693,25 +784,16 @@ def android_vector(svg, width_dp, height_dp):
         f'    android:viewportWidth="{vw}"',
         f'    android:viewportHeight="{vh}">',
     ]
-    for p in paths:
-        attrs = [f'android:pathData="{p["d"]}"']
-        if p.get("fill"):
-            attrs.append('android:fillColor="#FFFFFF"')
-        if p.get("stroke"):
-            attrs.append('android:strokeColor="#FFFFFF"')
-            attrs.append(f'android:strokeWidth="{p.get("sw", "1")}"')
-        if p.get("even"):
-            attrs.append('android:fillType="evenOdd"')
-        lines.append("    <path " + " ".join(attrs) + " />")
+    npaths = _append_svg_children(root, lines, "    ")
     lines.append("</vector>")
-    return "\n".join(lines) + "\n", len(paths)
+    return "\n".join(lines) + "\n", npaths
 
 
 def settings_row_vector(name):
     icon, style = SETTINGS_ROWS[name]
     svg = vendored_svg(icon, style)
     if svg is None:
-        raise FileNotFoundError(f"missing vendored MingCute {style}/{icon}.svg for {name}")
+        raise FileNotFoundError(f"missing glyph {style}/{icon}.svg for {name}")
     body, npaths = android_vector(svg, "24", "24")
     if npaths == 0:
         raise ValueError(f"{name} svg has no path")
@@ -997,6 +1079,8 @@ def main():
         if key in seen:
             continue
         seen.add(key)
+        if "/" in icon:
+            continue
         bucket = "line" if style == "line" else "fill"
         dest = ICONS / "mingcute" / "svg" / bucket / f"{icon}.svg"
         dest.parent.mkdir(parents=True, exist_ok=True)
