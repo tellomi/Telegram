@@ -532,6 +532,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             WallpapersListActivity.ColorWallpaper object = (WallpapersListActivity.ColorWallpaper) currentWallpaper;
             isMotion = object.motion;
             selectedPattern = object.pattern;
+            if (object.builtinId != null) {
+                currentIntensity = object.intensity;
+            }
             if (selectedPattern != null) {
                 currentIntensity = object.intensity;
                 if (currentIntensity < 0 && !Theme.getActiveTheme().isDark()) {
@@ -2631,6 +2634,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                 slug = Theme.DEFAULT_BACKGROUND_SLUG;
                 color = 0;
+            } else if (wallPaper.builtinId != null) {
+                slug = wallPaper.builtinId;
+                color = backgroundColor;
+                gradientColor1 = backgroundGradientColor1;
+                gradientColor2 = backgroundGradientColor2;
+                gradientColor3 = backgroundGradientColor3;
+                rotation = backgroundRotation;
             } else {
                 if (selectedPattern != null) {
                     slug = selectedPattern.slug;
@@ -4493,7 +4503,12 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 }
                 setBackgroundColor(wallPaper.gradientColor2, 2, true, false);
                 setBackgroundColor(wallPaper.gradientColor3, 3, true, false);
-                if (selectedPattern != null) {
+                if (wallPaper.builtinId != null) {
+                    backgroundImage.setImageBitmap(null);
+                    Drawable builtin = TellomiWallpaperDraw.create(TellomiWallpaperCatalog.byId(wallPaper.builtinId), Theme.isCurrentThemeDark());
+                    backgroundImage.setBackground(builtin);
+                    themeDelegate.applyChatServiceMessageColor(AndroidUtilities.calcDrawableColor(builtin), builtin, builtin, currentIntensity);
+                } else if (selectedPattern != null) {
                     backgroundImage.setImage(ImageLocation.getForDocument(selectedPattern.document), imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
                 } else if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                     backgroundImage.setImageBitmap(null);

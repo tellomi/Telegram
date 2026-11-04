@@ -2466,6 +2466,7 @@
     <string name="AskAQuestionInfo">请注意：Telegram 的支持服务来自志愿者。我们会尽快回复，但仍可能需要等待一段时间。\n\n请前往&lt;a href=\\"https://telegram.org/faq#general-questions\\"&gt;Telegram 常见问题&lt;/a&gt;看看：那里有绝大多数问题的答案和重要的&lt;a href=\\"https://telegram.org/faq#troubleshooting\\"&gt;故障排除&lt;/a&gt;提示。</string>
     <string name="AskButton">向志愿者提问</string>
     <string name="TelegramFAQ">Telegram 常见问题</string>
+    <string name="TellomiOpenSourceLicenses">开源许可</string>
     <string name="TelegramFaq">Telegram 常见问题</string>
     <string name="TelegramFeatures">Telegram 功能</string>
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>

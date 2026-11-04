@@ -44449,12 +44449,7 @@ public class ChatActivity extends BaseFragment implements
         private Drawable getBackgroundDrawableFromTheme(EmojiThemes chatTheme, int prevPhase) {
             Drawable drawable;
             if (chatTheme.showAsDefaultStub) {
-                Theme.ThemeInfo themeInfo = EmojiThemes.getDefaultThemeInfo(isDark);
-                SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
-                String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
-                Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
-                drawable = settings.wallpaper;
-                drawable = new ColorDrawable(Theme.tellomiDefaultWallpaperColor(isDark));
+                drawable = TellomiWallpaperDraw.createDefault(isDark);
             } else {
                 int backgroundColor = getColor(Theme.key_chat_wallpaper);
                 int gradientColor1 = getColor(Theme.key_chat_wallpaper_gradient_to1);
