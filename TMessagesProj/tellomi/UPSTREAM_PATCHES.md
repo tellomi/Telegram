@@ -963,3 +963,14 @@ Field names follow content-engine `docs/api.md`. `link_preview` from the merged 
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Multi-pick, remove, upload, then publish. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverImageRow.java` | Feed and detail image slots. |
 | `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMediaTest.java` | Tus headers, the post field, limits, and zh-Hans / zh-TW copy. |
+
+## Document hash before upload (ADR-0082)
+
+Before the bytes of a GIF, a file, or a video that will not be transcoded are uploaded, the client hashes the local file and calls `messages.getDocumentByHash#b1f2061f` (`sha256`, `size` as long, `mime_type`). A returned `document` with id, access hash, and dc is sent as `inputMediaDocument`. `documentEmpty`, an RPC error, a timeout, or a hash failure continues the existing upload. Photos, secret chats, voice notes, live photos, a separate cover, mask documents on the upload, and any video `VideoEditedInfo.needConvert()` still uploads are unchanged. The old `#338e2464` int-size binding in `TLRPC` is left as upstream generated it; the request used here is the current constructor.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java` | Which files qualify, the constructor, SHA-256, and what counts as a reusable document. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | The RPC, fail-open, and swapping the outgoing media to `inputMediaDocument`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | Three original-file upload sites (single video, single document/GIF, grouped document/video) call that lookup before `uploadFile`. Transcoding and encrypted uploads do not. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Eligibility, the long-size constructor, SHA-256, and that those three sites are the only hooks. |
