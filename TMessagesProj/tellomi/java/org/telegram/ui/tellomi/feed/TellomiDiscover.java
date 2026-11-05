@@ -812,6 +812,7 @@ public final class TellomiDiscover {
     /**
      * {@code quoteOf} is the engine {@code quote_of}. {@code pollOptions} is omitted
      * when null. Two to ten options, each at most 40 code points, become {@code poll.options}.
+     * An {@code @} username stays in {@code text}. This object has no mentions field.
      */
     public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
         String body = text == null ? "" : trim(text);

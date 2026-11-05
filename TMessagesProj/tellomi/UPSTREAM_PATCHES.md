@@ -861,6 +861,23 @@ The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_
 | `TMessagesProj/src/main/java/org/telegram/messenger/PushListenerController.java` | After the account is known, a discover payload is shown by `TellomiDiscoverPush` and is not turned into a chat message. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | The notification extra `tellomi_discover_post` opens `https://tell.cc/m#<id>` through the existing post-link path. |
 
+## Discover compose @mentions (M3)
+
+Android only. The composer parses and inserts `@username`. The local check is the same one `ChangeUsernameActivity.checkUserName` already uses: no leading or trailing `_`, no leading digit, only `0-9` / `A-Z` / `a-z` / `_`, at least `TellomiUsername.MIN_LENGTH` (4), at most 32. It does not call `account.checkUsername`. A token that fails that check keeps 发布 disabled and shows the reason. A lone `@`, and an `@` inside an address (`a@b.com`), are left as text.
+
+Picking a row, or tapping 提及, writes `@username` into the post. The 60-second video picker from D-41 stays on this screen. A clip that is still attached is not uploaded, and the text post is not sent in its place. `POST /v1/feed/posts` is unchanged: the name stays inside `text`. There is no `mentions` or `entities` field on that body, on the card parser, or on the iOS `tellomiDiscoverPublishBody`. The suggestion list is people already in `MessagesController.getUsers()` who have a public username. It does not search the network.
+
+The system banner and the in-app list already show `kind = mention` / `DISCOVER_MENTION` when one arrives. Creating that notice is the content engine's call to teamgram `POST /internal/v1/discover/notify`. This client does not send that request, and it does not add a field the engine document does not list. `content-engine` was not readable from this tree (private). teamgram `docs/api/discover-ai.md` says the 2026-11-04 read of `api/notifications.go` could not see the engine's field names. No `src/main` file changes for this.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMention.java` | Parse, validate, insert, and filter. Flavor only. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Hint, 提及, the suggestion list, and the invalid-username line. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | The publish-body comment records that mentions stay in `text`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | `Tellomi.Discover.Mention`, `MentionHint`, `MentionInvalid`, `MentionEmpty`. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMentionTest.java` | The username rules, insert, and the unchanged publish keys. |
+
 ## Release-feed update check
 
 Settings → Check for updates, and the automatic check on the shipped App module, called `help.getAppUpdate` and then `SharedConfig.setNewAppVersionAvailable`. That comparison uses `versionName` only. A published build that keeps the same marketing version and raises `versionCode` was treated as already installed. The installer publish writes `android/latest.json` (`versionName` + `versionCode`) and does not update `help.getAppUpdate`. `versions.json` on the download page can lag that file, and `android/test/latest.json` is a different channel. Neither of those is the check.
@@ -896,3 +913,20 @@ Install a dev build (`-PTELLOMI_SERVER_PROFILE=dev`) that can reach the server. 
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login redraws when the apply callback runs, not before the pack is loaded. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | Comment: the non-English, non-Chinese bins are a fallback. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiCloudStringsTest.java` | Which codes request a pack, and that apply plus login are wired to it. |
+
+## Discover video length (D-41)
+
+Compose had no video control. `POST /v1/feed/posts` still has no media field, and there is no media route, so a picked file is not uploaded and is not dropped into a text post. The 60-second cap is enforced on the client anyway.
+
+The picker is `ACTION_GET_CONTENT` (`video/*`) from `TellomiDiscoverComposeFragment`. Length comes from `MediaMetadataRetriever`, then `MediaStore.Video.Media.DURATION` if that fails. `TellomiDiscoverVideo.select` keeps a clip only when the length is from 1 ms through 60_000 ms. A longer clip is discarded and the screen says to pick a shorter one. An unreadable length is discarded too. Publish reads the length again and calls `beforeUpload`. Over 60 seconds is still discarded. A clip inside the cap returns `NOT_UPLOADED` and the text post is not sent.
+
+`MediaController`, ffmpeg, and the chat gallery were not edited. `PhotoEntry.duration` is whole seconds (`MediaStore` milliseconds / 1000). `TellomiDiscoverVideo.selectPhotoEntrySeconds` is that coarser check for a later gallery hook. The compose path does not use it.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideo.java` | The 60-second gate, the gallery-seconds helper, and the clock label. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoDuration.java` | Reads milliseconds from the picked uri. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Hint, pick, reject, and the publish-time check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and Chinese for those lines. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoTest.java` | The 60-second boundary, the upload gate, and the Chinese copy. |

@@ -138,6 +138,10 @@
     <string name="Tellomi_Discover_AiGenerated">AI generated</string>
     <string name="Tellomi_Discover_QuoteDeleted">The original post was deleted by its author</string>
     <string name="Tellomi_Discover_Publish">Post</string>
+    <string name="Tellomi_Discover_Mention">Mention</string>
+    <string name="Tellomi_Discover_MentionHint">Write something. Use @ to mention a username.</string>
+    <string name="Tellomi_Discover_MentionInvalid">%s is not a valid username, so they won\'t be notified.</string>
+    <string name="Tellomi_Discover_MentionEmpty">No matching username</string>
     <string name="Tellomi_Discover_Likes">%d likes</string>
     <string name="Tellomi_Discover_Comments">%d comments</string>
     <string name="Tellomi_Discover_Photos">%d photos</string>
@@ -149,6 +153,15 @@
     <string name="Tellomi_Discover_ShareExternal">Share to another app</string>
     <string name="Tellomi_Discover_Poll">Poll</string>
     <string name="Tellomi_Discover_PollAdd">Add an option</string>
+    <string name="Tellomi_Discover_VideoAdd">Add a video</string>
+    <string name="Tellomi_Discover_VideoReplace">Replace</string>
+    <string name="Tellomi_Discover_VideoRemove">Remove</string>
+    <string name="Tellomi_Discover_VideoHint">Videos can be up to 60 seconds.</string>
+    <string name="Tellomi_Discover_VideoTooLong">This video is longer than 60 seconds. Pick a shorter one.</string>
+    <string name="Tellomi_Discover_VideoUnknown">Couldn\'t read how long this video is. Pick another.</string>
+    <string name="Tellomi_Discover_VideoSelected">Selected · %s</string>
+    <string name="Tellomi_Discover_VideoNotUploaded">Video upload isn\'t available yet. Remove it to post the text.</string>
+    <string name="Tellomi_Discover_VideoReading">Reading the length…</string>
     <string name="Tellomi_Discover_Notifications">Notifications</string>
     <string name="Tellomi_Discover_NotificationsEmpty">No notifications yet</string>
     <string name="Tellomi_Discover_NotifyLike">liked your post</string>

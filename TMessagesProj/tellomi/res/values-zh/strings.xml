@@ -141,6 +141,10 @@
     <string name="Tellomi_Discover_AiGenerated">AI 生成</string>
     <string name="Tellomi_Discover_QuoteDeleted">原动态已被作者删除</string>
     <string name="Tellomi_Discover_Publish">发布</string>
+    <string name="Tellomi_Discover_Mention">提及</string>
+    <string name="Tellomi_Discover_MentionHint">写点什么，用 @ 提及用户</string>
+    <string name="Tellomi_Discover_MentionInvalid">%s 不是有效用户名，对方收不到提及。</string>
+    <string name="Tellomi_Discover_MentionEmpty">没有匹配的用户名</string>
     <string name="Tellomi_Discover_Likes">%d 赞</string>
     <string name="Tellomi_Discover_Comments">%d 评论</string>
     <string name="Tellomi_Discover_Photos">%d 张图片</string>
@@ -152,6 +156,15 @@
     <string name="Tellomi_Discover_ShareExternal">分享到外部 App</string>
     <string name="Tellomi_Discover_Poll">投票</string>
     <string name="Tellomi_Discover_PollAdd">添加选项</string>
+    <string name="Tellomi_Discover_VideoAdd">添加视频</string>
+    <string name="Tellomi_Discover_VideoReplace">更换</string>
+    <string name="Tellomi_Discover_VideoRemove">移除</string>
+    <string name="Tellomi_Discover_VideoHint">视频最长 60 秒。</string>
+    <string name="Tellomi_Discover_VideoTooLong">这段视频超过 60 秒，请换一段更短的。</string>
+    <string name="Tellomi_Discover_VideoUnknown">读不到这段视频的时长，请换一个。</string>
+    <string name="Tellomi_Discover_VideoSelected">已选择 · %s</string>
+    <string name="Tellomi_Discover_VideoNotUploaded">发现还不能上传视频，移除后可以发布文字。</string>
+    <string name="Tellomi_Discover_VideoReading">正在读取时长…</string>
     <string name="Tellomi_Discover_Notifications">通知</string>
     <string name="Tellomi_Discover_NotificationsEmpty">还没有通知</string>
     <string name="Tellomi_Discover_NotifyLike">赞了你的帖子</string>
