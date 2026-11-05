@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.TextWatcher;
@@ -46,7 +48,7 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private static final int REQUEST_VIDEO = 41;
 
     interface Publisher {
-        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscover.Completion completion);
+        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, TellomiDiscover.Completion completion);
 
         void published();
     }
@@ -72,6 +74,14 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private boolean videoBusy;
     private int videoGeneration;
     private TellomiDiscoverVideo.Decision videoDecision = TellomiDiscoverVideo.Decision.NONE;
+    private TellomiDiscoverLinkCard linkCard;
+    private final Handler linkHandler = new Handler(Looper.getMainLooper());
+    private Runnable linkTask;
+    private int linkGeneration;
+    private String linkUrl;
+    private TellomiDiscoverLink.Preview linkPreview;
+    private boolean linkSettled;
+    private boolean holding;
     private boolean sending;
     private boolean editing;
     private TellomiDiscover.ClientError sendError;
@@ -91,6 +101,16 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         Bundle args = new Bundle();
         args.putInt("limit", textLimit);
         return new TellomiDiscoverComposeFragment(args, textLimit, publisher, quoteOf);
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        linkGeneration++;
+        holding = false;
+        if (linkTask != null) {
+            linkHandler.removeCallbacks(linkTask);
+        }
+        super.onFragmentDestroy();
     }
 
     @Override
@@ -140,12 +160,16 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable s) {
+                refreshLink();
                 if (!editing) {
                     refreshCompose();
                 }
             }
         });
         column.addView(textView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(160)));
+        linkCard = TellomiDiscoverLinkCard.create(context, resourceProvider);
+        linkCard.hide();
+        column.addView(linkCard);
         TextView mention = new TextView(context);
         mention.setText(phrase(copy, "Tellomi.Discover.Mention"));
         mention.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -404,18 +428,34 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
 
     private void send() {
         TellomiDiscover.AudienceChoice choice = choice();
-        String body = textView.getText() == null ? "" : textView.getText().toString();
-        if (sending || videoBusy || choice == null || !choice.publishable || !TellomiDiscoverMention.invalid(body).isEmpty()) {
+        final String text = textView.getText() == null ? "" : textView.getText().toString();
+        if (sending || holding || videoBusy || choice == null || !choice.publishable || !TellomiDiscoverMention.invalid(text).isEmpty()) {
             return;
         }
         if (videoUri != null) {
             blockAttachedVideo();
             return;
         }
+        final String url = TellomiDiscoverLink.firstUrl(text);
+        if (url != null && TellomiDiscoverLink.fetchable(url) && (!url.equals(linkUrl) || !linkSettled)) {
+            TellomiDiscoverLink.Preview cached = TellomiDiscoverLinkFetch.peek(url);
+            if (cached != null) {
+                linkUrl = url;
+                linkPreview = cached;
+                linkSettled = true;
+            } else {
+                holding = true;
+                apply();
+                requestLink(url, true);
+                return;
+            }
+        }
+        holding = false;
         sending = true;
         sendError = null;
         apply();
-        publisher.publish(body, choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, new TellomiDiscover.Completion() {
+        TellomiDiscoverLink.Preview preview = url != null && url.equals(linkUrl) && linkSettled ? linkPreview : null;
+        publisher.publish(text, choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, preview, new TellomiDiscover.Completion() {
             @Override
             public void onResult(TellomiDiscover.Outcome outcome) {
                 sending = false;
@@ -469,7 +509,7 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         }
         String trimmed = TellomiDiscover.trim(text);
         boolean pollOk = !pollOn || TellomiDiscover.cleanPoll(pollValues()) != null;
-        boolean canSend = !sending && !videoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
+        boolean canSend = !sending && !holding && !videoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
         actionBar.createMenu().clearItems();
         actionBar.createMenu().addItem(MENU_PUBLISH, copy.publish).setEnabled(canSend);
     }
@@ -526,6 +566,76 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             base = TellomiDiscover.StoryBase.EVERYONE;
         }
         return TellomiDiscover.audience(base, ids, selfUserId);
+    }
+
+    private void refreshLink() {
+        if (linkCard == null || textView == null) {
+            return;
+        }
+        String url = TellomiDiscoverLink.firstUrl(textView.getText() == null ? "" : textView.getText().toString());
+        if (url == null || !TellomiDiscoverLink.fetchable(url)) {
+            linkGeneration++;
+            linkUrl = null;
+            linkPreview = null;
+            linkSettled = false;
+            holding = false;
+            if (linkTask != null) {
+                linkHandler.removeCallbacks(linkTask);
+            }
+            linkCard.hide();
+            return;
+        }
+        if (url.equals(linkUrl)) {
+            if (linkSettled && linkPreview != null) {
+                linkCard.show(linkPreview, false);
+            }
+            return;
+        }
+        TellomiDiscoverLink.Preview cached = TellomiDiscoverLinkFetch.peek(url);
+        if (cached != null) {
+            linkUrl = url;
+            linkPreview = cached;
+            linkSettled = true;
+            linkCard.show(cached, false);
+            return;
+        }
+        linkUrl = url;
+        linkPreview = null;
+        linkSettled = false;
+        linkCard.showLoading();
+        requestLink(url, false);
+    }
+
+    private void requestLink(final String url, final boolean immediate) {
+        final int generation = ++linkGeneration;
+        if (linkTask != null) {
+            linkHandler.removeCallbacks(linkTask);
+        }
+        linkTask = new Runnable() {
+            @Override
+            public void run() {
+                TellomiDiscoverLinkFetch.load(url, new TellomiDiscoverLinkFetch.Callback() {
+                    @Override
+                    public void onResult(TellomiDiscoverLink.Preview preview) {
+                        if (generation != linkGeneration || linkCard == null || !url.equals(linkUrl)) {
+                            return;
+                        }
+                        linkSettled = true;
+                        linkPreview = preview;
+                        if (preview == null) {
+                            linkCard.hide();
+                        } else {
+                            linkCard.show(preview, false);
+                        }
+                        if (holding) {
+                            holding = false;
+                            send();
+                        }
+                    }
+                });
+            }
+        };
+        linkHandler.postDelayed(linkTask, immediate ? 0 : 450);
     }
 
     private void addPollField(Context context, LinearLayout pollBox) {

@@ -530,7 +530,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     @Override
-    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, final TellomiDiscover.Completion completion) {
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, final TellomiDiscoverLink.Preview linkPreview, final TellomiDiscover.Completion completion) {
         final TellomiDiscover.Configuration configuration = configuration();
         if (!loggedIn() || !configuration.enabled) {
             completion.onResult(TellomiDiscover.Outcome.failure(loggedIn() ? TellomiDiscover.ClientError.DISABLED : TellomiDiscover.ClientError.SIGNED_OUT));
@@ -538,9 +538,9 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         }
         long now = System.currentTimeMillis() / 1000L;
         String city = TellomiDiscoverNearby.publishCity(cityCode);
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, city, quoteOf, pollOptions);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, city, quoteOf, pollOptions, linkPreview);
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, city, quoteOf, pollOptions), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, city, quoteOf, pollOptions, linkPreview), completion);
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
@@ -558,7 +558,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, TellomiDiscoverNearby.publishCity(cityCode), quoteOf, pollOptions), completion);
+                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, TellomiDiscoverNearby.publishCity(cityCode), quoteOf, pollOptions, linkPreview), completion);
             }
         });
     }
@@ -747,17 +747,25 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 row.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, activity.getResourceProvider()));
                 row.setPadding(0, dp(12), 0, dp(12));
-                row.setOnClickListener(new View.OnClickListener() {
+                LinearLayout textColumn = new LinearLayout(context);
+                textColumn.setOrientation(LinearLayout.VERTICAL);
+                textColumn.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                if (post.linkPreview != null) {
+                    TellomiDiscoverLinkCard card = TellomiDiscoverLinkCard.create(context, activity.getResourceProvider());
+                    card.show(post.linkPreview, false);
+                    textColumn.addView(card);
+                }
+                LinearLayout line = new LinearLayout(context);
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                line.setGravity(Gravity.CENTER_VERTICAL);
+                textColumn.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                textColumn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         activity.presentFragment(new TellomiDiscoverPostFragment(post.id));
                     }
                 });
-                LinearLayout line = new LinearLayout(context);
-                line.setOrientation(LinearLayout.HORIZONTAL);
-                line.setGravity(Gravity.CENTER_VERTICAL);
-                row.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-                line.addView(row);
+                line.addView(textColumn);
                 if (post.shareable) {
                     TextView forward = label(phrase(copy, "Tellomi.Discover.Forward"), 14, false);
                     forward.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, activity.getResourceProvider()));

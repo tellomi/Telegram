@@ -118,6 +118,7 @@ public final class TellomiPack {
         entry("Tellomi.Discover.NotifySwitch", "Discover", "发现"),
         entry("Tellomi.Discover.NotifySwitchInfo", "Likes, comments, mentions, follows, and forwards", "赞、评论、提及、关注和转发"),
         entry("Tellomi.Discover.Reposted", "Forwarded", "已转发"),
+        entry("Tellomi.Discover.LinkPreviewLoading", "Fetching the link preview.", "正在获取链接预览。"),
         entry("Tellomi.SignUp.AvatarFailed", "Couldn't upload the profile photo (%s)", "头像上传失败（%s）"),
         entry("Tellomi.SignUp.AvatarRetry", "Retry", "重试"),
         entry("Tellomi.Settings.Group.Account", "Account", "账号"),

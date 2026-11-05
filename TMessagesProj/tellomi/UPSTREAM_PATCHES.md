@@ -865,7 +865,7 @@ The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_
 
 Android only. The composer parses and inserts `@username`. The local check is the same one `ChangeUsernameActivity.checkUserName` already uses: no leading or trailing `_`, no leading digit, only `0-9` / `A-Z` / `a-z` / `_`, at least `TellomiUsername.MIN_LENGTH` (4), at most 32. It does not call `account.checkUsername`. A token that fails that check keeps 发布 disabled and shows the reason. A lone `@`, and an `@` inside an address (`a@b.com`), are left as text.
 
-Picking a row, or tapping 提及, writes `@username` into the post. The 60-second video picker from D-41 stays on this screen. A clip that is still attached is not uploaded, and the text post is not sent in its place. `POST /v1/feed/posts` is unchanged: the name stays inside `text`. There is no `mentions` or `entities` field on that body, on the card parser, or on the iOS `tellomiDiscoverPublishBody`. The suggestion list is people already in `MessagesController.getUsers()` who have a public username. It does not search the network.
+Picking a row, or tapping 提及, writes `@username` into the post. The 60-second video picker from D-41 stays on this screen. A clip that is still attached is not uploaded, and the text post is not sent in its place. `POST /v1/feed/posts` is unchanged for mentions: the name stays inside `text`. There is no `mentions` or `entities` field on that body, on the card parser, or on the iOS `tellomiDiscoverPublishBody`. The suggestion list is people already in `MessagesController.getUsers()` who have a public username. It does not search the network.
 
 The system banner and the in-app list already show `kind = mention` / `DISCOVER_MENTION` when one arrives. Creating that notice is the content engine's call to teamgram `POST /internal/v1/discover/notify`. This client does not send that request, and it does not add a field the engine document does not list. `content-engine` was not readable from this tree (private). teamgram `docs/api/discover-ai.md` says the 2026-11-04 read of `api/notifications.go` could not see the engine's field names. No `src/main` file changes for this.
 
@@ -877,6 +877,12 @@ The system banner and the in-app list already show `kind = mention` / `DISCOVER_
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | `Tellomi.Discover.Mention`, `MentionHint`, `MentionInvalid`, `MentionEmpty`. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
 | `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMentionTest.java` | The username rules, insert, and the unchanged publish keys. |
+
+## Discover link preview (M3)
+
+The phone fetches Open Graph itself when a Discover post is composed. The request does not go through Chengdu, `account.getWebPagePreview`, port 8801, or `POST /internal/v1/link-preview`. A short process-local map remembers a few results. Nothing is written to disk, and the feed does not fetch the page again.
+
+`POST /v1/feed/posts` gains one optional object, `link_preview`, and only when the URL is public http(s). The object is `url`, plus `title`, `description`, and `image` when those exist. iOS does not send this object yet. content-engine's API doc is not in this repo (private, 404). Cards are read from `card.link_preview`, or the same object beside `card`. A private or missing preview is left off the post and off the card. No `src/main` file changes. The composer still has the @mention list and the 60-second video picker. A city on the post is still `TellomiDiscoverNearby.publishCity`.
 
 ## Release-feed update check
 
