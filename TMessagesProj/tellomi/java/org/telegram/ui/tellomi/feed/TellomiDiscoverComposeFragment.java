@@ -113,44 +113,45 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             quote.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             quote.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
             column.addView(quote, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        }
-        TextView pollToggle = new TextView(context);
-        pollToggle.setText(phrase(copy, "Tellomi.Discover.Poll"));
-        pollToggle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        pollToggle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
-        pollToggle.setPadding(0, dp(8), 0, dp(4));
-        LinearLayout pollBox = new LinearLayout(context);
-        pollBox.setOrientation(LinearLayout.VERTICAL);
-        pollBox.setVisibility(View.GONE);
-        pollToggle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                pollOn = !pollOn;
-                pollBox.setVisibility(pollOn ? View.VISIBLE : View.GONE);
-                if (pollOn && pollFields.isEmpty()) {
-                    addPollField(context, pollBox);
-                    addPollField(context, pollBox);
-                }
-                apply();
-            }
-        });
-        column.addView(pollToggle, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        TextView addOption = new TextView(context);
-        addOption.setText(phrase(copy, "Tellomi.Discover.PollAdd"));
-        addOption.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        addOption.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
-        addOption.setPadding(0, dp(8), 0, dp(4));
-        addOption.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (pollFields.size() < TellomiDiscover.POLL_OPTION_MAX) {
-                    addPollField(context, pollBox);
+        } else {
+            TextView pollToggle = new TextView(context);
+            pollToggle.setText(phrase(copy, "Tellomi.Discover.Poll"));
+            pollToggle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            pollToggle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+            pollToggle.setPadding(0, dp(8), 0, dp(4));
+            LinearLayout pollBox = new LinearLayout(context);
+            pollBox.setOrientation(LinearLayout.VERTICAL);
+            pollBox.setVisibility(View.GONE);
+            pollToggle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    pollOn = !pollOn;
+                    pollBox.setVisibility(pollOn ? View.VISIBLE : View.GONE);
+                    if (pollOn && pollFields.isEmpty()) {
+                        addPollField(context, pollBox);
+                        addPollField(context, pollBox);
+                    }
                     apply();
                 }
-            }
-        });
-        pollBox.addView(addOption, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        column.addView(pollBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            });
+            column.addView(pollToggle, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            TextView addOption = new TextView(context);
+            addOption.setText(phrase(copy, "Tellomi.Discover.PollAdd"));
+            addOption.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            addOption.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+            addOption.setPadding(0, dp(8), 0, dp(4));
+            addOption.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (pollFields.size() < TellomiDiscover.POLL_OPTION_MAX) {
+                        addPollField(context, pollBox);
+                        apply();
+                    }
+                }
+            });
+            pollBox.addView(addOption, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            column.addView(pollBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
         visibilityButton = new TextView(context);
         visibilityButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         visibilityButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
