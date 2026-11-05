@@ -134,6 +134,10 @@
     <string name="Tellomi_Discover_AiGenerated">AI 生成</string>
     <string name="Tellomi_Discover_QuoteDeleted">原动态已被作者删除</string>
     <string name="Tellomi_Discover_Publish">发布</string>
+    <string name="Tellomi_Discover_Mention">提及</string>
+    <string name="Tellomi_Discover_MentionHint">写点什么，用 @ 提及用户</string>
+    <string name="Tellomi_Discover_MentionInvalid">%s 不是有效用户名，对方收不到提及。</string>
+    <string name="Tellomi_Discover_MentionEmpty">没有匹配的用户名</string>
     <string name="Tellomi_Discover_Likes">%d 赞</string>
     <string name="Tellomi_Discover_Comments">%d 评论</string>
     <string name="Tellomi_Discover_Photos">%d 张图片</string>

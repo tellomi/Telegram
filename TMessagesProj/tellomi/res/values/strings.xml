@@ -133,6 +133,10 @@
     <string name="Tellomi_Discover_AiGenerated">AI generated</string>
     <string name="Tellomi_Discover_QuoteDeleted">The original post was deleted by its author</string>
     <string name="Tellomi_Discover_Publish">Post</string>
+    <string name="Tellomi_Discover_Mention">Mention</string>
+    <string name="Tellomi_Discover_MentionHint">Write something. Use @ to mention a username.</string>
+    <string name="Tellomi_Discover_MentionInvalid">%s is not a valid username, so they won\'t be notified.</string>
+    <string name="Tellomi_Discover_MentionEmpty">No matching username</string>
     <string name="Tellomi_Discover_Likes">%d likes</string>
     <string name="Tellomi_Discover_Comments">%d comments</string>
     <string name="Tellomi_Discover_Photos">%d photos</string>
