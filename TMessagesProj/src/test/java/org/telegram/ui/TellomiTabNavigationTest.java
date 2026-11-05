@@ -77,6 +77,16 @@ public class TellomiTabNavigationTest {
     }
 
     @Test
+    public void aPostLinkKeepsDiscoverSelected() {
+        assertEquals(TellomiTabs.Tab.FEED, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.CHATS, true));
+        assertEquals(TellomiTabs.Tab.FEED, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.SETTINGS, true));
+        assertEquals(TellomiTabs.Tab.FEED, TellomiTabNavigation.tabToKeep(null, true));
+        assertEquals(TellomiTabs.Tab.CHATS, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.CHATS, false));
+        assertEquals(TellomiTabs.Tab.CONTACTS, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.CONTACTS, false));
+        assertEquals(TellomiTabs.Tab.CHATS, TellomiTabNavigation.tabToKeep(null, false));
+    }
+
+    @Test
     public void longPressHidesDiscoverCallsAndContactsOnly() {
         TellomiTabs.Visibility all = new TellomiTabs.Visibility(true, true, true);
         assertTrue(TellomiTabNavigation.canLongPressHide(TellomiTabs.Tab.FEED));

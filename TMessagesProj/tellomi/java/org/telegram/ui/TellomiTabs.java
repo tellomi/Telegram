@@ -57,6 +57,8 @@ public final class TellomiTabs {
     private static final int UPSTREAM_BAR_MAX_DP = 328 + 16;
     /** Wider than a 360dp phone so that cap does not shrink six tabs. */
     private static final int WIDE_BAR_MAX_DP = 376;
+    /** Set while a post link is turning Discover back on. Cleared once that tab is selected. */
+    private static boolean openFeedForPost;
     /** {@code MAIN_TABS_MARGIN + 4}, the upstream horizontal inset. */
     private static final int UPSTREAM_SIDE_PAD_DP = 12;
     private static final int WIDE_SIDE_PAD_DP = 4;
@@ -211,8 +213,17 @@ public final class TellomiTabs {
         }
         ensureFeedTab(activity);
         applyChrome(activity, false);
-        if (FeedActivity.peekPendingPostId() != null) {
-            AndroidUtilities.runOnUIThread(() -> selectFeed(activity));
+        if (openFeedForPost || FeedActivity.peekPendingPostId() != null) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (activity.tabsView == null) {
+                    return;
+                }
+                if (openFeedForPost) {
+                    onVisibilityChanged(activity);
+                } else {
+                    selectFeed(activity);
+                }
+            });
         }
         return true;
     }
@@ -223,9 +234,14 @@ public final class TellomiTabs {
             return false;
         }
         ensureFeedTab(activity);
-        Tab keep = currentTab(activity);
+        boolean openFeed = openFeedForPost;
+        Tab keep = TellomiTabNavigation.tabToKeep(currentTab(activity), openFeed);
         applyChrome(activity, true);
         remap(activity, keep);
+        if (openFeed) {
+            openFeedForPost = false;
+            selectFeed(activity);
+        }
         return true;
     }
 
@@ -504,9 +520,12 @@ public final class TellomiTabs {
 
     private static void revealFeed(LaunchActivity activity, int account) {
         MainTabsActivity tabs = popToMainTabs(activity);
+        openFeedForPost = true;
         Visibility current = read(account);
         commit(account, new Visibility(true, current.calls, current.contacts));
-        selectFeed(tabs);
+        if (openFeedForPost && tabs != null) {
+            onVisibilityChanged(tabs);
+        }
     }
 
     private static void selectFeed(MainTabsActivity activity) {
@@ -549,14 +568,19 @@ public final class TellomiTabs {
             return null;
         }
         MainTabsActivity tabs = null;
+        ArrayList<BaseFragment> above = new ArrayList<>();
         for (int i = stack.size() - 1; i >= 0; i--) {
-            if (stack.get(i) instanceof MainTabsActivity) {
-                tabs = (MainTabsActivity) stack.get(i);
+            BaseFragment fragment = stack.get(i);
+            if (fragment instanceof MainTabsActivity) {
+                tabs = (MainTabsActivity) fragment;
                 break;
             }
             if (i > 0) {
-                activity.actionBarLayout.removeFragmentFromStack(i);
+                above.add(fragment);
             }
+        }
+        for (int i = 0; i < above.size(); i++) {
+            activity.actionBarLayout.removeFragmentFromStack(above.get(i), true);
         }
         return tabs;
     }

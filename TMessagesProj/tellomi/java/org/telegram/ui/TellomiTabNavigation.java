@@ -129,6 +129,17 @@ public final class TellomiTabNavigation {
         }
     }
 
+    /**
+     * Tab to stay on after the bar is rebuilt. A post link lands on Discover
+     * even when the pager still thinks that index is Chats (D-57).
+     */
+    public static TellomiTabs.Tab tabToKeep(TellomiTabs.Tab current, boolean openFeed) {
+        if (openFeed) {
+            return TellomiTabs.Tab.FEED;
+        }
+        return current == null ? TellomiTabs.Tab.CHATS : current;
+    }
+
     /** Long-press hide. Chats, Settings, and Profile are unchanged (D-7, D-38). */
     public static TellomiTabs.Visibility hide(TellomiTabs.Visibility current, TellomiTabs.Tab tab) {
         if (tab == TellomiTabs.Tab.FEED) {
