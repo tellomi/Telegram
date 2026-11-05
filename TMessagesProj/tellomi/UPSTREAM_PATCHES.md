@@ -877,3 +877,20 @@ Install a dev build (`-PTELLOMI_SERVER_PROFILE=dev`) that can reach the server. 
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login redraws when the apply callback runs, not before the pack is loaded. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | Comment: the non-English, non-Chinese bins are a fallback. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiCloudStringsTest.java` | Which codes request a pack, and that apply plus login are wired to it. |
+
+## Discover video length (D-41)
+
+Compose had no video control. `POST /v1/feed/posts` still has no media field, and there is no media route, so a picked file is not uploaded and is not dropped into a text post. The 60-second cap is enforced on the client anyway.
+
+The picker is `ACTION_GET_CONTENT` (`video/*`) from `TellomiDiscoverComposeFragment`. Length comes from `MediaMetadataRetriever`, then `MediaStore.Video.Media.DURATION` if that fails. `TellomiDiscoverVideo.select` keeps a clip only when the length is from 1 ms through 60_000 ms. A longer clip is discarded and the screen says to pick a shorter one. An unreadable length is discarded too. Publish reads the length again and calls `beforeUpload`. Over 60 seconds is still discarded. A clip inside the cap returns `NOT_UPLOADED` and the text post is not sent.
+
+`MediaController`, ffmpeg, and the chat gallery were not edited. `PhotoEntry.duration` is whole seconds (`MediaStore` milliseconds / 1000). `TellomiDiscoverVideo.selectPhotoEntrySeconds` is that coarser check for a later gallery hook. The compose path does not use it.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideo.java` | The 60-second gate, the gallery-seconds helper, and the clock label. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoDuration.java` | Reads milliseconds from the picked uri. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Hint, pick, reject, and the publish-time check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and Chinese for those lines. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoTest.java` | The 60-second boundary, the upload gate, and the Chinese copy. |
