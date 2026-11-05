@@ -2,7 +2,10 @@ package org.telegram.ui.tellomi.feed;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -12,10 +15,13 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -23,12 +29,14 @@ import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.UUID;
 
 /** Composer. Visibility is the Stories privacy sheet, not a second model. */
 public class TellomiDiscoverComposeFragment extends BaseFragment {
 
     private static final int MENU_PUBLISH = 1;
+    private static final int REQUEST_VIDEO = 41;
 
     interface Publisher {
         void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscover.Completion completion);
@@ -46,6 +54,15 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private EditText textView;
     private TextView visibilityButton;
     private TextView hintView;
+    private TextView videoButton;
+    private TextView videoRemove;
+    private TextView videoHint;
+    private TextView videoStatus;
+    private Uri videoUri;
+    private long videoDurationMs;
+    private boolean videoBusy;
+    private int videoGeneration;
+    private TellomiDiscoverVideo.Decision videoDecision = TellomiDiscoverVideo.Decision.NONE;
     private boolean sending;
     private TellomiDiscover.ClientError sendError;
 
@@ -152,6 +169,40 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             pollBox.addView(addOption, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             column.addView(pollBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         }
+        LinearLayout videoRow = new LinearLayout(context);
+        videoRow.setOrientation(LinearLayout.HORIZONTAL);
+        videoRow.setGravity(Gravity.CENTER_VERTICAL);
+        videoButton = new TextView(context);
+        videoButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        videoButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+        videoButton.setPadding(0, dp(12), dp(16), dp(4));
+        videoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickVideo();
+            }
+        });
+        videoRemove = new TextView(context);
+        videoRemove.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        videoRemove.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourceProvider));
+        videoRemove.setPadding(0, dp(12), 0, dp(4));
+        videoRemove.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clearVideo();
+            }
+        });
+        videoRow.addView(videoButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        videoRow.addView(videoRemove, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        column.addView(videoRow, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        videoHint = new TextView(context);
+        videoHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        videoHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+        column.addView(videoHint, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        videoStatus = new TextView(context);
+        videoStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        videoStatus.setPadding(0, dp(4), 0, 0);
+        column.addView(videoStatus, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         visibilityButton = new TextView(context);
         visibilityButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         visibilityButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
@@ -167,7 +218,10 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
         column.addView(hintView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        root.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        ScrollView scroll = new ScrollView(context);
+        scroll.setFillViewport(true);
+        scroll.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        root.addView(scroll, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         fragmentView = root;
         apply();
         return fragmentView;
@@ -193,9 +247,130 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         sheet.show();
     }
 
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (requestCode != REQUEST_VIDEO) {
+            return;
+        }
+        if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        final Uri uri = data.getData();
+        final int generation = ++videoGeneration;
+        final Context context = getParentActivity();
+        videoBusy = true;
+        videoDecision = TellomiDiscoverVideo.Decision.NONE;
+        apply();
+        if (context == null) {
+            videoBusy = false;
+            videoUri = null;
+            videoDurationMs = 0L;
+            videoDecision = TellomiDiscoverVideo.Decision.UNKNOWN;
+            apply();
+            return;
+        }
+        Utilities.globalQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                final long duration = TellomiDiscoverVideoDuration.millis(context, uri);
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fragmentView == null || generation != videoGeneration) {
+                            return;
+                        }
+                        videoBusy = false;
+                        TellomiDiscoverVideo.Decision decision = TellomiDiscoverVideo.select(duration);
+                        if (decision == TellomiDiscoverVideo.Decision.ACCEPT) {
+                            videoUri = uri;
+                            videoDurationMs = duration;
+                            videoDecision = decision;
+                        } else {
+                            videoUri = null;
+                            videoDurationMs = 0L;
+                            videoDecision = decision;
+                        }
+                        apply();
+                    }
+                });
+            }
+        });
+    }
+
+    private void pickVideo() {
+        if (getParentActivity() == null || videoBusy || sending) {
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("video/*");
+        try {
+            startActivityForResult(intent, REQUEST_VIDEO);
+        } catch (Throwable ignored) {
+            videoUri = null;
+            videoDurationMs = 0L;
+            videoDecision = TellomiDiscoverVideo.Decision.UNKNOWN;
+            apply();
+        }
+    }
+
+    private void clearVideo() {
+        videoGeneration++;
+        videoUri = null;
+        videoDurationMs = 0L;
+        videoBusy = false;
+        videoDecision = TellomiDiscoverVideo.Decision.NONE;
+        apply();
+    }
+
+    /** Re-reads the length, then refuses the file. A text post is not sent instead. */
+    private void blockAttachedVideo() {
+        if (videoUri == null || videoBusy || sending) {
+            return;
+        }
+        final Uri uri = videoUri;
+        final long stored = videoDurationMs;
+        final int generation = ++videoGeneration;
+        final Context context = getParentActivity();
+        videoBusy = true;
+        apply();
+        Utilities.globalQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                long fresh = context == null ? 0L : TellomiDiscoverVideoDuration.millis(context, uri);
+                final long duration = fresh > 0L ? fresh : stored;
+                final TellomiDiscoverVideo.Decision decision = TellomiDiscoverVideo.beforeUpload(duration);
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fragmentView == null || generation != videoGeneration) {
+                            return;
+                        }
+                        videoBusy = false;
+                        if (decision == TellomiDiscoverVideo.Decision.TOO_LONG || decision == TellomiDiscoverVideo.Decision.UNKNOWN) {
+                            videoUri = null;
+                            videoDurationMs = 0L;
+                            videoDecision = decision;
+                        } else {
+                            if (fresh > 0L) {
+                                videoDurationMs = fresh;
+                            }
+                            videoDecision = TellomiDiscoverVideo.Decision.NOT_UPLOADED;
+                        }
+                        apply();
+                    }
+                });
+            }
+        });
+    }
+
     private void send() {
         TellomiDiscover.AudienceChoice choice = choice();
-        if (sending || choice == null || !choice.publishable) {
+        if (sending || videoBusy || choice == null || !choice.publishable) {
+            return;
+        }
+        if (videoUri != null) {
+            blockAttachedVideo();
             return;
         }
         sending = true;
@@ -227,10 +402,27 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         String errorText = sendError == null ? null : copy.failureText(sendError);
         String reason = choice == null ? null : copy.reasonText(choice.reason);
         hintView.setText(errorText != null ? errorText : (reason == null ? "" : reason));
+        if (videoButton != null) {
+            videoButton.setText(phrase(copy, videoUri == null ? "Tellomi.Discover.VideoAdd" : "Tellomi.Discover.VideoReplace"));
+            videoButton.setEnabled(!videoBusy && !sending);
+            videoRemove.setText(phrase(copy, "Tellomi.Discover.VideoRemove"));
+            videoRemove.setVisibility(videoUri == null ? View.GONE : View.VISIBLE);
+            videoRemove.setEnabled(!videoBusy && !sending);
+            videoHint.setText(phrase(copy, "Tellomi.Discover.VideoHint"));
+            String status = videoStatusText(copy);
+            if (status == null || status.isEmpty()) {
+                videoStatus.setVisibility(View.GONE);
+            } else {
+                videoStatus.setVisibility(View.VISIBLE);
+                videoStatus.setText(status);
+                boolean error = videoDecision == TellomiDiscoverVideo.Decision.TOO_LONG || videoDecision == TellomiDiscoverVideo.Decision.UNKNOWN;
+                videoStatus.setTextColor(Theme.getColor(error ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+            }
+        }
         String text = textView.getText() == null ? "" : textView.getText().toString();
         String trimmed = TellomiDiscover.trim(text);
         boolean pollOk = !pollOn || TellomiDiscover.cleanPoll(pollValues()) != null;
-        boolean canSend = !sending && choice != null && choice.publishable && pollOk && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
+        boolean canSend = !sending && !videoBusy && choice != null && choice.publishable && pollOk && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
         actionBar.createMenu().clearItems();
         actionBar.createMenu().addItem(MENU_PUBLISH, copy.publish).setEnabled(canSend);
     }
@@ -320,6 +512,28 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             values.add(text == null ? "" : text.toString());
         }
         return values;
+    }
+
+    private String videoStatusText(TellomiDiscover.Copy copy) {
+        if (videoBusy) {
+            return phrase(copy, "Tellomi.Discover.VideoReading");
+        }
+        if (videoDecision == TellomiDiscoverVideo.Decision.TOO_LONG) {
+            return phrase(copy, "Tellomi.Discover.VideoTooLong");
+        }
+        if (videoDecision == TellomiDiscoverVideo.Decision.UNKNOWN) {
+            return phrase(copy, "Tellomi.Discover.VideoUnknown");
+        }
+        if (videoUri != null) {
+            String selected;
+            try {
+                selected = String.format(Locale.US, phrase(copy, "Tellomi.Discover.VideoSelected"), TellomiDiscoverVideo.clock(videoDurationMs));
+            } catch (RuntimeException ignored) {
+                selected = TellomiDiscoverVideo.clock(videoDurationMs);
+            }
+            return selected + "\n" + phrase(copy, "Tellomi.Discover.VideoNotUploaded");
+        }
+        return null;
     }
 
     private String phrase(TellomiDiscover.Copy copy, String key) {
