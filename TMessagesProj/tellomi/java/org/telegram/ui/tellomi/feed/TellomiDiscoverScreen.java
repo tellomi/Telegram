@@ -40,6 +40,8 @@ import java.util.Map;
 final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publisher {
 
     private static final String CITY_KEY = "tellomi_discover_city";
+    private static final int POST_PRESENT_ATTEMPTS = 12;
+    private static final int POST_PRESENT_RETRY_MS = 80;
 
     private final FeedActivity activity;
     private final FrameLayout root;
@@ -66,6 +68,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private boolean failed;
     private String cityFilter = "";
     private boolean openingPost;
+    private int postPresentAttempts;
 
     TellomiDiscoverScreen(FeedActivity activity, FrameLayout root, Context context) {
         this.activity = activity;
@@ -140,20 +143,31 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             return;
         }
         openingPost = true;
+        postPresentAttempts = 0;
         final String id = post.detailId;
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                openingPost = false;
-                if (destroyed) {
-                    return;
-                }
-                if (activity.presentFragment(new TellomiDiscoverPostFragment(id))) {
-                    FeedActivity.takePendingPostId();
-                    activity.clearOpenedPost();
-                }
-            }
-        });
+        AndroidUtilities.runOnUIThread(() -> presentOpenedPost(id));
+    }
+
+    /** A chat close can still be in progress. Retry until the post can be presented (D-57). */
+    private void presentOpenedPost(String id) {
+        if (destroyed) {
+            openingPost = false;
+            return;
+        }
+        if (activity.presentFragment(new TellomiDiscoverPostFragment(id))) {
+            openingPost = false;
+            postPresentAttempts = 0;
+            FeedActivity.takePendingPostId();
+            activity.clearOpenedPost();
+            return;
+        }
+        if (postPresentAttempts < POST_PRESENT_ATTEMPTS) {
+            postPresentAttempts++;
+            AndroidUtilities.runOnUIThread(() -> presentOpenedPost(id), POST_PRESENT_RETRY_MS);
+            return;
+        }
+        openingPost = false;
+        postPresentAttempts = 0;
     }
 
     private String pendingPost() {

@@ -671,7 +671,7 @@ The welcome carousel built its six pages once, while that overlay still followed
 
 Settings → Navigation Bar sits after Language. Discover, Calls, and Contacts are switches. Chats and Settings are on and cannot be turned off. Calls writes `UserConfig.showCallsTab`, so Settings and the calls list keep the old Show Calls Tab switch. Long-press Discover or Contacts and choose Hide. Calls already had that menu. A hidden tab comes back from Navigation Bar.
 
-`https://tell.cc/m#<id>` turns Discover back on, selects it, and stores the id (`FeedActivity.setPendingPostId`). The post body is M3; until then the empty screen says the post cannot be opened. `https://tell.cc/m/<slug>` is still a message link. `TellomiTabs.enabled()` false does not consume the post link: `consumeFeedPostLink` returns false and `LaunchActivity` keeps the original parser. `t.me` is not a post host.
+`https://tell.cc/m#<id>` turns Discover back on and opens that post. A link opened from a chat removes that chat immediately, with no close animation, so the fragment transition does not defer `callTabsVisibleToggled` or block the post screen. The bar refresh keeps Discover selected (`TellomiTabNavigation.tabToKeep`) even when that notification arrives late. The id is stored with `FeedActivity.setPendingPostId`. While the feed client is off, the empty screen says the post cannot be opened. When it is on, `TellomiDiscoverScreen` presents `TellomiDiscoverPostFragment` and retries for about a second if a transition is still running. `https://tell.cc/m/<slug>` is still a message link. `TellomiTabs.enabled()` false does not consume the post link: `consumeFeedPostLink` returns false and `LaunchActivity` keeps the original parser. `t.me` is not a post host.
 
 New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It presents its own `ContactsActivity` picker and does not use the contacts tab, so hiding Contacts leaves that list in place. A lookup of the contacts tab does not create a page.
 
@@ -682,7 +682,8 @@ New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It p
 | `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `TellomiTabs.appendHideContacts` on the existing contacts long-press. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | New. Copy, row rules, long-press hide, the post id, and the contacts lookup. Not an upstream file. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | New. The Navigation Bar page. Not an upstream file. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. A post link pops back to the tabs without animation and selects Discover. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java` | Retries presenting the post when a fragment transition is still running. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. The live feed (below) replaces that screen only when `tellomi_discover_feed_enabled` is on. |
 
 ## Check for updates on the settings screen
