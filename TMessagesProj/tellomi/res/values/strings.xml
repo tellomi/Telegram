@@ -260,6 +260,9 @@
     <string name="Tellomi_Discover_HideContacts">Hide Contacts</string>
     <string name="Tellomi_Discover_NavigationTitle">Navigation Bar</string>
     <string name="Tellomi_Discover_NavigationFooter">Chats and Settings always stay in the bar.</string>
+    <string name="Tellomi_Discover_PersonalizationSection">Discover</string>
+    <string name="Tellomi_Discover_Personalization">Personalized recommendations</string>
+    <string name="Tellomi_Discover_PersonalizationInfo">When this is off, For You is not ranked from your activity.</string>
     <string name="Tellomi_Discover_FeedEmptyTitle">Nothing here yet</string>
     <string name="Tellomi_Discover_FeedEmptyText">Posts will show up here.</string>
     <string name="Tellomi_Discover_FeedPostUnavailable">This post can\'t be opened yet.</string>
