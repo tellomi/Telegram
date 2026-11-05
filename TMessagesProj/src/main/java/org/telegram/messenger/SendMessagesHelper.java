@@ -6622,6 +6622,39 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return null;
     }
 
+    // ADR-0082: sha256 the file that is about to be uploaded and reuse
+    // messages.getDocumentByHash when the server already has those bytes.
+    private boolean tellomiDocumentByHash(DelayedMessage message, int index, String location, Runnable upload) {
+        return TellomiDocumentByHashSend.lookupBeforeUpload(this, message, index, location, upload,
+                () -> tellomiAfterDocumentByHash(message, index, location, true),
+                () -> tellomiAfterDocumentByHash(message, index, location, false));
+    }
+
+    private void tellomiAfterDocumentByHash(DelayedMessage message, int index, String location, boolean send) {
+        ArrayList<DelayedMessage> waiting = delayedMessages.get(location);
+        if (waiting != null) {
+            waiting.remove(message);
+            if (waiting.isEmpty()) {
+                delayedMessages.remove(location);
+            }
+        }
+        MessageObject obj = message.obj;
+        if (message.type == 4 && message.messageObjects != null && index >= 0 && index < message.messageObjects.size()) {
+            obj = message.messageObjects.get(index);
+        }
+        if (obj != null) {
+            removeFromUploadingMessages(obj.getId(), message.scheduled);
+        }
+        if (!send) {
+            return;
+        }
+        if (message.type == 4) {
+            sendReadyToSendGroup(message, false, true);
+        } else if (message.sendRequest != null) {
+            performSendMessageRequest(message.sendRequest, message.obj, message.originalPath, message, message.parentObject, null, message.scheduled);
+        }
+    }
+
     private void performSendDelayedMessage(final DelayedMessage message, int index) {
         if (message.type == 0) {
             if (message.httpLocation != null) {
@@ -6733,7 +6766,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
                                 getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                             } else {
-                                getFileLoader().uploadFile(location, false, false, ConnectionsManager.FileTypeVideo);
+                                final String uploadPath = location;
+                                Runnable upload = () -> getFileLoader().uploadFile(uploadPath, false, false, ConnectionsManager.FileTypeVideo);
+                                if (!tellomiDocumentByHash(message, -1, uploadPath, upload)) {
+                                    upload.run();
+                                }
                             }
                         }
                         putToUploadingMessages(message.obj);
@@ -6881,7 +6918,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (media.file == null) {
                         String location = message.obj.messageOwner.attachPath;
                         putToDelayedMessages(location, message);
-                        getFileLoader().uploadFile(location, message.sendRequest == null, false, ConnectionsManager.FileTypeFile);
+                        final String uploadPath = location;
+                        Runnable upload = () -> getFileLoader().uploadFile(uploadPath, message.sendRequest == null, false, ConnectionsManager.FileTypeFile);
+                        if (!tellomiDocumentByHash(message, -1, uploadPath, upload)) {
+                            upload.run();
+                        }
                         putToUploadingMessages(message.obj);
                     } else if (media.thumb == null && message.photoSize != null && !(message.photoSize instanceof TLRPC.TL_photoStrippedSize)) {
                         String location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.photoSize.location.volume_id + "_" + message.photoSize.location.local_id + ".jpg";
@@ -7013,7 +7054,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 if (messageObject.videoEditedInfo != null && messageObject.videoEditedInfo.needConvert()) {
                                     getFileLoader().uploadFile(documentLocation, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                                 } else {
-                                    getFileLoader().uploadFile(documentLocation, false, false, ConnectionsManager.FileTypeVideo);
+                                    final String uploadPath = documentLocation;
+                                    Runnable upload = () -> getFileLoader().uploadFile(uploadPath, false, false, ConnectionsManager.FileTypeVideo);
+                                    if (!tellomiDocumentByHash(message, index, uploadPath, upload)) {
+                                        upload.run();
+                                    }
                                 }
                                 putToUploadingMessages(messageObject);
                             } else if (message.coverPhotoSize != null && message.coverFile == null && media != null && media.video_cover == null) {
