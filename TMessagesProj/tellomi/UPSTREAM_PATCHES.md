@@ -1004,3 +1004,19 @@ Account 0 `mainconfig` key `tellomi_get_file_hashes`, boolean. Missing or true r
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiFileHashes.java` | Part rules, the long-offset request, fail-open, and the kill switch. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java` | Starts the RPC on the download and holds `onFinishLoadingFile` until the check, the miss, or the timeout. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiFileHashesTest.java` | 128 KiB parts, mismatch versus miss, the switch, and that the upload path is not hooked. |
+
+## Discover personalization switch (D-58)
+
+Settings → Privacy and Security has a Discover section with 「个性化推荐」. The switch defaults on and is stored per account in `mainconfig` (`MessagesController.getMainSettings`), key `tellomi_discover_personalized`, the same file as `tellomi_show_feed_tab` and `tellomi_discover_city`. A missing key is on.
+
+The recommend request reads that switch. On matches the production URL: `GET /v1/feed/recommend` with no `personalized` query. Off reloads the recommend tab immediately with `personalized=false`. Following still ignores the flag. A recommend page that is not on screen is dropped so the next visit refetches.
+
+`personalization_toggle_visible` is still parsed onto `EngineConfig` and does not hide the row. The parser stores false both when the key is omitted and when it is false, so the configs this client already accepts would hide the only control that can send `personalized=false`. The row is always on this screen.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | Discover section, switch, and footer. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverPersonalization.java` | Preference, default on, and the recommend reload signal. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
+| `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |

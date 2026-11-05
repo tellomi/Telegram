@@ -18,6 +18,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -48,6 +49,33 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private final Context context;
     private final TellomiDiscover.Loader loader;
     private final int account;
+    private final TellomiDiscoverPersonalization.Listener personalizationListener = new TellomiDiscoverPersonalization.Listener() {
+        @Override
+        public void onChanged(int changedAccount, boolean on) {
+            if (destroyed || changedAccount != account) {
+                return;
+            }
+            Runnable apply = new Runnable() {
+                @Override
+                public void run() {
+                    if (destroyed) {
+                        return;
+                    }
+                    if (TellomiDiscoverPersonalization.reloadRecommendImmediately(kind)) {
+                        loadFeed(true);
+                    } else {
+                        posts.remove(TellomiDiscover.FeedKind.RECOMMEND);
+                        cursors.remove(TellomiDiscover.FeedKind.RECOMMEND);
+                    }
+                }
+            };
+            if (ApplicationLoader.applicationHandler == null) {
+                apply.run();
+            } else {
+                AndroidUtilities.runOnUIThread(apply);
+            }
+        }
+    };
 
     private TellomiDiscover.FeedKind kind = TellomiDiscover.FeedKind.RECOMMEND;
     private final List<TellomiDiscover.FeedKind> tabs = new ArrayList<>();
@@ -81,10 +109,12 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         this.loader = TellomiDiscoverClient.loader(account);
         this.cityCode = storedCity();
         tabs.addAll(TellomiDiscoverNearby.homeTabs());
+        TellomiDiscoverPersonalization.addListener(personalizationListener);
     }
 
     void destroy() {
         destroyed = true;
+        TellomiDiscoverPersonalization.removeListener(personalizationListener);
         loader.cancel();
     }
 
@@ -329,7 +359,11 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             }
             operation = TellomiDiscover.Operation.nearby(city, cursor);
         } else {
-            operation = TellomiDiscover.Operation.feed(requested, cursor, true);
+            operation = TellomiDiscover.Operation.feed(
+                requested,
+                cursor,
+                TellomiDiscoverPersonalization.forFeed(requested, TellomiDiscoverPersonalization.read(account))
+            );
         }
         loader.run(true, configuration, operation, new TellomiDiscover.Completion() {
             @Override
