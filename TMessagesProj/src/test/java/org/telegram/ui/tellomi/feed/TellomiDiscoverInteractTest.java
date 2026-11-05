@@ -54,29 +54,67 @@ public class TellomiDiscoverInteractTest {
         TellomiJson polled = TellomiJson.parse(poll);
         assertEquals("成都", polled.objectValue.get("poll").objectValue.get("options").arrayValue.get(0).stringValue);
         assertEquals("重庆", polled.objectValue.get("poll").objectValue.get("options").arrayValue.get(1).stringValue);
+        assertNull(polled.objectValue.get("quote_of"));
+        assertNull(TellomiDiscover.publishBody("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, "post-9", Arrays.asList("甲", "乙")));
         assertNull(TellomiDiscover.cleanPoll(Collections.singletonList("only")));
-        assertNull(TellomiDiscover.cleanPoll(Arrays.asList("a", "b", "c", "d", "e")));
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), TellomiDiscover.cleanPoll(Arrays.asList("a", " ", "b", "c", "d", "e")));
+        assertNull(TellomiDiscover.cleanPoll(Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11")));
+        StringBuilder longOption = new StringBuilder();
+        for (int i = 0; i < 41; i++) {
+            longOption.append("字");
+        }
+        assertNull(TellomiDiscover.cleanPoll(Arrays.asList("甲", longOption.toString())));
+        assertEquals(40, TellomiDiscover.POLL_OPTION_TEXT_LIMIT);
+        assertEquals(10, TellomiDiscover.POLL_OPTION_MAX);
     }
 
     @Test
     public void cardKeepsThePollAndShareableFlag() {
-        String json = "{\"cards\":[{\"id\":\"post-9\",\"state\":\"ok\",\"shareable\":true,\"card\":{\"text\":\"去哪\",\"poll\":{\"options\":[{\"text\":\"成都\",\"votes\":2,\"voted\":true},{\"label\":\"重庆\",\"vote_count\":1,\"voted_by_me\":false}]}},\"stats\":{\"reposts\":4}}]}";
+        String json = "{\"cards\":[{\"id\":\"post-9\",\"state\":\"ok\",\"shareable\":true,\"card\":{\"text\":\"去哪\",\"poll\":{\"options\":[\"成都\",\"重庆\"]}},\"poll\":{\"counts\":[2,0],\"voted\":[0]},\"stats\":{\"reposts\":4}}]}";
         TellomiDiscover.Card card = TellomiDiscoverParse.cards(json.getBytes(StandardCharsets.UTF_8)).get(0);
         assertTrue(card.shareable);
         assertEquals(2, card.poll.options.size());
         assertEquals("成都", card.poll.options.get(0).text);
-        assertTrue(card.poll.options.get(0).voted);
-        assertEquals(1, card.poll.options.get(1).votes);
+        assertEquals(2, card.poll.options.get(0).votes);
+        assertEquals(0, card.poll.options.get(1).votes);
+        assertEquals(Collections.singletonList(0), card.poll.voted);
         TellomiDiscover.Post post = TellomiDiscoverParse.displayPost(card);
         assertTrue(post.shareable);
         TellomiDiscover.PostSummary summary = TellomiDiscover.postSummary(post, TellomiDiscover.Copy.resolve("zh"), true);
         assertTrue(summary.body.contains("成都 2"));
-        assertTrue(summary.body.contains("重庆 1"));
-        TellomiDiscover.HttpCall vote = TellomiDiscover.httpCall("https://feed.example", TellomiDiscover.Operation.vote("post-9", 0), "jwt");
+        assertTrue(summary.body.contains("重庆"));
+        String open = "{\"cards\":[{\"id\":\"post-9\",\"state\":\"ok\",\"card\":{\"poll\":{\"options\":[\"甲\",\"乙\"]}},\"poll\":{\"counts\":[2,0],\"voted\":[]}}]}";
+        assertTrue(TellomiDiscoverParse.cards(open.getBytes(StandardCharsets.UTF_8)).get(0).poll.voted.isEmpty());
+        String legacy = "{\"cards\":[{\"id\":\"post-9\",\"state\":\"ok\",\"card\":{\"poll\":{\"options\":[{\"text\":\"甲\",\"votes\":2,\"voted\":true},{\"label\":\"重庆\",\"vote_count\":1,\"voted_by_me\":false}]}}}]}";
+        assertNull(TellomiDiscoverParse.cards(legacy.getBytes(StandardCharsets.UTF_8)).get(0).poll);
+        TellomiDiscover.Poll updated = TellomiDiscover.applyVote(post.poll, new TellomiDiscover.VoteTally(Arrays.asList(3, 1), Collections.singletonList(0)));
+        assertEquals(3, updated.options.get(0).votes);
+        assertEquals(1, updated.options.get(1).votes);
+        assertEquals(Collections.singletonList(0), updated.voted);
+        TellomiDiscover.HttpCall vote = TellomiDiscover.httpCall("https://feed.example", TellomiDiscover.Operation.vote("post-9", 1), "jwt");
         assertEquals("PUT", vote.method);
         assertEquals("/v1/feed/posts/post-9/vote", vote.path());
-        assertEquals(0, (int) TellomiJson.parse(vote.body).objectValue.get("option").numberValue);
+        TellomiJson voteJson = TellomiJson.parse(vote.body);
+        assertNull(voteJson.objectValue.get("option"));
+        assertEquals(1, (int) voteJson.objectValue.get("options").arrayValue.get(0).numberValue);
         assertNull(TellomiDiscover.voteBody(-1));
+        TellomiDiscover.Outcome empty = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.vote("post-9", 0),
+            new TellomiDiscover.HttpResult(200, "{}".getBytes(StandardCharsets.UTF_8))
+        );
+        assertEquals(TellomiDiscover.ClientError.UNREADABLE, empty.error);
+        TellomiDiscover.Outcome blank = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.vote("post-9", 0),
+            new TellomiDiscover.HttpResult(200, new byte[0])
+        );
+        assertEquals(TellomiDiscover.ClientError.UNREADABLE, blank.error);
+        TellomiDiscover.Outcome voted = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.vote("post-9", 0),
+            new TellomiDiscover.HttpResult(200, "{\"counts\":[3,1],\"voted\":[0]}".getBytes(StandardCharsets.UTF_8))
+        );
+        assertEquals(TellomiDiscover.Decoded.Kind.VOTED, voted.value.kind);
+        assertEquals(Arrays.asList(3, 1), voted.value.vote.counts);
+        assertEquals(Collections.singletonList(0), voted.value.vote.voted);
     }
 
     @Test

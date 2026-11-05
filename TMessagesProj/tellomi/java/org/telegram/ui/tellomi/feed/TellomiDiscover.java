@@ -549,7 +549,7 @@ public final class TellomiDiscover {
             return new Operation(Kind.REPOST, null, null, false, null, ids, null, null, null, null, 0);
         }
 
-        /** {@code option} is the zero-based index in {@code card.poll.options}. */
+        /** {@code option} is the zero-based index sent as {@code {"options":[index]}}. */
         public static Operation vote(String postId, int option) {
             List<String> ids = new ArrayList<>();
             if (postId != null) {
@@ -845,6 +845,9 @@ public final class TellomiDiscover {
                 object.put("city", code);
             }
         }
+        if (quoteOf != null && pollOptions != null) {
+            return null;
+        }
         if (quoteOf != null) {
             String quoted = postId(quoteOf);
             if (quoted == null) {
@@ -864,29 +867,72 @@ public final class TellomiDiscover {
         return TellomiJson.write(object);
     }
 
-    /** Two to four options, each at most 80 characters and a single line. */
+    public static final int POLL_OPTION_MIN = 2;
+    public static final int POLL_OPTION_MAX = 10;
+    /** Engine option text is at most 40 code points. */
+    public static final int POLL_OPTION_TEXT_LIMIT = 40;
+
+    /**
+     * Blank lines are dropped. Fewer than 2, more than 10, a newline, or an
+     * option over 40 code points is not a poll. A quote and a poll cannot share a post.
+     */
     public static List<String> cleanPoll(List<String> raw) {
-        if (raw == null || raw.size() < 2 || raw.size() > 4) {
+        if (raw == null) {
             return null;
         }
         List<String> options = new ArrayList<>();
         for (int i = 0; i < raw.size(); i++) {
             String option = raw.get(i) == null ? "" : trim(raw.get(i));
-            if (option.isEmpty() || option.codePointCount(0, option.length()) > 80 || option.indexOf('\n') >= 0 || option.indexOf('\r') >= 0) {
+            if (option.isEmpty()) {
+                continue;
+            }
+            if (option.codePointCount(0, option.length()) > POLL_OPTION_TEXT_LIMIT || option.indexOf('\n') >= 0 || option.indexOf('\r') >= 0) {
                 return null;
             }
             options.add(option);
         }
+        if (options.size() < POLL_OPTION_MIN || options.size() > POLL_OPTION_MAX) {
+            return null;
+        }
         return options;
     }
 
+    /** {@code PUT /v1/feed/posts/{id}/vote} body is {@code {"options":[index]}}. */
     public static byte[] voteBody(int option) {
-        if (option < 0 || option > 9) {
+        if (option < 0 || option >= POLL_OPTION_MAX) {
             return null;
         }
         Map<String, Object> object = new LinkedHashMap<>();
-        object.put("option", option);
+        List<Integer> options = new ArrayList<>();
+        options.add(option);
+        object.put("options", options);
         return TellomiJson.write(object);
+    }
+
+    /** Labels stay. Counts replace tallies. A missing slot is 0. {@code voted} keeps only real option indexes. */
+    public static Poll applyVote(Poll poll, VoteTally tally) {
+        if (poll == null || poll.options == null || tally == null) {
+            return poll;
+        }
+        List<PollOption> options = new ArrayList<>();
+        for (int i = 0; i < poll.options.size(); i++) {
+            PollOption option = poll.options.get(i);
+            int count = tally.counts != null && i < tally.counts.size() ? tally.counts.get(i) : 0;
+            if (count < 0) {
+                count = 0;
+            }
+            options.add(new PollOption(option == null ? "" : option.text, count));
+        }
+        List<Integer> voted = new ArrayList<>();
+        if (tally.voted != null) {
+            for (int i = 0; i < tally.voted.size(); i++) {
+                Integer index = tally.voted.get(i);
+                if (index != null && index >= 0 && index < options.size()) {
+                    voted.add(index);
+                }
+            }
+        }
+        return new Poll(options, voted);
     }
 
     public static final class PublishStep {
@@ -1138,20 +1184,32 @@ public final class TellomiDiscover {
     public static final class PollOption {
         public final String text;
         public final int votes;
-        public final boolean voted;
 
-        public PollOption(String text, int votes, boolean voted) {
+        public PollOption(String text, int votes) {
             this.text = text;
             this.votes = votes;
-            this.voted = voted;
         }
     }
 
     public static final class Poll {
         public final List<PollOption> options;
+        /** Indexes from the outer {@code poll.voted}. Empty means this account has not voted. */
+        public final List<Integer> voted;
 
-        public Poll(List<PollOption> options) {
+        public Poll(List<PollOption> options, List<Integer> voted) {
             this.options = options;
+            this.voted = voted == null ? Collections.<Integer>emptyList() : voted;
+        }
+    }
+
+    /** {@code 200 {"counts":[Int],"voted":[Int]}} from {@code PUT /v1/feed/posts/{id}/vote}. */
+    public static final class VoteTally {
+        public final List<Integer> counts;
+        public final List<Integer> voted;
+
+        public VoteTally(List<Integer> counts, List<Integer> voted) {
+            this.counts = counts;
+            this.voted = voted;
         }
     }
 
@@ -1200,7 +1258,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Decoded {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED, DONE, NOTICES }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED, DONE, NOTICES, VOTED }
 
         public final Kind kind;
         public final Capabilities capabilities;
@@ -1210,6 +1268,7 @@ public final class TellomiDiscover {
         public final List<Card> cards;
         public final CreatedPost created;
         public NoticePage notices;
+        public VoteTally vote;
 
         private Decoded(Kind kind, Capabilities capabilities, boolean status, EngineConfig engineConfig, FeedPage feed, List<Card> cards, CreatedPost created) {
             this.kind = kind;
@@ -1256,6 +1315,12 @@ public final class TellomiDiscover {
         static Decoded notices(NoticePage page) {
             Decoded decoded = new Decoded(Kind.NOTICES, null, false, null, null, null, null);
             decoded.notices = page;
+            return decoded;
+        }
+
+        static Decoded voted(VoteTally tally) {
+            Decoded decoded = new Decoded(Kind.VOTED, null, false, null, null, null, null);
+            decoded.vote = tally;
             return decoded;
         }
     }
@@ -1462,7 +1527,7 @@ public final class TellomiDiscover {
         if (result.status == 400 && "invalid_city".equals(TellomiDiscoverParse.errorCode(result.body))) {
             return Outcome.failure(ClientError.INVALID_CITY);
         }
-        boolean emptyOk = result.status == 204 && (operation.kind == Operation.Kind.REPOST || operation.kind == Operation.Kind.VOTE);
+        boolean emptyOk = result.status == 204 && operation.kind == Operation.Kind.REPOST;
         if (result.status != 200 && result.status != 201 && !emptyOk) {
             if (result.status == 401 || result.status == 403) {
                 return Outcome.failure(ClientError.UNAUTHORIZED);
@@ -1495,10 +1560,14 @@ public final class TellomiDiscover {
         if (operation.kind == Operation.Kind.REPORT) {
             return Outcome.success(Decoded.reported());
         }
-        if (operation.kind == Operation.Kind.REPOST || operation.kind == Operation.Kind.VOTE) {
+        if (operation.kind == Operation.Kind.REPOST) {
             if (result.status == 200 || result.status == 201 || result.status == 204) {
                 return Outcome.success(Decoded.done());
             }
+        }
+        if (operation.kind == Operation.Kind.VOTE && (result.status == 200 || result.status == 201)) {
+            VoteTally tally = TellomiDiscoverParse.voteTally(result.body);
+            return tally == null ? Outcome.failure(ClientError.UNREADABLE) : Outcome.success(Decoded.voted(tally));
         }
         if (operation.kind == Operation.Kind.NOTIFICATIONS && (result.status == 200 || result.status == 201)) {
             NoticePage page = TellomiDiscoverParse.notices(result.body);

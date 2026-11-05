@@ -143,7 +143,7 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         addOption.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (pollFields.size() < 4) {
+                if (pollFields.size() < TellomiDiscover.POLL_OPTION_MAX) {
                     addPollField(context, pollBox);
                     apply();
                 }

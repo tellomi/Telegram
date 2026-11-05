@@ -831,7 +831,7 @@ Android only. The feed client already posted text, read recommend / following / 
 
 A public (`shareable`) post gets a forward menu: direct repost (`PUT /v1/feed/posts/{id}/repost`), quote (`quote_of` on `POST /v1/feed/posts`), share into a Tellomi chat (`ShareAlert` with `https://tell.cc/m#<id>`), and the system share sheet. A post that is not shareable has no menu. A quote whose original is `deleted` still shows the existing「原动态已被作者删除」line. The engine removes the repost when the original is deleted; the client does not keep one.
 
-A post can include a poll (`poll.options`, two to four lines). The card reads `card.poll.options` (`text` / `label`, `votes` / `vote_count`, `voted` / `voted_by_me`). A tap sends `PUT /v1/feed/posts/{id}/vote` with `{"option": index}`.
+A post can include a poll (`poll.options`, two to ten strings, each at most 40 code points). A quote and a poll are not sent together. Option labels are `card.poll.options`. Counts and the chosen indexes are the sibling `poll.counts` and `poll.voted`; an empty `voted` means this account has not voted. A tap sends `PUT /v1/feed/posts/{id}/vote` with `{"options":[index]}`. Success is `200 {"counts":[Int],"voted":[Int]}`. An empty body or `{}` is not a success.
 
 The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_key` `DISCOVER_*` (or `custom.discover = 1`) and opens the post. It does not open a chat with user 777005. The switch on Notifications and Sounds is `account.updateNotifySettings` for @faxian (user id 777005). No row means on. `mute_until` in the future, including mute forever, means off. Muting all private chats does not write this peer.
 

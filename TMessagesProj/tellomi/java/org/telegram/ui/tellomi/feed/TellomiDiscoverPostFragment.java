@@ -30,6 +30,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
 
     private final String postId;
     private TellomiDiscover.Loader loader;
+    private TellomiDiscover.Post shown;
     private TextView bodyView;
     private LinearLayout column;
     private boolean started;
@@ -125,6 +126,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                     text.append(summary.meta);
                 }
                 bodyView.setText(text.toString());
+                shown = post;
                 addForward(post);
                 addPoll(post);
                 addComments(post);
@@ -184,7 +186,8 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
             }
             row.setText(label);
             row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            row.setTextColor(Theme.getColor(option.voted ? Theme.key_windowBackgroundWhiteBlueText4 : Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            boolean chosen = post.poll.voted != null && post.poll.voted.contains(index);
+            row.setTextColor(Theme.getColor(chosen ? Theme.key_windowBackgroundWhiteBlueText4 : Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
             row.setPadding(0, dp(10), 0, dp(10));
             row.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -203,13 +206,16 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
         loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.vote(postId, index), new TellomiDiscover.Completion() {
             @Override
             public void onResult(TellomiDiscover.Outcome outcome) {
-                if (outcome != null && outcome.ok()) {
-                    started = false;
-                    if (column != null) {
-                        column.removeViews(1, column.getChildCount() - 1);
-                    }
-                    loadIfAllowed();
+                if (outcome == null || !outcome.ok() || outcome.value == null || outcome.value.vote == null || shown == null || shown.poll == null) {
+                    return;
                 }
+                shown.poll = TellomiDiscover.applyVote(shown.poll, outcome.value.vote);
+                if (column != null && column.getChildCount() > 1) {
+                    column.removeViews(1, column.getChildCount() - 1);
+                }
+                addForward(shown);
+                addPoll(shown);
+                addComments(shown);
             }
         });
     }
