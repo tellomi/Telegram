@@ -173,6 +173,7 @@
     <string name="Tellomi_Discover_NotifySwitch">Discover</string>
     <string name="Tellomi_Discover_NotifySwitchInfo">Likes, comments, mentions, follows, and forwards</string>
     <string name="Tellomi_Discover_Reposted">Forwarded</string>
+    <string name="Tellomi_Discover_LinkPreviewLoading">Fetching the link preview.</string>
     <string name="Tellomi_Discover_Report">Report</string>
     <string name="Tellomi_Discover_ReportSent">Report sent</string>
     <string name="Tellomi_Discover_ReportFailed">Couldn\'t send the report</string>
