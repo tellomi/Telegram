@@ -195,7 +195,12 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
     private void onSwiped() {
         int action = TellomiAppUpdate.primaryAction(update == null ? null : update.url, update != null && update.document instanceof TLRPC.TL_document);
         if (action == TellomiAppUpdate.OPEN_URL) {
-            Browser.openUrl(getContext(), update.url.trim());
+            String url = update.url.trim();
+            if (TellomiAppUpdate.preferSystemBrowser(url)) {
+                Browser.openUrlInSystemBrowser(getContext(), url);
+            } else {
+                Browser.openUrl(getContext(), url);
+            }
             dismiss();
             return;
         }

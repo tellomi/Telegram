@@ -45,6 +45,8 @@ public class TellomiSettingsUpdateTest {
         assertEquals("Already the latest version", en.latest);
         assertEquals("Check for updates", TellomiSettingsUpdate.Copy.resolve(null).check);
         assertEquals("Already the latest version", TellomiSettingsUpdate.Copy.resolve("de").latest);
+        assertEquals("Could not check for updates. Try again.", en.failed);
+        assertEquals("暂时无法检查更新，请稍后再试。", zh.failed);
     }
 
     @Test
@@ -55,8 +57,10 @@ public class TellomiSettingsUpdateTest {
         TellomiSettingsUpdate.Copy chinese = TellomiSettingsUpdate.Copy.resolve("zh");
         assertEquals(english.check, en.get("TellomiCheckForUpdates"));
         assertEquals(english.latest, en.get("YourVersionIsLatest"));
+        assertEquals(english.failed, en.get("TellomiCheckForUpdatesFailed"));
         assertEquals(chinese.check, zh.get("TellomiCheckForUpdates"));
         assertEquals(chinese.latest, zh.get("YourVersionIsLatest"));
+        assertEquals(chinese.failed, zh.get("TellomiCheckForUpdatesFailed"));
     }
 
     @Test
@@ -69,7 +73,10 @@ public class TellomiSettingsUpdateTest {
         assertTrue(settings.contains("TellomiSettingsUpdate.debugMenuCheckVisible("));
         String launch = read("TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java");
         assertTrue(launch.contains("new TLRPC.TL_help_getAppUpdate()"));
+        assertTrue(launch.contains("ApplicationLoader.supportsInAppUpdates()"));
+        assertTrue(launch.contains("checkTellomiReleaseFeed(installedVersion, progress)"));
         assertTrue(launch.contains("LocaleController.getString(R.string.YourVersionIsLatest)"));
+        assertTrue(launch.contains("LocaleController.getString(R.string.TellomiCheckForUpdatesFailed)"));
     }
 
     private static String read(String relative) throws Exception {

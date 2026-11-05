@@ -41,17 +41,19 @@ public final class TellomiSettingsUpdate {
     public static final class Copy {
         public final String check;
         public final String latest;
+        public final String failed;
 
-        private Copy(String check, String latest) {
+        private Copy(String check, String latest, String failed) {
             this.check = check;
             this.latest = latest;
+            this.failed = failed;
         }
 
         public static Copy resolve(String language) {
             if (language != null && language.toLowerCase(Locale.US).startsWith("zh")) {
-                return new Copy("检查更新", "已是最新版本");
+                return new Copy("检查更新", "已是最新版本", "暂时无法检查更新，请稍后再试。");
             }
-            return new Copy("Check for updates", "Already the latest version");
+            return new Copy("Check for updates", "Already the latest version", "Could not check for updates. Try again.");
         }
     }
 }

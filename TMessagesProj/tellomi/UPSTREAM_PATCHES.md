@@ -841,3 +841,17 @@ The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_
 | `TMessagesProj/src/main/java/org/telegram/ui/NotificationsSettingsActivity.java` | One check row, `discoverRow`, after reactions. The title and the toggle live in the flavor class. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/PushListenerController.java` | After the account is known, a discover payload is shown by `TellomiDiscoverPush` and is not turned into a chat message. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | The notification extra `tellomi_discover_post` opens `https://tell.cc/m#<id>` through the existing post-link path. |
+
+## Release-feed update check
+
+Settings → Check for updates, and the automatic check on the shipped App module, called `help.getAppUpdate` and then `SharedConfig.setNewAppVersionAvailable`. That comparison uses `versionName` only. A published build that keeps the same marketing version and raises `versionCode` was treated as already installed. The installer publish writes `android/latest.json` (`versionName` + `versionCode`) and does not update `help.getAppUpdate`. `versions.json` on the download page can lag that file, and `android/test/latest.json` is a different channel. Neither of those is the check.
+
+The App module now reads `https://www.tellomi.cn/dl/android/latest.json` and `https://dl.tellomi.cn/android/latest.json` together. The higher `versionCode` is the release. The APK link is the one on the host that won, so the official URL is not offered when only the backup feed answered. The swipe opens an `.apk` link in the system browser. A feed that cannot be read does not show "already the latest" and does not start the 6-hour delay. Standalone and beta builds still use their previous check. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiReleaseUpdate.java` | Feed URLs, manifest parse, version-code comparison, and the APK link. |
+| `TMessagesProj/src/main/java/.../LaunchActivity.java` | In-app updates use that feed. Manual failure is not "already the latest". |
+| `TMessagesProj/src/main/java/.../SharedConfig.java` | A remote version code beats an equal version name. The saved offer keeps that code. |
+| `TMessagesProj/src/test/java/.../TellomiReleaseUpdateTest.java` | Same version name with a higher code, the stale page manifest, and the backup APK link. |
+| `docs/TELLOMI.md` | The in-app update section matches this source. |

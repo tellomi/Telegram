@@ -107,6 +107,7 @@
     <string name="TellomiFeedEmptyMessage">还没有内容</string>
     <string name="TellomiCheckForUpdates">检查更新</string>
     <string name="YourVersionIsLatest">已是最新版本</string>
+    <string name="TellomiCheckForUpdatesFailed">暂时无法检查更新，请稍后再试。</string>
     <string name="Tellomi_Discover_Recommend">推荐</string>
     <string name="Tellomi_Discover_Following">关注</string>
     <string name="Tellomi_Discover_Nearby">同城</string>

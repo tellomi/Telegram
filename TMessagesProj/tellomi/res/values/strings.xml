@@ -104,6 +104,7 @@
     <string name="TellomiFeedEmptyMessage">Nothing here yet</string>
     <string name="TellomiCheckForUpdates">Check for updates</string>
     <string name="YourVersionIsLatest">Already the latest version</string>
+    <string name="TellomiCheckForUpdatesFailed">Could not check for updates. Try again.</string>
     <string name="Tellomi_Discover_Recommend">For You</string>
     <string name="Tellomi_Discover_Following">Following</string>
     <string name="Tellomi_Discover_Nearby">Nearby</string>

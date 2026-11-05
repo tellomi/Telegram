@@ -61,6 +61,14 @@ public class TellomiAppUpdateTest {
     }
 
     @Test
+    public void apkLinkUsesTheSystemBrowser() {
+        assertTrue(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/14.0.7-1802949/Tellomi.apk"));
+        assertTrue(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/Tellomi.apk?x=1"));
+        assertFalse(TellomiAppUpdate.preferSystemBrowser("https://www.tellomi.cn/download/"));
+        assertFalse(TellomiAppUpdate.preferSystemBrowser(null));
+    }
+
+    @Test
     public void missingPayloadDoesNotOpenAStore() {
         assertEquals(TellomiAppUpdate.NONE, TellomiAppUpdate.primaryAction(null, false));
         assertEquals(TellomiAppUpdate.NONE, TellomiAppUpdate.primaryAction("", false));
@@ -139,6 +147,9 @@ public class TellomiAppUpdateTest {
         assertTrue(launch.contains("TellomiAppUpdate.shouldSkipAutomaticCheck("));
         assertTrue(launch.contains("SharedConfig.rememberUpdateCheckVersion(installedVersion)"));
         assertTrue(launch.contains("checkAppUpdate(false, null)"));
+        String dialog = read("TMessagesProj/tellomi/java/org/telegram/ui/TellomiSoftUpdateDialog.java");
+        assertTrue(dialog.contains("TellomiAppUpdate.preferSystemBrowser("));
+        assertTrue(dialog.contains("Browser.openUrlInSystemBrowser("));
     }
 
     private static String read(String relative) throws Exception {
