@@ -936,3 +936,15 @@ The picker is `ACTION_GET_CONTENT` (`video/*`) from `TellomiDiscoverComposeFragm
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and Chinese for those lines. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. |
 | `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoTest.java` | The 60-second boundary, the upload gate, and the Chinese copy. |
+
+## Login send-code SMS failure
+
+Reopen of closed, unmerged #9, rebased onto current master.
+
+`auth.sendCode` can fail with `SMS_CODE_CREATE_FAILED`. The spinner already stops in the RPC callback. That text is not in the phone-screen special cases (`PHONE_NUMBER_INVALID`, `FLOOD_WAIT`, and the rest). The fallback `tellomiShowSendFailure` shows the generic error plus the raw error string, so the dialog said `SMS_CODE_CREATE_FAILED`. `AlertsCreator.processError` still has no `auth.sendCode` branch. The phone screen now uses the same `needShowAlert` as those neighbors, with the fixed sentence 「验证码发送失败，请稍后重试」. The check is `req instanceof TLRPC.TL_auth_sendCode`, so change-phone (`account.sendChangePhoneCode`), resend, and every other error text on that callback still use the existing path. The sentence is hardcoded, like the sign-up agreement: it is not in the cloud langpack, so a new string resource would miss while `zh-hans` / `zh-hant` are active.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiLoginErrors.java` | New. Flavor-only copy and the `SMS_CODE_CREATE_FAILED` check. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone-screen `auth.sendCode` error callback calls `needShowAlert` for that error before `tellomiShowSendFailure`. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | The sentence and the phone-screen branch. |
