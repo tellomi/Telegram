@@ -802,6 +802,25 @@ The shared language pack cannot put a hyphen in a key. The iOS string generator 
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The resource-name note matches those underscore lookup keys. `resourceName` still turns a leftover `-` into `_`. |
 | `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverI18nTest.java` | The four lookup keys, and the resource names they already map to. |
 
+## Discover nearby tab (D-11 / D-12)
+
+The Discover bar always shows 推荐, 关注, and 同城, in that order. `GET /v1/feed/config` may omit `nearby`; the tab stays. An unknown config name is still not added.
+
+The first open of 同城 with no saved city asks for coarse location only (`ACCESS_COARSE_LOCATION`). The coordinate is used once for `Geocoder` and then dropped. Only `Address.getLocality()` can become a catalog code such as `cn:chengdu`. A street, a province, or a coordinate does not. If permission is denied, or geocoding returns nothing, the city list stays up and the user picks by hand. Nothing is stored until they pick.
+
+Publishing still uses `POST /v1/feed/posts` and the existing `city` field. The value is that catalog code. There is no latitude, longitude, or address field. The line above the feed (`Posting in Chengdu` / `发布到 成都`) is the city the next post will carry. The composer screen is unchanged, so it does not collide with the video and mention composers.
+
+`GET /v1/feed/nearby?city=` is the nearby read. `content-engine` was not readable from this tree (private, HTTP 404). A 404, 405, or 501 on that route is shown as 「同城暂时还不能刷新」. An empty 200 is 「这个城市还没有帖子」. The client does not invent another path. Simplified Chinese in `TellomiPack` is what zh-Hans and zh-Hant (including zh-TW) both read. `values-zh-rTW` is not added.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverNearby.java` | Home tabs, the publish city code, the compose line, and the missing-route check. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java` | The three tabs, the first coarse-location ask, the city list, and the degraded empty state. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | A missing nearby route is `NEARBY_UNAVAILABLE`, not a generic load failure. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and simplified Chinese for those lines. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. zh-Hant keeps this simplified pack. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverNearbyTest.java` | City normalize, tab order, the nearby query, and the publish keys. |
+
 ## Settings home (M1)
 
 The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds that list into the same three groups iOS uses: Account, General, and Support. The home screen shows those three titles. Each opens a secondary page with the rows that used to sit on the home list. Tips (`Telegram Features`, row 23) and Apple Watch (row 28, or a row titled Apple Watch) are left off. Suggestions, other accounts, the experimental block, and the debug block stay on the home screen. The check-for-updates row (`TellomiSettingsUpdate.ROW_ID`, 41) stays on the home screen, directly above the version footer, and still calls `checkAppUpdate` with progress. It is not a Support page row. The General group uses the white gear `msg_settings`. The header card gets a 12dp side inset when it is attached, because the list binds it with match-parent params and no margins.
