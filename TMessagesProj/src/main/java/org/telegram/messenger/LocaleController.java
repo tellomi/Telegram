@@ -1334,6 +1334,20 @@ public class LocaleController {
         if (localeInfo == null) {
             return 0;
         }
+        // TELLOMI: built-in it/es/de/nl/ar/pt_br/ko/uk/ru are a short bin. Marking
+        // the row remote runs langpack.getLangPack below. English stays the default
+        // bin. Chinese stays on localization_zh.bin. A row already in the dict is
+        // recorded here; an unknown remote is added by the block further down.
+        if (TellomiDefaults.attachServerLangpack(localeInfo)) {
+            LocaleInfo tracked = getLanguageFromDict(localeInfo.getKey());
+            if (tracked != null && tracked != localeInfo) {
+                tracked.pathToFile = localeInfo.pathToFile;
+            }
+            if (tracked != null && !remoteLanguagesDict.containsKey(tracked.getKey())) {
+                remoteLanguages.add(tracked);
+                remoteLanguagesDict.put(tracked.getKey(), tracked);
+            }
+        }
         int requestId = 0;
         boolean hasBase = localeInfo.hasBaseLang();
         File pathToFile = localeInfo.getPathToFile();
@@ -3370,6 +3384,16 @@ public class LocaleController {
                     if (response != null) {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                        });
+                    } else {
+                        // TELLOMI: a failed getLangPack must still finish the apply.
+                        // Otherwise the settings spinner never closes and login never
+                        // redraws, so the switch looks like it did nothing.
+                        AndroidUtilities.runOnUIThread(() -> {
+                            onPartlyDone.run();
+                            if (received[0] >= requested[0] && currentLocaleInfo == localeInfo) {
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+                            }
                         });
                     }
                 }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);

@@ -855,3 +855,25 @@ The App module now reads `https://www.tellomi.cn/dl/android/latest.json` and `ht
 | `TMessagesProj/src/main/java/.../SharedConfig.java` | A remote version code beats an equal version name. The saved offer keeps that code. |
 | `TMessagesProj/src/test/java/.../TellomiReleaseUpdateTest.java` | Same version name with a higher code, the stale page manifest, and the backup APK link. |
 | `docs/TELLOMI.md` | The in-app update section matches this source. |
+
+## Built-in languages use the server langpack
+
+`TELLOMI_USE_CLOUD_STRINGS` stays false. A remote or unofficial row was already read from the file `langpack.getLangPack` writes. The language button still lists the built-in codes (en, it, es, de, nl, ar, pt_br, ko, uk, ru, zh_hans, zh_hant). Those rows are created with `pathToFile = null`, so `applyLanguage` never called `applyRemoteLanguage`. `getStringV2` then used `localization_*.bin`.
+
+`values/` and `values-zh/strings.xml` each have 11505 strings. The other bundled folders are a subset: it 1516, es 1298, de 1359, ar 1227, pt-rBR 1234, ko 1121, nl 1068, uk 269, ru 257. Missing keys fall back to English. Russian and Ukrainian are so small that the switch looks like it did nothing. Chinese is not sent through this path: a remote Chinese row with no file used to drop the UI onto the English bin, and `localization_zh.bin` is already complete. English is the default table.
+
+`TellomiDefaults.attachServerLangpack` sets `pathToFile` to `remote` for any other built-in row at the start of `applyLanguage`, before `getPathToFile()`. The existing download then runs, and `cloudStringsEnabled` reads the file because the row is remote. The same object is stored in `remoteLanguages` when it is already in the language dict, so the version is saved with the other remote packs. English and both Chinese codes are unchanged. A failed `langpack.getLangPack` still runs the apply callback and posts `reloadInterface`, so the settings spinner closes and login redraws onto the local bin.
+
+Login used to rebuild itself as soon as `applyLanguage` returned. That return now happens before the pack arrives, and `reloadInterface` does not rebuild the top fragment. The login redraw runs from the apply callback, after the strings are loaded (or the request has failed).
+
+### Check on a device
+
+Install a dev build (`-PTELLOMI_SERVER_PROFILE=dev`) that can reach the server. On the login language list, choose Italiano, then Español, Deutsch, Nederlands, العربية, Português (Brasil), 한국어, Українська, and Русский. After the short download, labels that were English in the bundled bin (Settings, Chats, and the login fields) should follow that language. Repeat from Settings → Language. English should stay fully English with no download. 简体中文 and 繁體中文 should stay Chinese. Turn the network off, pick a language that is not cached, and the screen should still switch to the short local bin instead of hanging.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `needsServerLangpack` and `attachServerLangpack`. English and Chinese stay local. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `applyLanguage` marks the built-in row remote and keeps it in `remoteLanguages`. A failed `getLangPack` finishes the apply. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login redraws when the apply callback runs, not before the pack is loaded. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | Comment: the non-English, non-Chinese bins are a fallback. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiCloudStringsTest.java` | Which codes request a pack, and that apply plus login are wired to it. |

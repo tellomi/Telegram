@@ -6,8 +6,10 @@
  *
  * Bundled language list for the pre-login picker. The old card hardcoded
  * three rows (简体中文, 繁體中文, English). That was not a langpack result.
- * The codes below are the packs this tree ships strings for. Applying a
- * row is LocaleController.applyLanguage. See UPSTREAM_PATCHES.md.
+ * The codes below are the packs this tree ships a local bin for. English
+ * and Chinese bins are complete. The others are a fallback until
+ * LocaleController.applyLanguage downloads langpack.getLangPack.
+ * See UPSTREAM_PATCHES.md.
  */
 
 package org.telegram.ui;
@@ -56,10 +58,12 @@ public final class TellomiLanguageSheet {
     }
 
     /**
-     * Languages this client can show without a server langpack.
+     * Languages shown before langpack.getLanguages returns.
      * values-* folders: ar, de, es, it, ko, nl, pt-rBR, ru, uk, zh.
      * English is the default values/ pack. zh_hans and zh_hant both read localization_zh.bin.
-     * Anything else needs langpack.getLanguages and langpack.getLangPack on the server.
+     * The other codes still call langpack.getLangPack on apply. Their bins are a
+     * fallback when that request fails. Anything outside this list still needs
+     * langpack.getLanguages.
      */
     public static final List<String> BUNDLED_LANG_CODES = Collections.unmodifiableList(Arrays.asList(
             "en", "it", "es", "de", "nl", "ar", "pt_br", "ko", "uk", "ru", "zh_hans", "zh_hant"
