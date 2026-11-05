@@ -11,6 +11,7 @@ import java.net.URL;
 final class TellomiDiscoverHttps {
 
     private static final int MAX_BODY = 2_000_000;
+    private static final int MAX_BYTES_IMAGE = 21 * 1024 * 1024;
     private static final int TIMEOUT_MS = 20_000;
 
     void perform(final TellomiDiscover.HttpCall call, final TellomiDiscover.HttpCallback callback) {
@@ -44,6 +45,17 @@ final class TellomiDiscoverHttps {
                 if (call.contentType != null) {
                     connection.setRequestProperty("Content-Type", call.contentType);
                 }
+                if (call.headers != null) {
+                    for (java.util.Map.Entry<String, String> header : call.headers.entrySet()) {
+                        if (header.getKey() != null && header.getValue() != null) {
+                            connection.setRequestProperty(header.getKey(), header.getValue());
+                        }
+                    }
+                }
+                if (call.body != null && call.body.length > 256 * 1024) {
+                    connection.setConnectTimeout(60_000);
+                    connection.setReadTimeout(60_000);
+                }
                 if (call.body != null) {
                     connection.setDoOutput(true);
                     OutputStream out = connection.getOutputStream();
@@ -66,11 +78,11 @@ final class TellomiDiscoverHttps {
                 InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
                 byte[] body;
                 try {
-                    body = readLimited(stream);
+                    body = readLimited(stream, bodyLimit(call));
                 } catch (TooLarge ignored) {
                     return new TellomiDiscover.HttpResult(TellomiDiscover.ClientError.UNREADABLE);
                 }
-                return new TellomiDiscover.HttpResult(status, body);
+                return new TellomiDiscover.HttpResult(status, body, responseHeaders(connection));
             } catch (Exception ignored) {
                 return new TellomiDiscover.HttpResult(TellomiDiscover.ClientError.UNAVAILABLE);
             } finally {
@@ -101,7 +113,31 @@ final class TellomiDiscoverHttps {
         }
     }
 
-    private static byte[] readLimited(InputStream stream) throws Exception {
+    private static java.util.Map<String, String> responseHeaders(HttpURLConnection connection) {
+        java.util.Map<String, String> headers = new java.util.LinkedHashMap<>();
+        for (int i = 0; ; i++) {
+            String key = connection.getHeaderFieldKey(i);
+            String value = connection.getHeaderField(i);
+            if (key == null && value == null) {
+                break;
+            }
+            if (key != null && value != null) {
+                headers.put(key.toLowerCase(java.util.Locale.US), value);
+            }
+        }
+        return headers;
+    }
+
+    /** Image bytes can be the same 20MB the upload allows. Feed JSON stays capped. */
+    private static int bodyLimit(TellomiDiscover.HttpCall call) {
+        String path = call == null ? "" : call.path();
+        if ("GET".equals(call == null ? null : call.method) && path.startsWith("/v1/feed/media/") && !path.startsWith("/v1/feed/media/uploads")) {
+            return MAX_BYTES_IMAGE;
+        }
+        return MAX_BODY;
+    }
+
+    private static byte[] readLimited(InputStream stream, int max) throws Exception {
         if (stream == null) {
             return new byte[0];
         }
@@ -112,7 +148,7 @@ final class TellomiDiscoverHttps {
             int read;
             while ((read = stream.read(buffer)) >= 0) {
                 total += read;
-                if (total > MAX_BODY) {
+                if (total > max) {
                     throw new TooLarge();
                 }
                 out.write(buffer, 0, read);

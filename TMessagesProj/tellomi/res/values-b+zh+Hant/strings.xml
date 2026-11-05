@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="Tellomi_Discover_PhotoAdd">添加圖片</string>
+    <string name="Tellomi_Discover_PhotoHint">最多 10 張，JPEG、PNG 或 WebP，單張不超過 20MB。</string>
+    <string name="Tellomi_Discover_PhotoCount">已選 %d 張</string>
+    <string name="Tellomi_Discover_PhotoRemove">移除</string>
+    <string name="Tellomi_Discover_PhotoLimit">一次最多 10 張圖片。</string>
+    <string name="Tellomi_Discover_PhotoTooLarge">這張圖片超過 20MB。</string>
+    <string name="Tellomi_Discover_PhotoType">只支援 JPEG、PNG 或 WebP。</string>
+    <string name="Tellomi_Discover_PhotoUploadFailed">圖片上傳失敗。</string>
+    <string name="Tellomi_Discover_PhotoNetwork">網路不好，圖片沒有傳上去。</string>
+    <string name="Tellomi_Discover_PhotoUploading">正在上傳圖片…</string>
+</resources>

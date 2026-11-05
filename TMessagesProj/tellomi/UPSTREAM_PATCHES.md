@@ -922,7 +922,7 @@ Install a dev build (`-PTELLOMI_SERVER_PROFILE=dev`) that can reach the server. 
 
 ## Discover video length (D-41)
 
-Compose had no video control. `POST /v1/feed/posts` still has no media field, and there is no media route, so a picked file is not uploaded and is not dropped into a text post. The 60-second cap is enforced on the client anyway.
+Compose had no video control. A picked clip is still not uploaded and is not dropped into a text post. Image posts later send `media`; this video path does not. The 60-second cap is enforced on the client anyway.
 
 The picker is `ACTION_GET_CONTENT` (`video/*`) from `TellomiDiscoverComposeFragment`. Length comes from `MediaMetadataRetriever`, then `MediaStore.Video.Media.DURATION` if that fails. `TellomiDiscoverVideo.select` keeps a clip only when the length is from 1 ms through 60_000 ms. A longer clip is discarded and the screen says to pick a shorter one. An unreadable length is discarded too. Publish reads the length again and calls `beforeUpload`. Over 60 seconds is still discarded. A clip inside the cap returns `NOT_UPLOADED` and the text post is not sent.
 
@@ -948,3 +948,16 @@ Reopen of closed, unmerged #9, rebased onto current master.
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiLoginErrors.java` | New. Flavor-only copy and the `SMS_CODE_CREATE_FAILED` check. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone-screen `auth.sendCode` error callback calls `needShowAlert` for that error before `tellomiShowSendFailure`. |
 | `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | The sentence and the phone-screen branch. |
+
+## Discover multi-image posts (D-10)
+
+Compose can pick up to 10 JPEG, PNG, or WebP photos, each at most 20MB. The bytes go to `POST /v1/feed/media/uploads` as tus 1.0.0 (`Upload-Length`, `Upload-Metadata` filename/filetype, then `PATCH` with `Upload-Offset`). The key sent on `POST /v1/feed/posts` is `media[].key` with `type` `image`, the same names the card fixture already uses. A card image is drawn from `GET /v1/feed/media/<key>`, not only counted. A video still blocks the text post and is not uploaded. Free-form `#` topics are not sent: the engine topics field still only accepts lowercase letters, digits, `_`, and `-`.
+
+`content-engine` `docs/api.md` and `api/uploads.go` were not readable from this tree (the GitHub token only sees `tellomi/Telegram`). The field names above are the card fixture plus that tus path. Rebased onto the merged link-preview post: `link_preview` stays, and `media` is added beside it. No chat-video crop, iOS, or content-safety change.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMedia.java` | Limits, sniff, tus session, publish keys, image URL. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Multi-pick, remove, upload, then publish. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverImageRow.java` | Feed and detail image slots. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMediaTest.java` | Tus headers, the post field, limits, and zh-Hans / zh-TW copy. |

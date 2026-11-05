@@ -4,9 +4,9 @@ package org.telegram.ui.tellomi.feed;
  * Discover video cap (D-41 / v2.1 M3). A clip longer than 60 seconds is not
  * kept and is not uploaded. Exactly 60 seconds is allowed.
  *
- * {@code POST /v1/feed/posts} has no media field, and this client has no media
- * route. {@link #beforeUpload(long)} therefore returns {@link Decision#NOT_UPLOADED}
- * for a clip that is already within the cap, so a text post is not sent in its place.
+ * Image bytes go through {@code /v1/feed/media/uploads}. This gate does not upload
+ * a clip. {@link #beforeUpload(long)} still returns {@link Decision#NOT_UPLOADED}
+ * for a clip inside the cap, so a text post is not sent while a video is attached.
  *
  * Gallery rows in {@code MediaController.PhotoEntry} store duration as whole
  * seconds ({@code MediaStore} milliseconds / 1000). That truncation is not the

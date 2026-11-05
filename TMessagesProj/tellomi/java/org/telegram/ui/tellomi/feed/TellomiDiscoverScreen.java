@@ -530,7 +530,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     @Override
-    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, final TellomiDiscoverLink.Preview linkPreview, final TellomiDiscover.Completion completion) {
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, final TellomiDiscoverLink.Preview linkPreview, final java.util.List<String> mediaKeys, final TellomiDiscover.Completion completion) {
         final TellomiDiscover.Configuration configuration = configuration();
         if (!loggedIn() || !configuration.enabled) {
             completion.onResult(TellomiDiscover.Outcome.failure(loggedIn() ? TellomiDiscover.ClientError.DISABLED : TellomiDiscover.ClientError.SIGNED_OUT));
@@ -538,9 +538,9 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         }
         long now = System.currentTimeMillis() / 1000L;
         String city = TellomiDiscoverNearby.publishCity(cityCode);
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, city, quoteOf, pollOptions, linkPreview);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, city, quoteOf, pollOptions, linkPreview, mediaKeys);
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, city, quoteOf, pollOptions, linkPreview), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, city, quoteOf, pollOptions, linkPreview, mediaKeys), completion);
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
@@ -558,7 +558,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, TellomiDiscoverNearby.publishCity(cityCode), quoteOf, pollOptions, linkPreview), completion);
+                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, TellomiDiscoverNearby.publishCity(cityCode), quoteOf, pollOptions, linkPreview, mediaKeys), completion);
             }
         });
     }
@@ -792,6 +792,14 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     line.addView(more, new LinearLayout.LayoutParams(dp(40), dp(40)));
                 }
                 column.addView(line, layout(LinearLayout.LayoutParams.MATCH_PARENT));
+                if (post.images != null && !post.images.isEmpty()) {
+                    TellomiDiscoverImageRow.add(column, context, account, post.images, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            activity.presentFragment(new TellomiDiscoverPostFragment(post.id));
+                        }
+                    });
+                }
             }
         }
         ScrollView scroll = scroll(column);

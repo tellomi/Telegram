@@ -106,6 +106,108 @@ public final class TellomiDiscoverClient {
         void onResult(TellomiDiscover.AudienceToken token, TellomiDiscover.ClientError error);
     }
 
+    public interface UploadCallback {
+        void onResult(java.util.List<String> keys, TellomiDiscover.ClientError error);
+    }
+
+    public interface ImageCallback {
+        void onImage(int index, byte[] bytes);
+    }
+
+    /** Tus each file, then return card keys in the same order. An empty list does not hit the network. */
+    public static void uploadImages(final int account, final String baseUrl, final java.util.List<TellomiDiscoverMedia.Bytes> files, final UploadCallback callback) {
+        if (files == null || files.isEmpty()) {
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    callback.onResult(java.util.Collections.<String>emptyList(), null);
+                }
+            });
+            return;
+        }
+        fetchCredential(account, new TellomiDiscover.CredentialCallback() {
+            @Override
+            public void onResult(TellomiDiscover.Credential credential, TellomiDiscover.ClientError error) {
+                if (error != null || credential == null || credential.token == null || credential.token.isEmpty()) {
+                    callback.onResult(null, error == null ? TellomiDiscover.ClientError.MEDIA_UPLOAD : error);
+                    return;
+                }
+                pump(TellomiDiscoverMedia.Upload.start(baseUrl, credential.token, files), callback);
+            }
+        });
+    }
+
+    private static void pump(final TellomiDiscoverMedia.Upload upload, final UploadCallback callback) {
+        if (upload.finished()) {
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (upload.error != null) {
+                        callback.onResult(null, upload.error);
+                    } else {
+                        callback.onResult(upload.keys(), null);
+                    }
+                }
+            });
+            return;
+        }
+        final TellomiDiscover.HttpCall call = upload.next();
+        if (call == null) {
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    callback.onResult(null, TellomiDiscover.ClientError.MEDIA_UPLOAD);
+                }
+            });
+            return;
+        }
+        HTTPS.perform(call, new TellomiDiscover.HttpCallback() {
+            @Override
+            public void onResult(TellomiDiscover.HttpResult result) {
+                upload.consume(result);
+                pump(upload, callback);
+            }
+        });
+    }
+
+    /** One credential, then a GET per key. A miss calls back with a null body. */
+    public static void loadImages(final int account, final String baseUrl, final java.util.List<TellomiDiscover.Image> images, final ImageCallback callback) {
+        if (images == null || images.isEmpty() || callback == null) {
+            return;
+        }
+        fetchCredential(account, new TellomiDiscover.CredentialCallback() {
+            @Override
+            public void onResult(TellomiDiscover.Credential credential, TellomiDiscover.ClientError error) {
+                if (error != null || credential == null || credential.token == null) {
+                    for (int i = 0; i < images.size(); i++) {
+                        callback.onImage(i, null);
+                    }
+                    return;
+                }
+                for (int i = 0; i < images.size(); i++) {
+                    final int index = i;
+                    String url = TellomiDiscoverMedia.imageUrl(baseUrl, images.get(i).key);
+                    if (url == null || baseUrl == null || !url.startsWith(baseUrl)) {
+                        callback.onImage(index, null);
+                        continue;
+                    }
+                    HTTPS.perform(new TellomiDiscover.HttpCall("GET", url, null, credential.token, true, null), new TellomiDiscover.HttpCallback() {
+                        @Override
+                        public void onResult(final TellomiDiscover.HttpResult result) {
+                            final byte[] bytes = result != null && result.error == null && result.status == 200 ? result.body : null;
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    callback.onImage(index, bytes);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     public static final class GetEngineCredential extends TLObject {
         @Override
         public void serializeToStream(OutputSerializedData stream) {

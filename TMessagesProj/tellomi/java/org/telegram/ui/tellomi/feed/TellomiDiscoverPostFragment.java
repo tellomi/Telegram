@@ -127,12 +127,20 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                 }
                 bodyView.setText(text.toString());
                 shown = post;
+                addImages(post);
                 addLink(post);
                 addForward(post);
                 addPoll(post);
                 addComments(post);
             }
         });
+    }
+
+    private void addImages(TellomiDiscover.Post post) {
+        if (column == null || post == null || post.images == null || post.images.isEmpty()) {
+            return;
+        }
+        TellomiDiscoverImageRow.add(column, column.getContext(), currentAccount, post.images, null);
     }
 
     private void addLink(TellomiDiscover.Post post) {
@@ -223,6 +231,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                 if (column != null && column.getChildCount() > 1) {
                     column.removeViews(1, column.getChildCount() - 1);
                 }
+                addImages(shown);
                 addLink(shown);
                 addForward(shown);
                 addPoll(shown);
@@ -232,7 +241,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
     }
 
     @Override
-    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, TellomiDiscover.Completion completion) {
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, java.util.List<String> mediaKeys, TellomiDiscover.Completion completion) {
         TellomiDiscover.Configuration configuration = TellomiDiscoverFlags.configuration(currentAccount);
         boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
         if (!loggedIn || configuration == null || !configuration.enabled) {
@@ -243,13 +252,13 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
             loader = TellomiDiscoverClient.loader(currentAccount);
         }
         long now = System.currentTimeMillis() / 1000L;
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(currentAccount).getClientUserId(), nonce, TellomiDiscover.POST_TEXT_LIMIT, null, now, null, quoteOf, pollOptions, linkPreview);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(currentAccount).getClientUserId(), nonce, TellomiDiscover.POST_TEXT_LIMIT, null, now, null, quoteOf, pollOptions, linkPreview, mediaKeys);
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
             completion.onResult(TellomiDiscover.Outcome.failure(step.error));
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview, mediaKeys), completion);
             return;
         }
         final TellomiDiscover.Loader publishing = loader;
@@ -260,7 +269,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                publishing.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview), completion);
+                publishing.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview, mediaKeys), completion);
             }
         });
     }

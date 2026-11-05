@@ -23,11 +23,18 @@ public final class TellomiPack {
         public final String key;
         public final String en;
         public final String zh;
+        /** Traditional Chinese. Null keeps the simplified string for zh-Hant. */
+        public final String zhHant;
 
         Entry(String key, String en, String zh) {
+            this(key, en, zh, null);
+        }
+
+        Entry(String key, String en, String zh, String zhHant) {
             this.key = key;
             this.en = en;
             this.zh = zh;
+            this.zhHant = zhHant;
         }
     }
 
@@ -107,6 +114,16 @@ public final class TellomiPack {
         entry("Tellomi.Discover.VideoSelected", "Selected · %s", "已选择 · %s"),
         entry("Tellomi.Discover.VideoNotUploaded", "Video upload isn't available yet. Remove it to post the text.", "发现还不能上传视频，移除后可以发布文字。"),
         entry("Tellomi.Discover.VideoReading", "Reading the length…", "正在读取时长…"),
+        entry("Tellomi.Discover.PhotoAdd", "Add photos", "添加图片", "添加圖片"),
+        entry("Tellomi.Discover.PhotoHint", "Up to 10 photos. JPEG, PNG, or WebP. Each one up to 20 MB.", "最多 10 张，JPEG、PNG 或 WebP，单张不超过 20MB。", "最多 10 張，JPEG、PNG 或 WebP，單張不超過 20MB。"),
+        entry("Tellomi.Discover.PhotoCount", "%d selected", "已选 %d 张", "已選 %d 張"),
+        entry("Tellomi.Discover.PhotoRemove", "Remove", "移除", "移除"),
+        entry("Tellomi.Discover.PhotoLimit", "You can add up to 10 photos.", "一次最多 10 张图片。", "一次最多 10 張圖片。"),
+        entry("Tellomi.Discover.PhotoTooLarge", "This photo is larger than 20 MB.", "这张图片超过 20MB。", "這張圖片超過 20MB。"),
+        entry("Tellomi.Discover.PhotoType", "Use a JPEG, PNG, or WebP photo.", "只支持 JPEG、PNG 或 WebP。", "只支援 JPEG、PNG 或 WebP。"),
+        entry("Tellomi.Discover.PhotoUploadFailed", "Couldn't upload the photo.", "图片上传失败。", "圖片上傳失敗。"),
+        entry("Tellomi.Discover.PhotoNetwork", "The network failed while uploading.", "网络不好，图片没有传上去。", "網路不好，圖片沒有傳上去。"),
+        entry("Tellomi.Discover.PhotoUploading", "Uploading photos…", "正在上传图片…", "正在上傳圖片…"),
         entry("Tellomi.Discover.Notifications", "Notifications", "通知"),
         entry("Tellomi.Discover.NotificationsEmpty", "No notifications yet", "还没有通知"),
         entry("Tellomi.Discover.NotifyLike", "liked your post", "赞了你的帖子"),
@@ -163,6 +180,21 @@ public final class TellomiPack {
         return key.replace('.', '_').replace('-', '_').replace(':', '_');
     }
 
+    /** Hant, or TW / HK / MO without an explicit Hans tag. */
+    public static boolean traditionalChinese(String languageCode) {
+        if (languageCode == null || languageCode.isEmpty()) {
+            return false;
+        }
+        String value = languageCode.toLowerCase(Locale.US).replace('_', '-');
+        if (value.contains("hans")) {
+            return false;
+        }
+        if (value.contains("hant")) {
+            return true;
+        }
+        return value.endsWith("-tw") || value.endsWith("-hk") || value.endsWith("-mo");
+    }
+
     public static boolean chinese(String languageCode) {
         if (languageCode == null || languageCode.isEmpty()) {
             return false;
@@ -175,6 +207,9 @@ public final class TellomiPack {
         Entry entry = find(key);
         if (entry == null) {
             return null;
+        }
+        if (traditionalChinese(languageCode) && entry.zhHant != null && !entry.zhHant.isEmpty()) {
+            return entry.zhHant;
         }
         return chinese(languageCode) ? entry.zh : entry.en;
     }
@@ -239,6 +274,10 @@ public final class TellomiPack {
     }
 
     private static Entry entry(String key, String en, String zh) {
-        return new Entry(key, en, zh);
+        return new Entry(key, en, zh, null);
+    }
+
+    private static Entry entry(String key, String en, String zh, String zhHant) {
+        return new Entry(key, en, zh, zhHant);
     }
 }
