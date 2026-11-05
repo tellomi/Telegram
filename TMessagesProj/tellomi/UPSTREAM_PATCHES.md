@@ -297,7 +297,7 @@ The bind-email and login-email rows used `msg2_email.webp`, an opaque bitmap in 
 
 ## Splash mark and system Chinese on first launch
 
-The Android 12 splash (`Theme.TMessages.Start` → `@drawable/tg_splash_320`) was still the upstream paper-plane animation, so a fresh launch flashed the Telegram logo before the welcome screen. The flavor drawable of the same name is the Tellomi mark on `#17171A`. `src/main` keeps the upstream file. The welcome bubble is unchanged.
+The Android 12 splash (`Theme.TMessages.Start` → `@drawable/tg_splash_320`) was still the upstream paper-plane animation, so a fresh launch flashed the Telegram logo before the welcome screen. The flavor drawable of the same name is the Tellomi mark, ink only: `#111113` in light and `#FFFFFF` in `drawable-night`. It does not paint a disc. The start theme keeps the upstream window background (white / `#1f2732`). `src/main` keeps the upstream file. The welcome bubble is unchanged. There is no `ic_splash` resource in this tree; the theme already names `tg_splash_320`.
 
 Welcome stayed English (“The world's fastest…”, “Get started”) on a Chinese phone even after `localization_zh.bin` existed. `onDeviceConfigurationChange` passed the activity locale into `applyTellomiSystemLocale`. That locale is English (and on API 24+ `Configuration.locale` is often null) after `zh-hans` is installed. `zh-hans` is a `useCloudStrings` locale, so the callback treated that as “system is no longer Chinese” and applied English. The welcome screen then read the English flavor `TellomiIntro*` strings. The callback now uses `TellomiDefaults.deviceLocale()`. A flavor lookup that is stuck on the English default falls through to the stock key in `localization_zh.bin`. `resourceFor` builds a fresh configuration so a zh lookup is not a copy of the activity locale.
 
@@ -307,7 +307,9 @@ No `versionName`, `versionCode`, or datacenter change.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/res/drawable/tg_splash_320.xml` | Tellomi splash mark. Replaces the paper plane at merge. |
+| `TMessagesProj/tellomi/res/drawable/tg_splash_320.xml` | Light splash mark, ink `#111113`. Replaces the paper plane at merge. |
+| `TMessagesProj/tellomi/res/drawable-night/tg_splash_320.xml` | Night splash mark, ink `#FFFFFF`. |
+| `TMessagesProj/tellomi/res/drawable-*/book_logo.webp` | Pinned-shortcut badge. Replaces the paper plane. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Configuration changes keep the device Chinese pack. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Locale lookup uses a fresh configuration. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Chinese welcome falls back to `localization_zh.bin`. |
