@@ -256,6 +256,22 @@ public class FileLoadOperation {
     private byte[] cdnCheckBytes;
     private boolean requestingCdnOffsets;
 
+    // ADR-0083 B2. upload.getFileHashes on the plaintext download, fail-open
+    // unless a returned part does not match. See TellomiFileHashes.
+    private final TellomiFileHashes.Session tellomiFileHashes = new TellomiFileHashes.Session();
+    private final Object tellomiFileHashLock = new Object();
+    private int tellomiFileHashRequest;
+    private int tellomiFileHashGeneration;
+    private int tellomiFileHashSerial;
+    private Runnable tellomiFileHashTimeout;
+    private boolean tellomiFileHashGate;
+    private boolean tellomiFileHashHeld;
+    private boolean tellomiFileHashChecking;
+    private boolean tellomiFileHashCommitted;
+    private boolean tellomiHeldIncrement;
+    private int tellomiHeldCode;
+    private boolean tellomiHeldPreload;
+
     public final ArrayList<Integer> uiRequestTokens = new ArrayList<>();
     public ArrayList<RequestInfo> requestInfos;
     private ArrayList<RequestInfo> cancelledRequestInfos;
@@ -1387,13 +1403,39 @@ public class FileLoadOperation {
     }
 
     private void cancelOnStage(boolean deleteFiles) {
-        if (state != stateFinished && state != stateFailed) {
-            state = stateCancelling;
+        int hashToken = 0;
+        Runnable hashTimeout = null;
+        boolean failHashWait = false;
+        synchronized (tellomiFileHashLock) {
+            if (!tellomiFileHashCommitted && state != stateFinished && state != stateFailed) {
+                boolean waiting = tellomiFileHashHeld || tellomiFileHashChecking;
+                state = stateCancelling;
+                tellomiFileHashGeneration++;
+                tellomiFileHashHeld = false;
+                tellomiFileHashChecking = false;
+                tellomiFileHashes.stop();
+                hashToken = tellomiFileHashRequest;
+                tellomiFileHashRequest = 0;
+                hashTimeout = tellomiFileHashTimeout;
+                tellomiFileHashTimeout = null;
+                failHashWait = waiting && tellomiPendingDownloadTokens() == 0;
+            }
+        }
+        if (hashTimeout != null) {
+            Utilities.stageQueue.cancelRunnable(hashTimeout);
+        }
+        if (hashToken != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(hashToken, false);
+        }
+        if (state == stateCancelling) {
             cancelRequests(() -> {
                 if (state == stateCancelling) {
                     onFail(false, 1);
                 }
             });
+            if (failHashWait && state == stateCancelling) {
+                onFail(false, 1);
+            }
         }
         if (deleteFiles) {
             if (cacheFileFinal != null) {
@@ -1576,6 +1618,9 @@ public class FileLoadOperation {
 
     private void onFinishLoadingFile(final boolean increment, int finishCode, boolean preload) {
         if (state != stateDownloading && state != stateCancelling) {
+            return;
+        }
+        if (!tellomiFileHashGate && tellomiHoldForFileHashes(increment, finishCode, preload)) {
             return;
         }
         state = stateFinished;
@@ -2292,6 +2337,7 @@ public class FileLoadOperation {
             }
             return;
         }
+        tellomiStartFileHashes();
         int count = 1;
         if (isStory) {
             count = Math.max(0, currentMaxDownloadRequests - requestInfos.size());
@@ -2679,6 +2725,342 @@ public class FileLoadOperation {
                 downloadRequestPacer.onRequestSent(now);
                 Utilities.stageQueue.postRunnable(pacedDownloadRequest, downloadRequestPacer.remainingDelay(now));
             }
+        }
+    }
+
+    private boolean tellomiHashesApply(boolean finishingPreload, boolean alreadyOnDisk) {
+        boolean prefixOnly = finishingPreload && preloadPrefixSize > 0 && totalBytesCount > 0 && downloadedBytes < totalBytesCount;
+        return TellomiFileHashes.applies(
+                TellomiFileHashes.enabled(),
+                TellomiFileHashes.locationSupported(location),
+                webLocation != null,
+                isCdn,
+                isPreloadVideoOperation || finishingPreload,
+                alreadyOnDisk,
+                key != null,
+                encryptFile,
+                prefixOnly);
+    }
+
+    private long tellomiCompletedSize() {
+        if (cacheFileTemp != null && cacheFileTemp.exists()) {
+            long length = cacheFileTemp.length();
+            if (length > 0) {
+                return length;
+            }
+        }
+        return totalBytesCount > 0 ? totalBytesCount : 0;
+    }
+
+    private int tellomiPendingDownloadTokens() {
+        if (requestInfos == null) {
+            return 0;
+        }
+        int count = 0;
+        for (int i = 0; i < requestInfos.size(); i++) {
+            RequestInfo info = requestInfos.get(i);
+            if (info != null && info.requestToken != 0) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void tellomiStartFileHashes() {
+        if (state != stateDownloading || !tellomiHashesApply(false, false)) {
+            return;
+        }
+        long offset;
+        synchronized (tellomiFileHashLock) {
+            if (tellomiFileHashCommitted) {
+                return;
+            }
+            offset = tellomiFileHashes.open();
+        }
+        if (offset >= 0) {
+            tellomiSendFileHashes(offset);
+        }
+    }
+
+    /**
+     * @return true when {@link #onFinishLoadingFile} must wait for the hash RPC
+     */
+    private boolean tellomiHoldForFileHashes(boolean increment, int finishCode, boolean preload) {
+        if (state != stateDownloading) {
+            return false;
+        }
+        if (!tellomiHashesApply(preload, finishCode == FINISH_CODE_FILE_ALREADY_EXIST)) {
+            return false;
+        }
+        int kind = 0; // 1 send, 2 verify, 3 finish now
+        long sendOffset = -1;
+        ArrayList<TellomiFileHashes.Part> snapshot = null;
+        boolean confirmedEnd = false;
+        int generation = 0;
+        Runnable timeout = null;
+        synchronized (tellomiFileHashLock) {
+            if (tellomiFileHashGate || tellomiFileHashCommitted) {
+                return false;
+            }
+            if (tellomiFileHashHeld) {
+                return true;
+            }
+            tellomiHeldIncrement = increment;
+            tellomiHeldCode = finishCode;
+            tellomiHeldPreload = preload;
+            if (!tellomiFileHashes.started()) {
+                kind = 1;
+                sendOffset = tellomiFileHashes.open();
+                tellomiFileHashHeld = true;
+                tellomiArmHashTimeoutLocked();
+            } else if (tellomiFileHashRequest != 0 || tellomiFileHashChecking) {
+                kind = 0;
+                tellomiFileHashHeld = true;
+                tellomiArmHashTimeoutLocked();
+            } else {
+                long next = -1;
+                if (!tellomiFileHashes.stopped()) {
+                    next = tellomiFileHashes.requestNext(tellomiCompletedSize());
+                }
+                if (next >= 0) {
+                    kind = 1;
+                    sendOffset = next;
+                    tellomiFileHashHeld = true;
+                    tellomiArmHashTimeoutLocked();
+                } else if (tellomiFileHashes.hasParts()) {
+                    kind = 2;
+                    snapshot = new ArrayList<>(tellomiFileHashes.parts());
+                    confirmedEnd = tellomiFileHashes.confirmedEnd();
+                    generation = ++tellomiFileHashGeneration;
+                    tellomiFileHashHeld = true;
+                    tellomiFileHashChecking = true;
+                    timeout = tellomiFileHashTimeout;
+                    tellomiFileHashTimeout = null;
+                } else if (!tellomiFileHashes.stopped()) {
+                    kind = 0;
+                    tellomiFileHashHeld = true;
+                    tellomiArmHashTimeoutLocked();
+                } else {
+                    kind = 3;
+                    tellomiFileHashGate = true;
+                    tellomiFileHashCommitted = true;
+                }
+            }
+        }
+        if (timeout != null) {
+            Utilities.stageQueue.cancelRunnable(timeout);
+        }
+        if (kind == 1) {
+            tellomiSendFileHashes(sendOffset);
+            return true;
+        }
+        if (kind == 2) {
+            tellomiVerifyFileHashes(generation, snapshot, confirmedEnd);
+            return true;
+        }
+        return kind != 3;
+    }
+
+    private void tellomiArmHashTimeoutLocked() {
+        if (tellomiFileHashTimeout != null) {
+            return;
+        }
+        final int generation = tellomiFileHashGeneration;
+        tellomiFileHashTimeout = () -> {
+            TLRPC.TL_error error = new TLRPC.TL_error();
+            error.code = -1;
+            error.text = "TIMEOUT";
+            tellomiOnFileHashResult(generation, null, error);
+        };
+        Utilities.stageQueue.postRunnable(tellomiFileHashTimeout, TellomiFileHashes.FAIL_OPEN_MS);
+    }
+
+    private void tellomiSendFileHashes(long offset) {
+        if (location == null) {
+            TLRPC.TL_error error = new TLRPC.TL_error();
+            error.text = "LOCATION_INVALID";
+            tellomiOnFileHashResult(tellomiFileHashGeneration, null, error);
+            return;
+        }
+        final int generation;
+        final int serial;
+        synchronized (tellomiFileHashLock) {
+            generation = tellomiFileHashGeneration;
+            serial = ++tellomiFileHashSerial;
+        }
+        TellomiFileHashes.Get request = new TellomiFileHashes.Get();
+        request.location = location;
+        request.offset = offset;
+        int token;
+        try {
+            token = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
+                tellomiOnFileHashResult(generation, response, error);
+            }, null, null, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagDoNotWaitFloodWait,
+                    datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
+        } catch (Throwable sendError) {
+            FileLog.e(sendError);
+            TLRPC.TL_error error = new TLRPC.TL_error();
+            error.text = "SEND_FAILED";
+            tellomiOnFileHashResult(generation, null, error);
+            return;
+        }
+        int cancel = 0;
+        synchronized (tellomiFileHashLock) {
+            if (generation != tellomiFileHashGeneration || serial != tellomiFileHashSerial) {
+                cancel = token;
+            } else {
+                tellomiFileHashRequest = token;
+            }
+        }
+        if (cancel != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(cancel, false);
+        }
+    }
+
+    private void tellomiOnFileHashResult(int generation, TLObject response, TLRPC.TL_error error) {
+        int kind = 0; // 1 send, 2 verify, 3 finish
+        long sendOffset = -1;
+        ArrayList<TellomiFileHashes.Part> snapshot = null;
+        boolean confirmedEnd = false;
+        int verifyGeneration = 0;
+        Runnable timeout = null;
+        int cancelToken = 0;
+        synchronized (tellomiFileHashLock) {
+            if (generation != tellomiFileHashGeneration || tellomiFileHashChecking || tellomiFileHashCommitted) {
+                return;
+            }
+            boolean timedOut = error != null && "TIMEOUT".equals(error.text);
+            if (timedOut) {
+                // Drop the RPC that is still in flight. Its late callback keeps the old generation.
+                cancelToken = tellomiFileHashRequest;
+                tellomiFileHashRequest = 0;
+                tellomiFileHashGeneration++;
+                tellomiFileHashes.stop();
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("getFileHashes fail-open timeout");
+                }
+            } else {
+                tellomiFileHashRequest = 0;
+                long size = tellomiFileHashHeld ? tellomiCompletedSize() : (totalBytesCount > 0 ? totalBytesCount : 0);
+                long next = -1;
+                if (error != null) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("getFileHashes fail-open " + error.text);
+                    }
+                    tellomiFileHashes.stop();
+                } else if (response instanceof Vector) {
+                    next = tellomiFileHashes.accept(size, TellomiFileHashes.partsFrom((Vector<?>) response));
+                    if (next < 0 && tellomiFileHashes.confirmedEnd() && !tellomiFileHashes.hasParts() && BuildVars.LOGS_ENABLED) {
+                        FileLog.d("getFileHashes fail-open miss");
+                    }
+                } else {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("getFileHashes fail-open miss");
+                    }
+                    tellomiFileHashes.stop();
+                }
+                if (next >= 0) {
+                    kind = 1;
+                    sendOffset = next;
+                }
+            }
+            if (kind != 1 && tellomiFileHashHeld && tellomiFileHashes.hasParts()) {
+                kind = 2;
+                snapshot = new ArrayList<>(tellomiFileHashes.parts());
+                confirmedEnd = tellomiFileHashes.confirmedEnd();
+                verifyGeneration = ++tellomiFileHashGeneration;
+                tellomiFileHashChecking = true;
+                timeout = tellomiFileHashTimeout;
+                tellomiFileHashTimeout = null;
+            } else if (kind != 1 && tellomiFileHashHeld) {
+                kind = 3;
+                tellomiFileHashGeneration++;
+                tellomiFileHashGate = true;
+                tellomiFileHashCommitted = true;
+                tellomiFileHashHeld = false;
+                timeout = tellomiFileHashTimeout;
+                tellomiFileHashTimeout = null;
+            }
+        }
+        if (timeout != null) {
+            Utilities.stageQueue.cancelRunnable(timeout);
+        }
+        if (cancelToken != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(cancelToken, false);
+        }
+        if (kind == 1) {
+            tellomiSendFileHashes(sendOffset);
+        } else if (kind == 2) {
+            tellomiVerifyFileHashes(verifyGeneration, snapshot, confirmedEnd);
+        } else if (kind == 3) {
+            tellomiRunFileHashFinish();
+        }
+    }
+
+    private void tellomiVerifyFileHashes(int generation, ArrayList<TellomiFileHashes.Part> parts, boolean confirmedEnd) {
+        final File file = cacheFileTemp;
+        final long size = tellomiCompletedSize();
+        Runnable task = () -> {
+            TellomiFileHashes.Verdict verdict = TellomiFileHashes.check(file, size, parts, confirmedEnd);
+            Utilities.stageQueue.postRunnable(() -> tellomiApplyFileHashVerdict(generation, verdict));
+        };
+        if (!Utilities.globalQueue.postRunnable(task)) {
+            tellomiApplyFileHashVerdict(generation, TellomiFileHashes.Verdict.FAIL_OPEN);
+        }
+    }
+
+    private void tellomiApplyFileHashVerdict(int generation, TellomiFileHashes.Verdict verdict) {
+        boolean mismatch = verdict == TellomiFileHashes.Verdict.MISMATCH;
+        boolean claimed;
+        synchronized (tellomiFileHashLock) {
+            claimed = generation == tellomiFileHashGeneration && state == stateDownloading && tellomiFileHashHeld;
+            if (claimed) {
+                tellomiFileHashGeneration++;
+                tellomiFileHashHeld = false;
+                tellomiFileHashChecking = false;
+                tellomiFileHashGate = true;
+                tellomiFileHashCommitted = true;
+            }
+        }
+        if (mismatch) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("getFileHashes mismatch");
+            }
+            File temp = cacheFileTemp;
+            if (temp != null) {
+                temp.delete();
+            }
+            if (claimed) {
+                onFail(false, 0);
+            }
+            return;
+        }
+        if (!claimed) {
+            return;
+        }
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d(verdict == TellomiFileHashes.Verdict.FAIL_OPEN ? "getFileHashes fail-open check" : "getFileHashes ok");
+        }
+        tellomiRunFileHashFinish();
+    }
+
+    private void tellomiRunFileHashFinish() {
+        boolean increment;
+        int code;
+        boolean preload;
+        synchronized (tellomiFileHashLock) {
+            if (state != stateDownloading || !tellomiFileHashGate) {
+                return;
+            }
+            increment = tellomiHeldIncrement;
+            code = tellomiHeldCode;
+            preload = tellomiHeldPreload;
+        }
+        try {
+            onFinishLoadingFile(increment, code, preload);
+        } catch (Exception e) {
+            FileLog.e(e);
+            onFail(false, 0);
         }
     }
 

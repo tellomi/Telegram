@@ -990,3 +990,17 @@ Non-convert video is hashed on `Utilities.globalQueue`. `FAIL_OPEN_MS` (12s) cov
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java` | `mainconfig` kill switch, default on. Photo follow-up noted on the class. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | Disabled switch returns before any hash or RPC. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Default on, forced off skips lookup, JPEG/PNG documents are eligible, type 0 is not hooked. |
+
+## Download file hashes (ADR-0083 B2)
+
+After a full plaintext `upload.getFile` download is on disk, and in parallel while those bytes are still arriving, the client calls `upload.getFileHashes#9156982a` (`location:InputFileLocation`, `offset:long`). Parts are SHA-256 of 128 KiB, the same split as `upload.getCdnFileHashes` / teamgram `cdn.PartHashes` (`tellomi/teamgram-server` #215, `59922c63`). `offset` drops parts that start before it. The last part is shorter. A later page is requested when the returned parts do not cover the file.
+
+A miss (empty vector), an RPC error, or a 12s timeout after the download is ready to finish leaves the file in place. A part whose bytes differ, or a confirmed end shorter than the file, deletes the temp file and fails the download. CDN downloads already check ciphertext hashes. Web files, legacy `inputFileLocation` (`INPUT_REQUEST_INVALID` on that server), secret-chat decryption, local cache encryption, preload, a prefix stop, and a file already on disk do not call this method. `messages.getDocumentByHash` is unchanged.
+
+Account 0 `mainconfig` key `tellomi_get_file_hashes`, boolean. Missing or true runs the check. False skips the RPC. The generated `TL_upload_getFileHashes#c7025931` (`offset:int`) stays as upstream wrote it.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiFileHashes.java` | Part rules, the long-offset request, fail-open, and the kill switch. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java` | Starts the RPC on the download and holds `onFinishLoadingFile` until the check, the miss, or the timeout. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiFileHashesTest.java` | 128 KiB parts, mismatch versus miss, the switch, and that the upload path is not hooked. |
