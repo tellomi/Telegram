@@ -127,11 +127,21 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                 }
                 bodyView.setText(text.toString());
                 shown = post;
+                addLink(post);
                 addForward(post);
                 addPoll(post);
                 addComments(post);
             }
         });
+    }
+
+    private void addLink(TellomiDiscover.Post post) {
+        if (column == null || post == null || post.linkPreview == null) {
+            return;
+        }
+        TellomiDiscoverLinkCard card = TellomiDiscoverLinkCard.create(column.getContext(), resourceProvider);
+        card.show(post.linkPreview, true);
+        column.addView(card);
     }
 
     private void addForward(TellomiDiscover.Post post) {
@@ -213,6 +223,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                 if (column != null && column.getChildCount() > 1) {
                     column.removeViews(1, column.getChildCount() - 1);
                 }
+                addLink(shown);
                 addForward(shown);
                 addPoll(shown);
                 addComments(shown);
@@ -221,7 +232,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
     }
 
     @Override
-    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscover.Completion completion) {
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, TellomiDiscover.Completion completion) {
         TellomiDiscover.Configuration configuration = TellomiDiscoverFlags.configuration(currentAccount);
         boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
         if (!loggedIn || configuration == null || !configuration.enabled) {
@@ -232,13 +243,13 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
             loader = TellomiDiscoverClient.loader(currentAccount);
         }
         long now = System.currentTimeMillis() / 1000L;
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(currentAccount).getClientUserId(), nonce, TellomiDiscover.POST_TEXT_LIMIT, null, now, null, quoteOf, pollOptions);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(currentAccount).getClientUserId(), nonce, TellomiDiscover.POST_TEXT_LIMIT, null, now, null, quoteOf, pollOptions, linkPreview);
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
             completion.onResult(TellomiDiscover.Outcome.failure(step.error));
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview), completion);
             return;
         }
         final TellomiDiscover.Loader publishing = loader;
@@ -249,7 +260,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                publishing.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions), completion);
+                publishing.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions, linkPreview), completion);
             }
         });
     }

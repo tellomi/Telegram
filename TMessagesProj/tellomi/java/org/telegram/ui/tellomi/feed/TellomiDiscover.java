@@ -481,6 +481,8 @@ public final class TellomiDiscover {
         public final String quoteOf;
         public final List<String> pollOptions;
         public final int voteIndex;
+        /** Phone-fetched card. Null when the post has no link preview. */
+        public final TellomiDiscoverLink.Preview linkPreview;
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit) {
             this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, null, null, null);
@@ -491,6 +493,10 @@ public final class TellomiDiscover {
         }
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId, String quoteOf, List<String> pollOptions, int voteIndex) {
+            this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, reportOption, reportDetail, commentId, quoteOf, pollOptions, voteIndex, null);
+        }
+
+        private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId, String quoteOf, List<String> pollOptions, int voteIndex, TellomiDiscoverLink.Preview linkPreview) {
             this.kind = kind;
             this.feedKind = feedKind;
             this.cursor = cursor;
@@ -508,6 +514,7 @@ public final class TellomiDiscover {
             this.quoteOf = quoteOf;
             this.pollOptions = pollOptions;
             this.voteIndex = voteIndex;
+            this.linkPreview = linkPreview;
         }
 
         public static Operation capabilities() {
@@ -539,7 +546,11 @@ public final class TellomiDiscover {
         }
 
         public static Operation publish(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
-            return new Operation(Kind.PUBLISH, null, null, false, city, null, text, visibility, audienceToken, clientNonce, textLimit, null, null, null, quoteOf, pollOptions, -1);
+            return publish(text, visibility, audienceToken, clientNonce, textLimit, city, quoteOf, pollOptions, null);
+        }
+
+        public static Operation publish(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview) {
+            return new Operation(Kind.PUBLISH, null, null, false, city, null, text, visibility, audienceToken, clientNonce, textLimit, null, null, null, quoteOf, pollOptions, -1, linkPreview);
         }
 
         public static Operation repost(String postId) {
@@ -723,7 +734,7 @@ public final class TellomiDiscover {
             String notesUrl = url(base, "/v1/feed/me/notifications", query.isEmpty() ? null : query);
             return notesUrl == null ? null : new HttpCall("GET", notesUrl, null, trimmed, true, null);
         }
-        byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions);
+        byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions, operation.linkPreview);
         if (body == null) {
             return null;
         }
@@ -809,12 +820,19 @@ public final class TellomiDiscover {
         return publishBody(text, visibility, audienceToken, clientNonce, textLimit, city, null, null);
     }
 
+    public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
+        return publishBody(text, visibility, audienceToken, clientNonce, textLimit, city, quoteOf, pollOptions, null);
+    }
+
     /**
      * {@code quoteOf} is the engine {@code quote_of}. {@code pollOptions} is omitted
      * when null. Two to ten options, each at most 40 code points, become {@code poll.options}.
      * An {@code @} username stays in {@code text}. This object has no mentions field.
+     * {@code linkPreview} is the phone-fetched card. When it has a public URL it is
+     * {@code link_preview} with {@code url}, and {@code title}, {@code description},
+     * {@code image} only when present. A missing preview does not add the key.
      */
-    public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
+    public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview) {
         String body = text == null ? "" : trim(text);
         int limit = textLimit > 0 ? textLimit : POST_TEXT_LIMIT;
         if (body.isEmpty() || body.codePointCount(0, body.length()) > limit) {
@@ -865,6 +883,10 @@ public final class TellomiDiscover {
             Map<String, Object> poll = new LinkedHashMap<>();
             poll.put("options", options);
             object.put("poll", poll);
+        }
+        Map<String, String> linkFields = TellomiDiscoverLink.publishFields(linkPreview);
+        if (linkFields != null) {
+            object.put("link_preview", linkFields);
         }
         return TellomiJson.write(object);
     }
@@ -960,6 +982,10 @@ public final class TellomiDiscover {
     }
 
     public static PublishStep publishStep(String text, Visibility visibility, long[] userIds, long selfUserId, String clientNonce, int textLimit, AudienceToken token, long now, String city, String quoteOf, List<String> pollOptions) {
+        return publishStep(text, visibility, userIds, selfUserId, clientNonce, textLimit, token, now, city, quoteOf, pollOptions, null);
+    }
+
+    public static PublishStep publishStep(String text, Visibility visibility, long[] userIds, long selfUserId, String clientNonce, int textLimit, AudienceToken token, long now, String city, String quoteOf, List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview) {
         if (city != null && !trim(city).isEmpty() && TellomiDiscoverCity.knownCode(city) == null) {
             return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.INVALID_CITY);
         }
@@ -969,7 +995,7 @@ public final class TellomiDiscover {
                 return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.AUDIENCE_INVALID);
             }
             if (token != null && token.token != null && !token.token.isEmpty() && !audienceTokenNeedsRefresh(token.expires, now)) {
-                byte[] body = publishBody(text, visibility, token.token, clientNonce, textLimit, city, quoteOf, pollOptions);
+                byte[] body = publishBody(text, visibility, token.token, clientNonce, textLimit, city, quoteOf, pollOptions, linkPreview);
                 if (body == null) {
                     return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.NOT_PUBLISHABLE);
                 }
@@ -977,7 +1003,7 @@ public final class TellomiDiscover {
             }
             return new PublishStep(PublishStep.Kind.NEEDS_AUDIENCE_TOKEN, null, visibility.raw, ids, null);
         }
-        byte[] body = publishBody(text, visibility, null, clientNonce, textLimit, city, quoteOf, pollOptions);
+        byte[] body = publishBody(text, visibility, null, clientNonce, textLimit, city, quoteOf, pollOptions, linkPreview);
         if (body == null) {
             return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.NOT_PUBLISHABLE);
         }
@@ -1081,6 +1107,8 @@ public final class TellomiDiscover {
         public final String city;
         public List<Comment> comments = Collections.emptyList();
         public Poll poll;
+        /** Stored {@code link_preview}. The feed does not fetch the page again. */
+        public TellomiDiscoverLink.Preview linkPreview;
 
         public Card(String id, String state, Integer version, String text, String authorName, String authorHandle, String tellomiNumber, String authorId, String badge, boolean aiGenerated, boolean edited, boolean shareable, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -1152,6 +1180,8 @@ public final class TellomiDiscover {
         public List<Comment> comments = Collections.emptyList();
         public boolean shareable;
         public Poll poll;
+        /** Stored {@code link_preview}. The feed does not fetch the page again. */
+        public TellomiDiscoverLink.Preview linkPreview;
 
         public Post(String id, String text, String authorName, String authorHandle, String tellomiNumber, boolean unavailable, boolean aiGenerated, String badge, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -1516,7 +1546,7 @@ public final class TellomiDiscover {
         if (operation.city != null && !trim(operation.city).isEmpty() && TellomiDiscoverCity.knownCode(operation.city) == null) {
             return ClientError.INVALID_CITY;
         }
-        if (publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions) == null) {
+        if (publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions, operation.linkPreview) == null) {
             return ClientError.NOT_PUBLISHABLE;
         }
         return null;

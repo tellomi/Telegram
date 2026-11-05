@@ -178,6 +178,7 @@ public final class TellomiDiscoverParse {
         post.comments = card.comments == null ? java.util.Collections.emptyList() : card.comments;
         post.shareable = card.shareable;
         post.poll = card.poll;
+        post.linkPreview = card.linkPreview;
         return post;
     }
 
@@ -231,6 +232,7 @@ public final class TellomiDiscoverParse {
         );
         card.comments = comments(json.objectValue.get("comments"));
         card.poll = poll(body == null ? null : body.objectValue.get("poll"), json.objectValue.get("poll"));
+        card.linkPreview = TellomiDiscoverLink.stored(body, json);
         return card;
     }
 
