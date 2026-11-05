@@ -974,3 +974,19 @@ Before the bytes of a GIF, a file, or a video that will not be transcoded are up
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | The RPC, fail-open, and swapping the outgoing media to `inputMediaDocument`. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | Three original-file upload sites (single video, single document/GIF, grouped document/video) call that lookup before `uploadFile`. Transcoding and encrypted uploads do not. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Eligibility, the long-size constructor, SHA-256, and that those three sites are the only hooks. |
+
+## Document hash kill switch (ADR-0083 B1 / D4)
+
+Extends the section above. The three upload sites stay as they are. GIF, ordinary files, send-as-file images (`image/jpeg` / `image/png` documents), and grouped document or non-convert video slots already call `messages.getDocumentByHash` before `uploadFile`. This adds a way to turn that lookup off without a rebuild.
+
+Account 0 preferences file `mainconfig`, key `tellomi_get_document_by_hash`, boolean. A missing key or `true` keeps the lookup. `false` makes `lookupBeforeUpload` return immediately, and the caller runs the existing upload. The value is read on each send.
+
+Compressed photos stay on the upload path. Delayed type 0 and album slots with no document upload `FileTypePhoto` as `inputMediaUploadedPhoto`. `getDocumentByHash` returns a `Document`, and those bytes are a JPEG from `generatePhotoSizes`, not the gallery file. Send-as-file and `ImageLoader.shouldSendImageAsDocument` already go through `prepareSendingDocumentInternal` (delayed type 2, or type 4 when grouped) and are covered. Server-side photo reuse after the upload is unchanged. Follow-up: a photo RPC that returns `InputPhoto`, then a type 0 hook is safe.
+
+Non-convert video is hashed on `Utilities.globalQueue`. `FAIL_OPEN_MS` (12s) covers the hash and the RPC together. When the timer fires first, the upload starts and a late hit is dropped. `VideoEditedInfo.needConvert()` stays off this path because the stored bytes would be the transcode. Secret chats, voice notes, live photos, a separate cover, and mask documents stay off it too.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java` | `mainconfig` kill switch, default on. Photo follow-up noted on the class. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | Disabled switch returns before any hash or RPC. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Default on, forced off skips lookup, JPEG/PNG documents are eligible, type 0 is not hooked. |

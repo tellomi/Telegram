@@ -30,8 +30,34 @@ public class TellomiDocumentByHashTest {
         assertEquals(TellomiDocumentByHash.GIF, kind("image/gif", false, false));
         assertEquals(TellomiDocumentByHash.GIF, kind("video/mp4", true, true));
         assertEquals(TellomiDocumentByHash.DOCUMENT, kind("application/pdf", false, false));
+        assertEquals(TellomiDocumentByHash.DOCUMENT, kind("image/jpeg", false, false));
+        assertEquals(TellomiDocumentByHash.DOCUMENT, kind("image/png", false, false));
         assertEquals(TellomiDocumentByHash.VIDEO, kind("video/mp4", false, true));
         assertEquals(TellomiDocumentByHash.VIDEO, kind("video/webm", false, false));
+    }
+
+    @Test
+    public void killSwitchDefaultsOnAndSkipsTheLookupWhenOff() {
+        assertEquals("tellomi_get_document_by_hash", TellomiDocumentByHash.PREF_KEY);
+        TellomiDocumentByHash.enabledOverride = null;
+        assertTrue(TellomiDocumentByHash.enabled());
+        TellomiDocumentByHash.enabledOverride = Boolean.FALSE;
+        try {
+            assertFalse(TellomiDocumentByHash.enabled());
+            assertFalse(TellomiDocumentByHashSend.lookupBeforeUpload(null, null, -1, "/tmp/a.gif", () -> {
+            }, null, null));
+        } finally {
+            TellomiDocumentByHash.enabledOverride = null;
+        }
+        assertTrue(TellomiDocumentByHash.enabled());
+        String lookup = read("tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java");
+        int gate = lookup.indexOf("if (!TellomiDocumentByHash.enabled())");
+        int hash = lookup.indexOf("TellomiDocumentByHash.sha256");
+        assertTrue(gate >= 0);
+        assertTrue(hash > gate);
+        String rules = read("tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java");
+        assertTrue(rules.contains("mainconfig"));
+        assertTrue(rules.contains("getBoolean(PREF_KEY, true)"));
     }
 
     @Test
@@ -109,7 +135,16 @@ public class TellomiDocumentByHashTest {
         String send = read("src/main/java/org/telegram/messenger/SendMessagesHelper.java");
         assertEquals(4, count(send, "tellomiDocumentByHash("));
         assertTrue(send.contains("TellomiDocumentByHashSend.lookupBeforeUpload"));
+        assertTrue(send.contains("tellomiDocumentByHash(message, index, uploadPath, upload)"));
         assertTrue(send.contains("TL_inputMediaDocument"));
+        int delayed = send.indexOf("private void performSendDelayedMessage(final DelayedMessage message, int index)");
+        int photos = send.indexOf("if (message.type == 0) {", delayed);
+        int videos = send.indexOf("} else if (message.type == 1) {", photos);
+        assertTrue(delayed > 0 && photos > delayed && videos > photos);
+        assertFalse(send.substring(photos, videos).contains("tellomiDocumentByHash"));
+        int albumPhoto = send.indexOf("uploadFile(location, message.sendEncryptedRequest != null, true, ConnectionsManager.FileTypePhoto)");
+        assertTrue(albumPhoto > videos);
+        assertFalse(send.substring(albumPhoto - 400, albumPhoto).contains("tellomiDocumentByHash"));
         int video = send.indexOf("message.obj.videoEditedInfo.needConvert()");
         assertTrue(video > 0);
         int videoHook = send.indexOf("tellomiDocumentByHash(message, -1, uploadPath, upload)", video);

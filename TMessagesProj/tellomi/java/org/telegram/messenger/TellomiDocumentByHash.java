@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import android.content.SharedPreferences;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -7,22 +9,46 @@ import java.security.MessageDigest;
 import java.util.Locale;
 
 /**
- * ADR-0082 / TDLib {@code FileHashUploader} rules for
+ * ADR-0082 / ADR-0083 B1 / TDLib {@code FileHashUploader} rules for
  * {@code messages.getDocumentByHash}.
  *
  * <p>The current method is {@code messages.getDocumentByHash#b1f2061f}
  * ({@code sha256:bytes size:long mime_type:string}). A miss, an empty
- * document, or any failure must fall through to the existing upload.
- * Photos are not looked up this way. A file the client is about to
- * transcode is not the bytes that will be stored.
+ * document, an RPC error, a timeout, or a hash failure falls through to
+ * the existing upload. A file the client is about to transcode is not the
+ * bytes that will be stored, so that send stays on the upload path.
+ *
+ * <p>Compressed photos ({@code inputMediaUploadedPhoto}, delayed type 0,
+ * and album slots that upload {@code FileTypePhoto}) stay on the upload
+ * path. This RPC returns a {@code Document}. Those sends need a photo, and
+ * the bytes are a generated JPEG from {@code generatePhotoSizes}, so hashing
+ * the gallery original would not match the upload. Send-as-file images and
+ * files {@code ImageLoader.shouldSendImageAsDocument} routes already use the
+ * document path and are looked up. Server-side photo reuse still applies
+ * after the photo bytes are uploaded. A later photo lookup needs an RPC that
+ * returns an {@code InputPhoto}.
  */
 public final class TellomiDocumentByHash {
 
     /** {@code messages.getDocumentByHash#b1f2061f}. */
     public static final int CONSTRUCTOR = 0xb1f2061f;
 
-    /** Give up and upload if the lookup has not finished. */
+    /**
+     * Give up and upload if hashing plus the RPC have not finished.
+     * The timer starts before the hash, on purpose: a large non-convert
+     * video must not sit behind a long SHA-256. The late result is dropped
+     * and the upload that already started is the send.
+     */
     public static final int FAIL_OPEN_MS = 12_000;
+
+    /**
+     * Account 0 {@code mainconfig} boolean. Missing or true keeps the lookup.
+     * False skips it and uses the existing upload. Read on each send.
+     */
+    public static final String PREF_KEY = "tellomi_get_document_by_hash";
+
+    /** Unit tests only. {@code null} reads {@link #PREF_KEY}. */
+    static volatile Boolean enabledOverride;
 
     public static final int NONE = 0;
     public static final int GIF = 1;
@@ -30,6 +56,33 @@ public final class TellomiDocumentByHash {
     public static final int VIDEO = 3;
 
     private TellomiDocumentByHash() {
+    }
+
+    /**
+     * Lookup is on unless {@link #PREF_KEY} in {@code mainconfig} is false.
+     * A missing context or a prefs failure stays on, matching a fresh install.
+     */
+    public static boolean enabled() {
+        Boolean override = enabledOverride;
+        if (override != null) {
+            return override.booleanValue();
+        }
+        return readPreference();
+    }
+
+    private static boolean readPreference() {
+        try {
+            if (ApplicationLoader.applicationContext == null) {
+                return true;
+            }
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            if (preferences == null) {
+                return true;
+            }
+            return preferences.getBoolean(PREF_KEY, true);
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     /**
