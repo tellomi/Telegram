@@ -131,6 +131,11 @@
     <string name="Tellomi_Discover_Disabled">发现暂时不可用。</string>
     <string name="Tellomi_Discover_NearbyEmpty">这个城市还没有帖子。</string>
     <string name="Tellomi_Discover_InvalidCity">这个城市不能用，请重新选择。</string>
+    <string name="Tellomi_Discover_NearbyUnavailable">同城暂时还不能刷新。</string>
+    <string name="Tellomi_Discover_NearbyUnavailableHint">仍可以选城市。帖子只记录城市，不记录位置。</string>
+    <string name="Tellomi_Discover_ChangeCity">更换城市</string>
+    <string name="Tellomi_Discover_ComposeCity">发布到 %s</string>
+    <string name="Tellomi_Discover_ComposeCityNone">这条不标注城市</string>
     <string name="Tellomi_Discover_AiGenerated">AI 生成</string>
     <string name="Tellomi_Discover_QuoteDeleted">原动态已被作者删除</string>
     <string name="Tellomi_Discover_Publish">发布</string>

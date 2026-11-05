@@ -130,6 +130,11 @@
     <string name="Tellomi_Discover_Disabled">Discover isn\'t available right now.</string>
     <string name="Tellomi_Discover_NearbyEmpty">No posts in this city yet.</string>
     <string name="Tellomi_Discover_InvalidCity">That city can\'t be used. Choose another.</string>
+    <string name="Tellomi_Discover_NearbyUnavailable">City posts are not available yet.</string>
+    <string name="Tellomi_Discover_NearbyUnavailableHint">You can still pick a city. A post keeps only the city.</string>
+    <string name="Tellomi_Discover_ChangeCity">Change city</string>
+    <string name="Tellomi_Discover_ComposeCity">Posting in %s</string>
+    <string name="Tellomi_Discover_ComposeCityNone">No city on this post</string>
     <string name="Tellomi_Discover_AiGenerated">AI generated</string>
     <string name="Tellomi_Discover_QuoteDeleted">The original post was deleted by its author</string>
     <string name="Tellomi_Discover_Publish">Post</string>

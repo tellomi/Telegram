@@ -51,6 +51,7 @@ public final class TellomiDiscover {
         UNAVAILABLE,
         UNAUTHORIZED,
         NOT_FOUND,
+        NEARBY_UNAVAILABLE,
         UNREADABLE
     }
 
@@ -1528,6 +1529,9 @@ public final class TellomiDiscover {
         if (result.status == 400 && "invalid_city".equals(TellomiDiscoverParse.errorCode(result.body))) {
             return Outcome.failure(ClientError.INVALID_CITY);
         }
+        if (operation.kind == Operation.Kind.NEARBY && TellomiDiscoverNearby.missingEndpoint(result.status)) {
+            return Outcome.failure(ClientError.NEARBY_UNAVAILABLE);
+        }
         boolean emptyOk = result.status == 204 && operation.kind == Operation.Kind.REPOST;
         if (result.status != 200 && result.status != 201 && !emptyOk) {
             if (result.status == 401 || result.status == 403) {
@@ -1741,6 +1745,9 @@ public final class TellomiDiscover {
             }
             if (error == ClientError.INVALID_CITY) {
                 return invalidCity;
+            }
+            if (error == ClientError.NEARBY_UNAVAILABLE) {
+                return TellomiPack.text("Tellomi.Discover.NearbyUnavailable", languageCode, source);
             }
             return failed;
         }

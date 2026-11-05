@@ -55,6 +55,8 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private final Map<TellomiDiscover.FeedKind, String> cursors = new HashMap<>();
     private String cityCode;
     private boolean locationAsked;
+    private boolean pickingCity;
+    private boolean nearbyUnavailable;
     private boolean destroyed;
     private String banner;
     private boolean sawCapabilities;
@@ -77,8 +79,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         this.account = activity.getCurrentAccount();
         this.loader = TellomiDiscoverClient.loader(account);
         this.cityCode = storedCity();
-        tabs.add(TellomiDiscover.FeedKind.RECOMMEND);
-        tabs.add(TellomiDiscover.FeedKind.FOLLOWING);
+        tabs.addAll(TellomiDiscoverNearby.homeTabs());
     }
 
     void destroy() {
@@ -120,7 +121,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             String pending = pendingPost();
             boolean unavailable = chrome.postUnavailable || (pending != null && !pending.isEmpty());
             buildLegacy(unavailable);
-        } else if (chrome.surface == TellomiDiscover.Surface.CHOOSE_CITY) {
+        } else if (pickingCity || chrome.surface == TellomiDiscover.Surface.CHOOSE_CITY) {
             buildCity(copy);
         } else {
             buildFeed(copy, chrome);
@@ -187,6 +188,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             loadFeed(true);
             return;
         }
+        pickingCity = false;
         kind = next;
         failed = false;
         banner = null;
@@ -254,11 +256,25 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         }
         cityCode = known;
         storeCity(known);
+        pickingCity = false;
+        nearbyUnavailable = false;
         banner = null;
         failed = false;
         posts.remove(TellomiDiscover.FeedKind.NEARBY);
         cursors.remove(TellomiDiscover.FeedKind.NEARBY);
         sync(true);
+    }
+
+    private void clearCity() {
+        cityCode = null;
+        storeCity(null);
+        pickingCity = false;
+        nearbyUnavailable = false;
+        banner = null;
+        failed = false;
+        posts.remove(TellomiDiscover.FeedKind.NEARBY);
+        cursors.remove(TellomiDiscover.FeedKind.NEARBY);
+        sync(false);
     }
 
     private void loadFeed(boolean reset) {
@@ -334,20 +350,21 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 if (result.ok() && result.value.kind == TellomiDiscover.Decoded.Kind.ENGINE_CONFIG) {
                     engineConfigLoaded = true;
                     textLimit = result.value.engineConfig.postTextChars;
-                    if (!result.value.engineConfig.tabs.isEmpty()) {
-                        tabs.clear();
-                        tabs.addAll(result.value.engineConfig.tabs);
-                        if (!tabs.contains(kind)) {
-                            kind = tabs.get(0);
-                            if (kind == TellomiDiscover.FeedKind.NEARBY) {
-                                considerNearbyLocation();
-                            }
+                    tabs.clear();
+                    tabs.addAll(TellomiDiscoverNearby.homeTabs());
+                    if (!tabs.contains(kind)) {
+                        kind = tabs.get(0);
+                        if (kind == TellomiDiscover.FeedKind.NEARBY) {
+                            considerNearbyLocation();
                         }
                     }
                     advance(reset, generation, kind, cursor, configuration);
                     return;
                 }
                 if (result.ok() && result.value.kind == TellomiDiscover.Decoded.Kind.FEED) {
+                    if (requested == TellomiDiscover.FeedKind.NEARBY) {
+                        nearbyUnavailable = false;
+                    }
                     if (result.value.feed.items.isEmpty()) {
                         if (reset) {
                             posts.put(requested, new ArrayList<TellomiDiscover.Post>());
@@ -366,7 +383,19 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     finishHidden(generation);
                     return;
                 }
+                if (result.error == TellomiDiscover.ClientError.NEARBY_UNAVAILABLE) {
+                    nearbyUnavailable = true;
+                    failed = false;
+                    banner = null;
+                    posts.put(requested, new ArrayList<TellomiDiscover.Post>());
+                    cursors.remove(requested);
+                    loading = false;
+                    loadingMore = false;
+                    sync(false);
+                    return;
+                }
                 if (result.error == TellomiDiscover.ClientError.INVALID_CITY) {
+                    nearbyUnavailable = false;
                     cityCode = null;
                     storeCity(null);
                     banner = copy().invalidCity;
@@ -385,6 +414,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 if (reset) {
                     failed = true;
                 }
+                nearbyUnavailable = false;
                 loading = false;
                 loadingMore = false;
                 sync(false);
@@ -507,9 +537,10 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             return;
         }
         long now = System.currentTimeMillis() / 1000L;
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, cityCode, quoteOf, pollOptions);
+        String city = TellomiDiscoverNearby.publishCity(cityCode);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, city, quoteOf, pollOptions);
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, cityCode, quoteOf, pollOptions), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, city, quoteOf, pollOptions), completion);
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
@@ -527,7 +558,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, cityCode, quoteOf, pollOptions), completion);
+                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, TellomiDiscoverNearby.publishCity(cityCode), quoteOf, pollOptions), completion);
             }
         });
     }
@@ -589,6 +620,18 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         LinearLayout.LayoutParams locateLp = layout(LinearLayout.LayoutParams.MATCH_PARENT);
         locateLp.topMargin = dp(12);
         column.addView(locate, locateLp);
+        if (TellomiDiscoverNearby.publishCity(cityCode) != null) {
+            TextView none = label(phrase(copy, "Tellomi.Discover.ComposeCityNone"), 16, false);
+            none.setMinHeight(dp(48));
+            none.setGravity(Gravity.CENTER_VERTICAL);
+            none.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    clearCity();
+                }
+            });
+            column.addView(none, layout(LinearLayout.LayoutParams.MATCH_PARENT));
+        }
         final EditText filter = new EditText(context);
         filter.setHint(copy.cityPlaceholder);
         filter.setSingleLine(true);
@@ -645,6 +688,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         activity.messageView = null;
         LinearLayout column = column();
         addTabs(column, copy);
+        addCityLine(column, copy);
         if (banner != null || chrome.failure) {
             TextView failure = label(banner != null ? banner : copy.failed, 14, false);
             failure.setTextColor(Theme.getColor(Theme.key_text_RedRegular, activity.getResourceProvider()));
@@ -665,10 +709,23 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         List<TellomiDiscover.Post> list = posts.get(kind);
         if (list == null || list.isEmpty()) {
             if (!loading) {
-                TextView title = label(kind == TellomiDiscover.FeedKind.NEARBY ? copy.nearbyEmpty : copy.emptyTitle, 17, true);
+                boolean nearby = kind == TellomiDiscover.FeedKind.NEARBY;
+                String titleText = nearby && nearbyUnavailable ? phrase(copy, "Tellomi.Discover.NearbyUnavailable") : (nearby ? copy.nearbyEmpty : copy.emptyTitle);
+                String bodyText = nearby && nearbyUnavailable ? phrase(copy, "Tellomi.Discover.NearbyUnavailableHint") : (nearby ? copy.cityDenied : copy.emptyText);
+                TextView title = label(titleText, 17, true);
                 title.setGravity(Gravity.CENTER);
+                if (nearby && nearbyUnavailable) {
+                    title.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            nearbyUnavailable = false;
+                            failed = false;
+                            loadFeed(true);
+                        }
+                    });
+                }
                 column.addView(title, layout(LinearLayout.LayoutParams.MATCH_PARENT));
-                TextView body = label(kind == TellomiDiscover.FeedKind.NEARBY ? copy.cityDenied : copy.emptyText, 15, false);
+                TextView body = label(bodyText, 15, false);
                 body.setGravity(Gravity.CENTER);
                 column.addView(body, layout(LinearLayout.LayoutParams.MATCH_PARENT));
                 activity.titleView = title;
@@ -759,6 +816,30 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             row.addView(label, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         }
         column.addView(row, layout(LinearLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    private void addCityLine(LinearLayout column, TellomiDiscover.Copy copy) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView line = label(TellomiDiscoverNearby.composeLine(cityCode, copy.languageCode, copy.source), 14, false);
+        line.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        row.addView(line);
+        boolean chosen = TellomiDiscoverNearby.publishCity(cityCode) != null;
+        TextView action = label(phrase(copy, chosen ? "Tellomi.Discover.ChangeCity" : "Tellomi.Discover.CityPrompt"), 14, true);
+        action.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, activity.getResourceProvider()));
+        action.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickingCity = true;
+                sync(false);
+            }
+        });
+        row.addView(action);
+        LinearLayout.LayoutParams lp = layout(LinearLayout.LayoutParams.MATCH_PARENT);
+        lp.topMargin = dp(4);
+        lp.bottomMargin = dp(8);
+        column.addView(row, lp);
     }
 
     private String tabTitle(TellomiDiscover.FeedKind tab, TellomiDiscover.Copy copy) {
