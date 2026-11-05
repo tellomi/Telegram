@@ -163,6 +163,16 @@
     <string name="Tellomi_Discover_VideoSelected">已选择 · %s</string>
     <string name="Tellomi_Discover_VideoNotUploaded">发现还不能上传视频，移除后可以发布文字。</string>
     <string name="Tellomi_Discover_VideoReading">正在读取时长…</string>
+    <string name="Tellomi_Discover_PhotoAdd">添加图片</string>
+    <string name="Tellomi_Discover_PhotoHint">最多 10 张，JPEG、PNG 或 WebP，单张不超过 20MB。</string>
+    <string name="Tellomi_Discover_PhotoCount">已选 %d 张</string>
+    <string name="Tellomi_Discover_PhotoRemove">移除</string>
+    <string name="Tellomi_Discover_PhotoLimit">一次最多 10 张图片。</string>
+    <string name="Tellomi_Discover_PhotoTooLarge">这张图片超过 20MB。</string>
+    <string name="Tellomi_Discover_PhotoType">只支持 JPEG、PNG 或 WebP。</string>
+    <string name="Tellomi_Discover_PhotoUploadFailed">图片上传失败。</string>
+    <string name="Tellomi_Discover_PhotoNetwork">网络不好，图片没有传上去。</string>
+    <string name="Tellomi_Discover_PhotoUploading">正在上传图片…</string>
     <string name="Tellomi_Discover_Notifications">通知</string>
     <string name="Tellomi_Discover_NotificationsEmpty">还没有通知</string>
     <string name="Tellomi_Discover_NotifyLike">赞了你的帖子</string>

@@ -3,6 +3,7 @@ package org.telegram.ui.tellomi.feed;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -25,6 +26,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiDiscoverFlags;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -45,10 +47,11 @@ import java.util.UUID;
 public class TellomiDiscoverComposeFragment extends BaseFragment {
 
     private static final int MENU_PUBLISH = 1;
+    private static final int REQUEST_IMAGES = 42;
     private static final int REQUEST_VIDEO = 41;
 
     interface Publisher {
-        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, TellomiDiscover.Completion completion);
+        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, java.util.List<String> mediaKeys, TellomiDiscover.Completion completion);
 
         void published();
     }
@@ -82,6 +85,13 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private TellomiDiscoverLink.Preview linkPreview;
     private boolean linkSettled;
     private boolean holding;
+    private final java.util.ArrayList<TellomiDiscoverMedia.Bytes> photos = new java.util.ArrayList<>();
+    private LinearLayout photoList;
+    private TextView photoButton;
+    private TextView photoStatus;
+    private TellomiDiscover.ClientError photoError;
+    private boolean photoBusy;
+    private int photoGeneration;
     private boolean sending;
     private boolean editing;
     private TellomiDiscover.ClientError sendError;
@@ -265,6 +275,29 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         videoStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         videoStatus.setPadding(0, dp(4), 0, 0);
         column.addView(videoStatus, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        photoButton = new TextView(context);
+        photoButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        photoButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+        photoButton.setPadding(0, dp(12), 0, dp(4));
+        photoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickPhotos();
+            }
+        });
+        column.addView(photoButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        TextView photoHint = new TextView(context);
+        photoHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        photoHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+        photoHint.setText(phrase(copy, "Tellomi.Discover.PhotoHint"));
+        column.addView(photoHint, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        photoList = new LinearLayout(context);
+        photoList.setOrientation(LinearLayout.VERTICAL);
+        column.addView(photoList, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        photoStatus = new TextView(context);
+        photoStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        photoStatus.setPadding(0, dp(4), 0, 0);
+        column.addView(photoStatus, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         visibilityButton = new TextView(context);
         visibilityButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         visibilityButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
@@ -311,6 +344,10 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGES) {
+            takePhotos(resultCode, data);
+            return;
+        }
         if (requestCode != REQUEST_VIDEO) {
             return;
         }
@@ -357,6 +394,99 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
                 });
             }
         });
+    }
+
+    private void pickPhotos() {
+        if (getParentActivity() == null || photoBusy || sending) {
+            return;
+        }
+        if (photos.size() >= TellomiDiscoverMedia.MAX_IMAGES) {
+            photoError = TellomiDiscover.ClientError.MEDIA_LIMIT;
+            apply();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        try {
+            startActivityForResult(intent, REQUEST_IMAGES);
+        } catch (Throwable ignored) {
+            photoError = TellomiDiscover.ClientError.MEDIA_TYPE;
+            apply();
+        }
+    }
+
+    private void takePhotos(int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK || data == null) {
+            return;
+        }
+        final java.util.ArrayList<Uri> uris = new java.util.ArrayList<>();
+        ClipData clip = data.getClipData();
+        if (clip != null) {
+            for (int i = 0; i < clip.getItemCount(); i++) {
+                Uri uri = clip.getItemAt(i).getUri();
+                if (uri != null) {
+                    uris.add(uri);
+                }
+            }
+        } else if (data.getData() != null) {
+            uris.add(data.getData());
+        }
+        if (uris.isEmpty()) {
+            return;
+        }
+        final int generation = ++photoGeneration;
+        final android.content.ContentResolver resolver = getParentActivity() == null ? null : getParentActivity().getContentResolver();
+        photoBusy = true;
+        photoError = null;
+        apply();
+        Utilities.globalQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                final java.util.ArrayList<TellomiDiscoverMedia.Bytes> accepted = new java.util.ArrayList<>();
+                TellomiDiscover.ClientError problem = null;
+                int room = TellomiDiscoverMedia.MAX_IMAGES - photos.size();
+                if (uris.size() > room) {
+                    problem = TellomiDiscover.ClientError.MEDIA_LIMIT;
+                }
+                int take = Math.min(room, uris.size());
+                for (int i = 0; i < take; i++) {
+                    TellomiDiscoverMediaFiles.Opened opened = TellomiDiscoverMediaFiles.read(resolver, uris.get(i));
+                    if (opened.error != null) {
+                        if (problem == null) {
+                            problem = opened.error;
+                        }
+                        continue;
+                    }
+                    accepted.add(new TellomiDiscoverMedia.Bytes(opened.name, opened.bytes));
+                }
+                final TellomiDiscover.ClientError shown = problem;
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fragmentView == null || generation != photoGeneration) {
+                            return;
+                        }
+                        photoBusy = false;
+                        photos.addAll(accepted);
+                        if (shown != null) {
+                            photoError = shown;
+                        }
+                        apply();
+                    }
+                });
+            }
+        });
+    }
+
+    private void removePhoto(int index) {
+        if (photoBusy || sending || index < 0 || index >= photos.size()) {
+            return;
+        }
+        photos.remove(index);
+        photoError = null;
+        apply();
     }
 
     private void pickVideo() {
@@ -429,7 +559,7 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private void send() {
         TellomiDiscover.AudienceChoice choice = choice();
         final String text = textView.getText() == null ? "" : textView.getText().toString();
-        if (sending || holding || videoBusy || choice == null || !choice.publishable || !TellomiDiscoverMention.invalid(text).isEmpty()) {
+        if (sending || holding || videoBusy || photoBusy || choice == null || !choice.publishable || !TellomiDiscoverMention.invalid(text).isEmpty()) {
             return;
         }
         if (videoUri != null) {
@@ -455,7 +585,11 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         sendError = null;
         apply();
         TellomiDiscoverLink.Preview preview = url != null && url.equals(linkUrl) && linkSettled ? linkPreview : null;
-        publisher.publish(text, choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, preview, new TellomiDiscover.Completion() {
+        if (!photos.isEmpty()) {
+            uploadThenPublish(text, choice, preview);
+            return;
+        }
+        publisher.publish(text, choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, preview, null, new TellomiDiscover.Completion() {
             @Override
             public void onResult(TellomiDiscover.Outcome outcome) {
                 sending = false;
@@ -466,6 +600,39 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
                 }
                 sendError = outcome.error;
                 apply();
+            }
+        });
+    }
+
+    private void uploadThenPublish(final String body, final TellomiDiscover.AudienceChoice choice, final TellomiDiscoverLink.Preview preview) {
+        TellomiDiscover.Configuration configuration = TellomiDiscoverFlags.configuration(currentAccount);
+        final int generation = photoGeneration;
+        java.util.ArrayList<TellomiDiscoverMedia.Bytes> files = new java.util.ArrayList<>(photos);
+        TellomiDiscoverClient.uploadImages(currentAccount, configuration == null ? null : configuration.baseUrl, files, new TellomiDiscoverClient.UploadCallback() {
+            @Override
+            public void onResult(java.util.List<String> keys, TellomiDiscover.ClientError error) {
+                if (fragmentView == null || generation != photoGeneration) {
+                    return;
+                }
+                if (error != null || keys == null) {
+                    sending = false;
+                    sendError = error == null ? TellomiDiscover.ClientError.MEDIA_UPLOAD : error;
+                    apply();
+                    return;
+                }
+                publisher.publish(body, choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, preview, keys, new TellomiDiscover.Completion() {
+                    @Override
+                    public void onResult(TellomiDiscover.Outcome outcome) {
+                        sending = false;
+                        if (outcome.ok()) {
+                            publisher.published();
+                            finishFragment();
+                            return;
+                        }
+                        sendError = outcome.error;
+                        apply();
+                    }
+                });
             }
         });
     }
@@ -497,6 +664,57 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
                 videoStatus.setTextColor(Theme.getColor(error ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
             }
         }
+        if (photoButton != null && photoList != null && photoStatus != null) {
+            photoButton.setText(phrase(copy, "Tellomi.Discover.PhotoAdd"));
+            photoButton.setEnabled(!photoBusy && !sending && photos.size() < TellomiDiscoverMedia.MAX_IMAGES);
+            photoList.removeAllViews();
+            for (int i = 0; i < photos.size(); i++) {
+                final int index = i;
+                LinearLayout line = new LinearLayout(photoList.getContext());
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                line.setGravity(Gravity.CENTER_VERTICAL);
+                TextView name = new TextView(photoList.getContext());
+                String label = photos.get(i).name;
+                name.setText(label == null || label.isEmpty() ? phrase(copy, "Tellomi.Discover.PhotoAdd") : label);
+                name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                name.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+                line.addView(name, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                TextView remove = new TextView(photoList.getContext());
+                remove.setText(phrase(copy, "Tellomi.Discover.PhotoRemove"));
+                remove.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                remove.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourceProvider));
+                remove.setPadding(dp(8), dp(6), 0, dp(6));
+                remove.setEnabled(!photoBusy && !sending);
+                remove.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        removePhoto(index);
+                    }
+                });
+                line.addView(remove);
+                photoList.addView(line, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            }
+            String photoText = null;
+            if (photoBusy || sending && !photos.isEmpty()) {
+                photoText = phrase(copy, "Tellomi.Discover.PhotoUploading");
+            } else if (photoError != null) {
+                photoText = copy.failureText(photoError);
+            } else if (!photos.isEmpty()) {
+                try {
+                    photoText = String.format(Locale.US, phrase(copy, "Tellomi.Discover.PhotoCount"), photos.size());
+                } catch (RuntimeException ignored) {
+                    photoText = Integer.toString(photos.size());
+                }
+            }
+            if (photoText == null || photoText.isEmpty()) {
+                photoStatus.setVisibility(View.GONE);
+            } else {
+                photoStatus.setVisibility(View.VISIBLE);
+                photoStatus.setText(photoText);
+                boolean photoFailure = photoError != null;
+                photoStatus.setTextColor(Theme.getColor(photoFailure ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+            }
+        }
         String text = textView.getText() == null ? "" : textView.getText().toString();
         java.util.List<String> invalid = TellomiDiscoverMention.invalid(text);
         String mentionText = invalid.isEmpty() ? null : mentionLine(copy, invalid.get(0));
@@ -509,7 +727,8 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         }
         String trimmed = TellomiDiscover.trim(text);
         boolean pollOk = !pollOn || TellomiDiscover.cleanPoll(pollValues()) != null;
-        boolean canSend = !sending && !holding && !videoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
+        boolean withinLimit = text.codePointCount(0, text.length()) <= textLimit;
+        boolean canSend = !sending && !holding && !videoBusy && !photoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && withinLimit && (!trimmed.isEmpty() || !photos.isEmpty()) && TellomiDiscover.clientNonce(nonce);
         actionBar.createMenu().clearItems();
         actionBar.createMenu().addItem(MENU_PUBLISH, copy.publish).setEnabled(canSend);
     }

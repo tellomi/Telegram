@@ -81,7 +81,8 @@ public final class TellomiDiscoverParse {
             tabs,
             stringValue(json.objectValue.get("recommend_mode")),
             personalization != null && personalization,
-            limit
+            limit,
+            mediaBase(stringValue(json.objectValue.get("media_base_url")))
         );
     }
 
@@ -179,6 +180,7 @@ public final class TellomiDiscoverParse {
         post.shareable = card.shareable;
         post.poll = card.poll;
         post.linkPreview = card.linkPreview;
+        post.images = card.images == null ? java.util.Collections.<TellomiDiscover.Image>emptyList() : card.images;
         return post;
     }
 
@@ -233,6 +235,7 @@ public final class TellomiDiscoverParse {
         card.comments = comments(json.objectValue.get("comments"));
         card.poll = poll(body == null ? null : body.objectValue.get("poll"), json.objectValue.get("poll"));
         card.linkPreview = TellomiDiscoverLink.stored(body, json);
+        card.images = images(body == null ? null : body.objectValue.get("media"));
         return card;
     }
 
@@ -402,21 +405,64 @@ public final class TellomiDiscoverParse {
     }
 
     private static int imageCount(TellomiJson json) {
+        return images(json).size() + skippedImages(json);
+    }
+
+    /** Images with a usable {@code key}. A typed image with no key still counts, and is not shown. */
+    private static java.util.List<TellomiDiscover.Image> images(TellomiJson json) {
+        java.util.List<TellomiDiscover.Image> list = new java.util.ArrayList<>();
+        if (json == null || json.type != TellomiJson.Type.ARRAY) {
+            return list;
+        }
+        for (int i = 0; i < json.arrayValue.size(); i++) {
+            TellomiJson item = objectValue(json.arrayValue.get(i));
+            if (!imageItem(item)) {
+                continue;
+            }
+            String key = stringValue(item.objectValue.get("key"));
+            boolean usableKey = TellomiDiscoverMedia.validKey(key);
+            String url = TellomiDiscoverMedia.cardUrl(stringValue(item.objectValue.get("url")));
+            if (usableKey || url != null) {
+                list.add(new TellomiDiscover.Image(usableKey ? key : null, url));
+            }
+        }
+        return list;
+    }
+
+    private static int skippedImages(TellomiJson json) {
         if (json == null || json.type != TellomiJson.Type.ARRAY) {
             return 0;
         }
         int count = 0;
         for (int i = 0; i < json.arrayValue.size(); i++) {
             TellomiJson item = objectValue(json.arrayValue.get(i));
-            if (item == null) {
+            if (!imageItem(item)) {
                 continue;
             }
-            String kind = stringValue(item.objectValue.get("type"));
-            if (kind != null && "image".equals(kind.toLowerCase(java.util.Locale.US))) {
+            String key = stringValue(item.objectValue.get("key"));
+            String url = TellomiDiscoverMedia.cardUrl(stringValue(item.objectValue.get("url")));
+            if (!TellomiDiscoverMedia.validKey(key) && url == null) {
                 count++;
             }
         }
         return count;
+    }
+
+    /** Empty is the same as a missing {@code media_base_url}. */
+    private static String mediaBase(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static boolean imageItem(TellomiJson item) {
+        if (item == null) {
+            return false;
+        }
+        String kind = stringValue(item.objectValue.get("type"));
+        return kind != null && "image".equals(kind.toLowerCase(java.util.Locale.US));
     }
 
     private static TellomiJson object(byte[] data) {

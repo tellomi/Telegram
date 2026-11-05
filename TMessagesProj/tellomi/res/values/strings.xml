@@ -162,6 +162,16 @@
     <string name="Tellomi_Discover_VideoSelected">Selected · %s</string>
     <string name="Tellomi_Discover_VideoNotUploaded">Video upload isn\'t available yet. Remove it to post the text.</string>
     <string name="Tellomi_Discover_VideoReading">Reading the length…</string>
+    <string name="Tellomi_Discover_PhotoAdd">Add photos</string>
+    <string name="Tellomi_Discover_PhotoHint">Up to 10 photos. JPEG, PNG, or WebP. Each one up to 20 MB.</string>
+    <string name="Tellomi_Discover_PhotoCount">%d selected</string>
+    <string name="Tellomi_Discover_PhotoRemove">Remove</string>
+    <string name="Tellomi_Discover_PhotoLimit">You can add up to 10 photos.</string>
+    <string name="Tellomi_Discover_PhotoTooLarge">This photo is larger than 20 MB.</string>
+    <string name="Tellomi_Discover_PhotoType">Use a JPEG, PNG, or WebP photo.</string>
+    <string name="Tellomi_Discover_PhotoUploadFailed">Couldn\'t upload the photo.</string>
+    <string name="Tellomi_Discover_PhotoNetwork">The network failed while uploading.</string>
+    <string name="Tellomi_Discover_PhotoUploading">Uploading photos…</string>
     <string name="Tellomi_Discover_Notifications">Notifications</string>
     <string name="Tellomi_Discover_NotificationsEmpty">No notifications yet</string>
     <string name="Tellomi_Discover_NotifyLike">liked your post</string>
