@@ -176,6 +176,8 @@ public final class TellomiDiscoverParse {
             card.city
         );
         post.comments = card.comments == null ? java.util.Collections.emptyList() : card.comments;
+        post.shareable = card.shareable;
+        post.poll = card.poll;
         return post;
     }
 
@@ -228,7 +230,104 @@ public final class TellomiDiscoverParse {
             city
         );
         card.comments = comments(json.objectValue.get("comments"));
+        card.poll = poll(body == null ? null : body.objectValue.get("poll"));
         return card;
+    }
+
+    public static TellomiDiscover.NoticePage notices(byte[] data) {
+        TellomiJson json = object(data);
+        if (json == null) {
+            return null;
+        }
+        TellomiJson items = json.objectValue.get("items");
+        if (items == null) {
+            items = json.objectValue.get("notifications");
+        }
+        if (items == null || items.type != TellomiJson.Type.ARRAY) {
+            return null;
+        }
+        java.util.List<TellomiDiscover.Notice> parsed = new java.util.ArrayList<>();
+        for (int i = 0; i < items.arrayValue.size(); i++) {
+            TellomiJson item = objectValue(items.arrayValue.get(i));
+            if (item == null) {
+                continue;
+            }
+            String id = stringValue(item.objectValue.get("id"));
+            if (id == null || id.isEmpty()) {
+                id = stringValue(item.objectValue.get("event_id"));
+            }
+            String kind = stringValue(item.objectValue.get("kind"));
+            if (id == null || id.isEmpty() || kind == null || kind.isEmpty()) {
+                continue;
+            }
+            String actor = stringValue(item.objectValue.get("actor_name"));
+            if (actor == null) {
+                TellomiJson actorObject = objectValue(item.objectValue.get("actor"));
+                actor = actorObject == null ? null : stringValue(actorObject.objectValue.get("display_name"));
+            }
+            String text = stringValue(item.objectValue.get("text"));
+            if (text == null) {
+                text = stringValue(item.objectValue.get("body"));
+            }
+            String postId = TellomiDiscover.postId(stringValue(item.objectValue.get("post_id")));
+            parsed.add(new TellomiDiscover.Notice(id, kind, actor == null ? "" : actor, postId, text == null ? "" : text));
+        }
+        String cursor = stringValue(json.objectValue.get("cursor"));
+        if (cursor != null && cursor.isEmpty()) {
+            cursor = null;
+        }
+        return new TellomiDiscover.NoticePage(parsed, cursor);
+    }
+
+    private static TellomiDiscover.Poll poll(TellomiJson json) {
+        TellomiJson object = objectValue(json);
+        if (object == null) {
+            return null;
+        }
+        TellomiJson options = object.objectValue.get("options");
+        if (options == null || options.type != TellomiJson.Type.ARRAY || options.arrayValue.isEmpty()) {
+            return null;
+        }
+        java.util.List<TellomiDiscover.PollOption> parsed = new java.util.ArrayList<>();
+        for (int i = 0; i < options.arrayValue.size(); i++) {
+            TellomiJson item = options.arrayValue.get(i);
+            if (item == null) {
+                continue;
+            }
+            String text;
+            int votes = 0;
+            boolean voted = false;
+            if (item.type == TellomiJson.Type.STRING) {
+                text = item.stringValue;
+            } else {
+                TellomiJson option = objectValue(item);
+                if (option == null) {
+                    continue;
+                }
+                text = stringValue(option.objectValue.get("text"));
+                if (text == null) {
+                    text = stringValue(option.objectValue.get("label"));
+                }
+                Integer count = intValue(option.objectValue.get("votes"));
+                if (count == null) {
+                    count = intValue(option.objectValue.get("vote_count"));
+                }
+                votes = count == null ? 0 : count;
+                Boolean mine = boolValue(option.objectValue.get("voted"));
+                if (mine == null) {
+                    mine = boolValue(option.objectValue.get("voted_by_me"));
+                }
+                voted = mine != null && mine;
+            }
+            if (text == null || text.isEmpty()) {
+                continue;
+            }
+            parsed.add(new TellomiDiscover.PollOption(text, votes, voted));
+        }
+        if (parsed.isEmpty()) {
+            return null;
+        }
+        return new TellomiDiscover.Poll(parsed);
     }
 
     private static java.util.List<TellomiDiscover.Comment> comments(TellomiJson json) {

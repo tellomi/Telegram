@@ -461,7 +461,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Operation {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH, REPORT }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH, REPORT, REPOST, VOTE, NOTIFICATIONS }
 
         public final Kind kind;
         public final FeedKind feedKind;
@@ -477,12 +477,19 @@ public final class TellomiDiscover {
         public final String reportOption;
         public final String reportDetail;
         public final String commentId;
+        public final String quoteOf;
+        public final List<String> pollOptions;
+        public final int voteIndex;
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit) {
             this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, null, null, null);
         }
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId) {
+            this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, reportOption, reportDetail, commentId, null, null, -1);
+        }
+
+        private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId, String quoteOf, List<String> pollOptions, int voteIndex) {
             this.kind = kind;
             this.feedKind = feedKind;
             this.cursor = cursor;
@@ -497,6 +504,9 @@ public final class TellomiDiscover {
             this.reportOption = reportOption;
             this.reportDetail = reportDetail;
             this.commentId = commentId;
+            this.quoteOf = quoteOf;
+            this.pollOptions = pollOptions;
+            this.voteIndex = voteIndex;
         }
 
         public static Operation capabilities() {
@@ -524,7 +534,32 @@ public final class TellomiDiscover {
         }
 
         public static Operation publish(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city) {
-            return new Operation(Kind.PUBLISH, null, null, false, city, null, text, visibility, audienceToken, clientNonce, textLimit);
+            return publish(text, visibility, audienceToken, clientNonce, textLimit, city, null, null);
+        }
+
+        public static Operation publish(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
+            return new Operation(Kind.PUBLISH, null, null, false, city, null, text, visibility, audienceToken, clientNonce, textLimit, null, null, null, quoteOf, pollOptions, -1);
+        }
+
+        public static Operation repost(String postId) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(Kind.REPOST, null, null, false, null, ids, null, null, null, null, 0);
+        }
+
+        /** {@code option} is the zero-based index in {@code card.poll.options}. */
+        public static Operation vote(String postId, int option) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(Kind.VOTE, null, null, false, null, ids, null, null, null, null, 0, null, null, null, null, null, option);
+        }
+
+        public static Operation notifications(String cursor) {
+            return new Operation(Kind.NOTIFICATIONS, null, cursor, false, null, null, null, null, null, null, 0);
         }
 
         public static Operation report(String postId, String commentId, String optionId, String detail) {
@@ -662,7 +697,32 @@ public final class TellomiDiscover {
             String reportUrl = url(base, "/v1/feed/reports", null);
             return reportUrl == null ? null : new HttpCall("POST", reportUrl, report, trimmed, true, "application/json");
         }
-        byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city);
+        if (operation.kind == Operation.Kind.REPOST) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : postId(operation.ids.get(0));
+            if (postId == null) {
+                return null;
+            }
+            String repostUrl = url(base, "/v1/feed/posts/" + postId + "/repost", null);
+            return repostUrl == null ? null : new HttpCall("PUT", repostUrl, null, trimmed, true, null);
+        }
+        if (operation.kind == Operation.Kind.VOTE) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : postId(operation.ids.get(0));
+            byte[] vote = voteBody(operation.voteIndex);
+            if (postId == null || vote == null) {
+                return null;
+            }
+            String voteUrl = url(base, "/v1/feed/posts/" + postId + "/vote", null);
+            return voteUrl == null ? null : new HttpCall("PUT", voteUrl, vote, trimmed, true, "application/json");
+        }
+        if (operation.kind == Operation.Kind.NOTIFICATIONS) {
+            List<QueryItem> query = new ArrayList<>();
+            if (operation.cursor != null && !operation.cursor.isEmpty()) {
+                query.add(new QueryItem("cursor", operation.cursor));
+            }
+            String notesUrl = url(base, "/v1/feed/me/notifications", query.isEmpty() ? null : query);
+            return notesUrl == null ? null : new HttpCall("GET", notesUrl, null, trimmed, true, null);
+        }
+        byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions);
         if (body == null) {
             return null;
         }
@@ -745,6 +805,14 @@ public final class TellomiDiscover {
     }
 
     public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city) {
+        return publishBody(text, visibility, audienceToken, clientNonce, textLimit, city, null, null);
+    }
+
+    /**
+     * {@code quoteOf} is the engine {@code quote_of}. {@code pollOptions} is omitted
+     * when null. Two to four non-empty options become {@code poll.options}.
+     */
+    public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions) {
         String body = text == null ? "" : trim(text);
         int limit = textLimit > 0 ? textLimit : POST_TEXT_LIMIT;
         if (body.isEmpty() || body.codePointCount(0, body.length()) > limit) {
@@ -777,6 +845,47 @@ public final class TellomiDiscover {
                 object.put("city", code);
             }
         }
+        if (quoteOf != null) {
+            String quoted = postId(quoteOf);
+            if (quoted == null) {
+                return null;
+            }
+            object.put("quote_of", quoted);
+        }
+        if (pollOptions != null) {
+            List<String> options = cleanPoll(pollOptions);
+            if (options == null) {
+                return null;
+            }
+            Map<String, Object> poll = new LinkedHashMap<>();
+            poll.put("options", options);
+            object.put("poll", poll);
+        }
+        return TellomiJson.write(object);
+    }
+
+    /** Two to four options, each at most 80 characters and a single line. */
+    public static List<String> cleanPoll(List<String> raw) {
+        if (raw == null || raw.size() < 2 || raw.size() > 4) {
+            return null;
+        }
+        List<String> options = new ArrayList<>();
+        for (int i = 0; i < raw.size(); i++) {
+            String option = raw.get(i) == null ? "" : trim(raw.get(i));
+            if (option.isEmpty() || option.codePointCount(0, option.length()) > 80 || option.indexOf('\n') >= 0 || option.indexOf('\r') >= 0) {
+                return null;
+            }
+            options.add(option);
+        }
+        return options;
+    }
+
+    public static byte[] voteBody(int option) {
+        if (option < 0 || option > 9) {
+            return null;
+        }
+        Map<String, Object> object = new LinkedHashMap<>();
+        object.put("option", option);
         return TellomiJson.write(object);
     }
 
@@ -799,6 +908,10 @@ public final class TellomiDiscover {
     }
 
     public static PublishStep publishStep(String text, Visibility visibility, long[] userIds, long selfUserId, String clientNonce, int textLimit, AudienceToken token, long now, String city) {
+        return publishStep(text, visibility, userIds, selfUserId, clientNonce, textLimit, token, now, city, null, null);
+    }
+
+    public static PublishStep publishStep(String text, Visibility visibility, long[] userIds, long selfUserId, String clientNonce, int textLimit, AudienceToken token, long now, String city, String quoteOf, List<String> pollOptions) {
         if (city != null && !trim(city).isEmpty() && TellomiDiscoverCity.knownCode(city) == null) {
             return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.INVALID_CITY);
         }
@@ -808,7 +921,7 @@ public final class TellomiDiscover {
                 return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.AUDIENCE_INVALID);
             }
             if (token != null && token.token != null && !token.token.isEmpty() && !audienceTokenNeedsRefresh(token.expires, now)) {
-                byte[] body = publishBody(text, visibility, token.token, clientNonce, textLimit, city);
+                byte[] body = publishBody(text, visibility, token.token, clientNonce, textLimit, city, quoteOf, pollOptions);
                 if (body == null) {
                     return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.NOT_PUBLISHABLE);
                 }
@@ -816,7 +929,7 @@ public final class TellomiDiscover {
             }
             return new PublishStep(PublishStep.Kind.NEEDS_AUDIENCE_TOKEN, null, visibility.raw, ids, null);
         }
-        byte[] body = publishBody(text, visibility, null, clientNonce, textLimit, city);
+        byte[] body = publishBody(text, visibility, null, clientNonce, textLimit, city, quoteOf, pollOptions);
         if (body == null) {
             return new PublishStep(PublishStep.Kind.REJECTED, null, null, null, ClientError.NOT_PUBLISHABLE);
         }
@@ -919,6 +1032,7 @@ public final class TellomiDiscover {
         public final String ipRegionLabel;
         public final String city;
         public List<Comment> comments = Collections.emptyList();
+        public Poll poll;
 
         public Card(String id, String state, Integer version, String text, String authorName, String authorHandle, String tellomiNumber, String authorId, String badge, boolean aiGenerated, boolean edited, boolean shareable, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -988,6 +1102,8 @@ public final class TellomiDiscover {
         public final String ipRegionLabel;
         public final String city;
         public List<Comment> comments = Collections.emptyList();
+        public boolean shareable;
+        public Poll poll;
 
         public Post(String id, String text, String authorName, String authorHandle, String tellomiNumber, boolean unavailable, boolean aiGenerated, String badge, int likeCount, int commentCount, int repostCount, int imageCount, String quoteState, String quoteText, String ipRegionLabel, String city) {
             this.id = id;
@@ -1019,6 +1135,52 @@ public final class TellomiDiscover {
         }
     }
 
+    public static final class PollOption {
+        public final String text;
+        public final int votes;
+        public final boolean voted;
+
+        public PollOption(String text, int votes, boolean voted) {
+            this.text = text;
+            this.votes = votes;
+            this.voted = voted;
+        }
+    }
+
+    public static final class Poll {
+        public final List<PollOption> options;
+
+        public Poll(List<PollOption> options) {
+            this.options = options;
+        }
+    }
+
+    public static final class Notice {
+        public final String id;
+        public final String kind;
+        public final String actorName;
+        public final String postId;
+        public final String text;
+
+        public Notice(String id, String kind, String actorName, String postId, String text) {
+            this.id = id;
+            this.kind = kind;
+            this.actorName = actorName;
+            this.postId = postId;
+            this.text = text;
+        }
+    }
+
+    public static final class NoticePage {
+        public final List<Notice> items;
+        public final String cursor;
+
+        public NoticePage(List<Notice> items, String cursor) {
+            this.items = items;
+            this.cursor = cursor;
+        }
+    }
+
     public static final class HttpResult {
         public final int status;
         public final byte[] body;
@@ -1038,7 +1200,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Decoded {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED, DONE, NOTICES }
 
         public final Kind kind;
         public final Capabilities capabilities;
@@ -1047,6 +1209,7 @@ public final class TellomiDiscover {
         public final FeedPage feed;
         public final List<Card> cards;
         public final CreatedPost created;
+        public NoticePage notices;
 
         private Decoded(Kind kind, Capabilities capabilities, boolean status, EngineConfig engineConfig, FeedPage feed, List<Card> cards, CreatedPost created) {
             this.kind = kind;
@@ -1084,6 +1247,16 @@ public final class TellomiDiscover {
 
         static Decoded reported() {
             return new Decoded(Kind.REPORTED, null, false, null, null, null, null);
+        }
+
+        static Decoded done() {
+            return new Decoded(Kind.DONE, null, false, null, null, null, null);
+        }
+
+        static Decoded notices(NoticePage page) {
+            Decoded decoded = new Decoded(Kind.NOTICES, null, false, null, null, null, null);
+            decoded.notices = page;
+            return decoded;
         }
     }
 
@@ -1259,10 +1432,24 @@ public final class TellomiDiscover {
             String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
             return reportBody(postId, operation.commentId, operation.reportOption, operation.reportDetail) == null ? ClientError.NOT_PUBLISHABLE : null;
         }
+        if (operation.kind == Operation.Kind.REPOST) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            return postId(postId) == null ? ClientError.NOT_FOUND : null;
+        }
+        if (operation.kind == Operation.Kind.VOTE) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            if (postId(postId) == null || voteBody(operation.voteIndex) == null) {
+                return ClientError.NOT_PUBLISHABLE;
+            }
+            return null;
+        }
+        if (operation.kind == Operation.Kind.NOTIFICATIONS) {
+            return null;
+        }
         if (operation.city != null && !trim(operation.city).isEmpty() && TellomiDiscoverCity.knownCode(operation.city) == null) {
             return ClientError.INVALID_CITY;
         }
-        if (publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city) == null) {
+        if (publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions) == null) {
             return ClientError.NOT_PUBLISHABLE;
         }
         return null;
@@ -1275,7 +1462,8 @@ public final class TellomiDiscover {
         if (result.status == 400 && "invalid_city".equals(TellomiDiscoverParse.errorCode(result.body))) {
             return Outcome.failure(ClientError.INVALID_CITY);
         }
-        if (result.status != 200 && result.status != 201) {
+        boolean emptyOk = result.status == 204 && (operation.kind == Operation.Kind.REPOST || operation.kind == Operation.Kind.VOTE);
+        if (result.status != 200 && result.status != 201 && !emptyOk) {
             if (result.status == 401 || result.status == 403) {
                 return Outcome.failure(ClientError.UNAUTHORIZED);
             }
@@ -1306,6 +1494,15 @@ public final class TellomiDiscover {
         }
         if (operation.kind == Operation.Kind.REPORT) {
             return Outcome.success(Decoded.reported());
+        }
+        if (operation.kind == Operation.Kind.REPOST || operation.kind == Operation.Kind.VOTE) {
+            if (result.status == 200 || result.status == 201 || result.status == 204) {
+                return Outcome.success(Decoded.done());
+            }
+        }
+        if (operation.kind == Operation.Kind.NOTIFICATIONS && (result.status == 200 || result.status == 201)) {
+            NoticePage page = TellomiDiscoverParse.notices(result.body);
+            return page == null ? Outcome.failure(ClientError.UNREADABLE) : Outcome.success(Decoded.notices(page));
         }
         CreatedPost value = TellomiDiscoverParse.createdPost(result.body);
         return value == null ? Outcome.failure(ClientError.UNREADABLE) : Outcome.success(Decoded.created(value));
@@ -1523,6 +1720,21 @@ public final class TellomiDiscover {
                 body = body + copy.unavailable;
             } else if (post.quoteText != null && !post.quoteText.isEmpty()) {
                 body = body + "\n" + post.quoteText;
+            }
+            if (list && post.poll != null && post.poll.options != null) {
+                for (int i = 0; i < post.poll.options.size(); i++) {
+                    PollOption option = post.poll.options.get(i);
+                    if (option == null || option.text == null || option.text.isEmpty()) {
+                        continue;
+                    }
+                    if (!body.isEmpty()) {
+                        body = body + "\n";
+                    }
+                    body = body + option.text;
+                    if (option.votes > 0) {
+                        body = body + " " + option.votes;
+                    }
+                }
             }
         }
         List<String> meta = new ArrayList<>();

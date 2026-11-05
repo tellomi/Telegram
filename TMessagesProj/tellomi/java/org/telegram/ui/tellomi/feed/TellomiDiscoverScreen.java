@@ -109,9 +109,9 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         }
         TellomiDiscover.Copy copy = copy();
         if (chrome.showsCompose && !Boolean.FALSE.equals(engineVisible)) {
-            activity.showComposeButton(true, copy.compose);
+            activity.showComposeButton(true, copy.compose, phrase(copy, "Tellomi.Discover.Notifications"));
         } else {
-            activity.showComposeButton(false, copy.compose);
+            activity.showComposeButton(false, copy.compose, "");
         }
         if (chrome.surface == TellomiDiscover.Surface.LEGACY_EMPTY || Boolean.FALSE.equals(engineVisible)) {
             String pending = pendingPost();
@@ -431,24 +431,71 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     void compose() {
+        presentComposer(null);
+    }
+
+    void notifications() {
+        TellomiDiscover.Configuration configuration = configuration();
+        if (!loggedIn() || !configuration.enabled || Boolean.FALSE.equals(engineVisible)) {
+            return;
+        }
+        activity.presentFragment(new TellomiDiscoverNotificationsFragment());
+    }
+
+    private void presentComposer(String quoteOf) {
         TellomiDiscover.Configuration configuration = configuration();
         if (!TellomiDiscover.chrome(loggedIn(), configuration.enabled, kind, null, false, cityCode).showsCompose || Boolean.FALSE.equals(engineVisible)) {
             return;
         }
-        activity.presentFragment(TellomiDiscoverComposeFragment.create(textLimit, this));
+        activity.presentFragment(TellomiDiscoverComposeFragment.create(textLimit, this, quoteOf));
+    }
+
+    private void share(final TellomiDiscover.Post post) {
+        TellomiDiscoverShare.show(activity, post.id, post.shareable, new Runnable() {
+            @Override
+            public void run() {
+                repost(post.id);
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                presentComposer(post.id);
+            }
+        });
+    }
+
+    private void repost(String postId) {
+        TellomiDiscover.Configuration configuration = configuration();
+        loader.run(loggedIn(), configuration, TellomiDiscover.Operation.repost(postId), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (destroyed) {
+                    return;
+                }
+                if (outcome.ok()) {
+                    banner = phrase(copy(), "Tellomi.Discover.Reposted");
+                    posts.remove(kind);
+                    failed = false;
+                    sync(true);
+                    return;
+                }
+                banner = copy().failed;
+                sync(false);
+            }
+        });
     }
 
     @Override
-    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, final TellomiDiscover.Completion completion) {
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, final TellomiDiscover.Completion completion) {
         final TellomiDiscover.Configuration configuration = configuration();
         if (!loggedIn() || !configuration.enabled) {
             completion.onResult(TellomiDiscover.Outcome.failure(loggedIn() ? TellomiDiscover.ClientError.DISABLED : TellomiDiscover.ClientError.SIGNED_OUT));
             return;
         }
         long now = System.currentTimeMillis() / 1000L;
-        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, cityCode);
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(account).getClientUserId(), nonce, textLimit, null, now, cityCode, quoteOf, pollOptions);
         if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
-            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, cityCode), completion);
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, textLimit, cityCode, quoteOf, pollOptions), completion);
             return;
         }
         if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
@@ -466,7 +513,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                     completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
                     return;
                 }
-                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, cityCode), completion);
+                loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, textLimit, cityCode, quoteOf, pollOptions), completion);
             }
         });
     }
@@ -640,6 +687,18 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 line.setGravity(Gravity.CENTER_VERTICAL);
                 row.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
                 line.addView(row);
+                if (post.shareable) {
+                    TextView forward = label(phrase(copy, "Tellomi.Discover.Forward"), 14, false);
+                    forward.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, activity.getResourceProvider()));
+                    forward.setPadding(dp(8), dp(12), dp(8), dp(12));
+                    forward.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            share(post);
+                        }
+                    });
+                    line.addView(forward);
+                }
                 if (!TellomiDiscoverReport.menuActions(loggedIn()).isEmpty()) {
                     ImageView more = new ImageView(context);
                     more.setImageResource(R.drawable.ic_ab_other);
@@ -733,6 +792,10 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
 
     private boolean loggedIn() {
         return UserConfig.getInstance(account).isClientActivated();
+    }
+
+    private String phrase(TellomiDiscover.Copy copy, String key) {
+        return org.telegram.ui.TellomiPack.text(key, copy.languageCode, copy.source);
     }
 
     private TellomiDiscover.Copy copy() {

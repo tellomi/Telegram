@@ -824,3 +824,19 @@ New lookup keys use only letters, digits, `.`, and `_`: `Tellomi.Settings.Group.
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The seven `Tellomi.Settings.*` keys. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiSettingsLayoutTest.java` | Groups, pages, the card, the help URL, and the lookup keys. |
+
+## Discover polls, forwards, and notification switch (M3)
+
+Android only. The feed client already posted text, read recommend / following / nearby, and showed a deleted quote. This adds the missing interactions that the engine already serves.
+
+A public (`shareable`) post gets a forward menu: direct repost (`PUT /v1/feed/posts/{id}/repost`), quote (`quote_of` on `POST /v1/feed/posts`), share into a Tellomi chat (`ShareAlert` with `https://tell.cc/m#<id>`), and the system share sheet. A post that is not shareable has no menu. A quote whose original is `deleted` still shows the existing「原动态已被作者删除」line. The engine removes the repost when the original is deleted; the client does not keep one.
+
+A post can include a poll (`poll.options`, two to four lines). The card reads `card.poll.options` (`text` / `label`, `votes` / `vote_count`, `voted` / `voted_by_me`). A tap sends `PUT /v1/feed/posts/{id}/vote` with `{"option": index}`.
+
+The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_key` `DISCOVER_*` (or `custom.discover = 1`) and opens the post. It does not open a chat with user 777005. The switch on Notifications and Sounds is `account.updateNotifySettings` for @faxian (user id 777005). No row means on. `mute_until` in the future, including mute forever, means off. Muting all private chats does not write this peer.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/NotificationsSettingsActivity.java` | One check row, `discoverRow`, after reactions. The title and the toggle live in the flavor class. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/PushListenerController.java` | After the account is known, a discover payload is shown by `TellomiDiscoverPush` and is not turned into a chat message. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | The notification extra `tellomi_discover_post` opens `https://tell.cc/m#<id>` through the existing post-link path. |
