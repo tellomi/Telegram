@@ -81,7 +81,8 @@ public final class TellomiDiscoverParse {
             tabs,
             stringValue(json.objectValue.get("recommend_mode")),
             personalization != null && personalization,
-            limit
+            limit,
+            mediaBase(stringValue(json.objectValue.get("media_base_url")))
         );
     }
 
@@ -419,8 +420,10 @@ public final class TellomiDiscoverParse {
                 continue;
             }
             String key = stringValue(item.objectValue.get("key"));
-            if (TellomiDiscoverMedia.validKey(key)) {
-                list.add(new TellomiDiscover.Image(key));
+            boolean usableKey = TellomiDiscoverMedia.validKey(key);
+            String url = TellomiDiscoverMedia.cardUrl(stringValue(item.objectValue.get("url")));
+            if (usableKey || url != null) {
+                list.add(new TellomiDiscover.Image(usableKey ? key : null, url));
             }
         }
         return list;
@@ -436,11 +439,22 @@ public final class TellomiDiscoverParse {
             if (!imageItem(item)) {
                 continue;
             }
-            if (!TellomiDiscoverMedia.validKey(stringValue(item.objectValue.get("key")))) {
+            String key = stringValue(item.objectValue.get("key"));
+            String url = TellomiDiscoverMedia.cardUrl(stringValue(item.objectValue.get("url")));
+            if (!TellomiDiscoverMedia.validKey(key) && url == null) {
                 count++;
             }
         }
         return count;
+    }
+
+    /** Empty is the same as a missing {@code media_base_url}. */
+    private static String mediaBase(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static boolean imageItem(TellomiJson item) {

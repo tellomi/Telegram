@@ -170,42 +170,109 @@ public final class TellomiDiscoverClient {
         });
     }
 
-    /** One credential, then a GET per key. A miss calls back with a null body. */
-    public static void loadImages(final int account, final String baseUrl, final java.util.List<TellomiDiscover.Image> images, final ImageCallback callback) {
+    /**
+     * Card {@code url} is fetched as given. A key without a url uses {@code mediaBaseUrl},
+     * or {@code media_base_url} from {@code GET /v1/feed/config} when that argument is empty.
+     * The discover bearer is sent only when the image host is the feed host.
+     */
+    public static void loadImages(final int account, final String feedBase, final String mediaBaseUrl, final java.util.List<TellomiDiscover.Image> images, final ImageCallback callback) {
         if (images == null || images.isEmpty() || callback == null) {
+            return;
+        }
+        if (!needsMediaBase(images) || (mediaBaseUrl != null && !mediaBaseUrl.isEmpty())) {
+            if (!sameHostImage(feedBase, mediaBaseUrl, images)) {
+                deliverImages(feedBase, null, mediaBaseUrl, images, callback);
+                return;
+            }
+            fetchCredential(account, new TellomiDiscover.CredentialCallback() {
+                @Override
+                public void onResult(TellomiDiscover.Credential credential, TellomiDiscover.ClientError error) {
+                    String token = credential == null ? null : credential.token;
+                    deliverImages(feedBase, token, mediaBaseUrl, images, callback);
+                }
+            });
             return;
         }
         fetchCredential(account, new TellomiDiscover.CredentialCallback() {
             @Override
             public void onResult(TellomiDiscover.Credential credential, TellomiDiscover.ClientError error) {
-                if (error != null || credential == null || credential.token == null) {
-                    for (int i = 0; i < images.size(); i++) {
-                        callback.onImage(i, null);
-                    }
+                if (error != null || credential == null || credential.token == null || credential.token.isEmpty()) {
+                    deliverImages(feedBase, null, null, images, callback);
                     return;
                 }
-                for (int i = 0; i < images.size(); i++) {
-                    final int index = i;
-                    String url = TellomiDiscoverMedia.imageUrl(baseUrl, images.get(i).key);
-                    if (url == null || baseUrl == null || !url.startsWith(baseUrl)) {
-                        callback.onImage(index, null);
-                        continue;
+                TellomiDiscover.HttpCall call = TellomiDiscover.httpCall(feedBase, TellomiDiscover.Operation.engineConfig(), credential.token);
+                if (call == null) {
+                    deliverImages(feedBase, credential.token, null, images, callback);
+                    return;
+                }
+                final String token = credential.token;
+                HTTPS.perform(call, new TellomiDiscover.HttpCallback() {
+                    @Override
+                    public void onResult(TellomiDiscover.HttpResult result) {
+                        String base = null;
+                        if (result != null && result.error == null && (result.status == 200 || result.status == 201)) {
+                            TellomiDiscover.EngineConfig config = TellomiDiscoverParse.engineConfig(result.body);
+                            base = config == null ? null : config.mediaBaseUrl;
+                        }
+                        deliverImages(feedBase, token, base, images, callback);
                     }
-                    HTTPS.perform(new TellomiDiscover.HttpCall("GET", url, null, credential.token, true, null), new TellomiDiscover.HttpCallback() {
+                });
+            }
+        });
+    }
+
+    private static boolean sameHostImage(String feedBase, String mediaBaseUrl, java.util.List<TellomiDiscover.Image> images) {
+        for (int i = 0; i < images.size(); i++) {
+            TellomiDiscover.Image image = images.get(i);
+            if (image == null) {
+                continue;
+            }
+            String url = TellomiDiscoverMedia.displayUrl(image.url, mediaBaseUrl, image.key);
+            if (TellomiDiscoverMedia.sameHost(feedBase, url)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean needsMediaBase(java.util.List<TellomiDiscover.Image> images) {
+        for (int i = 0; i < images.size(); i++) {
+            TellomiDiscover.Image image = images.get(i);
+            if (image != null && TellomiDiscoverMedia.cardUrl(image.url) == null && TellomiDiscoverMedia.validKey(image.key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void deliverImages(final String feedBase, final String token, final String mediaBaseUrl, final java.util.List<TellomiDiscover.Image> images, final ImageCallback callback) {
+        for (int i = 0; i < images.size(); i++) {
+            final int index = i;
+            TellomiDiscover.Image image = images.get(i);
+            String url = image == null ? null : TellomiDiscoverMedia.displayUrl(image.url, mediaBaseUrl, image.key);
+            if (url == null) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onImage(index, null);
+                    }
+                });
+                continue;
+            }
+            boolean authorize = token != null && !token.isEmpty() && TellomiDiscoverMedia.sameHost(feedBase, url);
+            HTTPS.perform(new TellomiDiscover.HttpCall("GET", url, null, authorize ? token : "", authorize, null), new TellomiDiscover.HttpCallback() {
+                @Override
+                public void onResult(final TellomiDiscover.HttpResult result) {
+                    final byte[] bytes = result != null && result.error == null && result.status == 200 ? result.body : null;
+                    AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
-                        public void onResult(final TellomiDiscover.HttpResult result) {
-                            final byte[] bytes = result != null && result.error == null && result.status == 200 ? result.body : null;
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    callback.onImage(index, bytes);
-                                }
-                            });
+                        public void run() {
+                            callback.onImage(index, bytes);
                         }
                     });
                 }
-            }
-        });
+            });
+        }
     }
 
     public static final class GetEngineCredential extends TLObject {

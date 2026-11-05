@@ -21,7 +21,7 @@ final class TellomiDiscoverImageRow {
     private TellomiDiscoverImageRow() {
     }
 
-    static void add(LinearLayout column, final Context context, final int account, final List<TellomiDiscover.Image> images, final View.OnClickListener open) {
+    static void add(LinearLayout column, final Context context, final int account, final String mediaBaseUrl, final List<TellomiDiscover.Image> images, final View.OnClickListener open) {
         if (column == null || images == null || images.isEmpty()) {
             return;
         }
@@ -49,7 +49,7 @@ final class TellomiDiscoverImageRow {
         column.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         TellomiDiscover.Configuration configuration = TellomiDiscoverFlags.configuration(account);
         String base = configuration == null ? null : configuration.baseUrl;
-        TellomiDiscoverClient.loadImages(account, base, images, new TellomiDiscoverClient.ImageCallback() {
+        TellomiDiscoverClient.loadImages(account, base, mediaBaseUrl, images, new TellomiDiscoverClient.ImageCallback() {
             @Override
             public void onImage(int index, byte[] bytes) {
                 if (index < 0 || index >= slots.length) {

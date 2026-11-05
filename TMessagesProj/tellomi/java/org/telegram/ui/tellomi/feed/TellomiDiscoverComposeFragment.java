@@ -727,7 +727,8 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         }
         String trimmed = TellomiDiscover.trim(text);
         boolean pollOk = !pollOn || TellomiDiscover.cleanPoll(pollValues()) != null;
-        boolean canSend = !sending && !holding && !videoBusy && !photoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
+        boolean withinLimit = text.codePointCount(0, text.length()) <= textLimit;
+        boolean canSend = !sending && !holding && !videoBusy && !photoBusy && choice != null && choice.publishable && pollOk && invalid.isEmpty() && withinLimit && (!trimmed.isEmpty() || !photos.isEmpty()) && TellomiDiscover.clientNonce(nonce);
         actionBar.createMenu().clearItems();
         actionBar.createMenu().addItem(MENU_PUBLISH, copy.publish).setEnabled(canSend);
     }

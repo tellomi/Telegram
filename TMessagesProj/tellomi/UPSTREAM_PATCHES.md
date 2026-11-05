@@ -951,9 +951,9 @@ Reopen of closed, unmerged #9, rebased onto current master.
 
 ## Discover multi-image posts (D-10)
 
-Compose can pick up to 10 JPEG, PNG, or WebP photos, each at most 20MB. The bytes go to `POST /v1/feed/media/uploads` as tus 1.0.0 (`Upload-Length`, `Upload-Metadata` filename/filetype, then `PATCH` with `Upload-Offset`). The key sent on `POST /v1/feed/posts` is `media[].key` with `type` `image`, the same names the card fixture already uses. A card image is drawn from `GET /v1/feed/media/<key>`, not only counted. A video still blocks the text post and is not uploaded. Free-form `#` topics are not sent: the engine topics field still only accepts lowercase letters, digits, `_`, and `-`.
+Compose can pick up to 10 JPEG, PNG, or WebP photos, each at most 20MB. The bytes go to `POST /v1/feed/media/uploads` as tus 1.0.0 (`Upload-Length`, `Upload-Metadata` filename/filetype, then `PATCH` with `Upload-Offset`). `POST /v1/feed/posts` sends the returned keys as `media_keys` (a string array). `media[]` is only the card response. A picture is `media[].url` when the engine sends one, otherwise `media_base_url` from `GET /v1/feed/config` plus the key. There is no `GET /v1/feed/media/<key>`. Text may be empty when `media_keys` is present. A video still blocks the post and is not uploaded. Free-form `#` topics are not sent.
 
-`content-engine` `docs/api.md` and `api/uploads.go` were not readable from this tree (the GitHub token only sees `tellomi/Telegram`). The field names above are the card fixture plus that tus path. Rebased onto the merged link-preview post: `link_preview` stays, and `media` is added beside it. No chat-video crop, iOS, or content-safety change.
+Field names follow content-engine `docs/api.md`. `link_preview` from the merged link-preview post stays beside `media_keys`. No chat-video crop, iOS, or content-safety change.
 
 | File | Change |
 | --- | --- |

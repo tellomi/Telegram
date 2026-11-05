@@ -11,15 +11,17 @@ import java.util.Map;
 /**
  * Discover image posts.
  *
- * The card fixture already stores {@code media:[{type,key}]}. Upload is tus 1.0.0
- * at {@code /v1/feed/media/uploads}. A finished upload's key is the JSON {@code key},
- * then JSON {@code id}, then the last path segment of the tus {@code Location}.
- * {@code POST /v1/feed/posts} sends that key back as {@code media[].key}.
- * Bytes are shown from {@code GET /v1/feed/media/<key>}.
+ * Upload is tus 1.0.0 at {@code /v1/feed/media/uploads}. A finished upload's key is
+ * the JSON {@code key}, then JSON {@code id}, then the last path segment of the
+ * tus {@code Location}. {@code POST /v1/feed/posts} sends those keys as
+ * {@code media_keys}. {@code media[]} is only the card response.
  *
- * content-engine {@code docs/api.md} and {@code api/uploads.go} were not readable
- * from this checkout. These names are the card fixture plus the tus path and the
- * limits given for that route. There is no free-form topic field here.
+ * A card image is {@code media[].url} when the engine sends one (R2). Otherwise
+ * the bytes are {@code media_base_url} from {@code GET /v1/feed/config} plus the
+ * key. There is no {@code GET /v1/feed/media/<key>}. A local engine serves
+ * {@code GET /media/{key}} through that base URL.
+ *
+ * Names follow content-engine {@code docs/api.md}. There is no free-form topic field.
  */
 public final class TellomiDiscoverMedia {
 
@@ -109,17 +111,109 @@ public final class TellomiDiscoverMedia {
         return true;
     }
 
-    /** {@code GET} URL for a card key. The bearer stays on this host. */
-    public static String imageUrl(String base, String key) {
-        if (!validKey(key)) {
+    /**
+     * Publish keys. Null means a key is illegal or there are more than {@link #MAX_IMAGES}.
+     * Null or empty input is an empty list, which omits {@code media_keys}.
+     */
+    public static List<String> mediaKeys(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (raw.size() > MAX_IMAGES) {
             return null;
         }
-        String[] parts = key.split("/", -1);
-        StringBuilder path = new StringBuilder("/v1/feed/media");
-        for (int i = 0; i < parts.length; i++) {
-            path.append('/').append(encode(parts[i]));
+        List<String> keys = new ArrayList<>();
+        for (int i = 0; i < raw.size(); i++) {
+            if (!validKey(raw.get(i))) {
+                return null;
+            }
+            keys.add(raw.get(i));
         }
-        return TellomiDiscover.url(base, path.toString(), null);
+        return keys;
+    }
+
+    /** Card {@code media[].url} when it is an absolute http(s) URL. Query is kept. */
+    public static String cardUrl(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String value = raw.trim();
+        if (value.isEmpty() || value.indexOf(' ') >= 0 || value.indexOf('\n') >= 0) {
+            return null;
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))) {
+                return null;
+            }
+            if (uri.getHost() == null || uri.getHost().isEmpty() || uri.getUserInfo() != null) {
+                return null;
+            }
+            return value;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * {@code media_base_url} + {@code key}. One slash is inserted when the base has none.
+     * This is how a local engine becomes {@code GET /media/{key}}.
+     */
+    public static String imageUrl(String mediaBaseUrl, String key) {
+        if (!validKey(key) || mediaBaseUrl == null) {
+            return null;
+        }
+        String base = mediaBaseUrl.trim();
+        try {
+            java.net.URI uri = java.net.URI.create(base);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))) {
+                return null;
+            }
+            if (uri.getHost() == null || uri.getHost().isEmpty() || uri.getUserInfo() != null) {
+                return null;
+            }
+            if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
+                return null;
+            }
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+        if (!base.endsWith("/")) {
+            base = base + "/";
+        }
+        String[] parts = key.split("/", -1);
+        StringBuilder path = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                path.append('/');
+            }
+            path.append(encode(parts[i]));
+        }
+        return base + path.toString();
+    }
+
+    /** Card {@code url} wins. Otherwise {@code media_base_url} plus the key. */
+    public static String displayUrl(String cardUrl, String mediaBaseUrl, String key) {
+        String direct = cardUrl(cardUrl);
+        if (direct != null) {
+            return direct;
+        }
+        return imageUrl(mediaBaseUrl, key);
+    }
+
+    public static boolean sameHost(String feedBase, String url) {
+        if (feedBase == null || url == null) {
+            return false;
+        }
+        try {
+            java.net.URI base = java.net.URI.create(feedBase);
+            java.net.URI next = java.net.URI.create(url);
+            return base.getHost() != null && next.getHost() != null && base.getHost().equalsIgnoreCase(next.getHost());
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 
     public static String uploadUrl(String base) {

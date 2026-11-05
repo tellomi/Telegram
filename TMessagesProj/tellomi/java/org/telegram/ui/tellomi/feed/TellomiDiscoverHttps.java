@@ -131,7 +131,7 @@ final class TellomiDiscoverHttps {
     /** Image bytes can be the same 20MB the upload allows. Feed JSON stays capped. */
     private static int bodyLimit(TellomiDiscover.HttpCall call) {
         String path = call == null ? "" : call.path();
-        if ("GET".equals(call == null ? null : call.method) && path.startsWith("/v1/feed/media/") && !path.startsWith("/v1/feed/media/uploads")) {
+        if ("GET".equals(call == null ? null : call.method) && !path.startsWith("/v1/")) {
             return MAX_BYTES_IMAGE;
         }
         return MAX_BODY;

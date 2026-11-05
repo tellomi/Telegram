@@ -63,6 +63,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private boolean engineHasFeed;
     private Boolean engineVisible;
     private boolean engineConfigLoaded;
+    private String mediaBaseUrl;
     private int textLimit = TellomiDiscover.POST_TEXT_LIMIT;
     private boolean loading;
     private boolean loadingMore;
@@ -350,6 +351,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 if (result.ok() && result.value.kind == TellomiDiscover.Decoded.Kind.ENGINE_CONFIG) {
                     engineConfigLoaded = true;
                     textLimit = result.value.engineConfig.postTextChars;
+                    mediaBaseUrl = result.value.engineConfig.mediaBaseUrl;
                     tabs.clear();
                     tabs.addAll(TellomiDiscoverNearby.homeTabs());
                     if (!tabs.contains(kind)) {
@@ -793,7 +795,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 }
                 column.addView(line, layout(LinearLayout.LayoutParams.MATCH_PARENT));
                 if (post.images != null && !post.images.isEmpty()) {
-                    TellomiDiscoverImageRow.add(column, context, account, post.images, new View.OnClickListener() {
+                    TellomiDiscoverImageRow.add(column, context, account, mediaBaseUrl, post.images, new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             activity.presentFragment(new TellomiDiscoverPostFragment(post.id));

@@ -63,11 +63,16 @@ public class TellomiDiscoverMediaTest {
         assertNull(without.objectValue.get("media"));
         byte[] posted = TellomiDiscover.publishBody("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, null, null, null, Arrays.asList("m/a", "m/b"));
         TellomiJson json = TellomiJson.parse(posted);
-        TellomiJson media = json.objectValue.get("media");
-        assertEquals(2, media.arrayValue.size());
-        assertEquals("image", media.arrayValue.get(0).objectValue.get("type").stringValue);
-        assertEquals("m/a", media.arrayValue.get(0).objectValue.get("key").stringValue);
-        assertEquals("m/b", media.arrayValue.get(1).objectValue.get("key").stringValue);
+        assertNull(json.objectValue.get("media"));
+        TellomiJson keys = json.objectValue.get("media_keys");
+        assertEquals(2, keys.arrayValue.size());
+        assertEquals("m/a", keys.arrayValue.get(0).stringValue);
+        assertEquals("m/b", keys.arrayValue.get(1).stringValue);
+        byte[] photosOnly = TellomiDiscover.publishBody("  ", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, null, null, null, Collections.singletonList("m/a"));
+        TellomiJson only = TellomiJson.parse(photosOnly);
+        assertEquals("", only.objectValue.get("text").stringValue);
+        assertEquals("m/a", only.objectValue.get("media_keys").arrayValue.get(0).stringValue);
+        assertNull(TellomiDiscover.publishBody("  ", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null));
         assertNull(TellomiDiscover.publishBody("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, null, null, null, Arrays.asList("..")));
         assertNull(TellomiDiscover.publishBody("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, null, null, null, Collections.nCopies(11, "m/a")));
         TellomiDiscover.HttpCall call = TellomiDiscover.httpCall(
@@ -76,12 +81,13 @@ public class TellomiDiscoverMediaTest {
             "jwt"
         );
         assertEquals("/v1/feed/posts", call.path());
-        assertEquals("m/a", TellomiJson.parse(call.body).objectValue.get("media").arrayValue.get(0).objectValue.get("key").stringValue);
+        assertEquals("m/a", TellomiJson.parse(call.body).objectValue.get("media_keys").arrayValue.get(0).stringValue);
         TellomiDiscoverLink.Preview preview = new TellomiDiscoverLink.Preview("https://example.com/a", "Hello", null, null);
         byte[] both = TellomiDiscover.publishBody("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null, null, null, preview, Collections.singletonList("m/a"));
         TellomiJson joined = TellomiJson.parse(both);
         assertEquals("https://example.com/a", joined.objectValue.get("link_preview").objectValue.get("url").stringValue);
-        assertEquals("m/a", joined.objectValue.get("media").arrayValue.get(0).objectValue.get("key").stringValue);
+        assertEquals("m/a", joined.objectValue.get("media_keys").arrayValue.get(0).stringValue);
+        assertNull(joined.objectValue.get("media"));
         assertNull(joined.objectValue.get("topics"));
     }
 
@@ -94,11 +100,22 @@ public class TellomiDiscoverMediaTest {
         assertEquals(2, card.images.size());
         assertEquals("m/a", card.images.get(0).key);
         assertEquals("m/b", card.images.get(1).key);
+        assertNull(card.images.get(0).url);
+        byte[] withUrl = ("{\"cards\":[{\"id\":\"post-9\",\"state\":\"ok\",\"card\":{\"text\":\"\",\"media\":[{\"type\":\"image\",\"key\":\"m/a\",\"url\":\"https://r2.example/a.jpg?X-Amz-Signature=abc\"},{\"type\":\"image\",\"key\":\"m/b\"}]}}]}")
+            .getBytes(StandardCharsets.UTF_8);
+        TellomiDiscover.Card remote = TellomiDiscoverParse.cards(withUrl).get(0);
+        assertEquals("https://r2.example/a.jpg?X-Amz-Signature=abc", remote.images.get(0).url);
+        assertNull(remote.images.get(1).url);
         TellomiDiscover.Post post = TellomiDiscoverParse.displayPost(card);
         assertEquals(2, post.images.size());
-        assertEquals("https://feed.example/v1/feed/media/m/a", TellomiDiscoverMedia.imageUrl("https://feed.example", "m/a"));
-        assertNull(TellomiDiscoverMedia.imageUrl("https://feed.example", "../secret"));
-        assertNull(TellomiDiscoverMedia.imageUrl("http://feed.example", "m/a"));
+        assertEquals("https://r2.example/a.jpg?X-Amz-Signature=abc", TellomiDiscoverMedia.displayUrl(remote.images.get(0).url, "https://cdn.example/media", "m/a"));
+        assertEquals("https://feed.example/media/m/a", TellomiDiscoverMedia.imageUrl("https://feed.example/media", "m/a"));
+        assertEquals("https://cdn.example/files/m/b", TellomiDiscoverMedia.displayUrl(null, "https://cdn.example/files/", "m/b"));
+        assertNull(TellomiDiscoverMedia.imageUrl("https://feed.example/media", "../secret"));
+        assertTrue(!TellomiDiscoverMedia.imageUrl("https://feed.example/media", "m/a").contains("/v1/feed/media"));
+        byte[] config = "{\"enabled\":true,\"region\":\"cn\",\"tabs\":[\"recommend\"],\"media_base_url\":\"https://cdn.example/media\"}".getBytes(StandardCharsets.UTF_8);
+        assertEquals("https://cdn.example/media", TellomiDiscoverParse.engineConfig(config).mediaBaseUrl);
+        assertNull(TellomiDiscoverParse.engineConfig("{\"enabled\":true,\"region\":\"cn\",\"tabs\":[\"recommend\"]}".getBytes(StandardCharsets.UTF_8)).mediaBaseUrl);
     }
 
     @Test

@@ -865,13 +865,18 @@ public final class TellomiDiscover {
      * {@code linkPreview} is the phone-fetched card. When it has a public URL it is
      * {@code link_preview} with {@code url}, and {@code title}, {@code description},
      * {@code image} only when present. A missing preview does not add the key.
-     * {@code mediaKeys} become {@code media:[{type:image,key}]} and are omitted when null or empty.
-     * The card fixture already uses those two names. There is no separate mentions or topics field.
+     * {@code mediaKeys} are the upload keys and become {@code media_keys}, omitted when empty.
+     * {@code media[]} is only the card shape. Text may be empty when {@code media_keys} is present.
+     * There is no separate mentions or topics field.
      */
     public static byte[] publishBody(String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String city, String quoteOf, List<String> pollOptions, TellomiDiscoverLink.Preview linkPreview, List<String> mediaKeys) {
         String body = text == null ? "" : trim(text);
         int limit = textLimit > 0 ? textLimit : POST_TEXT_LIMIT;
-        if (body.isEmpty() || body.codePointCount(0, body.length()) > limit) {
+        List<String> keys = TellomiDiscoverMedia.mediaKeys(mediaKeys);
+        if (keys == null) {
+            return null;
+        }
+        if ((body.isEmpty() && keys.isEmpty()) || body.codePointCount(0, body.length()) > limit) {
             return null;
         }
         if (!clientNonce(clientNonce)) {
@@ -924,22 +929,8 @@ public final class TellomiDiscover {
         if (linkFields != null) {
             object.put("link_preview", linkFields);
         }
-        if (mediaKeys != null && !mediaKeys.isEmpty()) {
-            if (mediaKeys.size() > TellomiDiscoverMedia.MAX_IMAGES) {
-                return null;
-            }
-            List<Map<String, String>> media = new ArrayList<>();
-            for (int i = 0; i < mediaKeys.size(); i++) {
-                String key = mediaKeys.get(i);
-                if (!TellomiDiscoverMedia.validKey(key)) {
-                    return null;
-                }
-                Map<String, String> item = new LinkedHashMap<>();
-                item.put("type", "image");
-                item.put("key", key);
-                media.add(item);
-            }
-            object.put("media", media);
+        if (!keys.isEmpty()) {
+            object.put("media_keys", keys);
         }
         return TellomiJson.write(object);
     }
@@ -1108,14 +1099,17 @@ public final class TellomiDiscover {
         public final String recommendMode;
         public final boolean personalizationToggleVisible;
         public final int postTextChars;
+        /** From {@code GET /v1/feed/config}. Null when the engine omits it. */
+        public final String mediaBaseUrl;
 
-        public EngineConfig(boolean enabled, String region, List<FeedKind> tabs, String recommendMode, boolean personalizationToggleVisible, int postTextChars) {
+        public EngineConfig(boolean enabled, String region, List<FeedKind> tabs, String recommendMode, boolean personalizationToggleVisible, int postTextChars, String mediaBaseUrl) {
             this.enabled = enabled;
             this.region = region;
             this.tabs = tabs;
             this.recommendMode = recommendMode;
             this.personalizationToggleVisible = personalizationToggleVisible;
             this.postTextChars = postTextChars;
+            this.mediaBaseUrl = mediaBaseUrl;
         }
     }
 
@@ -1141,12 +1135,17 @@ public final class TellomiDiscover {
         }
     }
 
-    /** One {@code card.media} image. {@code key} is the engine storage key. */
+    /**
+     * One {@code card.media} image. {@code url} is set when the engine returns one (R2).
+     * {@code key} is joined to {@code media_base_url} when {@code url} is absent.
+     */
     public static final class Image {
         public final String key;
+        public final String url;
 
-        public Image(String key) {
+        public Image(String key, String url) {
             this.key = key;
+            this.url = url;
         }
     }
 

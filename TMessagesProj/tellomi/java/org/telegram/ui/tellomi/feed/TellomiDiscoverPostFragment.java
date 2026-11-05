@@ -140,7 +140,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
         if (column == null || post == null || post.images == null || post.images.isEmpty()) {
             return;
         }
-        TellomiDiscoverImageRow.add(column, column.getContext(), currentAccount, post.images, null);
+        TellomiDiscoverImageRow.add(column, column.getContext(), currentAccount, null, post.images, null);
     }
 
     private void addLink(TellomiDiscover.Post post) {
