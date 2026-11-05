@@ -27,6 +27,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     public static final String ARG_POST_ID = "tellomi_post_id";
     static final int MENU_COMPOSE = 1;
+    static final int MENU_NOTIFICATIONS = 2;
 
     private static String pendingPostId;
 
@@ -84,12 +85,13 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         }
     }
 
-    void showComposeButton(boolean show, String title) {
+    void showComposeButton(boolean show, String title, String notifications) {
         if (actionBar == null) {
             return;
         }
         actionBar.createMenu().clearItems();
         if (show) {
+            actionBar.createMenu().addItem(MENU_NOTIFICATIONS, notifications);
             actionBar.createMenu().addItem(MENU_COMPOSE, title);
         }
     }
@@ -153,6 +155,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                     finishFragment();
                 } else if (id == MENU_COMPOSE && screen != null) {
                     screen.compose();
+                } else if (id == MENU_NOTIFICATIONS && screen != null) {
+                    screen.notifications();
                 }
             }
         });

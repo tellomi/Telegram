@@ -23,13 +23,14 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 
 /** One post, loaded with POST /v1/feed/cards. Signed out does not send. */
-public class TellomiDiscoverPostFragment extends BaseFragment {
+public class TellomiDiscoverPostFragment extends BaseFragment implements TellomiDiscoverComposeFragment.Publisher {
 
     private static final int MENU_OTHER = 1;
     private static final int MENU_REPORT = 2;
 
     private final String postId;
     private TellomiDiscover.Loader loader;
+    private TellomiDiscover.Post shown;
     private TextView bodyView;
     private LinearLayout column;
     private boolean started;
@@ -125,9 +126,141 @@ public class TellomiDiscoverPostFragment extends BaseFragment {
                     text.append(summary.meta);
                 }
                 bodyView.setText(text.toString());
+                shown = post;
+                addForward(post);
+                addPoll(post);
                 addComments(post);
             }
         });
+    }
+
+    private void addForward(TellomiDiscover.Post post) {
+        if (column == null || post == null || !post.shareable) {
+            return;
+        }
+        TextView forward = new TextView(column.getContext());
+        forward.setText(phrase("Tellomi.Discover.Forward"));
+        forward.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        forward.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+        forward.setPadding(0, dp(8), 0, dp(8));
+        forward.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TellomiDiscoverShare.show(TellomiDiscoverPostFragment.this, post.id, true, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (loader == null) {
+                            loader = TellomiDiscoverClient.loader(currentAccount);
+                        }
+                        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.repost(post.id), new TellomiDiscover.Completion() {
+                            @Override
+                            public void onResult(TellomiDiscover.Outcome outcome) {
+                                if (bodyView != null && outcome != null && outcome.ok()) {
+                                    forward.setText(phrase("Tellomi.Discover.Reposted"));
+                                }
+                            }
+                        });
+                    }
+                }, new Runnable() {
+                    @Override
+                    public void run() {
+                        presentFragment(TellomiDiscoverComposeFragment.create(TellomiDiscover.POST_TEXT_LIMIT, TellomiDiscoverPostFragment.this, post.id));
+                    }
+                });
+            }
+        });
+        column.addView(forward, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void addPoll(TellomiDiscover.Post post) {
+        if (column == null || post == null || post.poll == null || post.poll.options == null) {
+            return;
+        }
+        for (int i = 0; i < post.poll.options.size(); i++) {
+            final int index = i;
+            TellomiDiscover.PollOption option = post.poll.options.get(i);
+            TextView row = new TextView(column.getContext());
+            String label = option.text == null ? "" : option.text;
+            if (option.votes > 0) {
+                label = label + "  " + option.votes;
+            }
+            row.setText(label);
+            row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            boolean chosen = post.poll.voted != null && post.poll.voted.contains(index);
+            row.setTextColor(Theme.getColor(chosen ? Theme.key_windowBackgroundWhiteBlueText4 : Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            row.setPadding(0, dp(10), 0, dp(10));
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    vote(index);
+                }
+            });
+            column.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+    }
+
+    private void vote(int index) {
+        if (loader == null) {
+            loader = TellomiDiscoverClient.loader(currentAccount);
+        }
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.vote(postId, index), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (outcome == null || !outcome.ok() || outcome.value == null || outcome.value.vote == null || shown == null || shown.poll == null) {
+                    return;
+                }
+                shown.poll = TellomiDiscover.applyVote(shown.poll, outcome.value.vote);
+                if (column != null && column.getChildCount() > 1) {
+                    column.removeViews(1, column.getChildCount() - 1);
+                }
+                addForward(shown);
+                addPoll(shown);
+                addComments(shown);
+            }
+        });
+    }
+
+    @Override
+    public void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscover.Completion completion) {
+        TellomiDiscover.Configuration configuration = TellomiDiscoverFlags.configuration(currentAccount);
+        boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
+        if (!loggedIn || configuration == null || !configuration.enabled) {
+            completion.onResult(TellomiDiscover.Outcome.failure(loggedIn ? TellomiDiscover.ClientError.DISABLED : TellomiDiscover.ClientError.SIGNED_OUT));
+            return;
+        }
+        if (loader == null) {
+            loader = TellomiDiscoverClient.loader(currentAccount);
+        }
+        long now = System.currentTimeMillis() / 1000L;
+        TellomiDiscover.PublishStep step = TellomiDiscover.publishStep(text, visibility, userIds, UserConfig.getInstance(currentAccount).getClientUserId(), nonce, TellomiDiscover.POST_TEXT_LIMIT, null, now, null, quoteOf, pollOptions);
+        if (step.kind == TellomiDiscover.PublishStep.Kind.REJECTED) {
+            completion.onResult(TellomiDiscover.Outcome.failure(step.error));
+            return;
+        }
+        if (step.kind == TellomiDiscover.PublishStep.Kind.READY) {
+            loader.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, null, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions), completion);
+            return;
+        }
+        final TellomiDiscover.Loader publishing = loader;
+        TellomiDiscoverClient.fetchAudienceToken(currentAccount, step.tokenKind, step.userIds, new TellomiDiscoverClient.AudienceCallback() {
+            @Override
+            public void onResult(TellomiDiscover.AudienceToken token, TellomiDiscover.ClientError error) {
+                if (error != null || token == null) {
+                    completion.onResult(TellomiDiscover.Outcome.failure(error == null ? TellomiDiscover.ClientError.UNAVAILABLE : error));
+                    return;
+                }
+                publishing.run(true, configuration, TellomiDiscover.Operation.publish(text, visibility, token.token, nonce, TellomiDiscover.POST_TEXT_LIMIT, null, quoteOf, pollOptions), completion);
+            }
+        });
+    }
+
+    @Override
+    public void published() {
+    }
+
+    private String phrase(String key) {
+        TellomiDiscover.Copy copy = copy();
+        return org.telegram.ui.TellomiPack.text(key, copy.languageCode, copy.source);
     }
 
     private void addComments(TellomiDiscover.Post post) {

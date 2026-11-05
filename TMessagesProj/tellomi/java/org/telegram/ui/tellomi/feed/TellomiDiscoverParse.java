@@ -176,6 +176,8 @@ public final class TellomiDiscoverParse {
             card.city
         );
         post.comments = card.comments == null ? java.util.Collections.emptyList() : card.comments;
+        post.shareable = card.shareable;
+        post.poll = card.poll;
         return post;
     }
 
@@ -228,7 +230,153 @@ public final class TellomiDiscoverParse {
             city
         );
         card.comments = comments(json.objectValue.get("comments"));
+        card.poll = poll(body == null ? null : body.objectValue.get("poll"), json.objectValue.get("poll"));
         return card;
+    }
+
+    /**
+     * {@code 200 {"counts":[Int],"voted":[Int]}}. An empty body or {@code {}} is not a tally.
+     * A negative number rejects the whole response.
+     */
+    public static TellomiDiscover.VoteTally voteTally(byte[] data) {
+        TellomiJson json = object(data);
+        if (json == null || !json.objectValue.containsKey("counts") || !json.objectValue.containsKey("voted")) {
+            return null;
+        }
+        java.util.List<Integer> counts = intList(json.objectValue.get("counts"));
+        java.util.List<Integer> voted = intList(json.objectValue.get("voted"));
+        if (counts == null || voted == null) {
+            return null;
+        }
+        for (int i = 0; i < counts.size(); i++) {
+            if (counts.get(i) == null || counts.get(i) < 0) {
+                return null;
+            }
+        }
+        for (int i = 0; i < voted.size(); i++) {
+            if (voted.get(i) == null || voted.get(i) < 0) {
+                return null;
+            }
+        }
+        return new TellomiDiscover.VoteTally(counts, voted);
+    }
+
+    public static TellomiDiscover.NoticePage notices(byte[] data) {
+        TellomiJson json = object(data);
+        if (json == null) {
+            return null;
+        }
+        TellomiJson items = json.objectValue.get("items");
+        if (items == null) {
+            items = json.objectValue.get("notifications");
+        }
+        if (items == null || items.type != TellomiJson.Type.ARRAY) {
+            return null;
+        }
+        java.util.List<TellomiDiscover.Notice> parsed = new java.util.ArrayList<>();
+        for (int i = 0; i < items.arrayValue.size(); i++) {
+            TellomiJson item = objectValue(items.arrayValue.get(i));
+            if (item == null) {
+                continue;
+            }
+            String id = stringValue(item.objectValue.get("id"));
+            if (id == null || id.isEmpty()) {
+                id = stringValue(item.objectValue.get("event_id"));
+            }
+            String kind = stringValue(item.objectValue.get("kind"));
+            if (id == null || id.isEmpty() || kind == null || kind.isEmpty()) {
+                continue;
+            }
+            String actor = stringValue(item.objectValue.get("actor_name"));
+            if (actor == null) {
+                TellomiJson actorObject = objectValue(item.objectValue.get("actor"));
+                actor = actorObject == null ? null : stringValue(actorObject.objectValue.get("display_name"));
+            }
+            String text = stringValue(item.objectValue.get("text"));
+            if (text == null) {
+                text = stringValue(item.objectValue.get("body"));
+            }
+            String postId = TellomiDiscover.postId(stringValue(item.objectValue.get("post_id")));
+            parsed.add(new TellomiDiscover.Notice(id, kind, actor == null ? "" : actor, postId, text == null ? "" : text));
+        }
+        String cursor = stringValue(json.objectValue.get("cursor"));
+        if (cursor != null && cursor.isEmpty()) {
+            cursor = null;
+        }
+        return new TellomiDiscover.NoticePage(parsed, cursor);
+    }
+
+    /**
+     * Labels are {@code card.poll.options} as strings. Counts and this account's
+     * choice are the sibling {@code poll.counts} / {@code poll.voted}. An object
+     * option ({@code text}/{@code label}/{@code votes}) is not a poll.
+     */
+    private static TellomiDiscover.Poll poll(TellomiJson labels, TellomiJson tally) {
+        TellomiJson labelObject = objectValue(labels);
+        if (labelObject == null) {
+            return null;
+        }
+        TellomiJson options = labelObject.objectValue.get("options");
+        if (options == null || options.type != TellomiJson.Type.ARRAY) {
+            return null;
+        }
+        java.util.List<String> texts = new java.util.ArrayList<>();
+        for (int i = 0; i < options.arrayValue.size(); i++) {
+            String text = stringValue(options.arrayValue.get(i));
+            if (text == null) {
+                return null;
+            }
+            text = TellomiDiscover.trim(text);
+            if (text.isEmpty()) {
+                return null;
+            }
+            texts.add(text);
+        }
+        if (texts.size() < TellomiDiscover.POLL_OPTION_MIN) {
+            return null;
+        }
+        TellomiJson tallyObject = objectValue(tally);
+        java.util.List<Integer> counts = intListOrEmpty(tallyObject, "counts");
+        java.util.List<Integer> votedRaw = intListOrEmpty(tallyObject, "voted");
+        java.util.List<TellomiDiscover.PollOption> parsed = new java.util.ArrayList<>();
+        for (int i = 0; i < texts.size(); i++) {
+            int votes = i < counts.size() && counts.get(i) != null ? counts.get(i) : 0;
+            if (votes < 0) {
+                votes = 0;
+            }
+            parsed.add(new TellomiDiscover.PollOption(texts.get(i), votes));
+        }
+        java.util.List<Integer> voted = new java.util.ArrayList<>();
+        for (int i = 0; i < votedRaw.size(); i++) {
+            Integer index = votedRaw.get(i);
+            if (index != null && index >= 0 && index < parsed.size()) {
+                voted.add(index);
+            }
+        }
+        return new TellomiDiscover.Poll(parsed, voted);
+    }
+
+    private static java.util.List<Integer> intListOrEmpty(TellomiJson object, String key) {
+        if (object == null || !object.objectValue.containsKey(key)) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.List<Integer> values = intList(object.objectValue.get(key));
+        return values == null ? java.util.Collections.<Integer>emptyList() : values;
+    }
+
+    private static java.util.List<Integer> intList(TellomiJson json) {
+        if (json == null || json.type != TellomiJson.Type.ARRAY) {
+            return null;
+        }
+        java.util.List<Integer> values = new java.util.ArrayList<>();
+        for (int i = 0; i < json.arrayValue.size(); i++) {
+            Integer value = intValue(json.arrayValue.get(i));
+            if (value == null) {
+                return null;
+            }
+            values.add(value);
+        }
+        return values;
     }
 
     private static java.util.List<TellomiDiscover.Comment> comments(TellomiJson json) {

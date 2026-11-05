@@ -1629,6 +1629,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         String conferenceSlug = null;
         boolean forceNotInternalForApps = intent.getBooleanExtra(EXTRA_FORCE_NOT_INTERNAL_APPS, false);
         boolean forceRequest = intent.getBooleanExtra(EXTRA_FORCE_REQUEST, false);
+        if (!restore) {
+            String discoverPost = intent.getStringExtra(org.telegram.ui.tellomi.feed.TellomiDiscoverPush.EXTRA_POST);
+            android.net.Uri discoverUri = org.telegram.ui.tellomi.feed.TellomiDiscoverPush.openUri(discoverPost);
+            if (discoverUri != null && TellomiTabs.consumeFeedPostLink(this, discoverUri, intentAccount[0])) {
+                return true;
+            }
+        }
 
         photoPathsArray = null;
         videoPath = null;

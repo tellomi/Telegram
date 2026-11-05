@@ -31,14 +31,17 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private static final int MENU_PUBLISH = 1;
 
     interface Publisher {
-        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, TellomiDiscover.Completion completion);
+        void publish(String text, TellomiDiscover.Visibility visibility, long[] userIds, String nonce, String quoteOf, java.util.List<String> pollOptions, TellomiDiscover.Completion completion);
 
         void published();
     }
 
     private final int textLimit;
     private final Publisher publisher;
+    private final String quoteOf;
     private final String nonce = UUID.randomUUID().toString();
+    private final java.util.ArrayList<EditText> pollFields = new java.util.ArrayList<>();
+    private boolean pollOn;
     private StoryPrivacyBottomSheet.StoryPrivacy privacy = new StoryPrivacyBottomSheet.StoryPrivacy();
     private EditText textView;
     private TextView visibilityButton;
@@ -46,16 +49,21 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
     private boolean sending;
     private TellomiDiscover.ClientError sendError;
 
-    private TellomiDiscoverComposeFragment(Bundle args, int textLimit, Publisher publisher) {
+    private TellomiDiscoverComposeFragment(Bundle args, int textLimit, Publisher publisher, String quoteOf) {
         super(args);
         this.textLimit = textLimit > 0 ? textLimit : TellomiDiscover.POST_TEXT_LIMIT;
         this.publisher = publisher;
+        this.quoteOf = quoteOf;
     }
 
     static TellomiDiscoverComposeFragment create(int textLimit, Publisher publisher) {
+        return create(textLimit, publisher, null);
+    }
+
+    static TellomiDiscoverComposeFragment create(int textLimit, Publisher publisher, String quoteOf) {
         Bundle args = new Bundle();
         args.putInt("limit", textLimit);
-        return new TellomiDiscoverComposeFragment(args, textLimit, publisher);
+        return new TellomiDiscoverComposeFragment(args, textLimit, publisher, quoteOf);
     }
 
     @Override
@@ -99,6 +107,51 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             }
         });
         column.addView(textView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(160)));
+        if (quoteOf != null) {
+            TextView quote = new TextView(context);
+            quote.setText(phrase(copy, "Tellomi.Discover.Quote"));
+            quote.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            quote.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+            column.addView(quote, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        } else {
+            TextView pollToggle = new TextView(context);
+            pollToggle.setText(phrase(copy, "Tellomi.Discover.Poll"));
+            pollToggle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            pollToggle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+            pollToggle.setPadding(0, dp(8), 0, dp(4));
+            LinearLayout pollBox = new LinearLayout(context);
+            pollBox.setOrientation(LinearLayout.VERTICAL);
+            pollBox.setVisibility(View.GONE);
+            pollToggle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    pollOn = !pollOn;
+                    pollBox.setVisibility(pollOn ? View.VISIBLE : View.GONE);
+                    if (pollOn && pollFields.isEmpty()) {
+                        addPollField(context, pollBox);
+                        addPollField(context, pollBox);
+                    }
+                    apply();
+                }
+            });
+            column.addView(pollToggle, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            TextView addOption = new TextView(context);
+            addOption.setText(phrase(copy, "Tellomi.Discover.PollAdd"));
+            addOption.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            addOption.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+            addOption.setPadding(0, dp(8), 0, dp(4));
+            addOption.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (pollFields.size() < TellomiDiscover.POLL_OPTION_MAX) {
+                        addPollField(context, pollBox);
+                        apply();
+                    }
+                }
+            });
+            pollBox.addView(addOption, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            column.addView(pollBox, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
         visibilityButton = new TextView(context);
         visibilityButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         visibilityButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
@@ -148,7 +201,7 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         sending = true;
         sendError = null;
         apply();
-        publisher.publish(textView.getText() == null ? "" : textView.getText().toString(), choice.visibility, choice.userIds, nonce, new TellomiDiscover.Completion() {
+        publisher.publish(textView.getText() == null ? "" : textView.getText().toString(), choice.visibility, choice.userIds, nonce, quoteOf, pollOn ? pollValues() : null, new TellomiDiscover.Completion() {
             @Override
             public void onResult(TellomiDiscover.Outcome outcome) {
                 sending = false;
@@ -176,7 +229,8 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
         hintView.setText(errorText != null ? errorText : (reason == null ? "" : reason));
         String text = textView.getText() == null ? "" : textView.getText().toString();
         String trimmed = TellomiDiscover.trim(text);
-        boolean canSend = !sending && choice != null && choice.publishable && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
+        boolean pollOk = !pollOn || TellomiDiscover.cleanPoll(pollValues()) != null;
+        boolean canSend = !sending && choice != null && choice.publishable && pollOk && !trimmed.isEmpty() && text.codePointCount(0, text.length()) <= textLimit && TellomiDiscover.clientNonce(nonce);
         actionBar.createMenu().clearItems();
         actionBar.createMenu().addItem(MENU_PUBLISH, copy.publish).setEnabled(canSend);
     }
@@ -233,6 +287,43 @@ public class TellomiDiscoverComposeFragment extends BaseFragment {
             base = TellomiDiscover.StoryBase.EVERYONE;
         }
         return TellomiDiscover.audience(base, ids, selfUserId);
+    }
+
+    private void addPollField(Context context, LinearLayout pollBox) {
+        EditText field = new EditText(context);
+        field.setSingleLine(true);
+        field.setBackground(null);
+        field.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        field.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        field.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                apply();
+            }
+        });
+        pollFields.add(field);
+        pollBox.addView(field, pollBox.getChildCount() - 1, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(40)));
+    }
+
+    private java.util.List<String> pollValues() {
+        java.util.ArrayList<String> values = new java.util.ArrayList<>();
+        for (int i = 0; i < pollFields.size(); i++) {
+            CharSequence text = pollFields.get(i).getText();
+            values.add(text == null ? "" : text.toString());
+        }
+        return values;
+    }
+
+    private String phrase(TellomiDiscover.Copy copy, String key) {
+        return org.telegram.ui.TellomiPack.text(key, copy.languageCode, copy.source);
     }
 
     private TellomiDiscover.Copy copy() {
