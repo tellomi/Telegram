@@ -31,6 +31,9 @@ public final class TellomiDocumentByHashSend {
      */
     public static boolean lookupBeforeUpload(SendMessagesHelper helper, SendMessagesHelper.DelayedMessage message,
                                               int index, String path, Runnable upload, Runnable onHit, Runnable onDrop) {
+        if (!TellomiDocumentByHash.enabled()) {
+            return false;
+        }
         try {
             if (helper == null || message == null || upload == null || !TellomiDocumentByHash.isLocalFilePath(path)) {
                 return false;
