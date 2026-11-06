@@ -89,6 +89,9 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private String banner;
     private boolean sawCapabilities;
     private boolean engineHasFeed;
+    private boolean reactionsEnabled;
+    private boolean commentsEnabled;
+    private final Map<String, TellomiDiscoverReact.Like> likeSessions = new HashMap<>();
     private Boolean engineVisible;
     private boolean engineConfigLoaded;
     private String mediaBaseUrl;
@@ -374,6 +377,8 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 if (result.ok() && result.value.kind == TellomiDiscover.Decoded.Kind.CAPABILITIES) {
                     sawCapabilities = true;
                     engineHasFeed = result.value.capabilities.features.contains("feed");
+                    reactionsEnabled = TellomiDiscoverReact.feature(result.value.capabilities, "reactions");
+                    commentsEnabled = TellomiDiscoverReact.feature(result.value.capabilities, "comments");
                     advance(reset, generation, requested, cursor, configuration);
                     return;
                 }
@@ -542,6 +547,95 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 presentComposer(post.id);
             }
         });
+    }
+
+    private TellomiDiscoverReact.Like likeSession(TellomiDiscover.Post post) {
+        TellomiDiscoverReact.Like session = likeSessions.get(post.id);
+        String surface = TellomiDiscoverReact.surface(kind);
+        if (session == null) {
+            session = TellomiDiscoverReact.Like.start(post.id, post.liked, post.likeCount, post.likesHidden, surface);
+            likeSessions.put(post.id, session);
+            return session;
+        }
+        session.bind(post.id, post.liked, post.likeCount, post.likesHidden, surface);
+        return session;
+    }
+
+    private void toggleLike(String postId) {
+        List<TellomiDiscover.Post> list = posts.get(kind);
+        TellomiDiscover.Post post = null;
+        if (list != null) {
+            for (int i = 0; i < list.size(); i++) {
+                if (postId.equals(list.get(i).id)) {
+                    post = list.get(i);
+                    break;
+                }
+            }
+        }
+        if (post == null) {
+            return;
+        }
+        TellomiDiscoverReact.Like session = likeSession(post);
+        TellomiDiscoverReact.Like.Request request = session.tap();
+        applyLike(session);
+        if (request != null) {
+            sendLike(session, request);
+        }
+        sync(false);
+    }
+
+    private void sendLike(final TellomiDiscoverReact.Like session, final TellomiDiscoverReact.Like.Request request) {
+        loader.run(loggedIn(), configuration(), TellomiDiscover.Operation.like(request.postId, request.on, request.surface), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (destroyed) {
+                    return;
+                }
+                boolean ok = outcome != null && outcome.ok();
+                TellomiDiscoverReact.Like.Request next = session.complete(request.generation, request.version, ok);
+                applyLike(session);
+                if (!ok && next == null) {
+                    banner = phrase(copy(), TellomiDiscoverReact.messageKey(outcome == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error));
+                }
+                if (next != null) {
+                    sendLike(session, next);
+                    return;
+                }
+                sync(false);
+            }
+        });
+    }
+
+    private void applyLike(TellomiDiscoverReact.Like session) {
+        List<TellomiDiscover.Post> list = posts.get(kind);
+        if (list == null) {
+            return;
+        }
+        TellomiDiscoverReact.Like.View view = session.view();
+        for (int i = 0; i < list.size(); i++) {
+            TellomiDiscover.Post post = list.get(i);
+            if (post.id.equals(likeId(session))) {
+                list.set(i, TellomiDiscover.withLike(post, view.liked, view.hidden ? post.likeCount : view.count, view.hidden));
+                return;
+            }
+        }
+    }
+
+    private String likeId(TellomiDiscoverReact.Like session) {
+        for (Map.Entry<String, TellomiDiscoverReact.Like> entry : likeSessions.entrySet()) {
+            if (entry.getValue() == session) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    private String likeCaption(TellomiDiscover.Copy copy, TellomiDiscoverReact.Like.View view) {
+        String label = phrase(copy, view.liked ? "Tellomi.Discover.Liked" : "Tellomi.Discover.Like");
+        if (!view.hidden && view.count > 0) {
+            return label + " " + view.count;
+        }
+        return label;
     }
 
     private void repost(String postId) {
@@ -798,10 +892,24 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 textColumn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        activity.presentFragment(new TellomiDiscoverPostFragment(post.id));
+                        activity.presentFragment(new TellomiDiscoverPostFragment(post.id, TellomiDiscoverReact.surface(kind), reactionsEnabled, commentsEnabled));
                     }
                 });
                 line.addView(textColumn);
+                if (reactionsEnabled && !post.unavailable) {
+                    final TellomiDiscoverReact.Like session = likeSession(post);
+                    final TellomiDiscoverReact.Like.View likeView = session.view();
+                    TextView like = label(likeCaption(copy, likeView), 14, false);
+                    like.setTextColor(Theme.getColor(likeView.liked ? Theme.key_windowBackgroundWhiteBlueText4 : Theme.key_windowBackgroundWhiteGrayText, activity.getResourceProvider()));
+                    like.setPadding(dp(8), dp(12), dp(8), dp(12));
+                    like.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            toggleLike(post.id);
+                        }
+                    });
+                    line.addView(like);
+                }
                 if (post.shareable) {
                     TextView forward = label(phrase(copy, "Tellomi.Discover.Forward"), 14, false);
                     forward.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, activity.getResourceProvider()));

@@ -1020,3 +1020,20 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 | `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
 | `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |
+
+## Discover likes and public text comments
+
+Likes and text comments use the discover bearer on the content-engine. `PUT` and `DELETE /v1/feed/posts/{id}/like` send an empty body and `surface` (`recommend` by default, also `following`, `hot`, `search`, `profile`). Success is 204. `POST /v1/feed/posts/{id}/comments` sends `text`, optional `parent_id`, and `client_nonce`. It does not send `media_keys` or `operation_id`. `GET` the same path pages public comments, oldest first, 50 at a time. `DELETE /v1/feed/posts/{commentId}` deletes that comment only.
+
+A card reads `me.liked`, `stats.likes`, and `stats.likes_hidden`. A hidden count is not shown as 0. A pending comment is not added to the public count. One desired like is in flight; a failed call restores the confirmed count. A comment page from another post, or from an older generation after the open post changes, is dropped. `401 credential_expired` refreshes the discover token once. `404 feed_hidden` hides the feed. Comment errors stay on the post; they are not sent as a private message. Voting, forwarding, and reporting are unchanged. Stories are unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiDiscover.java` | Like, comment list, comment create, and comment delete calls. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverParse.java` | `me.liked`, hidden like counts, comment pages. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverReact.java` | Like serialization and comment page state. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Like control on a post row when `reactions` is in capabilities. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverPostFragment.java` | Like, comment field, list, and paging when the capabilities allow them. |
+| `TMessagesProj/tellomi/java/.../TellomiPack.java` and discover strings | The like and comment phrases. |
+| `TMessagesProj/src/test/java/.../TellomiDiscoverReactTest.java` | Contract, failure restore, paging, and nonce retry. |
+| `TMessagesProj/build.gradle` | Unit-test compile can see `com.sun.net.httpserver` so the existing release-update test still compiles. Production compile is unchanged. |
