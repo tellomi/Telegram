@@ -520,6 +520,46 @@ task tellomiVerifyShippableDc {
     }
 }
 
+// Unit tests compile against android.jar. com.sun.net.httpserver is not in
+// that jar or in the Java 8 platform Tellomi compiles for, and
+// TellomiReleaseUpdateTest starts one. Put the JDK classes on the unit-test
+// compile classpath only. The test process uses the real jdk.httpserver module.
+def tellomiJdkHttpserverClasses = {
+    def home = System.getProperty("java.home")
+    def rt = [new File(home, "lib/rt.jar"), new File(home, "jre/lib/rt.jar")].find { it.isFile() }
+    if (rt != null) {
+        return rt
+    }
+    def jmod = new File(home, "jmods/jdk.httpserver.jmod")
+    if (!jmod.isFile()) {
+        return null
+    }
+    def dest = new File(buildDir, "tellomi-jdk-httpserver")
+    def classes = new File(dest, "classes")
+    def marker = new File(classes, "com/sun/net/httpserver/HttpServer.class")
+    if (!marker.isFile()) {
+        dest.mkdirs()
+        exec {
+            commandLine new File(home, "bin/jmod").absolutePath, "extract", "--dir", dest.absolutePath, jmod.absolutePath
+        }
+    }
+    return classes
+}
+
+def tellomiHttpserver = tellomiJdkHttpserverClasses()
+if (tellomiHttpserver != null) {
+    tasks.withType(JavaCompile).configureEach { task ->
+        if (task.name.contains("UnitTest")) {
+            task.doFirst {
+                task.classpath = task.classpath.plus(files(tellomiHttpserver))
+            }
+        }
+    }
+    tasks.withType(Test).configureEach { task ->
+        task.jvmArgs("--add-modules", "jdk.httpserver")
+    }
+}
+
 // TELLOMI: application modules do not declare the brand dimension. Select the
 // only library flavor so :TMessagesProj_App:assembleAfatDebug still resolves.
 rootProject.subprojects { sub ->

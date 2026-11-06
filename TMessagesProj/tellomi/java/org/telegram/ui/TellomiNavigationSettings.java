@@ -22,7 +22,7 @@ import java.util.ArrayList;
 
 /**
  * Settings → Navigation Bar (M2 / D-6, D-38). Discover, Calls, and Contacts
- * can be turned on or off. Chats and Settings stay on. Calls writes
+ * can be turned on or off. Chats stays on. Settings is not a bottom tab. Calls writes
  * {@code UserConfig.showCallsTab}, so the existing calls switch still works.
  */
 public class TellomiNavigationSettings extends BaseFragment {
