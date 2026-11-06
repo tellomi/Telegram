@@ -492,8 +492,8 @@
     <string name="NewChannel">新建频道</string>
     <string name="EnterChannelName">频道名称</string>
     <string name="AddMutual">添加他人到您的频道</string>
-    <string name="ChannelUsernameHelp">设置公开链接后，其他人就可以找到并加入您的频道。\n\n您可以使用 **a-z**、**0-9** 和下划线。\n最小长度为 5 个字符。</string>
-    <string name="MegaUsernameHelp">如果您设置了公开链接，其他用户可以查找并加入到群组中。\n\n您可以使用 a–z，0–9 和下划线。最小长度为 5 个字符。</string>
+    <string name="ChannelUsernameHelp">设置公开链接后，其他人就可以找到并加入您的频道。\n\n您可以使用 **a-z**、**0-9** 和下划线。\n最小长度为 4 个字符。</string>
+    <string name="MegaUsernameHelp">如果您设置了公开链接，其他用户可以查找并加入到群组中。\n\n您可以使用 a–z，0–9 和下划线。最小长度为 4 个字符。</string>
     <string name="ChannelUsernamePlaceholder">链接</string>
     <string name="ChannelPrivateLinkHelp">任何人都可以通过此链接关注您的频道。您可以随时废除此链接。</string>
     <string name="MegaPrivateLinkHelp">任何人都可以通过此链接加入您的群组。您可以随时撤销此链接。</string>
@@ -538,10 +538,10 @@
     <string name="ChannelAlertCreate2">创建频道</string>
     <string name="LinkInUse">抱歉，此链接已被占用。</string>
     <string name="LinkInvalid">抱歉，此公开链接不符合规范。</string>
-    <string name="LinkInvalidShort">公开链接必须包含至少 5 个字符。</string>
+    <string name="LinkInvalidShort">公开链接必须包含至少 4 个字符。</string>
     <string name="LinkInvalidLong">公开链接不能超过 32 个字符。</string>
     <string name="LinkInvalidStartNumber">公开链接不能以数字开头。</string>
-    <string name="LinkInvalidShortMega">公开链接必须包含至少 5 个字符。</string>
+    <string name="LinkInvalidShortMega">公开链接必须包含至少 4 个字符。</string>
     <string name="LinkInvalidStartNumberMega">公开链接不能以数字开头。</string>
     <string name="LinkChecking">正在检查用户名…</string>
     <string name="LinkAvailable">%1$s 可用。</string>
@@ -2058,11 +2058,11 @@
     <string name="UsernameInUse">此用户名已被使用。</string>
     <string name="UsernameInUsePurchase">此用户名已被占用。\n但是，目前可以购买。**了解更多...**</string>
     <string name="UsernameInvalid">此用户名不符合规范。</string>
-    <string name="UsernameInvalidShort">用户名必须包含至少 5 个字符。</string>
-    <string name="UsernameInvalidShortPurchase">一个基本的用户名必须至少有5个字符。\n但是，您可以购买包括这个在内的简短的可收藏用户名。**了解更多...**</string>
+    <string name="UsernameInvalidShort">用户名必须包含至少 4 个字符。</string>
+    <string name="UsernameInvalidShortPurchase">一个基本的用户名必须至少有4个字符。\n但是，您可以购买包括这个在内的简短的可收藏用户名。**了解更多...**</string>
     <string name="UsernameInvalidLong">用户名不能超过 32 个字符。</string>
     <string name="UsernameInvalidStartNumber">用户名不能以数字开头。</string>
-    <string name="UsernameHelp">您可以在 **Telegram** 上设置一个用户名。设置后，别人可以通过此用户名找到您并与您联系，而不需要您的手机号码。\n\n您可以使用 **a-z**、**0-9** 和下划线。最小长度为 **5** 个字符。</string>
+    <string name="UsernameHelp">您可以在 **Telegram** 上设置一个用户名。设置后，别人可以通过此用户名找到您并与您联系，而不需要您的手机号码。\n\n您可以使用 **a-z**、**0-9** 和下划线。最小长度为 **4** 个字符。</string>
     <string name="UsernameHelpLink">通过此链接可以与您聊天：\n%1$s</string>
     <string name="UsernameChecking">正在检查用户名…</string>
     <string name="UsernameAvailable">%1$s 可用。</string>
@@ -2466,6 +2466,7 @@
     <string name="AskAQuestionInfo">请注意：Telegram 的支持服务来自志愿者。我们会尽快回复，但仍可能需要等待一段时间。\n\n请前往&lt;a href=\\"https://telegram.org/faq#general-questions\\"&gt;Telegram 常见问题&lt;/a&gt;看看：那里有绝大多数问题的答案和重要的&lt;a href=\\"https://telegram.org/faq#troubleshooting\\"&gt;故障排除&lt;/a&gt;提示。</string>
     <string name="AskButton">向志愿者提问</string>
     <string name="TelegramFAQ">Telegram 常见问题</string>
+    <string name="TellomiOpenSourceLicenses">开源许可</string>
     <string name="TelegramFaq">Telegram 常见问题</string>
     <string name="TelegramFeatures">Telegram 功能</string>
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>
@@ -3875,6 +3876,7 @@
     <string name="ActionChangeCreator">un1 已将此群组的所有权转让给 un2。</string>
     <string name="UnsupportedMedia2">您当前的 Telegram 版本不支持此消息。请更新至最新版本。</string>
     <string name="YourVersionIsLatest">您的版本是最新的。</string>
+    <string name="TellomiCheckForUpdatesFailed">暂时无法检查更新，请稍后再试。</string>
     <string name="AttachPhoto">图片</string>
     <string name="AttachVideo">视频</string>
     <string name="AttachLivePhoto">动态照片</string>
@@ -8600,6 +8602,33 @@
     <string name="WebBookmarkAdd">添加书签</string>
     <string name="WebBookmarkedToast">已将链接添加至 **我的收藏** 中的书签。</string>
     <string name="SearchEngine1Name">Google</string>
+    <string name="SearchEngine1SearchURL">https://www.google.com/search?q=</string>
+    <string name="SearchEngine1AutocompleteURL">https://suggestqueries.google.com/complete/search?client=chrome&amp;q=</string>
+    <string name="SearchEngine1PrivacyPolicyURL">https://policies.google.com/privacy</string>
+    <string name="SearchEngine2Name">DuckDuckGo</string>
+    <string name="SearchEngine2SearchURL">https://duckduckgo.com/?q=</string>
+    <string name="SearchEngine2AutocompleteURL">https://duckduckgo.com/ac/?q=</string>
+    <string name="SearchEngine2PrivacyPolicyURL">https://duckduckgo.com/privacy</string>
+    <string name="SearchEngine3Name">必应</string>
+    <string name="SearchEngine3SearchURL">https://www.bing.com/search?q=</string>
+    <string name="SearchEngine3AutocompleteURL">https://api.bing.com/osjson.aspx?query=</string>
+    <string name="SearchEngine3PrivacyPolicyURL">https://privacy.microsoft.com/en-us/privacystatement</string>
+    <string name="SearchEngine4Name">雅虎</string>
+    <string name="SearchEngine4SearchURL">https://search.yahoo.com/search?p=</string>
+    <string name="SearchEngine4AutocompleteURL">https://sugg.search.yahoo.net/sg/?output=json&amp;nresults=10&amp;command=</string>
+    <string name="SearchEngine4PrivacyPolicyURL">https://legal.yahoo.com/us/en/yahoo/privacy/index.html</string>
+    <string name="SearchEngine5Name">Brave 搜索</string>
+    <string name="SearchEngine5SearchURL">https://search.brave.com/search?q=</string>
+    <string name="SearchEngine5AutocompleteURL">https://search.brave.com/api/suggest?q=</string>
+    <string name="SearchEngine5PrivacyPolicyURL">https://search.brave.com/help/privacy-policy</string>
+    <string name="SearchEngine6Name">保留</string>
+    <string name="SearchEngine6SearchURL">reserved</string>
+    <string name="SearchEngine6AutocompleteURL">reserved</string>
+    <string name="SearchEngine6PrivacyPolicyURL">reserved</string>
+    <string name="SearchEngine7Name">保留</string>
+    <string name="SearchEngine7SearchURL">reserved</string>
+    <string name="SearchEngine7AutocompleteURL">reserved</string>
+    <string name="SearchEngine7PrivacyPolicyURL">reserved</string>
     <string name="BrowserSettingsTitle">浏览器</string>
     <string name="BrowserSettingsEnable">启用应用内浏览器</string>
     <string name="BrowserSettingsCustomTabsTitle">打开外部链接时</string>

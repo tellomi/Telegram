@@ -186,11 +186,13 @@ In `BuildVars`:
 
 ### In-app updates
 
-`TMessagesProj_App` (the APK CI builds with `:TMessagesProj_App:assembleAfatRelease`) calls `help.getAppUpdate` on launch. The check still waits `updateCheckDelay` (default 24 hours) after the previous check. `-PTELLOMI_CHECK_UPDATES=false` skips the automatic request. `isStandalone()` stays false on this module. `ApplicationLoaderImpl.isInAppUpdatesEnabled()` is the only new gate.
+`TMessagesProj_App` (the APK CI builds with `:TMessagesProj_App:assembleAfatRelease`) checks the release feeds on launch and when Settings → Check for updates is tapped. Both feeds are read: `https://www.tellomi.cn/dl/android/latest.json` and `https://dl.tellomi.cn/android/latest.json`. The higher `versionCode` wins. A feed that does not answer is skipped. A higher code is an update even when `versionName` is unchanged. The download URL is the APK on the host that served the chosen manifest, so a dead official host does not become the install link. `android/test/latest.json` and `versions.json` are not this check. `help.getAppUpdate` stays the path for standalone and beta builds only.
 
-A soft update (`can_not_skip=false`) is a dismissible card: close, or tap outside. The action is a swipe. When `url` is set, the completed swipe opens that URL with `Browser.openUrl` (the official site or APK link the server sends). A document with no url uses the existing APK install path. The card does not open Google Play. Dismissing clears the pending soft update. On this module a saved soft update also does not skip the next check, because there is no side-menu download banner. The 24-hour delay still applies. A force update (`can_not_skip=true`) still uses `BlockingUpdateView`. Its button opens `url` when the server set one, and otherwise installs the document on this module. The label color follows the black/white button so night mode stays readable.
+The check waits `updateCheckDelay` (default 6 hours) after a feed that was actually read. A fresh install has no saved check time, so the first resume checks immediately. The first launch after an upgrade (the installed version code changed, or none was recorded yet) checks once even inside that window. A feed that cannot be read does not count as "already the latest" and does not start the delay. `help.getAppConfig` `inapp_update_check_delay` still replaces the default. `-PTELLOMI_CHECK_UPDATES=false` skips the automatic request. A manual check still runs. `isStandalone()` stays false on this module. `ApplicationLoaderImpl.isInAppUpdatesEnabled()` is the gate that selects the release feed.
 
-The server has to send a `version` string newer than the installed `versionName` (`APP_VERSION_NAME`, currently 14.0.4). The version code is not what the popup compares. This tree does not change `TELLOMI_APP_UPDATE_*` on the server.
+A soft update (`can_not_skip=false`) is a dismissible card: close, or tap outside. The action is a swipe. When `url` is set, the completed swipe opens that URL with `Browser.openUrl` (the APK link from the release manifest). A document with no url uses the existing APK install path. The card does not open Google Play. Dismissing clears the pending soft update. On this module a saved soft update also does not skip the next check, because there is no side-menu download banner. The delay above still applies. A force update (`can_not_skip=true`) still uses `BlockingUpdateView`. Its button opens `url` when one is set, and otherwise installs the document on this module. The label color follows the black/white button so night mode stays readable.
+
+A saved offer stores the remote `versionCode`. Reloading that offer keeps it while the installed code is still lower, including when both `versionName` strings match. This tree does not change `TELLOMI_APP_UPDATE_*` on the server.
 
 ## What still points at Telegram
 
@@ -207,7 +209,7 @@ These were left in place on purpose. They are either in-app deep links (resolved
 
 Bundled `strings.xml` copies show `tell.cc` for public links and `tellomi.cn` for help, privacy, terms, download, and support. `TellomiBrand.rewrite` applies the same mapping to any string that still contains the old hosts, including cloud langpack text. Link parsing still accepts `t.me`, `telegram.me`, and `telegram.dog`. Internal `tg://telegram.org` rewrites are a URI-parser stand-in, not a page the user opens. The YouTube embed referer `https://messenger.telegram.org/` is unchanged.
 
-Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 3 characters. The English and bundled locale strings that said “at least 5 characters” now say 3.
+Usernames: `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, and `CreateBotAlert` accept 4 characters (`TellomiUsername.MIN_LENGTH`, teamgram #182). The English and bundled locale strings that said “at least 5 characters” now say 4.
 
 ### Emoji blocklist
 

@@ -492,8 +492,8 @@
     <string name="NewChannel">New Channel</string>
     <string name="EnterChannelName">Channel name</string>
     <string name="AddMutual">Add contacts to your channel</string>
-    <string name="ChannelUsernameHelp">If you set a permanent link, other people will be able to find and join your channel.\n\nYou can use a-z, 0-9 and underscores.\nMinimum length is 3 characters.</string>
-    <string name="MegaUsernameHelp">If you set a permanent link, other people will be able to find and join your group.\n\nYou can use a-z, 0-9 and underscores.\nMinimum length is 3 characters.</string>
+    <string name="ChannelUsernameHelp">If you set a permanent link, other people will be able to find and join your channel.\n\nYou can use a-z, 0-9 and underscores.\nMinimum length is 4 characters.</string>
+    <string name="MegaUsernameHelp">If you set a permanent link, other people will be able to find and join your group.\n\nYou can use a-z, 0-9 and underscores.\nMinimum length is 4 characters.</string>
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link any time.</string>
     <string name="MegaPrivateLinkHelp">People can join your group by following this link. You can revoke the link any time.</string>
@@ -538,10 +538,10 @@
     <string name="ChannelAlertCreate2">Create Channel</string>
     <string name="LinkInUse">Sorry, this name is already taken.</string>
     <string name="LinkInvalid">Sorry, this name is invalid.</string>
-    <string name="LinkInvalidShort">Channel names must have at least 3 characters.</string>
+    <string name="LinkInvalidShort">Channel names must have at least 4 characters.</string>
     <string name="LinkInvalidLong">The name must not exceed 32 characters.</string>
     <string name="LinkInvalidStartNumber">Channel names can\'t start with a number.</string>
-    <string name="LinkInvalidShortMega">Group names must have at least 3 characters.</string>
+    <string name="LinkInvalidShortMega">Group names must have at least 4 characters.</string>
     <string name="LinkInvalidStartNumberMega">Group names can\'t start with a number.</string>
     <string name="LinkChecking">Checking name…</string>
     <string name="LinkAvailable">%1$s is available.</string>
@@ -2077,11 +2077,11 @@
     <string name="UsernameInUse">Sorry, this username is already taken.</string>
     <string name="UsernameInUsePurchase">This link is already taken.\nHowever, it is currently available for purchase. **Learn more…**</string>
     <string name="UsernameInvalid">Sorry, this username is invalid.</string>
-    <string name="UsernameInvalidShort">A username must have at least 3 characters.</string>
-    <string name="UsernameInvalidShortPurchase">A username must have at least 3 characters.\nHowever, it is currently available for purchase. **Learn more…**</string>
+    <string name="UsernameInvalidShort">A username must have at least 4 characters.</string>
+    <string name="UsernameInvalidShortPurchase">A username must have at least 4 characters.\nHowever, it is currently available for purchase. **Learn more…**</string>
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
-    <string name="UsernameHelp">You can choose a username on **Telegram**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores. Minimum length is **3** characters.</string>
+    <string name="UsernameHelp">You can choose a username on **Telegram**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores. Minimum length is **4** characters.</string>
     <string name="UsernameHelpLink">This link opens a chat with you:\n%1$s</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
@@ -2488,6 +2488,7 @@
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the <![CDATA[<a href=\"https://tellomi.cn/help/">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://tellomi.cn/help/">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
     <string name="TelegramFAQ">Telegram FAQ</string>
+    <string name="TellomiOpenSourceLicenses">Open-source licenses</string>
     <string name="TelegramFaq">Telegram FAQ</string>
     <string name="TelegramFeatures">Telegram Features</string>
     <string name="TelegramFeaturesUrl">https://tell.cc/TelegramTips</string>
@@ -3916,6 +3917,7 @@
     <string name="ActionChangeCreator">un1 has transferred ownership of the group to un2.</string>
     <string name="UnsupportedMedia2">This message is not supported on your version of Telegram. Please update to the latest version.</string>
     <string name="YourVersionIsLatest">Your version is up to date.</string>
+    <string name="TellomiCheckForUpdatesFailed">Could not check for updates. Try again.</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLivePhoto">Motion Photo</string>

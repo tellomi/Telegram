@@ -145,6 +145,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TellomiDefaults;
+import org.telegram.messenger.TellomiLoginErrors;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -1809,27 +1810,31 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     /**
-     * Persists the built-in language and redraws login. reloadInterface does not
-     * rebuild the top fragment, so this screen is rebuilt here. Typed phone,
-     * email, and code stay in {@link #tellomiLanguageRestore}.
+     * Persists the chosen language and redraws login once the strings are in
+     * memory. Built-in rows other than English and Chinese download
+     * {@code langpack.getLangPack} before that. reloadInterface does not rebuild
+     * this top fragment, so the redraw is here. Typed phone, email, and code
+     * stay in {@link #tellomiLanguageRestore}.
      */
     private void tellomiApplyInterfaceLanguage(LocaleController.LocaleInfo info) {
         if (info == null || TellomiLanguageSheet.sameLanguage(info, LocaleController.getInstance().getCurrentLocaleInfo())) {
             return;
         }
-        tellomiLanguageRestore = tellomiCaptureLoginState();
-        if (views != null) {
-            for (int a = 0; a < views.length; a++) {
-                if (views[a] != null) {
-                    views[a].onDestroyActivity();
+        LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(() -> {
+            if (getParentLayout() == null) {
+                return;
+            }
+            tellomiLanguageRestore = tellomiCaptureLoginState();
+            if (views != null) {
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] != null) {
+                        views[a].onDestroyActivity();
+                    }
                 }
             }
-        }
-        LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, null);
-        TellomiLanguageAlert.rememberUserChoice(info);
-        if (getParentLayout() != null) {
             getParentLayout().rebuildAllFragmentViews(true, true);
-        }
+        }));
+        TellomiLanguageAlert.rememberUserChoice(info);
     }
 
     /**
@@ -4506,6 +4511,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                        } else if (req instanceof TLRPC.TL_auth_sendCode && TellomiLoginErrors.isSmsCodeCreateFailed(error.text)) {
+                            // TELLOMI: auth.sendCode SMS_CODE_CREATE_FAILED is not in the upstream list.
+                            // tellomiShowSendFailure would show the raw error string. Same alert as the neighbors.
+                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), TellomiLoginErrors.SMS_CODE_CREATE_FAILED_ALERT);
                         } else {
                             tellomiShowSendFailure(error);
                         }
@@ -10218,8 +10227,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     postDelayed(() -> {
                         needHideProgress(false, false);
                         AndroidUtilities.hideKeyboard(fragmentView.findFocus());
+                        TellomiSignUpAvatar.Outcome tellomiAvatar = TellomiSignUpAvatar.afterSignUp(avatarBig != null);
                         onAuthSuccess((TLRPC.TL_auth_authorization) response, true);
-                        if (avatarBig != null) {
+                        if (tellomiAvatar.accountCreated && tellomiAvatar.uploadAvatar && avatarBig != null) {
                             TLRPC.FileLocation avatar = avatarBig;
                             Utilities.cacheClearQueue.postRunnable(()-> MessagesController.getInstance(currentAccount).uploadAndApplyUserAvatar(avatar));
                         }

@@ -104,6 +104,7 @@ import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.TellomiSignUpAvatarPrompt;
 import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
@@ -1592,7 +1593,9 @@ public class MessagesController extends BaseController implements NotificationCe
         callRingTimeout = mainPreferences.getInt("callRingTimeout", 90000);
         callConnectTimeout = mainPreferences.getInt("callConnectTimeout", 30000);
         callPacketTimeout = mainPreferences.getInt("callPacketTimeout", 10000);
-        updateCheckDelay = mainPreferences.getInt("updateCheckDelay", 24 * 60 * 60);
+        updateCheckDelay = TellomiAppUpdate.resolveCheckDelaySeconds(
+                mainPreferences.contains("updateCheckDelay"),
+                mainPreferences.getInt("updateCheckDelay", 0));
         maxFolderPinnedDialogsCountDefault = mainPreferences.getInt("maxFolderPinnedDialogsCountDefault", 100);
         maxFolderPinnedDialogsCountPremium = mainPreferences.getInt("maxFolderPinnedDialogsCountPremium", 100);
         maxMessageLength = mainPreferences.getInt("maxMessageLength", 4096);
@@ -2649,6 +2652,10 @@ public class MessagesController extends BaseController implements NotificationCe
         if (EmojiBlocklist.mergeServerList(config.emojiBlocklist.get())) {
             changed = true;
             Emoji.applyBlocklistToRecent();
+        }
+        // TELLOMI: discover feed. A missing tellomi_discover_feed_enabled key stays off.
+        if (TellomiDiscoverFlags.capture(currentAccount, editor, mainPreferences, object)) {
+            changed = true;
         }
 
         for (int a = 0, N = object.value.size(); a < N; a++) {
@@ -6094,7 +6101,15 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
                 req.file = file;
                 req.flags |= 1;
+                final String avatarPath = uploadingAvatar;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
+                    if (error != null || !(response instanceof TLRPC.TL_photos_photo)) {
+                        TellomiSignUpAvatarPrompt.show(error == null ? null : error.text, error == null ? 0 : error.code, () -> {
+                            uploadingAvatar = avatarPath;
+                            getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
+                        });
+                        return;
+                    }
                     if (error == null) {
                         TLRPC.User user = getUser(getUserConfig().getClientUserId());
                         if (user == null) {
@@ -6356,7 +6371,12 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (id == NotificationCenter.fileUploadFailed) {
             String location = (String) args[0];
             if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
+                final String avatarPath = uploadingAvatar;
                 uploadingAvatar = null;
+                TellomiSignUpAvatarPrompt.show(null, 0, () -> {
+                    uploadingAvatar = avatarPath;
+                    getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
+                });
             } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
                 uploadingWallpaper = null;
                 uploadingWallpaperInfo = null;

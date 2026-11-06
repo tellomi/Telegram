@@ -304,8 +304,8 @@ RULES = [
     ("list_mute", "notification-off", "line"),
     ("list_unmute", "notification", "line"),
     ("list_pin", "pin", "line"),
-    ("list_check", "checks", "line"),
-    ("list_halfcheck", "check", "line"),
+    # list_check / list_halfcheck are exact overrides in icon_fixes.py.
+    # A full "checks" glyph here is what drew two ticks for one sent message.
     ("list_reorder", "menu", "line"),
     ("list_warning", "alert", "line"),
     ("list_secret", "lock", "line"),
@@ -426,47 +426,85 @@ EXTRAS = [
 ]
 
 
-# Settings rows keep Telegram's own vectors. The "settings" substring rule
-# paints every settings_* name as settings-3 (one gear). These names are
-# skipped so a later regen does not put that gear back.
-SETTINGS_KEEP_UPSTREAM = {
-    "settings_account",
-    "settings_ask",
-    "settings_business",
-    "settings_chat",
-    "settings_data",
-    "settings_devices",
-    "settings_faq",
-    "settings_features",
-    "settings_folders",
-    "settings_gift",
-    "settings_language",
-    "settings_policy",
-    "settings_power",
-    "settings_premium",
-    "settings_privacy",
-    "settings_sounds",
-    "settings_stars",
+# Main settings rows. The "settings" substring rule paints every settings_*
+# name as settings-3 (one gear). Each glyph follows tellomi/Telegram-iOS
+# Tellomi/Icons/mapping.csv (Item List/Icons/*). Stars is semantic/star-coin,
+# not the Premium line star. Privacy Policy has no iOS row; the shield stays
+# distinct from Privacy (lock). iOS Proxy is semantic/proxy and is not this row.
+SETTINGS_ROWS = {
+    "settings_account": ("user-3", "line"),  # Item List/Icons/Profile
+    "settings_ask": ("message-circle-question-mark", "line"),  # Item List/Icons/Support
+    # settings_business stays the upstream briefcase. The announcement glyph
+    # was the iOS row, and it read as a channel megaphone on Android.
+    "settings_chat": ("chat-1", "line"),  # Item List/Icons/Chat
+    "settings_data": ("cylinder", "line"),  # Item List/Icons/Data
+    "settings_devices": ("device", "line"),  # Item List/Icons/Devices
+    "settings_faq": ("question", "line"),  # Item List/Icons/Faq
+    "settings_features": ("bulb", "line"),  # Item List/Icons/Tips
+    "settings_folders": ("folder", "line"),  # Item List/Icons/Folder
+    "settings_gift": ("gift", "line"),  # Item List/Icons/Gift
+    "settings_language": ("globe", "line"),  # Item List/Icons/Language
+    "settings_policy": ("shield", "line"),  # no iOS row; shield, distinct from Privacy
+    "settings_power": ("battery", "line"),  # Item List/Icons/PowerSaving
+    "settings_premium": ("star", "line"),  # Item List/Icons/Premium
+    "settings_privacy": ("lock", "line"),  # Item List/Icons/Privacy
+    "settings_sounds": ("bell-ringing", "line"),  # Item List/Icons/Notifications
+    "settings_stars": ("semantic/star-coin", "line"),  # Item List/Icons/Stars
 }
 
 
+# Whole tokens only. A key shorter than this matched "gif" inside "gift",
+# "menu" on every menu row, and "search" on every search filter.
+MIN_RULE_KEY = 8
+# These tokens are too generic to select a glyph by themselves.
+BANNED_RULE_KEYS = {
+    "gif", "menu", "more", "photo", "video", "search", "check", "pin",
+    "star", "user", "call", "gift", "file", "lock", "eye", "add", "tag",
+    "data", "chat", "link", "bot", "mic", "paid", "phone", "group",
+}
+
+
+def _bounded_key(name, key):
+    """True when key is the name or a run of its underscore-separated tokens."""
+    if name == key:
+        return True
+    return f"_{key}_" in f"_{name}_"
+
+
 def match(name):
+    """Exact name, then the longest safe token-bounded rule.
+
+    A miss returns None. Callers keep the upstream drawable. Nothing falls
+    through to the overflow glyph.
+    """
     low = name.lower()
-    if low in SETTINGS_KEEP_UPSTREAM:
+    # Imported lazily: icon_fixes imports this module.
+    from icon_fixes import GRAM_MARKS, REVERT_NAMES, glyph_override
+
+    if low in REVERT_NAMES:
         return None
+    override = glyph_override(low)
+    if override:
+        return override
+    row = SETTINGS_ROWS.get(low)
+    if row:
+        return row
     tokens = low.split("_")
+    if low in GRAM_MARKS:
+        return ("tellomi-mark", "line")
     if "gram" in tokens or low.startswith("tellomi_ic_") or low.startswith("login_"):
         return None
-    rules = sorted(RULES, key=lambda r: len(r[0]), reverse=True)
-    for key, icon, style in rules:
-        if "_" in key or len(key) >= 7:
-            if key in low:
-                return icon, style
+    best = None
+    best_len = 0
+    for key, icon, style in RULES:
+        if key in BANNED_RULE_KEYS or len(key) < MIN_RULE_KEY:
             continue
-        for token in tokens:
-            if token == key or (token.startswith(key) and token[len(key):] in {"s", "es", "ed", "ing", "d", "2"}):
-                return icon, style
-    return None
+        if icon == "more-2":
+            continue
+        if _bounded_key(low, key) and len(key) > best_len:
+            best = (icon, style)
+            best_len = len(key)
+    return best
 
 
 def resources_on_disk():
@@ -552,7 +590,8 @@ def vector_is_tinted(path):
 HAND_GLYPHS = {
     "send_plane_24": ("arrow-up", "line", "vector"),
     "send_plane_26": ("arrow-up", "line", "vector"),
-    "send_outline": ("arrow-up", "line", "vector"),
+    # send_outline is the dashed ring around an ephemeral send button.
+    # It is not a send glyph. icon_fixes.py drops the overlay.
     "attach_send": ("arrow-up", "line", "raster"),
     "msg_send": ("arrow-up", "line", "raster"),
     "msg_sendfile": ("arrow-up", "line", "raster"),
@@ -562,27 +601,52 @@ HAND_GLYPHS = {
 }
 
 
+def vendored_svg(icon, style):
+    if icon.startswith("semantic/"):
+        path = ICONS / "semantic" / f"{icon.split('/', 1)[1]}.svg"
+        return path if path.exists() else None
+    bucket = "line" if style == "line" else "fill"
+    path = ICONS / "mingcute" / "svg" / bucket / f"{icon}.svg"
+    if not path.exists():
+        return None
+    return path
+
+
 def svg_path(icon, style):
     if icon == "arrow-up":
         return None
     folder = "core-regular" if style == "line" else "core-filled"
     path = SVG_ROOT / folder / f"{icon}.svg"
-    if not path.exists():
-        # a few names in the rules are guesses; try without a trailing variant
-        return None
-    return path
+    if path.exists():
+        return path
+    # Settings rows are regenerated from the committed MingCute copies when
+    # the checkout is absent, so a later regen cannot drop them.
+    if (icon, style) in {(n, s) for n, s in SETTINGS_ROWS.values()}:
+        return vendored_svg(icon, style)
+    return None
 
 
 def render_webp(svg, width, height, dest):
-    import subprocess
+    import io
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".png")
     svg_text = svg.read_text().replace("currentColor", "#FFFFFF")
-    painted = tmp.with_suffix(".src.svg")
-    painted.write_text(svg_text)
-    subprocess.check_call(["rsvg-convert", "-w", str(width), "-h", str(height), "-o", str(tmp), str(painted)])
-    painted.unlink(missing_ok=True)
-    im = Image.open(tmp).convert("RGBA")
+    # Hairline strokes disappear when a 24px glyph is drawn into a 6px bitmap.
+    scale = 4 if min(width, height) < 28 else 1
+    rw, rh = width * scale, height * scale
+    try:
+        import cairosvg
+        png = cairosvg.svg2png(bytestring=svg_text.encode(), output_width=rw, output_height=rh)
+        im = Image.open(io.BytesIO(png)).convert("RGBA")
+    except Exception:
+        import subprocess
+        painted = tmp.with_suffix(".src.svg")
+        painted.write_text(svg_text)
+        subprocess.check_call(["rsvg-convert", "-w", str(rw), "-h", str(rh), "-o", str(tmp), str(painted)])
+        painted.unlink(missing_ok=True)
+        im = Image.open(tmp).convert("RGBA")
+    if scale != 1:
+        im = im.resize((width, height), Image.Resampling.LANCZOS)
     # Force white RGB, keep coverage in alpha. rsvg paints #fff already;
     # re-stamp so a black fallback still tints.
     pixels = []
@@ -597,32 +661,121 @@ def render_webp(svg, width, height, dest):
     tmp.unlink(missing_ok=True)
 
 
+def _local_tag(tag):
+    if not isinstance(tag, str):
+        return ""
+    return tag.split("}")[-1]
+
+
+def _fmt_num(n):
+    text = f"{n:.6f}".rstrip("0").rstrip(".")
+    if text in ("", "-0"):
+        return "0"
+    return text
+
+
+def _svg_float(el, key, default):
+    raw = el.attrib.get(key)
+    if raw is None:
+        return default
+    return float(raw.strip().rstrip("px"))
+
+
+def _nested_svg_transform(el):
+    """Map a nested <svg> viewport into its parent. None when it is not placed."""
+    vb = el.attrib.get("viewBox")
+    if not vb:
+        return None
+    minx, miny, vbw, vbh = [float(p) for p in vb.replace(",", " ").split()]
+    if vbw == 0 or vbh == 0:
+        return None
+    x = _svg_float(el, "x", 0.0)
+    y = _svg_float(el, "y", 0.0)
+    w = _svg_float(el, "width", vbw)
+    h = _svg_float(el, "height", vbh)
+    sx = w / vbw
+    sy = h / vbh
+    tx = x - minx * sx
+    ty = y - miny * sy
+    return sx, sy, tx, ty
+
+
+def _path_item(el):
+    d = el.attrib.get("d")
+    if not d:
+        return None
+    fill = el.attrib.get("fill", "currentColor")
+    stroke = el.attrib.get("stroke")
+    sw = el.attrib.get("stroke-width")
+    item = {"d": d}
+    if fill and fill != "none":
+        item["fill"] = "#FFFFFF"
+    if stroke and stroke != "none":
+        item["stroke"] = "#FFFFFF"
+        if sw:
+            item["sw"] = sw
+    if el.attrib.get("fill-rule") == "evenodd":
+        item["even"] = True
+    return item
+
+
+def _append_path(lines, item, indent):
+    attrs = [f'android:pathData="{item["d"]}"']
+    if item.get("fill"):
+        attrs.append('android:fillColor="#FFFFFF"')
+    if item.get("stroke"):
+        attrs.append('android:strokeColor="#FFFFFF"')
+        attrs.append(f'android:strokeWidth="{item.get("sw", "1")}"')
+    if item.get("even"):
+        attrs.append('android:fillType="evenOdd"')
+    lines.append(indent + "<path " + " ".join(attrs) + " />")
+
+
+def _append_svg_children(el, lines, indent):
+    """Emit path elements. A nested svg viewport becomes a vector group.
+
+    Root paths stay a verbatim copy of `d`, so a flat MingCute glyph does not
+    change when this walks the tree. semantic/star-coin places the star with
+    the same x/y/width/height/viewBox as the iOS svg.
+    """
+    count = 0
+    for child in list(el):
+        tag = _local_tag(child.tag)
+        if tag == "path":
+            item = _path_item(child)
+            if item:
+                _append_path(lines, item, indent)
+                count += 1
+            continue
+        if tag == "svg":
+            mapped = _nested_svg_transform(child)
+            if mapped is None:
+                count += _append_svg_children(child, lines, indent)
+                continue
+            sx, sy, tx, ty = mapped
+            identity = (
+                abs(sx - 1) < 1e-9 and abs(sy - 1) < 1e-9
+                and abs(tx) < 1e-9 and abs(ty) < 1e-9
+            )
+            if identity:
+                count += _append_svg_children(child, lines, indent)
+                continue
+            lines.append(
+                f'{indent}<group android:scaleX="{_fmt_num(sx)}" android:scaleY="{_fmt_num(sy)}" '
+                f'android:translateX="{_fmt_num(tx)}" android:translateY="{_fmt_num(ty)}">'
+            )
+            count += _append_svg_children(child, lines, indent + "    ")
+            lines.append(f"{indent}</group>")
+            continue
+        count += _append_svg_children(child, lines, indent)
+    return count
+
+
 def android_vector(svg, width_dp, height_dp):
     tree = ET.parse(svg)
     root = tree.getroot()
     vb = root.attrib.get("viewBox", "0 0 24 24").split()
     vw, vh = vb[-2], vb[-1]
-    paths = []
-    for el in root.iter():
-        tag = el.tag.split("}")[-1]
-        if tag != "path":
-            continue
-        d = el.attrib.get("d")
-        if not d:
-            continue
-        fill = el.attrib.get("fill", "currentColor")
-        stroke = el.attrib.get("stroke")
-        sw = el.attrib.get("stroke-width")
-        item = {"d": d}
-        if fill and fill != "none":
-            item["fill"] = "#FFFFFF"
-        if stroke and stroke != "none":
-            item["stroke"] = "#FFFFFF"
-            if sw:
-                item["sw"] = sw
-        if el.attrib.get("fill-rule") == "evenodd":
-            item["even"] = True
-        paths.append(item)
     lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
         '<vector xmlns:android="http://schemas.android.com/apk/res/android"',
@@ -631,18 +784,31 @@ def android_vector(svg, width_dp, height_dp):
         f'    android:viewportWidth="{vw}"',
         f'    android:viewportHeight="{vh}">',
     ]
-    for p in paths:
-        attrs = [f'android:pathData="{p["d"]}"']
-        if p.get("fill"):
-            attrs.append('android:fillColor="#FFFFFF"')
-        if p.get("stroke"):
-            attrs.append('android:strokeColor="#FFFFFF"')
-            attrs.append(f'android:strokeWidth="{p.get("sw", "1")}"')
-        if p.get("even"):
-            attrs.append('android:fillType="evenOdd"')
-        lines.append("    <path " + " ".join(attrs) + " />")
+    npaths = _append_svg_children(root, lines, "    ")
     lines.append("</vector>")
-    return "\n".join(lines) + "\n", len(paths)
+    return "\n".join(lines) + "\n", npaths
+
+
+def settings_row_vector(name):
+    icon, style = SETTINGS_ROWS[name]
+    svg = vendored_svg(icon, style)
+    if svg is None:
+        raise FileNotFoundError(f"missing glyph {style}/{icon}.svg for {name}")
+    body, npaths = android_vector(svg, "24", "24")
+    if npaths == 0:
+        raise ValueError(f"{name} svg has no path")
+    return body
+
+
+def write_settings_row_drawables():
+    dest_dir = RES_OUT / "drawable"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    for name in sorted(SETTINGS_ROWS):
+        dest = dest_dir / f"{name}.xml"
+        dest.write_text(settings_row_vector(name))
+        written.append(dest)
+    return written
 
 
 def vector_dp(path):
@@ -809,6 +975,10 @@ def main():
     remaining = []
     used_svg = []
     for name in sorted(names):
+        from icon_fixes import REVERT_NAMES, is_hand_drawn
+        if name in REVERT_NAMES or is_hand_drawn(name):
+            remaining.append((name, "meaning fix, not a plain MingCute fit"))
+            continue
         if name in HAND_GLYPHS:
             icon, style, kind = HAND_GLYPHS[name]
             rows.append((name, icon, style, kind))
@@ -909,6 +1079,8 @@ def main():
         if key in seen:
             continue
         seen.add(key)
+        if "/" in icon:
+            continue
         bucket = "line" if style == "line" else "fill"
         dest = ICONS / "mingcute" / "svg" / bucket / f"{icon}.svg"
         dest.parent.mkdir(parents=True, exist_ok=True)

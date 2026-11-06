@@ -60,6 +60,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.TellomiFeatures;
+import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -1254,7 +1255,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             }
         }
-        if (name == null || name.length() < 3) {
+        if (TellomiUsername.isTooShort(name)) {
             if (alert) {
                 AlertsCreator.showSimpleAlert(this, LocaleController.getString(R.string.UsernameInvalidShort));
             } else {
@@ -1330,12 +1331,12 @@ public class ChangeUsernameActivity extends BaseFragment {
                             lastNameAvailable = true;
                         } else {
                             if (statusTextView != null) {
-                                if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() < 3) {
+                                if (error != null && "USERNAME_INVALID".equals(error.text) && TellomiUsername.isTooShort(req.username)) {
                                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                                     statusTextView.setTag(Theme.key_text_RedRegular);
                                     statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                                 } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                                    if (req.username.length() < 3) {
+                                    if (TellomiUsername.isTooShort(req.username)) {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                                     } else {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));

@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import org.junit.Test;
+import org.telegram.messenger.TellomiLoginErrors;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -148,6 +149,25 @@ public class TellomiLoginFixesTest {
         assertEquals(TellomiSentCode.KIND_CALL, TellomiSentCode.kind(3, false));
         assertEquals(TellomiSentCode.KIND_CALL, TellomiSentCode.kind(4, false));
         assertEquals(TellomiSentCode.KIND_EMAIL, TellomiSentCode.kind(2, true));
+    }
+
+    @Test
+    public void smsCodeCreateFailedUsesTheFixedSentence() throws Exception {
+        assertEquals("验证码发送失败，请稍后重试", TellomiLoginErrors.SMS_CODE_CREATE_FAILED_ALERT);
+        assertEquals("SMS_CODE_CREATE_FAILED", TellomiLoginErrors.SMS_CODE_CREATE_FAILED);
+        assertTrue(TellomiLoginErrors.isSmsCodeCreateFailed("SMS_CODE_CREATE_FAILED"));
+        assertTrue(TellomiLoginErrors.isSmsCodeCreateFailed("AUTH_RESTART SMS_CODE_CREATE_FAILED"));
+        assertFalse(TellomiLoginErrors.isSmsCodeCreateFailed("FLOOD_WAIT_30"));
+        assertFalse(TellomiLoginErrors.isSmsCodeCreateFailed("PHONE_NUMBER_INVALID"));
+        assertFalse(TellomiLoginErrors.isSmsCodeCreateFailed(null));
+        assertFalse(TellomiLoginErrors.isSmsCodeCreateFailed(""));
+        String login = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java").toPath()), StandardCharsets.UTF_8);
+        int branch = login.indexOf("TellomiLoginErrors.isSmsCodeCreateFailed(error.text)");
+        assertTrue(branch > 0);
+        int send = login.lastIndexOf("new TLRPC.TL_auth_sendCode()", branch);
+        int change = login.lastIndexOf("new TL_account.sendChangePhoneCode()", branch);
+        assertTrue(send > change);
+        assertTrue(login.substring(branch - 80, branch).contains("req instanceof TLRPC.TL_auth_sendCode"));
     }
 
     @Test

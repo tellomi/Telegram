@@ -237,7 +237,41 @@ public final class TellomiDefaults {
         return remote || unofficial;
     }
 
-    /** True when this locale's strings should be read from the downloaded android langpack. */
+    /**
+     * True when applying this built-in row must call {@code langpack.getLangPack}.
+     * English ships the full default table. Simplified and Traditional Chinese ship
+     * the full {@code localization_zh.bin} and stay built-in. The other built-in
+     * bins (it, es, de, nl, ar, pt_br, ko, uk, ru) are a small subset, so leaving
+     * them local looks like English.
+     */
+    public static boolean needsServerLangpack(LocaleController.LocaleInfo info) {
+        if (info == null || !info.builtIn || info.shortName == null || info.shortName.length() == 0) {
+            return false;
+        }
+        if (info.pathToFile != null && info.pathToFile.length() > 0) {
+            return false;
+        }
+        String code = info.shortName.replace('-', '_').toLowerCase(Locale.US);
+        return !"en".equals(code) && !"zh".equals(code) && !"zh_hans".equals(code) && !"zh_hant".equals(code);
+    }
+
+    /**
+     * Marks {@code info} remote so {@code LocaleController.applyLanguage} downloads it.
+     * @return true when the row changed
+     */
+    public static boolean attachServerLangpack(LocaleController.LocaleInfo info) {
+        if (!needsServerLangpack(info)) {
+            return false;
+        }
+        info.pathToFile = "remote";
+        return true;
+    }
+
+    /**
+     * True when this locale's strings should be read from the downloaded android langpack
+     * even though the row is still the built-in Chinese entry. Other languages are read
+     * once {@link #attachServerLangpack} or {@code langpack.getLanguages} marks them remote.
+     */
     public static boolean useCloudStrings(LocaleController.LocaleInfo info) {
         if (info == null || info.shortName == null) {
             return false;

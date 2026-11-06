@@ -565,6 +565,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         subtitleView.setText(sb);
 
         versionView.setText(getVersionName());
+        TellomiSettingsLayout.applyCard(currentAccount, user, titleView, subtitleView, topView);
     }
 
 
@@ -649,7 +650,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 200 - 12));
+        items.add(UItem.asCustomShadow(topView, 236 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -732,6 +733,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
+        TellomiNavigationSettings.appendRow(items);
 
         items.add(UItem.asShadow(null));
         if (!walletAbove && TellomiFeatures.walletEnabled(currentAccount)) {
@@ -771,6 +773,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
         items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
         items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
+        items.add(SettingCell.Factory.of(27, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TellomiOpenSourceLicenses)));
 
         if (SharedSettings.experimentalSettingsAllowed.get()) {
             items.add(UItem.asShadow(null));
@@ -787,7 +790,54 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(SettingCell.Factory.of(22, 0xFFF45255, 0xFFDF3955, 0, getString(R.string.DebugClearLogs)));
         }
 
+        if (TellomiSettingsUpdate.rowVisible()) {
+            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
+                items.add(UItem.asShadow(null));
+            }
+            items.add(SettingCell.Factory.of(TellomiSettingsUpdate.ROW_ID, 0, 0, 0, getString(R.string.TellomiCheckForUpdates)));
+        }
         items.add(UItem.asCustomShadow(versionView));
+        TellomiSettingsLayout.arrange(items);
+    }
+
+    private void checkForAppUpdate() {
+        Activity activity = getParentActivity();
+        if (!(activity instanceof LaunchActivity)) {
+            return;
+        }
+        Browser.Progress progress = TellomiSettingsUpdate.attachProgressOnManualCheck() ? newManualUpdateProgress(activity) : null;
+        ((LaunchActivity) activity).checkAppUpdate(true, progress);
+    }
+
+    private Browser.Progress newManualUpdateProgress(Activity activity) {
+        final AlertDialog spinner = new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER);
+        spinner.setCanCancel(true);
+        final boolean[] closed = new boolean[]{false};
+        final Browser.Progress[] holder = new Browser.Progress[1];
+        holder[0] = new Browser.Progress(() -> {
+            if (activity.isFinishing() || closed[0]) {
+                return;
+            }
+            try {
+                spinner.show();
+            } catch (Exception ignored) {
+            }
+        }, () -> {
+            if (closed[0]) {
+                return;
+            }
+            closed[0] = true;
+            try {
+                spinner.dismiss();
+            } catch (Exception ignored) {
+            }
+        });
+        spinner.setOnCancelListener(dialog -> {
+            if (!closed[0] && holder[0] != null) {
+                holder[0].cancel();
+            }
+        });
+        return holder[0];
     }
 
     private void presentSettingFragment(BaseFragment fragment) {
@@ -805,6 +855,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             presentFragment(fragment);
         }
     }
+
+    private void openTellomiSettingsRow(int id) { onClick(UItem.asHeader(id, ""), null, 0, 0, 0); }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.object instanceof TLRPC.TL_attachMenuBot) {
@@ -845,6 +897,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             return;
         }
+        if (TellomiSettingsLayout.isGroup(item.id)) { presentSettingFragment(TellomiSettingsLayout.section(item.id, this::openTellomiSettingsRow)); return; }
         switch (item.id) {
             case 1:
                 presentSettingFragment(new UserInfoActivity());
@@ -872,6 +925,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 10:
                 presentSettingFragment(new LanguageSelectActivity());
+                break;
+            case TellomiNavigationSettings.ROW_ID:
+                if (TellomiTabs.enabled()) {
+                    presentSettingFragment(new TellomiNavigationSettings());
+                }
                 break;
 
             case 11:
@@ -909,10 +967,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 showDialog(AlertsCreator.createSupportAlert(this, resourceProvider));
                 break;
             case 18:
-                Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.TelegramFaqUrl));
+                Browser.openUrl(getParentActivity(), TellomiSettingsLayout.helpUrl(currentAccount));
                 break;
             case 19:
                 Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.PrivacyPolicyUrl));
+                break;
+            case 27:
+                presentSettingFragment(new TellomiLicensesActivity());
                 break;
 
             case 20:
@@ -928,7 +989,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 if (MessagesController.getInstance(currentAccount).isFrozen()) {
                     AccountFrozenAlert.show(currentAccount);
                 } else {
-                    Browser.openUrl(getContext(), LocaleController.getString(R.string.TelegramFeaturesUrl));
+                    Browser.openUrl(getContext(), TellomiSettingsLayout.helpUrl(currentAccount));
                 }
                 break;
             }
@@ -940,6 +1001,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new AudioRecorderSettingsActivity());
                 break;
             }
+            case TellomiSettingsUpdate.ROW_ID:
+                checkForAppUpdate();
+                break;
         }
     }
 
@@ -1494,7 +1558,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                 getString(R.string.DebugMenuCallSettings),
                 null,
-                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                TellomiSettingsUpdate.debugMenuCheckVisible(BuildVars.DEBUG_PRIVATE_VERSION, ApplicationLoader.isStandaloneBuild(), ApplicationLoader.isBetaBuild()) ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
@@ -1604,7 +1668,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (which == 8) { // ?
                 SharedConfig.toggleRoundCamera16to9();
             } else if (which == 9) { // Check app update
-                ((LaunchActivity) getParentActivity()).checkAppUpdate(true, null);
+                checkForAppUpdate();
             } else if (which == 10) { // Read all chats
                 getMessagesStorage().readAllDialogs(-1);
             } else if (which == 11) { // Voip audio effects

@@ -81,15 +81,16 @@ Public links are generated and shown as `tell.cc` (`BuildVars.LINK_HOST`). `t.me
 
 ## Username length
 
-Client-side minimum is 3 characters. The old check rejected `length() < 4`, and a server `USERNAME_INVALID` on a 4-character name was shown as too short, so the effective minimum was 5.
+Public usernames are at least 4 characters, the same minimum teamgram #182 accepts. Upstream rejected `length() < 4` locally and also labeled a 4-character name too short when the server returned `USERNAME_INVALID`, so the effective minimum was 5. A 4-character name now passes the local check. A shorter name is still too short. Theme links and sticker-pack links keep their own 5-character check.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChangeUsernameActivity.java` | Local check is `length() < 3`. A 3- or 4-character name is no longer labeled too short when the server returns `USERNAME_INVALID`. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChannelCreateActivity.java` | Same for a new channel or group username. |
-| `TMessagesProj/src/main/java/org/telegram/ui/ChatEditTypeActivity.java` | Same for an existing channel or group username. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiUsername.java` | `MIN_LENGTH` is 4. `isTooShort` is the shared check. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChangeUsernameActivity.java` | The local check and the `USERNAME_INVALID` / purchase short copy use `TellomiUsername.isTooShort`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChannelCreateActivity.java` | Same for a new channel or group public link. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatEditTypeActivity.java` | Same for an existing channel or group public link. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/CreateBotAlert.java` | Same for a bot username. |
-| `TMessagesProj/src/main/res/values*/strings.xml` | `UsernameHelp`, `UsernameInvalidShort`, `UsernameInvalidShortPurchase`, `ChannelUsernameHelp`, `MegaUsernameHelp`, `LinkInvalidShort`, and `LinkInvalidShortMega` say 3 where they said 5. |
+| `TMessagesProj/src/main/res/values*/strings.xml` | `UsernameHelp`, `UsernameInvalidShort`, `UsernameInvalidShortPurchase`, `ChannelUsernameHelp`, `MegaUsernameHelp`, `LinkInvalidShort`, and `LinkInvalidShortMega` say 4 where they said 5. Bundled copies that had already been edited to 3 say 4 as well. |
 
 ## Launcher icon
 
@@ -296,7 +297,7 @@ The bind-email and login-email rows used `msg2_email.webp`, an opaque bitmap in 
 
 ## Splash mark and system Chinese on first launch
 
-The Android 12 splash (`Theme.TMessages.Start` → `@drawable/tg_splash_320`) was still the upstream paper-plane animation, so a fresh launch flashed the Telegram logo before the welcome screen. The flavor drawable of the same name is the Tellomi mark on `#17171A`. `src/main` keeps the upstream file. The welcome bubble is unchanged.
+The Android 12 splash (`Theme.TMessages.Start` → `@drawable/tg_splash_320`) was still the upstream paper-plane animation, so a fresh launch flashed the Telegram logo before the welcome screen. The flavor drawable of the same name is the Tellomi mark, ink only: `#111113` in light and `#FFFFFF` in `drawable-night`. It does not paint a disc. The start theme keeps the upstream window background (white / `#1f2732`). `src/main` keeps the upstream file. The welcome bubble is unchanged. There is no `ic_splash` resource in this tree; the theme already names `tg_splash_320`.
 
 Welcome stayed English (“The world's fastest…”, “Get started”) on a Chinese phone even after `localization_zh.bin` existed. `onDeviceConfigurationChange` passed the activity locale into `applyTellomiSystemLocale`. That locale is English (and on API 24+ `Configuration.locale` is often null) after `zh-hans` is installed. `zh-hans` is a `useCloudStrings` locale, so the callback treated that as “system is no longer Chinese” and applied English. The welcome screen then read the English flavor `TellomiIntro*` strings. The callback now uses `TellomiDefaults.deviceLocale()`. A flavor lookup that is stuck on the English default falls through to the stock key in `localization_zh.bin`. `resourceFor` builds a fresh configuration so a zh lookup is not a copy of the activity locale.
 
@@ -306,7 +307,9 @@ No `versionName`, `versionCode`, or datacenter change.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/res/drawable/tg_splash_320.xml` | Tellomi splash mark. Replaces the paper plane at merge. |
+| `TMessagesProj/tellomi/res/drawable/tg_splash_320.xml` | Light splash mark, ink `#111113`. Replaces the paper plane at merge. |
+| `TMessagesProj/tellomi/res/drawable-night/tg_splash_320.xml` | Night splash mark, ink `#FFFFFF`. |
+| `TMessagesProj/tellomi/res/drawable-*/book_logo.webp` | Pinned-shortcut badge. Replaces the paper plane. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Configuration changes keep the device Chinese pack. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Locale lookup uses a fresh configuration. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Chinese welcome falls back to `localization_zh.bin`. |
@@ -345,7 +348,7 @@ The top-right Help control on the login screens is a language button. It shows t
 
 `values-zh-rTW` is not added. `localeFilters` is `zz`, so a region qualifier never ships in the APK. `LocalizationUtils` only maps language tags that have no hyphen, and both Chinese rows use `localization_zh.bin` (simplified). Choosing 繁體中文 stores `zh_hant` and the button shows 繁體中文. The sentences stay on that simplified pack, which is the same fallback this tree already uses when the server has no `zh-hant` langpack.
 
-Help is no longer the top-right control. `收不到验证码？` opens a card whose Help row opens `BuildVars.HELP_URL` (`https://tellomi.cn/help/`). The email code screen has the same row. An app code (`auth.sentCodeTypeApp`) no longer says the SMS was sent. The line is「验证码已发送到你在其他设备上登录的 Tellomi」, and「改用短信接收」on that screen calls `auth.resendCode`. SMS, call, and email keep their own lines.
+Help is no longer the top-right control. `收不到验证码？` opens a card whose Help row opens `BuildVars.HELP_URL` (`https://tellomi.cn/help`, no trailing slash). The email code screen has the same row. An app code (`auth.sentCodeTypeApp`) no longer says the SMS was sent. The line is「验证码已发送到你在其他设备上登录的 Tellomi」, and「改用短信接收」on that screen calls `auth.resendCode`. SMS, call, and email keep their own lines.
 
 Signing in an account that is already on the device used to `ConnectionsManager.cleanup(true)` on the new authorization and leave it on the server. `auth.logOut` is sent on that session first. The local keys are reset when that RPC finishes.
 
@@ -543,7 +546,7 @@ The voice-to-text button is still the upstream 20-frame trim morph (`transcribe_
 
 `:TMessagesProj_App:assembleAfatRelease` is the APK that ships. Its `ApplicationLoaderImpl` only used to override `onGetApplicationId`, so `isStandalone()` stayed false and `LaunchActivity.checkAppUpdate` returned before `help.getAppUpdate`. Flipping `isStandalone()` would also change billing, premium links, and the SMS-job build, so the App module overrides `isInAppUpdatesEnabled()` instead.
 
-`TELLOMI_CHECK_UPDATES` was false, and `checkAppUpdate` returns before the request when that flag is off and the call is not forced. It is now true. `-PTELLOMI_CHECK_UPDATES=false` still skips the automatic check. The 24-hour `updateCheckDelay` is unchanged.
+`TELLOMI_CHECK_UPDATES` was false, and `checkAppUpdate` returns before the request when that flag is off and the call is not forced. It is now true. `-PTELLOMI_CHECK_UPDATES=false` still skips the automatic check. The delay default is changed in "Faster in-app update checks" below.
 
 A soft update (`can_not_skip=false`) shows `TellomiSoftUpdateDialog`: black and white card, close control, swipe-to-update. Day is a gray card, black type, white track, black thumb. Night keeps the same layout with the dialog background and inverted ink. A completed swipe opens `appUpdate.url` through `Browser.openUrl`. A document with an empty url uses `TellomiApkInstall`. Neither path opens a store listing. Dismissing clears that pending soft update so a later check can show it again. Force updates stay on `BlockingUpdateView`. That button prefers `url`, then the APK when this module can install it. The button label contrasts with `featuredStickers_addButton` so a white night button does not keep white type.
 
@@ -617,13 +620,20 @@ Official Telegram (custom backend off) still replaces all four families, includi
 
 ## Settings row icons
 
-The MingCute pass matched the substring `settings` to `settings-3`, so Account, Chat Settings, Privacy and Security, and the other rows all drew one gear. A later pass swapped in other MingCute glyphs. Those rows are Telegram's own vectors again (white artwork on the gray plate). `settings_arrow` and `settings_gram_24` are unchanged. The generator skips these names so a regen does not paint the gear back.
+The MingCute pass matched the substring `settings` to `settings-3`, so the main settings rows all drew one gear. Those rows now use one glyph each, the same meanings as iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`). Stars is the iOS semantic coin, not a MingCute star. The art stays white on the gray plate. `src/main` vectors are unchanged; the `tellomi` flavor overlays them. `settings_arrow` and `settings_gram_24` are unchanged. `settings_wallet` stays the colored upstream vector.
+
+Language is `globe` (`Item List/Icons/Language`), not `translate` (`Item List/Icons/Translation`). Privacy Policy has no iOS row; it uses the shield, distinct from Privacy (`lock`). iOS Proxy is `semantic/proxy` and is not this row.
+
+M6 reads iOS `Tellomi/Icons/mapping.csv` (`Item List/Icons/*`, tellomi/Telegram-iOS @ `6966e7ce`). Three rows still used the previous glyphs: Data is `cylinder`, Devices is `device`, Stars is `semantic/star-coin`. Premium stays the line `star`. The star sits in the coin through the same nested-svg viewport as iOS (`x=4.4`, `y=4.4`, `15.2` inside viewBox `24`). `settings_business` stays the upstream briefcase. `settings_arrow` and `settings_gram_24` are unchanged. No settings-screen Java.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,business,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Removed. `src/main` vectors are used. |
-| `TMessagesProj/tellomi/icons/generate_icons.py` | Those names are not regenerated. |
-| `TMessagesProj/tellomi/icons/mapping.csv` | Rows removed. |
+| `TMessagesProj/tellomi/res/drawable/settings_{account,ask,chat,data,devices,faq,features,folders,gift,language,policy,power,premium,privacy,sounds,stars}.xml` | Flavor vectors. One glyph each. Data, Devices, and Stars were regenerated for M6. |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | `SETTINGS_ROWS` wins over the `settings` substring rule. A nested svg viewport becomes a vector group. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | Those rows. Data, Devices, and Stars follow the current iOS names. |
+| `TMessagesProj/tellomi/icons/mingcute/svg/line/cylinder.svg` | MingCute cylinder for `Item List/Icons/Data`. |
+| `TMessagesProj/tellomi/icons/semantic/star-coin.svg` | iOS `semantic/star-coin` for `Item List/Icons/Stars`. Not a MingCute glyph. |
+| `TMessagesProj/tellomi/icons/test_settings_rows.py` | Locks the mapping, the distinct files, and the generated vectors. |
 
 ## No language chooser after login
 
@@ -649,3 +659,364 @@ The welcome carousel built its six pages once, while that overlay still followed
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `cloudStringsEnabled` is true for a remote or unofficial pack. `peekCurrentLocaleInfo` for the overlay check. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `uiIsChinese` follows the app language. `readDownloadedPack`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome copy is rebuilt after a language change. |
+
+## Bottom tabs (M2 / D-4, D-5, D-7, D-8, D-36, D-37)
+
+`TellomiTabs` (tellomi flavor) builds the visible list: Discover, Chats, Calls, Contacts, Settings, Profile. Chats and Settings stay. Profile stays last. A fresh install is Discover, Chats, Settings, Profile (`showCallsTab` is already false; `tellomi_show_feed_tab` defaults true; `tellomi_show_contacts_tab` defaults false). The pager opens on Chats. `TellomiTabs.enabled()` is the flag; when it is false the four upstream positions are unchanged. Discover is an empty screen until the feed client (M3). Six tabs use a wider bar so a 360dp screen does not ellipsize the labels. The night theme is unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `indexToPosition`, `getFragmentsCount`, `getStartPosition`, `createBaseFragmentAt`, `prepareDialogsActivity`, folder scroll, profile fade, and the calls-tab notification call `TellomiTabs`. `tabsView` and `dialogsActivity` are package-visible so that class can reach them. `install` runs once from `createView` and skips the calls/settings swap. Tab clicks resolve the position when they fire. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `TabAnimation.FEED` and `setLabelHorizontalPadding`. |
+
+## Navigation bar, long-press hide, post links (M2 / D-6, D-38, D-57)
+
+Settings → Navigation Bar sits after Language. Discover, Calls, and Contacts are switches. Chats and Settings are on and cannot be turned off. Calls writes `UserConfig.showCallsTab`, so Settings and the calls list keep the old Show Calls Tab switch. Long-press Discover or Contacts and choose Hide. Calls already had that menu. A hidden tab comes back from Navigation Bar.
+
+`https://tell.cc/m#<id>` turns Discover back on and opens that post. A link opened from a chat removes that chat immediately, with no close animation, so the fragment transition does not defer `callTabsVisibleToggled` or block the post screen. The bar refresh keeps Discover selected (`TellomiTabNavigation.tabToKeep`) even when that notification arrives late. The id is stored with `FeedActivity.setPendingPostId`. While the feed client is off, the empty screen says the post cannot be opened. When it is on, `TellomiDiscoverScreen` presents `TellomiDiscoverPostFragment` and retries for about a second if a transition is still running. `https://tell.cc/m/<slug>` is still a message link. `TellomiTabs.enabled()` false does not consume the post link: `consumeFeedPostLink` returns false and `LaunchActivity` keeps the original parser. `t.me` is not a post host.
+
+New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It presents its own `ContactsActivity` picker and does not use the contacts tab, so hiding Contacts leaves that list in place. A lookup of the contacts tab does not create a page.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | After Language, `TellomiNavigationSettings.appendRow`. One `case` opens the page. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | At the start of the http(s) branch, `TellomiTabs.consumeFeedPostLink`. False leaves the link alone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `TellomiTabs.appendHideContacts` on the existing contacts long-press. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | New. Copy, row rules, long-press hide, the post id, and the contacts lookup. Not an upstream file. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | New. The Navigation Bar page. Not an upstream file. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. A post link pops back to the tabs without animation and selects Discover. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java` | Retries presenting the post when a fragment transition is still running. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. The live feed (below) replaces that screen only when `tellomi_discover_feed_enabled` is on. |
+
+## Check for updates on the settings screen
+
+A normal account could only start a check from the debug menu (`SettingsActivity` item index 9), and that item is hidden unless the build is standalone, beta, or a private debug build. The menu also passed a null progress, so a response with no newer build said nothing.
+
+Settings now has a row directly above the version footer. It is shown for every account. The tap calls `LaunchActivity.checkAppUpdate(true, progress)`. The request, the soft-update popup, and the force-update screen are unchanged. Progress is a spinner the user can cancel. When the response is not a newer build, the existing bulletin uses `YourVersionIsLatest`: "Already the latest version" / "已是最新版本". The debug menu uses the same tap.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsUpdate.java` | New. The row stays visible. The debug-menu item stays gated. The tap attaches progress. English and Chinese copy. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | The row above the version. Both taps call `checkAppUpdate(true, progress)`. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | `TellomiCheckForUpdates`. `YourVersionIsLatest` overlay. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSettingsUpdateTest.java` | Row visibility, copy, and the existing `help.getAppUpdate` call. |
+
+## Discover feed client (M3 / C-M3b)
+
+The Discover tab stays on the empty screen until `help.getAppConfig` includes `tellomi_discover_feed_enabled`. A missing key is off, including after the key was previously on. An `http` base URL does not turn the client on. While the flag is off, or the account is logged out, the client does not call `discover.getEngineCredential` and does not open an engine URL. The credential is teamgram's `discover.getEngineCredential` (the Signal-Server `GET /v1/tellomi/feed/auth` note in the engine doc is stale). `discover.getAudienceToken` supplies `audience.audience_token` for include and exclude. Tabs come from `GET /v1/feed/config`; an unknown name is ignored. Nearby is `GET /v1/feed/nearby?city=`. The city code is `<iso>:<slug>`. Hong Kong, Macau, and Taiwan use the `cn:` prefix. Only `Address.getLocality()` is kept; `Geocoder` is the lookup when Play services are absent, and a failure stays on the manual list. Location is requested the first time the nearby tab is opened with no city, and only at coarse accuracy. Visibility is `StoryPrivacyBottomSheet`. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | After the emoji-blocklist hook, `TellomiDiscoverFlags.capture` reads `tellomi_discover_feed_enabled` and `tellomi_discover_feed_base_url` from the same `help.getAppConfig` object. |
+
+## Chat wallpaper and accent colors
+
+The server `account.getWallPapers` result stays empty. Wallpapers are bundled. The default chat background is a doodle on a gradient (light `#EFE7DD`, dark `#0B141A` to `#16232B`), not a flat color. The wallpaper screen shows those ten built-in backgrounds plus one solid (`#F0F2F5` / `#101418`). Incoming bubbles are `#FFFFFF` / `#202C33`. On a solid wallpaper the bubble draws a 0.5dp shadow and the date chip is a translucent black. Built-in theme accents are the twelve shared hex values, default `#3390EC`. Pattern art is Tabler and Lucide icons plus Pattern Monster dots and Hero Patterns topography. Settings → Open-source licenses names them. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiWallpaperCatalog.java` | New. Color table, the ten wallpapers, the solid preset, bubble colors, and the license text. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiWallpaperDraw.java` | New. Builds the pattern drawable from `tellomi/assets/wallpapers`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLicensesActivity.java` | New. The open-source license page. |
+| `TMessagesProj/tellomi/assets/wallpapers/` | `doodle.png`, `dots.png`, `waves.png`, `WallpaperCatalog.json`, and the license notices. |
+| `TMessagesProj/tellomi/wallpapers/generate_patterns.py` | Regenerates those bitmaps from the named open-source icons. |
+| `TMessagesProj/build.gradle` | The tellomi flavor assets directory is `tellomi/assets`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java` | Default wallpaper loads the doodle only when the saved choice is the stock slug `d` with no color and no file. A chosen color (including black), gallery file, theme wallpaper, or other slug is left in place. Accent lists are the twelve colors. Incoming and outgoing bubbles follow the catalog. Solid wallpapers use the translucent date chip. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/MessageDrawable.java` | Solid wallpaper bubbles draw the 0.5dp shadow. |
+| `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | Color presets are the one solid. The list starts with the bundled wallpapers. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java` | A bundled row draws its pattern locally. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Preview and save keep a bundled wallpaper's id. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The default theme stub uses the doodle. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | Help section opens the license page. |
+| `TMessagesProj/src/main/res/values/strings.xml` | `TellomiOpenSourceLicenses`. |
+| `TMessagesProj/src/main/res/values-zh/strings.xml` | Same string in Chinese. |
+
+## Icon meanings
+
+The MingCute pass matched short substrings, so `gift` became the GIF film, every search filter became a magnifying glass, and an unmatched `menu_*` name became the overflow dots. `list_check` was the double-check glyph. Chat list then drew that plus `list_halfcheck`, which was a full single check, and a sent message showed two ticks while a read one showed three.
+
+`match()` now takes an exact override, then the longest rule whose key is a whole run of underscore-separated tokens and at least 8 characters. Short tokens (`gif`, `menu`, `search`, `video`, `photo`, and the rest of that list) do not match. A miss keeps the upstream drawable. Nothing falls through to `more-2`.
+
+Slash, plus, minus, and call-direction arrows are MingCute glyphs with a second path. The half-check is the rising arm of MingCute `check`, placed in the same box as the upstream bitmap so the existing 5.5dp offset still makes one double check. GIF is the word in a rounded rect. The sticker is a folded sheet with a face cut out of the fill. Gram vectors are the full Tellomi mark in white, including `mini_gram_72_white`.
+
+Send arrows (`send_plane_24`, `attach_send`, `msg_send`, `msg_sendfile`, `ic_send`) and the unsupported-card mark (`send_plane_26`) are unchanged. `send_outline` is the dashed ring on an ephemeral send button again. Login and the session are untouched.
+
+Reverted to the upstream drawable, because a MingCute stand-in lost the drawing:
+
+- Premium and star art: `filled_giveaway_premium`, `filled_gift_premium`, `filled_premium_away`, `filled_premium_bots`, `filled_premium_business`, `filled_premium_chatlink`, `filled_premium_hours`, `filled_premium_intro`, `filled_premium_status2`, `menu_feature_premium`, `menu_premium_away`, `menu_premium_chatbot`, `menu_premium_chatlink`, `menu_premium_clock`, `menu_premium_clock_add`, `menu_premium_effects`, `menu_premium_location`, `menu_premium_seen`, `menu_premium_tools`, `msg_mini_premiumlock`, `msg_premium_ads`, `msg_premium_avatar`, `msg_premium_badge`, `msg_premium_icons`, `msg_premium_limits`, `msg_premium_lock2`, `msg_premium_normal`, `msg_premium_reactions`, `msg_premium_speed`, `msg_premium_stickers`, `msg_premium_translate`, `msg_premium_uploads`, `msg_premium_voice`, `premium_ai_editor`, `premium_colors`, `premium_rich_editor`, `premium_status`, `premium_tags`, `premium_wallpaper`, `star_premium`, `star_premium_cutout`
+- `settings_business` (briefcase), `send_outline` (dashed ring), `community_cards`, `msg_speed`, `msg_voicechat`, `msg_voicechat2`, `msg_stories_saved`, `menu_clear_cookies`, `msg_filled_sdcard`, `filled_requests_24`
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/icons/generate_icons.py` | Exact override, then longest token-bounded rule. No short substring. No `more-2` fallback. Small bitmaps are drawn larger and scaled down. |
+| `TMessagesProj/tellomi/icons/icon_fixes.py` | Composites, the half-check, GIF, sticker, white Gram mark, and the upstream reverts. |
+| `TMessagesProj/tellomi/icons/mapping.csv` | The resolved names. Reverted rows are gone. |
+| `TMessagesProj/tellomi/icons/test_icon_meanings.py` | Single check, distinct pairs, no overflow fallback, white Gram mark. |
+| `TMessagesProj/tellomi/icons/test_settings_rows.py` | Business is not a flavor gear. Gram is the Tellomi mark. |
+| `TMessagesProj/tellomi/res/` | The redrawn overlays. Reverted names are deleted here so `src/main` wins. |
+
+## Faster in-app update checks
+
+`checkAppUpdate(false)` still runs from `LaunchActivity` when the UI returns to the foreground. Three things kept that request from ever showing the popup. A missing `appUpdateCheckTime` used `System.currentTimeMillis()` as the last check, so a fresh install (and any install that had never finished a check) started a new 24-hour window on every cold start. A finished check inside that window was skipped, including the first launch after an upgrade. The fallback delay was 24 hours.
+
+A missing check time is now 0, so the next resume checks. The installed `versionCode` is stored in `appUpdateCheckVersion` when a check is sent. No stored code, or a code that differs from this run, skips the delay once. The next launch of the same code uses the delay again. The fallback is 6 hours. `help.getAppConfig` `inapp_update_check_delay` still writes `updateCheckDelay` and that saved value wins. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiAppUpdate.java` | Fresh-install check time, 6-hour default, version-change force, and the skip decision. |
+| `TMessagesProj/src/main/java/.../SharedConfig.java` | Load the check time through that helper. Remember the version code after a check is sent. |
+| `TMessagesProj/src/main/java/.../MessagesController.java` | `updateCheckDelay` falls back to 6 hours. The `inapp_update_check_delay` write is unchanged. |
+| `TMessagesProj/src/main/java/.../LaunchActivity.java` | The foreground check uses the skip helper, then records the version code. |
+| `TMessagesProj/src/test/java/.../TellomiAppUpdateTest.java` | Fresh install, upgrade, and the 6-hour / app-config delay. |
+| `docs/TELLOMI.md` | The in-app update section matches this schedule. |
+
+## Discover report, signup avatar, and langpack keys
+
+Discover posts and comments use the `…` menu. The reason list is `ReportBottomSheet` (the same sheet as a chat report). The chosen official option id (`spam`, `violence`, `pornography`, `child`, `drugs`, `personal`, `other`) is sent as `POST /v1/feed/reports` with `detail`. `other` asks for a comment before that request. A signed-out account does not open the sheet and does not send. Success and failure show the existing bulletin. This client does not call `messages.report` for a Discover post.
+
+`auth.signUp` still finishes the account before any avatar upload. `photos.uploadProfilePhoto` failure (including HTTP 500) leaves the account in place, shows 「头像上传失败」 with the server error code, and can retry the upload. The same prompt is used for a profile photo. Login and the session are otherwise unchanged.
+
+Discover, tab, and city copy is read from the same langpack keys as iOS (`Tellomi.Discover.Feed`, `Tellomi.Discover.City.cn_hong_kong`, `Tellomi.SignUp.AvatarFailed`, and the rest of that list). Android resource names replace `.` and `-` with `_`. A downloaded pack value for the active language, including Japanese, replaces the bundle. `Tellomi.Discover.Report*` is Android-only.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/ReportBottomSheet.java` | `openLocal` shows the native sheet without sending `messages.report`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | After a successful `auth.signUp`, the avatar upload is scheduled only when `TellomiSignUpAvatar.afterSignUp` says the account is already created. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | A failed signup or profile avatar upload shows the server code and can retry. It does not clear the session. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/utils/PhotoUtilities.java` | Profile photo RPC errors use the same prompt. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | Langpack keys and the bundled English and Chinese. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSignUpAvatar.java` | The non-blocking avatar decision and the real error code. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSignUpAvatarPrompt.java` | The dialog. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverReport.java` | The `…` menu and the sheet, then `POST /v1/feed/reports`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | Copy comes from the pack. Report is an engine operation. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | Display names use `Tellomi.Discover.City.*`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | Tab copy uses the iOS keys `Tellomi.Discover.Feed`, `HideFeed`, `HideContacts`, `NavigationTitle`, `NavigationFooter`, `FeedEmptyTitle`, `FeedEmptyText`, and `FeedPostUnavailable`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | The bar reads the pack for the active language. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The new keys. |
+
+## Discover city lookup keys
+
+The shared language pack cannot put a hyphen in a key. The iOS string generator rejects it. Four Discover city lookup keys therefore use an underscore. The city code on a post is unchanged (`cn:hong-kong`, `us:new-york`, `us:los-angeles`, `us:san-francisco`). Bundled resource names were already `Tellomi_Discover_City_cn_hong_kong`, `Tellomi_Discover_City_us_new_york`, `Tellomi_Discover_City_us_los_angeles`, and `Tellomi_Discover_City_us_san_francisco`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverCity.java` | `displayKey` replaces both `:` and `-`, so the lookup keys are `Tellomi.Discover.City.cn_hong_kong`, `us_new_york`, `us_los_angeles`, and `us_san_francisco`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The resource-name note matches those underscore lookup keys. `resourceName` still turns a leftover `-` into `_`. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverI18nTest.java` | The four lookup keys, and the resource names they already map to. |
+
+## Discover nearby tab (D-11 / D-12)
+
+The Discover bar always shows 推荐, 关注, and 同城, in that order. `GET /v1/feed/config` may omit `nearby`; the tab stays. An unknown config name is still not added.
+
+The first open of 同城 with no saved city asks for coarse location only (`ACCESS_COARSE_LOCATION`). The coordinate is used once for `Geocoder` and then dropped. Only `Address.getLocality()` can become a catalog code such as `cn:chengdu`. A street, a province, or a coordinate does not. If permission is denied, or geocoding returns nothing, the city list stays up and the user picks by hand. Nothing is stored until they pick.
+
+Publishing still uses `POST /v1/feed/posts` and the existing `city` field. The value is that catalog code. There is no latitude, longitude, or address field. The line above the feed (`Posting in Chengdu` / `发布到 成都`) is the city the next post will carry. The composer screen is unchanged, so it does not collide with the video and mention composers.
+
+`GET /v1/feed/nearby?city=` is the nearby read. `content-engine` was not readable from this tree (private, HTTP 404). A 404, 405, or 501 on that route is shown as 「同城暂时还不能刷新」. An empty 200 is 「这个城市还没有帖子」. The client does not invent another path. Simplified Chinese in `TellomiPack` is what zh-Hans and zh-Hant (including zh-TW) both read. `values-zh-rTW` is not added.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverNearby.java` | Home tabs, the publish city code, the compose line, and the missing-route check. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java` | The three tabs, the first coarse-location ask, the city list, and the degraded empty state. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | A missing nearby route is `NEARBY_UNAVAILABLE`, not a generic load failure. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and simplified Chinese for those lines. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. zh-Hant keeps this simplified pack. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverNearbyTest.java` | City normalize, tab order, the nearby query, and the publish keys. |
+
+## Settings home (M1)
+
+The settings tab is still `SettingsActivity`. `TellomiSettingsLayout` rebuilds that list into the same three groups iOS uses: Account, General, and Support. The home screen shows those three titles. Each opens a secondary page with the rows that used to sit on the home list. Tips (`Telegram Features`, row 23) and Apple Watch (row 28, or a row titled Apple Watch) are left off. Suggestions, other accounts, the experimental block, and the debug block stay on the home screen. The check-for-updates row (`TellomiSettingsUpdate.ROW_ID`, 41) stays on the home screen, directly above the version footer, and still calls `checkAppUpdate` with progress. It is not a Support page row. The General group uses the white gear `msg_settings`. The header card gets a 12dp side inset when it is attached, because the list binds it with match-parent params and no margins.
+
+The top block is a card. It shows the display name, and when the account has them, the phone, the email, and the public username. Phone and email are both shown. The email is the saved sign-in address, not the masked switcher label.
+
+Help Center, the old FAQ row, the settings-search FAQ webpage (`messages.getWebPage`), `tg://settings/faq`, and `tg://settings/features` open `help.getAppConfig` `tellomi_help_url`. A missing, blank, or non-http value is `TellomiHelp.URL` (`https://tellomi.cn/help`, no trailing slash). `BuildVars.HELP_URL` is that same constant, so login opens it too. The search index does not read `TelegramFaqUrl`. Login and the session are otherwise unchanged.
+
+New lookup keys use only letters, digits, `.`, and `_`: `Tellomi.Settings.Group.Account`, `Tellomi.Settings.Group.General`, `Tellomi.Settings.Group.Support`, `Tellomi.Settings.Help`, `Tellomi.Settings.Card.Phone`, `Tellomi.Settings.Card.Email`, `Tellomi.Settings.Card.Username`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiHelp.java` | The one help-center URL, `https://tellomi.cn/help`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java` | `HELP_URL` is `TellomiHelp.URL`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsModel.java` | Group order, the card lines, and the help URL. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSettingsLayout.java` | Draws that model: the card (12dp side inset once the header is attached), the three rows (General uses `msg_settings`), and the secondary pages. The update row stays on the home list. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java` | `arrange` after the list is built, `applyCard` on the header, the group tap, and the two help opens. The header is 36dp taller so the card can show three lines. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/AppGlobalConfig.java` | `tellomi_help_url`, default `TellomiHelp.URL`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The FAQ row, the settings search hit, and the FAQ webpage index use the same help URL. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LinkManager.java` | `tg://settings/faq` and `tg://settings/features` use the same help URL. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | The seven `Tellomi.Settings.*` keys. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSettingsLayoutTest.java` | Groups, pages, the card, the help URL, and the lookup keys. |
+
+## Discover polls, forwards, and notification switch (M3)
+
+Android only. The feed client already posted text, read recommend / following / nearby, and showed a deleted quote. This adds the missing interactions that the engine already serves.
+
+A public (`shareable`) post gets a forward menu: direct repost (`PUT /v1/feed/posts/{id}/repost`), quote (`quote_of` on `POST /v1/feed/posts`), share into a Tellomi chat (`ShareAlert` with `https://tell.cc/m#<id>`), and the system share sheet. A post that is not shareable has no menu. A quote whose original is `deleted` still shows the existing「原动态已被作者删除」line. The engine removes the repost when the original is deleted; the client does not keep one.
+
+A post can include a poll (`poll.options`, two to ten strings, each at most 40 code points). A quote and a poll are not sent together. Option labels are `card.poll.options`. Counts and the chosen indexes are the sibling `poll.counts` and `poll.voted`; an empty `voted` means this account has not voted. A tap sends `PUT /v1/feed/posts/{id}/vote` with `{"options":[index]}`. Success is `200 {"counts":[Int],"voted":[Int]}`. An empty body or `{}` is not a success.
+
+The in-app list is `GET /v1/feed/me/notifications`. The system banner uses `loc_key` `DISCOVER_*` (or `custom.discover = 1`) and opens the post. It does not open a chat with user 777005. The switch on Notifications and Sounds is `account.updateNotifySettings` for @faxian (user id 777005). No row means on. `mute_until` in the future, including mute forever, means off. Muting all private chats does not write this peer.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/NotificationsSettingsActivity.java` | One check row, `discoverRow`, after reactions. The title and the toggle live in the flavor class. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/PushListenerController.java` | After the account is known, a discover payload is shown by `TellomiDiscoverPush` and is not turned into a chat message. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | The notification extra `tellomi_discover_post` opens `https://tell.cc/m#<id>` through the existing post-link path. |
+
+## Discover compose @mentions (M3)
+
+Android only. The composer parses and inserts `@username`. The local check is the same one `ChangeUsernameActivity.checkUserName` already uses: no leading or trailing `_`, no leading digit, only `0-9` / `A-Z` / `a-z` / `_`, at least `TellomiUsername.MIN_LENGTH` (4), at most 32. It does not call `account.checkUsername`. A token that fails that check keeps 发布 disabled and shows the reason. A lone `@`, and an `@` inside an address (`a@b.com`), are left as text.
+
+Picking a row, or tapping 提及, writes `@username` into the post. The 60-second video picker from D-41 stays on this screen. A clip that is still attached is not uploaded, and the text post is not sent in its place. `POST /v1/feed/posts` is unchanged for mentions: the name stays inside `text`. There is no `mentions` or `entities` field on that body, on the card parser, or on the iOS `tellomiDiscoverPublishBody`. The suggestion list is people already in `MessagesController.getUsers()` who have a public username. It does not search the network.
+
+The system banner and the in-app list already show `kind = mention` / `DISCOVER_MENTION` when one arrives. Creating that notice is the content engine's call to teamgram `POST /internal/v1/discover/notify`. This client does not send that request, and it does not add a field the engine document does not list. `content-engine` was not readable from this tree (private). teamgram `docs/api/discover-ai.md` says the 2026-11-04 read of `api/notifications.go` could not see the engine's field names. No `src/main` file changes for this.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMention.java` | Parse, validate, insert, and filter. Flavor only. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Hint, 提及, the suggestion list, and the invalid-username line. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscover.java` | The publish-body comment records that mentions stay in `text`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | `Tellomi.Discover.Mention`, `MentionHint`, `MentionInvalid`, `MentionEmpty`. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese for those keys. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMentionTest.java` | The username rules, insert, and the unchanged publish keys. |
+
+## Discover link preview (M3)
+
+The phone fetches Open Graph itself when a Discover post is composed. The request does not go through Chengdu, `account.getWebPagePreview`, port 8801, or `POST /internal/v1/link-preview`. A short process-local map remembers a few results. Nothing is written to disk, and the feed does not fetch the page again.
+
+`POST /v1/feed/posts` gains one optional object, `link_preview`, and only when the URL is public http(s). The object is `url`, plus `title`, `description`, and `image` when those exist. iOS does not send this object yet. content-engine's API doc is not in this repo (private, 404). Cards are read from `card.link_preview`, or the same object beside `card`. A private or missing preview is left off the post and off the card. No `src/main` file changes. The composer still has the @mention list and the 60-second video picker. A city on the post is still `TellomiDiscoverNearby.publishCity`.
+
+## Release-feed update check
+
+Settings → Check for updates, and the automatic check on the shipped App module, called `help.getAppUpdate` and then `SharedConfig.setNewAppVersionAvailable`. That comparison uses `versionName` only. A published build that keeps the same marketing version and raises `versionCode` was treated as already installed. The installer publish writes `android/latest.json` (`versionName` + `versionCode`) and does not update `help.getAppUpdate`. `versions.json` on the download page can lag that file, and `android/test/latest.json` is a different channel. Neither of those is the check.
+
+The App module now reads `https://www.tellomi.cn/dl/android/latest.json` and `https://dl.tellomi.cn/android/latest.json` together. The higher `versionCode` is the release. The APK link is the one on the host that won, so the official URL is not offered when only the backup feed answered. The swipe opens an `.apk` link in the system browser. A feed that cannot be read does not show "already the latest" and does not start the 6-hour delay. Standalone and beta builds still use their previous check. Login and the session are untouched.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiReleaseUpdate.java` | Feed URLs, manifest parse, version-code comparison, and the APK link. |
+| `TMessagesProj/src/main/java/.../LaunchActivity.java` | In-app updates use that feed. Manual failure is not "already the latest". |
+| `TMessagesProj/src/main/java/.../SharedConfig.java` | A remote version code beats an equal version name. The saved offer keeps that code. |
+| `TMessagesProj/src/test/java/.../TellomiReleaseUpdateTest.java` | Same version name with a higher code, the stale page manifest, and the backup APK link. |
+| `docs/TELLOMI.md` | The in-app update section matches this source. |
+
+## Built-in languages use the server langpack
+
+`TELLOMI_USE_CLOUD_STRINGS` stays false. A remote or unofficial row was already read from the file `langpack.getLangPack` writes. The language button still lists the built-in codes (en, it, es, de, nl, ar, pt_br, ko, uk, ru, zh_hans, zh_hant). Those rows are created with `pathToFile = null`, so `applyLanguage` never called `applyRemoteLanguage`. `getStringV2` then used `localization_*.bin`.
+
+`values/` and `values-zh/strings.xml` each have 11505 strings. The other bundled folders are a subset: it 1516, es 1298, de 1359, ar 1227, pt-rBR 1234, ko 1121, nl 1068, uk 269, ru 257. Missing keys fall back to English. Russian and Ukrainian are so small that the switch looks like it did nothing. Chinese is not sent through this path: a remote Chinese row with no file used to drop the UI onto the English bin, and `localization_zh.bin` is already complete. English is the default table.
+
+`TellomiDefaults.attachServerLangpack` sets `pathToFile` to `remote` for any other built-in row at the start of `applyLanguage`, before `getPathToFile()`. The existing download then runs, and `cloudStringsEnabled` reads the file because the row is remote. The same object is stored in `remoteLanguages` when it is already in the language dict, so the version is saved with the other remote packs. English and both Chinese codes are unchanged. A failed `langpack.getLangPack` still runs the apply callback and posts `reloadInterface`, so the settings spinner closes and login redraws onto the local bin.
+
+Login used to rebuild itself as soon as `applyLanguage` returned. That return now happens before the pack arrives, and `reloadInterface` does not rebuild the top fragment. The login redraw runs from the apply callback, after the strings are loaded (or the request has failed).
+
+### Check on a device
+
+Install a dev build (`-PTELLOMI_SERVER_PROFILE=dev`) that can reach the server. On the login language list, choose Italiano, then Español, Deutsch, Nederlands, العربية, Português (Brasil), 한국어, Українська, and Русский. After the short download, labels that were English in the bundled bin (Settings, Chats, and the login fields) should follow that language. Repeat from Settings → Language. English should stay fully English with no download. 简体中文 and 繁體中文 should stay Chinese. Turn the network off, pick a language that is not cached, and the screen should still switch to the short local bin instead of hanging.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | `needsServerLangpack` and `attachServerLangpack`. English and Chinese stay local. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `applyLanguage` marks the built-in row remote and keeps it in `remoteLanguages`. A failed `getLangPack` finishes the apply. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Login redraws when the apply callback runs, not before the pack is loaded. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLanguageSheet.java` | Comment: the non-English, non-Chinese bins are a fallback. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiCloudStringsTest.java` | Which codes request a pack, and that apply plus login are wired to it. |
+
+## Discover video length (D-41)
+
+Compose had no video control. A picked clip is still not uploaded and is not dropped into a text post. Image posts later send `media`; this video path does not. The 60-second cap is enforced on the client anyway.
+
+The picker is `ACTION_GET_CONTENT` (`video/*`) from `TellomiDiscoverComposeFragment`. Length comes from `MediaMetadataRetriever`, then `MediaStore.Video.Media.DURATION` if that fails. `TellomiDiscoverVideo.select` keeps a clip only when the length is from 1 ms through 60_000 ms. A longer clip is discarded and the screen says to pick a shorter one. An unreadable length is discarded too. Publish reads the length again and calls `beforeUpload`. Over 60 seconds is still discarded. A clip inside the cap returns `NOT_UPLOADED` and the text post is not sent.
+
+`MediaController`, ffmpeg, and the chat gallery were not edited. `PhotoEntry.duration` is whole seconds (`MediaStore` milliseconds / 1000). `TellomiDiscoverVideo.selectPhotoEntrySeconds` is that coarser check for a later gallery hook. The compose path does not use it.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideo.java` | The 60-second gate, the gallery-seconds helper, and the clock label. No Android types. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoDuration.java` | Reads milliseconds from the picked uri. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Hint, pick, reject, and the publish-time check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` | English and Chinese for those lines. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The same lines. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverVideoTest.java` | The 60-second boundary, the upload gate, and the Chinese copy. |
+
+## Login send-code SMS failure
+
+Reopen of closed, unmerged #9, rebased onto current master.
+
+`auth.sendCode` can fail with `SMS_CODE_CREATE_FAILED`. The spinner already stops in the RPC callback. That text is not in the phone-screen special cases (`PHONE_NUMBER_INVALID`, `FLOOD_WAIT`, and the rest). The fallback `tellomiShowSendFailure` shows the generic error plus the raw error string, so the dialog said `SMS_CODE_CREATE_FAILED`. `AlertsCreator.processError` still has no `auth.sendCode` branch. The phone screen now uses the same `needShowAlert` as those neighbors, with the fixed sentence 「验证码发送失败，请稍后重试」. The check is `req instanceof TLRPC.TL_auth_sendCode`, so change-phone (`account.sendChangePhoneCode`), resend, and every other error text on that callback still use the existing path. The sentence is hardcoded, like the sign-up agreement: it is not in the cloud langpack, so a new string resource would miss while `zh-hans` / `zh-hant` are active.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiLoginErrors.java` | New. Flavor-only copy and the `SMS_CODE_CREATE_FAILED` check. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Phone-screen `auth.sendCode` error callback calls `needShowAlert` for that error before `tellomiShowSendFailure`. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiLoginFixesTest.java` | The sentence and the phone-screen branch. |
+
+## Discover multi-image posts (D-10)
+
+Compose can pick up to 10 JPEG, PNG, or WebP photos, each at most 20MB. The bytes go to `POST /v1/feed/media/uploads` as tus 1.0.0 (`Upload-Length`, `Upload-Metadata` filename/filetype, then `PATCH` with `Upload-Offset`). `POST /v1/feed/posts` sends the returned keys as `media_keys` (a string array). `media[]` is only the card response. A picture is `media[].url` when the engine sends one, otherwise `media_base_url` from `GET /v1/feed/config` plus the key. There is no `GET /v1/feed/media/<key>`. Text may be empty when `media_keys` is present. A video still blocks the post and is not uploaded. Free-form `#` topics are not sent.
+
+Field names follow content-engine `docs/api.md`. `link_preview` from the merged link-preview post stays beside `media_keys`. No chat-video crop, iOS, or content-safety change.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMedia.java` | Limits, sniff, tus session, publish keys, image URL. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeFragment.java` | Multi-pick, remove, upload, then publish. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverImageRow.java` | Feed and detail image slots. |
+| `TMessagesProj/src/test/java/org/telegram/ui/tellomi/feed/TellomiDiscoverMediaTest.java` | Tus headers, the post field, limits, and zh-Hans / zh-TW copy. |
+
+## Document hash before upload (ADR-0082)
+
+Before the bytes of a GIF, a file, or a video that will not be transcoded are uploaded, the client hashes the local file and calls `messages.getDocumentByHash#b1f2061f` (`sha256`, `size` as long, `mime_type`). A returned `document` with id, access hash, and dc is sent as `inputMediaDocument`. `documentEmpty`, an RPC error, a timeout, or a hash failure continues the existing upload. Photos, secret chats, voice notes, live photos, a separate cover, mask documents on the upload, and any video `VideoEditedInfo.needConvert()` still uploads are unchanged. The old `#338e2464` int-size binding in `TLRPC` is left as upstream generated it; the request used here is the current constructor.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java` | Which files qualify, the constructor, SHA-256, and what counts as a reusable document. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | The RPC, fail-open, and swapping the outgoing media to `inputMediaDocument`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | Three original-file upload sites (single video, single document/GIF, grouped document/video) call that lookup before `uploadFile`. Transcoding and encrypted uploads do not. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Eligibility, the long-size constructor, SHA-256, and that those three sites are the only hooks. |
+
+## Document hash kill switch (ADR-0083 B1 / D4)
+
+Extends the section above. The three upload sites stay as they are. GIF, ordinary files, send-as-file images (`image/jpeg` / `image/png` documents), and grouped document or non-convert video slots already call `messages.getDocumentByHash` before `uploadFile`. This adds a way to turn that lookup off without a rebuild.
+
+Account 0 preferences file `mainconfig`, key `tellomi_get_document_by_hash`, boolean. A missing key or `true` keeps the lookup. `false` makes `lookupBeforeUpload` return immediately, and the caller runs the existing upload. The value is read on each send.
+
+Compressed photos stay on the upload path. Delayed type 0 and album slots with no document upload `FileTypePhoto` as `inputMediaUploadedPhoto`. `getDocumentByHash` returns a `Document`, and those bytes are a JPEG from `generatePhotoSizes`, not the gallery file. Send-as-file and `ImageLoader.shouldSendImageAsDocument` already go through `prepareSendingDocumentInternal` (delayed type 2, or type 4 when grouped) and are covered. Server-side photo reuse after the upload is unchanged. Follow-up: a photo RPC that returns `InputPhoto`, then a type 0 hook is safe.
+
+Non-convert video is hashed on `Utilities.globalQueue`. `FAIL_OPEN_MS` (12s) covers the hash and the RPC together. When the timer fires first, the upload starts and a late hit is dropped. `VideoEditedInfo.needConvert()` stays off this path because the stored bytes would be the transcode. Secret chats, voice notes, live photos, a separate cover, and mask documents stay off it too.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHash.java` | `mainconfig` kill switch, default on. Photo follow-up noted on the class. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDocumentByHashSend.java` | Disabled switch returns before any hash or RPC. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiDocumentByHashTest.java` | Default on, forced off skips lookup, JPEG/PNG documents are eligible, type 0 is not hooked. |
+
+## Download file hashes (ADR-0083 B2)
+
+After a full plaintext `upload.getFile` download is on disk, and in parallel while those bytes are still arriving, the client calls `upload.getFileHashes#9156982a` (`location:InputFileLocation`, `offset:long`). Parts are SHA-256 of 128 KiB, the same split as `upload.getCdnFileHashes` / teamgram `cdn.PartHashes` (`tellomi/teamgram-server` #215, `59922c63`). `offset` drops parts that start before it. The last part is shorter. A later page is requested when the returned parts do not cover the file.
+
+A miss (empty vector), an RPC error, or a 12s timeout after the download is ready to finish leaves the file in place. A part whose bytes differ, or a confirmed end shorter than the file, deletes the temp file and fails the download. CDN downloads already check ciphertext hashes. Web files, legacy `inputFileLocation` (`INPUT_REQUEST_INVALID` on that server), secret-chat decryption, local cache encryption, preload, a prefix stop, and a file already on disk do not call this method. `messages.getDocumentByHash` is unchanged.
+
+Account 0 `mainconfig` key `tellomi_get_file_hashes`, boolean. Missing or true runs the check. False skips the RPC. The generated `TL_upload_getFileHashes#c7025931` (`offset:int`) stays as upstream wrote it.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiFileHashes.java` | Part rules, the long-offset request, fail-open, and the kill switch. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java` | Starts the RPC on the download and holds `onFinishLoadingFile` until the check, the miss, or the timeout. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiFileHashesTest.java` | 128 KiB parts, mismatch versus miss, the switch, and that the upload path is not hooked. |
+
+## Discover personalization switch (D-58)
+
+Settings → Privacy and Security has a Discover section with 「个性化推荐」. The switch defaults on and is stored per account in `mainconfig` (`MessagesController.getMainSettings`), key `tellomi_discover_personalized`, the same file as `tellomi_show_feed_tab` and `tellomi_discover_city`. A missing key is on.
+
+The recommend request reads that switch. On matches the production URL: `GET /v1/feed/recommend` with no `personalized` query. Off reloads the recommend tab immediately with `personalized=false`. Following still ignores the flag. A recommend page that is not on screen is dropped so the next visit refetches.
+
+`personalization_toggle_visible` is still parsed onto `EngineConfig` and does not hide the row. The parser stores false both when the key is omitted and when it is false, so the configs this client already accepts would hide the only control that can send `personalized=false`. The row is always on this screen.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | Discover section, switch, and footer. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverPersonalization.java` | Preference, default on, and the recommend reload signal. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
+| `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |

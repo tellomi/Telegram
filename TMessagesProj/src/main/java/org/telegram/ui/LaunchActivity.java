@@ -26,6 +26,7 @@ import android.app.PictureInPictureUiState;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -124,6 +125,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.TellomiAppUpdate;
+import org.telegram.messenger.TellomiReleaseUpdate;
 import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -1629,6 +1631,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         String conferenceSlug = null;
         boolean forceNotInternalForApps = intent.getBooleanExtra(EXTRA_FORCE_NOT_INTERNAL_APPS, false);
         boolean forceRequest = intent.getBooleanExtra(EXTRA_FORCE_REQUEST, false);
+        if (!restore) {
+            String discoverPost = intent.getStringExtra(org.telegram.ui.tellomi.feed.TellomiDiscoverPush.EXTRA_POST);
+            android.net.Uri discoverUri = org.telegram.ui.tellomi.feed.TellomiDiscoverPush.openUri(discoverPost);
+            if (discoverUri != null && TellomiTabs.consumeFeedPostLink(this, discoverUri, intentAccount[0])) {
+                return true;
+            }
+        }
 
         photoPathsArray = null;
         videoPath = null;
@@ -2018,6 +2027,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     return false;
                                 case "http":
                                 case "https": {
+                                    if (TellomiTabs.consumeFeedPostLink(this, data, intentAccount[0])) {
+                                        intent.setAction(null);
+                                        if (progress != null) {
+                                            progress.end();
+                                        }
+                                        return true;
+                                    }
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
@@ -6152,9 +6168,21 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             });
             return;
         }
-        if (!force && Math.abs(System.currentTimeMillis() - SharedConfig.lastUpdateCheckTime) < MessagesController.getInstance(0).updateCheckDelay * 1000) {
+        final int installedVersion = SharedConfig.buildVersion();
+        if (!force && TellomiAppUpdate.shouldSkipAutomaticCheck(
+                System.currentTimeMillis(),
+                SharedConfig.lastUpdateCheckTime,
+                MessagesController.getInstance(0).updateCheckDelay,
+                installedVersion,
+                SharedConfig.hasLastUpdateCheckVersion,
+                SharedConfig.lastUpdateCheckVersion)) {
             return;
         }
+        if (ApplicationLoader.supportsInAppUpdates()) {
+            checkTellomiReleaseFeed(installedVersion, progress);
+            return;
+        }
+        SharedConfig.rememberUpdateCheckVersion(installedVersion);
         final TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
         try {
             req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
@@ -6222,6 +6250,99 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (progress != null) {
             progress.init();
             progress.onCancel(() -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
+        }
+    }
+
+    private int tellomiReleaseCheckGeneration;
+
+    /**
+     * Shipped App module. Reads the release feeds and compares {@code versionCode}.
+     * Standalone and beta builds stay on the {@code help.getAppUpdate} path above.
+     */
+    private void checkTellomiReleaseFeed(int installedVersion, Browser.Progress progress) {
+        final int token = ++tellomiReleaseCheckGeneration;
+        final int account = currentAccount;
+        int localCode = installedVersion;
+        String localName = BuildVars.BUILD_VERSION_STRING;
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (info.versionCode != 0) {
+                localCode = info.versionCode;
+            }
+            if (info.versionName != null && info.versionName.length() > 0) {
+                localName = info.versionName;
+            }
+        } catch (Exception ignore) {
+        }
+        final int code = localCode;
+        final String name = localName;
+        if (progress != null) {
+            progress.init();
+            progress.onCancel(() -> {
+                if (tellomiReleaseCheckGeneration == token) {
+                    tellomiReleaseCheckGeneration++;
+                }
+            });
+        }
+        Utilities.globalQueue.postRunnable(() -> {
+            TellomiReleaseUpdate.Manifest manifest = null;
+            try {
+                manifest = TellomiReleaseUpdate.fetch();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            final TellomiReleaseUpdate.Manifest resolved = manifest;
+            AndroidUtilities.runOnUIThread(() -> finishTellomiReleaseCheck(token, code, name, resolved, progress, account));
+        });
+    }
+
+    private void finishTellomiReleaseCheck(int token, int localCode, String localName, TellomiReleaseUpdate.Manifest manifest, Browser.Progress progress, int account) {
+        if (token != tellomiReleaseCheckGeneration || isFinishing()) {
+            if (progress != null) {
+                progress.end();
+            }
+            return;
+        }
+        if (manifest == null) {
+            if (progress != null) {
+                progress.end();
+                showUpdateBulletin(LocaleController.getString(R.string.TellomiCheckForUpdatesFailed));
+            }
+            return;
+        }
+        SharedConfig.lastUpdateCheckTime = System.currentTimeMillis();
+        SharedConfig.rememberUpdateCheckVersion(localCode);
+        SharedConfig.saveConfig();
+        String download = TellomiReleaseUpdate.downloadUrl(manifest);
+        boolean newer = TellomiReleaseUpdate.isNewer(localCode, localName, manifest) && download != null;
+        FileLog.d("tellomi release feed versionCode=" + manifest.versionCode + " name=" + manifest.versionName + " localCode=" + localCode + " newer=" + newer);
+        if (progress != null) {
+            progress.end();
+        }
+        if (!newer) {
+            if (progress != null) {
+                showUpdateBulletin(LocaleController.getString(R.string.YourVersionIsLatest));
+            }
+            return;
+        }
+        TLRPC.TL_help_appUpdate update = new TLRPC.TL_help_appUpdate();
+        update.version = manifest.versionName;
+        update.url = download;
+        update.flags |= TLRPC.TL_help_appUpdate.FLAG_2;
+        update.text = manifest.notes == null ? "" : manifest.notes;
+        update.can_not_skip = false;
+        update.id = manifest.versionCode;
+        SharedConfig.setNewAppVersionAvailable(update, manifest.versionCode);
+        if (ApplicationLoader.applicationLoaderInstance != null) {
+            ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, update, account);
+        }
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
+    }
+
+    private void showUpdateBulletin(String text) {
+        BaseFragment fragment = getLastFragment();
+        if (fragment != null && text != null) {
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.chats_infotip, text).show();
         }
     }
 
