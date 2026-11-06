@@ -116,7 +116,7 @@ List icons that used Telegram's colored rounded plates are black, white, or gray
 
 ## CI APK
 
-GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these.
+GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these. Ordinary push and pull_request runs compile native code, Java, and resources. They do not install the release keystore or upload an installable APK. Run workflow, a `v*` tag, and `release/android` still package.
 
 | File | Change |
 | --- | --- |

@@ -2,7 +2,7 @@
 
 GitHub Actions workflow: [`.github/workflows/android-apk.yml`](../../.github/workflows/android-apk.yml).
 
-It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, application id `app.tellomi.chat`) and the native library `libtmessages.49.so` for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. That is the same APK as a local `./gradlew :TMessagesProj_App:assembleAfatDebug` (or `assembleAfatRelease` when the signing secrets below are set).
+It builds the `tellomi` flavor of `TMessagesProj_App` (the `afat` variant, application id `app.tellomi.chat`) and the native library `libtmessages.49.so` for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. A packaged APK is the same file as a local `./gradlew :TMessagesProj_App:assembleAfatDebug` (or `assembleAfatRelease` when the signing secrets below are set).
 
 The workflow runs on:
 
@@ -10,7 +10,11 @@ The workflow runs on:
 - every `pull_request`
 - `workflow_dispatch` (Actions → **Android APK** → **Run workflow**)
 
-Toolchain, matching `TMessagesProj/build.gradle`: JDK 17, Android SDK 36, build-tools 36.0.0, NDK **27.2.12479018**, CMake **3.22.1**. Each ABI is compiled on its own runner (full LTO does not fit four ABIs on one GitHub-hosted disk), then a package job assembles the fat APK. Gradle dependencies, ccache, and an unchanged `libtmessages.49.so` are cached between runs.
+An ordinary `push` or `pull_request` compiles the native libraries, Java, and resources. It does not read the release keystore, sign, or upload an installable APK. Before this gate, those runs did install the keystore and upload `tellomi-release` when the four signing secrets were set. Publish to R2 was already skipped for them.
+
+An installable APK is assembled only when someone runs the workflow by hand, or when the existing publish paths run: a push of a `v*` tag, or a push to `release/android`. No other ref was added.
+
+Toolchain, matching `TMessagesProj/build.gradle`: JDK 17, Android SDK 36, build-tools 36.0.0, NDK **27.2.12479018**, CMake **3.22.1**. Each ABI is compiled on its own runner (full LTO does not fit four ABIs on one GitHub-hosted disk). A package run then assembles the fat APK. Gradle dependencies, ccache, and an unchanged `libtmessages.49.so` are cached between runs. The `native-<abi>-debug` and `native-<abi>-release` artifacts are that `.so` only. They are not signed and cannot be installed on a phone.
 
 ## Debug and release
 
@@ -34,10 +38,12 @@ The checked-in dummy key stays in git. Release signing on your laptop is still t
 ## Download the APK
 
 1. Open the repository **Actions** tab.
-2. Open **Android APK** and select the run (a push, a pull request, or a manual run).
-3. Wait until the **Package Tellomi APK** job is green.
+2. Open **Android APK** and select a manual run, a `v*` tag run, or a `release/android` run.
+3. Wait until **Verify or package Tellomi** is green and the assemble step ran.
 4. In the run summary, download the artifact named `tellomi-debug` or `tellomi-release`.
 5. Unzip it. The file inside is `tellomi-debug.apk` or `tellomi-release.apk`.
+
+A push or pull request run has no `tellomi-debug` or `tellomi-release` artifact. Its `native-*` artifacts are the `.so` libraries described above.
 
 The workflow page is `https://github.com/tellomi/Telegram/actions/workflows/android-apk.yml`. Each run's URL looks like `https://github.com/tellomi/Telegram/actions/runs/<run-id>`. The artifact is on that page; it is not attached to the pull request.
 
@@ -57,7 +63,7 @@ git push origin <commit>:release/android
 
 If `release/android` already exists, that push has to be a fast-forward. The push builds the signed APK and uploads it with `Tools/tellomi-publish-installer.sh` to R2 bucket `tellomi-updates`, the same upload as **Run workflow** with `publish=release`: `android/<versionName>-<versionCode>/Tellomi.apk`, then `android/latest.json`. The Chengdu server copies that manifest to https://www.tellomi.cn/dl/ within about 10 minutes. `versionName` is `APP_VERSION_NAME` from `gradle.properties`. `versionCode` is the per-run code from the package job.
 
-- A push to `master`, including a merge of new features, builds the APK and does not publish.
+- A push to `master`, including a merge of new features, verifies the build and does not assemble or upload an installable APK. It does not publish.
 - A push to `release/android` publishes the release channel.
 - **Run workflow** still follows the `publish` input: `release`, `test`, or `none` (the default, which does not upload).
 - A push of a `v*` tag still publishes the test channel (`android/test/`), pruned after 14 days.
