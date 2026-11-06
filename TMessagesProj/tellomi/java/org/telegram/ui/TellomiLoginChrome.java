@@ -42,7 +42,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.OutlineTextContainerView
 
 public final class TellomiLoginChrome {
 
@@ -82,15 +83,30 @@ public final class TellomiLoginChrome {
 
     /** Page and field label. Light stays #111111; dark uses white so typed text stays readable. */
     public static int text() {
-        return night() ? 0xFFFFFFFF : TEXT;
+        return TellomiContrast.digit(night());
     }
 
     public static int fieldFill() {
-        return night() ? 0xFF2C2C2E : FIELD;
+        return TellomiContrast.field(night());
     }
 
     public static int fieldHint() {
-        return night() ? 0xFF8E8E93 : 0xFFC7C7CC;
+        return TellomiContrast.hint(night());
+    }
+
+    /**
+     * Typed text, hint, cursor, and selection for one field. Cursor and selection
+     * follow the same ink as the digits so a dark field does not keep a black cursor.
+     */
+    public static void applyInput(EditTextBoldCursor field) {
+        if (field == null) {
+            return;
+        }
+        boolean night = night();
+        field.setTextColor(TellomiContrast.digit(night));
+        field.setHintTextColor(TellomiContrast.hint(night));
+        field.setCursorColor(TellomiContrast.digit(night));
+        field.setHighlightColor(TellomiContrast.selection(night));
     }
 
     /** Light CTA is #111111. On a dark page that color disappears into the chrome, so the button flips to white. */
@@ -346,6 +362,7 @@ public final class TellomiLoginChrome {
         row.setBackground(background);
         ImageView icon = new ImageView(context);
         icon.setImageResource(iconRes);
+        icon.setColorFilter(new android.graphics.PorterDuffColorFilter(text(), android.graphics.PorterDuff.Mode.SRC_IN));
         icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(AndroidUtilities.dp(22), AndroidUtilities.dp(22));
         iconLp.leftMargin = AndroidUtilities.dp(16);
