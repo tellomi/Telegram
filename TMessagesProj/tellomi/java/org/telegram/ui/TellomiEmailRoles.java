@@ -3,7 +3,7 @@ package org.telegram.ui;
 /**
  * Email identity versus a phone account's attached login email versus recovery.
  *
- * <p>Server contract (teamgram-server PR 227, {@code 2f791858}): an email-only
+ * <p>Server contract (teamgram-server PR 227, head {@code b4a57578}): an email-only
  * account stores the address in {@code users.email} and leaves {@code users.phone}
  * NULL. {@code account.getPassword.login_email_pattern} is a read-only mask of
  * that address ({@code u***@tellomi.app}), returned even when there is no cloud
@@ -104,6 +104,14 @@ public final class TellomiEmailRoles {
     /** A pure-email registration does not set the two-step recovery email. */
     public static boolean countsAsRecovery(String signInEmail) {
         return false;
+    }
+
+    /**
+     * {@code help.getPromoData} on head {@code b4a57578} does not offer these.
+     * A copy saved before that filter must not open the attach form.
+     */
+    public static boolean isSetupLoginEmailSuggestion(String name) {
+        return "SETUP_LOGIN_EMAIL".equals(name) || "SETUP_LOGIN_EMAIL_NOSKIP".equals(name);
     }
 
     public static boolean looksLikePhone(String phone) {

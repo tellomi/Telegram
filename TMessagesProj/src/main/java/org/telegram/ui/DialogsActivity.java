@@ -13630,7 +13630,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             final LoginActivity loginActivity = new LoginActivity().changeEmail(() -> {
                 Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourceProvider);
                 layout.setAnimation(R.raw.email_check_inbox);
-                layout.textView.setText(getString(R.string.YourLoginEmailChangedSuccess));
+                layout.textView.setText(getString(R.string.TellomiLoginEmailChanged));
                 int duration = Bulletin.DURATION_LONG;
 
                 Bulletin.make(DialogsActivity.this, layout, duration).show();
