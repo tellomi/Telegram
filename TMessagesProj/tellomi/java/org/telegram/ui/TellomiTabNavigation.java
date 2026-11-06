@@ -137,7 +137,7 @@ public final class TellomiTabNavigation {
         if (openFeed) {
             return TellomiTabs.Tab.FEED;
         }
-        return TellomiTabs.landing(current);
+        return current == null ? TellomiTabs.Tab.CHATS : current;
     }
 
     /** Long-press hide. Chats, the removed Settings tab, and Profile are unchanged. */

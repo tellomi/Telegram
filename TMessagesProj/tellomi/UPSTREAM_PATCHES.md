@@ -1023,13 +1023,16 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 
 ## Settings leaves the bottom bar
 
-The bottom bar no longer includes Settings. Profile stays, and its existing settings button still opens `SettingsActivity`. Discover, Chats, Calls, and Contacts keep their order. Chats is still the pager start. A selection that was Settings, including a saved pager index in the old six-tab order, opens Profile. The settings glass tab is hidden and removed from accessibility. `tg://settings` and the profile button still present `SettingsActivity` on the stack. The navigation page no longer lists Settings, and its footer no longer says Settings stays in the bar.
+The bottom bar no longer includes Settings. Profile stays, and its existing settings button still opens `SettingsActivity`. Discover, Chats, Calls, and Contacts keep their order. Chats is still the pager start. The settings glass tab is hidden and removed from accessibility. `tg://settings` and the profile button still present `SettingsActivity` on the stack. The navigation page no longer lists Settings, and its footer no longer says Settings stays in the bar.
+
+The selected page is not stored. `ViewPagerActivity.clearViews` keeps the current pager index only on that live object. `createView` uses it if the object is still alive, and otherwise calls `getStartPosition`, which is Chats. `MainTabsActivity` does not implement `saveSelfArgs`. There is no old Settings selection to move, so nothing maps that tab onto Profile.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Settings is not in `visible`. `landing` and `restoredPagerPosition` send that selection to Profile. The glass tab stays hidden. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | The navigation list omits Settings. Keeping a Settings selection opens Profile unless a post link opens Discover. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Settings is not in `visible`. The glass tab stays hidden. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | The navigation list omits Settings. A post link still opens Discover. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | The page comment matches the shorter list. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` and the navigation footer strings | Chats is the tab that cannot be turned off. |
-| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabsTest.java` | Orders, the saved Settings index, and the profile settings button. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabsTest.java` | Orders, the Chats start path, and the profile settings button. |
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Footer copy and the shorter row list. |
+| `TMessagesProj/build.gradle` | Unit-test compile can see `com.sun.net.httpserver` for the existing release-update test. Production compile is unchanged. |

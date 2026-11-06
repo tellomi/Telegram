@@ -28,7 +28,7 @@ import java.util.List;
  * Order when everything is on: Discover, Chats, Calls, Contacts, Profile.
  * A fresh install shows Discover, Chats, and Profile. Chats cannot be removed.
  * Settings is not a bottom tab. Profile still opens Settings. The pager starts on Chats.
- * A pager that was sitting on Settings lands on Profile.
+ * The selected page is not written to disk. A new process starts on Chats.
  *
  * Visual indices match {@code MainTabsActivity}'s tab array: chats 0, contacts 1,
  * settings 2, calls 3, profile 4, discover 5.
@@ -111,33 +111,6 @@ public final class TellomiTabs {
         }
         tabs.add(Tab.PROFILE);
         return tabs;
-    }
-
-    /**
-     * A saved selection of the removed Settings tab opens Profile.
-     * Other tabs stay put. A missing selection opens Chats.
-     */
-    public static Tab landing(Tab selected) {
-        if (selected == Tab.SETTINGS) {
-            return Tab.PROFILE;
-        }
-        return selected == null ? Tab.CHATS : selected;
-    }
-
-    /**
-     * Pager index after Settings leaves the bar. {@code before} is the old
-     * order, {@code savedPosition} is the index that was selected.
-     */
-    public static int restoredPagerPosition(List<Tab> before, int savedPosition, List<Tab> after) {
-        Tab selected = null;
-        if (before != null && savedPosition >= 0 && savedPosition < before.size()) {
-            selected = before.get(savedPosition);
-        }
-        int pos = indexOf(after, landing(selected));
-        if (pos < 0) {
-            pos = indexOf(after, Tab.CHATS);
-        }
-        return pos < 0 ? 0 : pos;
     }
 
     public static int indexOf(List<Tab> tabs, Tab tab) {

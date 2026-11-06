@@ -79,23 +79,23 @@ public class TellomiTabsTest {
     }
 
     @Test
-    public void aSavedSettingsSelectionOpensProfile() {
-        List<TellomiTabs.Tab> before = Arrays.asList(
-            TellomiTabs.Tab.FEED,
-            TellomiTabs.Tab.CHATS,
-            TellomiTabs.Tab.CALLS,
-            TellomiTabs.Tab.CONTACTS,
-            TellomiTabs.Tab.SETTINGS,
-            TellomiTabs.Tab.PROFILE
-        );
-        List<TellomiTabs.Tab> after = TellomiTabs.visible(new TellomiTabs.Visibility(true, true, true));
-        assertEquals(TellomiTabs.Tab.PROFILE, TellomiTabs.landing(TellomiTabs.Tab.SETTINGS));
-        assertEquals(4, TellomiTabs.restoredPagerPosition(before, 4, after));
-        assertEquals(TellomiTabs.Tab.PROFILE, after.get(TellomiTabs.restoredPagerPosition(before, 4, after)));
-        assertEquals(4, TellomiTabs.restoredPagerPosition(before, 5, after));
-        assertEquals(1, TellomiTabs.restoredPagerPosition(before, 1, after));
-        assertEquals(TellomiTabs.Tab.PROFILE, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.SETTINGS, false));
+    public void settingsSelectionIsNotRewrittenAndANewLaunchStartsOnChats() throws Exception {
+        assertEquals(TellomiTabs.Tab.SETTINGS, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.SETTINGS, false));
         assertEquals(TellomiTabs.Tab.FEED, TellomiTabNavigation.tabToKeep(TellomiTabs.Tab.SETTINGS, true));
+        assertEquals(TellomiTabs.Tab.CHATS, TellomiTabNavigation.tabToKeep(null, false));
+        assertEquals(1, TellomiTabs.indexOf(TellomiTabs.visible(TellomiTabs.Visibility.fresh()), TellomiTabs.Tab.CHATS));
+
+        String pager = read("TMessagesProj/src/main/java/org/telegram/ui/ViewPagerActivity.java");
+        int create = pager.indexOf("initialFragmentPosition = getStartPosition()");
+        int memory = pager.indexOf("initialFragmentPosition = viewPager.getCurrentPosition()");
+        assertTrue(create > 0);
+        assertTrue(memory > 0);
+        assertFalse(pager.contains("restoredPagerPosition"));
+        String tabs = read("TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java");
+        assertFalse(tabs.contains("restoredPagerPosition"));
+        String main = read("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java");
+        assertTrue(main.contains("return TellomiTabs.startPosition(currentAccount, POSITION_CHATS)"));
+        assertFalse(main.contains("saveSelfArgs"));
     }
 
     @Test
@@ -104,10 +104,18 @@ public class TellomiTabsTest {
         assertEquals(-1, TellomiTabs.indexOf(TellomiTabs.visible(TellomiTabs.Visibility.fresh()), TellomiTabs.Tab.CONTACTS));
         assertEquals(0, TellomiTabs.indexOf(TellomiTabs.visible(TellomiTabs.Visibility.fresh()), TellomiTabs.Tab.FEED));
         assertEquals(2, TellomiTabs.indexOf(TellomiTabs.visible(TellomiTabs.Visibility.fresh()), TellomiTabs.Tab.PROFILE));
-        String profile = new String(java.nio.file.Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void profileSettingsButtonStillOpensSettings() throws Exception {
+        String profile = read("TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java");
         int settings = profile.indexOf("case ProfileActionsView.KEY_SETTINGS:");
         assertTrue(settings > 0);
         assertTrue(profile.substring(settings, settings + 120).contains("new SettingsActivity()"));
+    }
+
+    private static String read(String relative) throws Exception {
+        return new String(java.nio.file.Files.readAllBytes(find(relative).toPath()), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private static java.io.File find(String relative) {
