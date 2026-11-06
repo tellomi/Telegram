@@ -157,6 +157,117 @@ public final class TellomiDiscoverParse {
         return stringValue(json.objectValue.get("error"));
     }
 
+    /**
+     * {@code 201}/{@code 200 {"id","state","version","held"?}}. {@code held} may be absent.
+     * A missing id, state, or version is not a created comment.
+     */
+    public static TellomiDiscover.CommentCreated commentCreated(byte[] data) {
+        TellomiJson json = object(data);
+        if (json == null) {
+            return null;
+        }
+        String id = TellomiDiscover.postId(stringValue(json.objectValue.get("id")));
+        String state = stringValue(json.objectValue.get("state"));
+        Integer version = intValue(json.objectValue.get("version"));
+        if (id == null || state == null || state.isEmpty() || version == null) {
+            return null;
+        }
+        Boolean held = null;
+        if (json.objectValue.containsKey("held")) {
+            held = boolValue(json.objectValue.get("held"));
+            if (held == null) {
+                return null;
+            }
+        }
+        return new TellomiDiscover.CommentCreated(id, state, version, held);
+    }
+
+    /**
+     * Public comments, oldest first. Pending rows are omitted. A comment whose
+     * {@code post_id} is another post is omitted. More than 50 rows is unreadable.
+     */
+    public static TellomiDiscover.CommentPage commentPage(byte[] data, String postId) {
+        TellomiJson json = object(data);
+        if (json == null) {
+            return null;
+        }
+        TellomiJson values = json.objectValue.get("comments");
+        if (values == null || values.type != TellomiJson.Type.ARRAY) {
+            return null;
+        }
+        if (values.arrayValue.size() > TellomiDiscoverReact.COMMENT_PAGE) {
+            return null;
+        }
+        String cursor = null;
+        if (json.objectValue.containsKey("cursor")) {
+            TellomiJson rawCursor = json.objectValue.get("cursor");
+            if (rawCursor == null || rawCursor.type != TellomiJson.Type.STRING) {
+                return null;
+            }
+            cursor = rawCursor.stringValue;
+            if (cursor.isEmpty()) {
+                cursor = null;
+            }
+        }
+        java.util.List<TellomiDiscover.Comment> parsed = new java.util.ArrayList<>();
+        for (int i = 0; i < values.arrayValue.size(); i++) {
+            TellomiJson item = values.arrayValue.get(i);
+            if (item == null || item.type != TellomiJson.Type.OBJECT) {
+                return null;
+            }
+            TellomiDiscover.Comment comment = commentCard(item, postId);
+            if (comment == null) {
+                continue;
+            }
+            parsed.add(comment);
+        }
+        return new TellomiDiscover.CommentPage(parsed, cursor);
+    }
+
+    private static TellomiDiscover.Comment commentCard(TellomiJson item, String expectedPost) {
+        String id = TellomiDiscover.postId(stringValue(item.objectValue.get("id")));
+        if (id == null) {
+            return null;
+        }
+        String state = stringValue(item.objectValue.get("state"));
+        if (state != null && !"ok".equals(state)) {
+            return null;
+        }
+        String post = stringValue(item.objectValue.get("post_id"));
+        if (post != null) {
+            post = TellomiDiscover.postId(post);
+            if (post == null || (expectedPost != null && !expectedPost.equals(post))) {
+                return null;
+            }
+        }
+        String root = uuidOrNull(item.objectValue.get("root_id"));
+        String parent = uuidOrNull(item.objectValue.get("parent_id"));
+        if (item.objectValue.containsKey("root_id") && root == null) {
+            return null;
+        }
+        if (item.objectValue.containsKey("parent_id") && parent == null) {
+            return null;
+        }
+        TellomiJson body = objectValue(item.objectValue.get("card"));
+        TellomiJson author = body == null ? null : objectValue(body.objectValue.get("author"));
+        String text = body == null ? null : stringValue(body.objectValue.get("text"));
+        if (text == null) {
+            text = stringValue(item.objectValue.get("text"));
+        }
+        String authorName = author == null ? "" : empty(stringValue(author.objectValue.get("display_name")));
+        TellomiJson me = objectValue(item.objectValue.get("me"));
+        Boolean own = me == null ? null : boolValue(me.objectValue.get("author"));
+        return new TellomiDiscover.Comment(id, text == null ? "" : text, state == null ? "ok" : state, authorName, post, root, parent, own != null && own);
+    }
+
+    private static String uuidOrNull(TellomiJson json) {
+        String value = stringValue(json);
+        if (value == null || !TellomiDiscover.clientNonce(value)) {
+            return null;
+        }
+        return value;
+    }
+
     public static TellomiDiscover.Post displayPost(TellomiDiscover.Card card) {
         TellomiDiscover.Post post = new TellomiDiscover.Post(
             card.id,
@@ -177,6 +288,8 @@ public final class TellomiDiscoverParse {
             card.city
         );
         post.comments = card.comments == null ? java.util.Collections.emptyList() : card.comments;
+        post.liked = card.liked;
+        post.likesHidden = card.likesHidden;
         post.shareable = card.shareable;
         post.poll = card.poll;
         post.linkPreview = card.linkPreview;
@@ -232,6 +345,11 @@ public final class TellomiDiscoverParse {
             body == null ? null : stringValue(body.objectValue.get("ip_region_label")),
             city
         );
+        TellomiJson me = objectValue(json.objectValue.get("me"));
+        Boolean liked = me == null ? null : boolValue(me.objectValue.get("liked"));
+        Boolean likesHidden = stats == null ? null : boolValue(stats.objectValue.get("likes_hidden"));
+        card.liked = liked != null && liked;
+        card.likesHidden = likesHidden != null && likesHidden;
         card.comments = comments(json.objectValue.get("comments"));
         card.poll = poll(body == null ? null : body.objectValue.get("poll"), json.objectValue.get("poll"));
         card.linkPreview = TellomiDiscoverLink.stored(body, json);

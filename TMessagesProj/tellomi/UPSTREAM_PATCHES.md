@@ -1021,6 +1021,22 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
 | `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |
 
+## Discover likes and public text comments
+
+Likes and text comments use the discover bearer on the content-engine. `PUT` and `DELETE /v1/feed/posts/{id}/like` send an empty body and `surface` (`recommend` by default, also `following`, `hot`, `search`, `profile`). Success is 204. `POST /v1/feed/posts/{id}/comments` sends `text`, optional `parent_id`, and `client_nonce`. It does not send `media_keys` or `operation_id`. `GET` the same path pages public comments, oldest first, 50 at a time. `DELETE /v1/feed/posts/{commentId}` deletes that comment only.
+
+A card reads `me.liked`, `stats.likes`, and `stats.likes_hidden`. A hidden count is not shown as 0. A pending comment is not added to the public count. One like request is in flight. Its confirmed count changes only when that request succeeds. Taps during the flight stay as the desired state. An uncertain failure of the older request sends one idempotent like or unlike for that latest state, then stops. A 403 or 404 does not send again; the button returns to the confirmed count and the error stays on screen. Leaving the list or the post drops a late response. `401 credential_expired` refreshes the discover token once. `404 feed_hidden` hides the feed. Comment errors stay on the post; they are not sent as a private message. Voting, forwarding, and reporting are unchanged. Stories are unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiDiscover.java` | Like, comment list, comment create, and comment delete calls. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverParse.java` | `me.liked`, hidden like counts, comment pages. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverReact.java` | Like serialization and comment page state. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Like control on a post row when `reactions` is in capabilities. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverPostFragment.java` | Like, comment field, list, and paging when the capabilities allow them. |
+| `TMessagesProj/tellomi/java/.../TellomiPack.java` and discover strings | The like and comment phrases. |
+| `TMessagesProj/src/test/java/.../TellomiDiscoverReactTest.java` | Contract, failure restore, paging, and nonce retry. |
+
 ## Settings leaves the bottom bar
 
 The bottom bar no longer includes Settings. Profile stays, and its existing settings button still opens `SettingsActivity`. Discover, Chats, Calls, and Contacts keep their order. Chats is still the pager start. The settings glass tab is hidden and removed from accessibility. `tg://settings` and the profile button still present `SettingsActivity` on the stack. The navigation page no longer lists Settings, and its footer no longer says Settings stays in the bar.
