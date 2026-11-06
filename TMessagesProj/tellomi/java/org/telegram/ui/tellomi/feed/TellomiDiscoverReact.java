@@ -100,6 +100,9 @@ public final class TellomiDiscoverReact {
         if (result.status == 401) {
             return TellomiDiscover.Outcome.failure(TellomiDiscover.ClientError.UNAUTHORIZED);
         }
+        if (result.status == 403) {
+            return TellomiDiscover.Outcome.failure(TellomiDiscover.ClientError.UNAUTHORIZED);
+        }
         if (operation.kind == TellomiDiscover.Operation.Kind.LIKE || operation.kind == TellomiDiscover.Operation.Kind.UNLIKE || operation.kind == TellomiDiscover.Operation.Kind.DELETE_COMMENT) {
             if (result.status == 204) {
                 return TellomiDiscover.Outcome.success(TellomiDiscover.Decoded.done());
@@ -229,13 +232,19 @@ public final class TellomiDiscoverReact {
             public final String postId;
             public final boolean on;
             public final String surface;
+            /** Tap count when this request was built. Later taps make a newer intent. */
+            final int intentVersion;
+            /** One idempotent follow-up after an uncertain failure. Never a 403 or 404 retry. */
+            final boolean automatic;
 
-            Request(int generation, int version, String postId, boolean on, String surface) {
+            Request(int generation, int version, String postId, boolean on, String surface, int intentVersion, boolean automatic) {
                 this.generation = generation;
                 this.version = version;
                 this.postId = postId;
                 this.on = on;
                 this.surface = surface;
+                this.intentVersion = intentVersion;
+                this.automatic = automatic;
             }
         }
 
@@ -243,11 +252,13 @@ public final class TellomiDiscoverReact {
         private String surface = "recommend";
         private int generation = 1;
         private int nextVersion = 1;
+        private int intentVersion;
         private boolean confirmedLiked;
         private boolean targetLiked;
         private int confirmedCount;
         private boolean hidden;
         private Request inflight;
+        private TellomiDiscover.ClientError failure;
 
         public static Like start(String postId, boolean liked, int count, boolean hidden, String surface) {
             Like like = new Like();
@@ -262,6 +273,22 @@ public final class TellomiDiscoverReact {
 
         public boolean idle() {
             return inflight == null && targetLiked == confirmedLiked;
+        }
+
+        public TellomiDiscover.ClientError failure() {
+            return failure;
+        }
+
+        public int generation() {
+            return generation;
+        }
+
+        /** The page went away. A response for the old generation does not change this like. */
+        public void close() {
+            generation++;
+            inflight = null;
+            targetLiked = confirmedLiked;
+            failure = null;
         }
 
         /** A freshly loaded card may replace an idle like. An in-flight tap is left alone. */
@@ -305,43 +332,91 @@ public final class TellomiDiscoverReact {
         }
 
         public Request tap() {
+            intentVersion++;
             targetLiked = !targetLiked;
+            failure = null;
             if (inflight != null) {
                 return null;
             }
-            return send();
+            return send(false);
         }
 
-        /** @return the next request when the desired state is still ahead of the confirmed one */
         public Request complete(int generation, int version, boolean ok) {
+            return finish(generation, version, ok ? null : TellomiDiscover.ClientError.UNAVAILABLE);
+        }
+
+        /**
+         * {@code error} null is success. A newer tap during the flight is kept.
+         * An uncertain failure of that newer intent sends one idempotent like or unlike.
+         * 403 and 404 do not send again. The confirmed count moves only on success.
+         */
+        public Request finish(int generation, int version, TellomiDiscover.ClientError error) {
             if (this.generation != generation || inflight == null || inflight.version != version) {
                 return null;
             }
-            boolean sent = inflight.on;
+            Request sent = inflight;
+            boolean sentOn = sent.on;
             inflight = null;
-            if (ok) {
+            if (error == null) {
                 if (!hidden) {
-                    if (sent && !confirmedLiked) {
+                    if (sentOn && !confirmedLiked) {
                         confirmedCount++;
                     }
-                    if (!sent && confirmedLiked) {
+                    if (!sentOn && confirmedLiked) {
                         confirmedCount = Math.max(0, confirmedCount - 1);
                     }
                 }
-                confirmedLiked = sent;
-            } else {
+                confirmedLiked = sentOn;
+                failure = null;
+                if (targetLiked != confirmedLiked) {
+                    return send(false);
+                }
+                return null;
+            }
+            if (permanent(error) || sent.automatic || sent.intentVersion == intentVersion) {
                 targetLiked = confirmedLiked;
+                failure = error;
+                return null;
             }
-            if (targetLiked != confirmedLiked) {
-                return send();
-            }
-            return null;
+            failure = null;
+            return send(true);
         }
 
-        private Request send() {
-            inflight = new Request(generation, nextVersion++, postId, targetLiked, surface);
+        private Request send(boolean automatic) {
+            inflight = new Request(generation, nextVersion++, postId, targetLiked, surface, intentVersion, automatic);
             return inflight;
         }
+    }
+
+    /** List and detail both apply a like response through here. */
+    public static Like.Request onLikeHttp(Like like, Like.Request request, TellomiDiscover.Outcome outcome) {
+        if (like == null || request == null || request.generation != like.generation()) {
+            return null;
+        }
+        TellomiDiscover.ClientError error = null;
+        if (outcome == null || !outcome.ok()) {
+            error = outcome == null || outcome.error == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error;
+        }
+        return like.finish(request.generation, request.version, error);
+    }
+
+    public static boolean permanentLikeFailure(TellomiDiscover.ClientError error) {
+        return permanent(error);
+    }
+
+    private static boolean permanent(TellomiDiscover.ClientError error) {
+        return error == TellomiDiscover.ClientError.NOT_FOUND
+            || error == TellomiDiscover.ClientError.HIDDEN
+            || error == TellomiDiscover.ClientError.UNAUTHORIZED
+            || error == TellomiDiscover.ClientError.PROFILE_REQUIRED
+            || error == TellomiDiscover.ClientError.INVALID_TEXT
+            || error == TellomiDiscover.ClientError.INVALID_NONCE
+            || error == TellomiDiscover.ClientError.INVALID_PARENT
+            || error == TellomiDiscover.ClientError.COMMENTS_CLOSED
+            || error == TellomiDiscover.ClientError.REPLY_NOT_ALLOWED
+            || error == TellomiDiscover.ClientError.HARASSMENT_GUARD
+            || error == TellomiDiscover.ClientError.NOT_COMMENTABLE
+            || error == TellomiDiscover.ClientError.BAD_CURSOR;
     }
 
     /** Public comments for one post. Pending rows stay out of {@link #publicCount()}. */

@@ -46,6 +46,7 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
     private boolean commentsOn;
     private String replyParent;
     private TellomiDiscoverReact.Like likeSession;
+    private boolean destroyed;
     private final TellomiDiscoverReact.Comments commentThread = new TellomiDiscoverReact.Comments();
 
     public TellomiDiscoverPostFragment(String postId) {
@@ -67,6 +68,10 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
 
     @Override
     public void onFragmentDestroy() {
+        destroyed = true;
+        if (likeSession != null) {
+            likeSession.close();
+        }
         if (loader != null) {
             loader.cancel();
         }
@@ -238,17 +243,17 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
         loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.like(request.postId, request.on, request.surface), new TellomiDiscover.Completion() {
             @Override
             public void onResult(TellomiDiscover.Outcome outcome) {
-                if (likeSession == null) {
+                if (destroyed || likeSession == null) {
                     return;
                 }
-                boolean ok = outcome != null && outcome.ok();
-                TellomiDiscoverReact.Like.Request next = likeSession.complete(request.generation, request.version, ok);
+                TellomiDiscoverReact.Like.Request next = TellomiDiscoverReact.onLikeHttp(likeSession, request, outcome);
                 paintLike();
-                if (!ok) {
-                    setCommentStatus(outcome == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error);
-                }
                 if (next != null) {
                     sendLike(next);
+                    return;
+                }
+                if (likeSession.failure() != null) {
+                    setCommentStatus(likeSession.failure());
                 }
             }
         });

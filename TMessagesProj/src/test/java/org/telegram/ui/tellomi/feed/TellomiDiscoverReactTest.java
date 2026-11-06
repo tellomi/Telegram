@@ -113,6 +113,91 @@ public class TellomiDiscoverReactTest {
     }
 
     @Test
+    public void clicksDuringAnUncertainFailureSendTheLatestTargetOnce() throws Exception {
+        TellomiDiscoverReact.Like like = TellomiDiscoverReact.Like.start("post-9", false, 2, false, "recommend");
+        TellomiDiscoverReact.Like.Request first = like.tap();
+        assertNull(like.tap());
+        assertNull(like.tap());
+        assertTrue(like.view().liked);
+        TellomiDiscover.Outcome uncertain = TellomiDiscover.Outcome.failure(TellomiDiscover.ClientError.UNAVAILABLE);
+        TellomiDiscoverReact.Like.Request follow = TellomiDiscoverReact.onLikeHttp(like, first, uncertain);
+        assertTrue(follow.on);
+        assertTrue(follow.automatic);
+        assertEquals("PUT", TellomiDiscover.httpCall("https://feed.example", TellomiDiscover.Operation.like(follow.postId, follow.on, follow.surface), "jwt").method);
+        assertEquals(3, like.view().count);
+        assertNull(like.failure());
+        assertNull(TellomiDiscoverReact.onLikeHttp(like, follow, uncertain));
+        assertFalse(like.view().liked);
+        assertEquals(2, like.view().count);
+        assertEquals(TellomiDiscover.ClientError.UNAVAILABLE, like.failure());
+        assertEquals("Tellomi.Discover.Failed", TellomiDiscoverReact.messageKey(like.failure()));
+
+        TellomiDiscoverReact.Like settled = TellomiDiscoverReact.Like.start("post-9", false, 2, false, "recommend");
+        TellomiDiscoverReact.Like.Request again = settled.tap();
+        settled.tap();
+        settled.tap();
+        TellomiDiscoverReact.Like.Request retry = TellomiDiscoverReact.onLikeHttp(settled, again, uncertain);
+        TellomiDiscover.Outcome done = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.like("post-9", true, "recommend"),
+            new TellomiDiscover.HttpResult(204, new byte[0])
+        );
+        assertNull(TellomiDiscoverReact.onLikeHttp(settled, retry, done));
+        assertTrue(settled.view().liked);
+        assertEquals(3, settled.view().count);
+        assertNull(settled.failure());
+
+        TellomiDiscoverReact.Like invisible = TellomiDiscoverReact.Like.start("post-9", false, 2, false, "recommend");
+        TellomiDiscoverReact.Like.Request hiddenPut = invisible.tap();
+        invisible.tap();
+        invisible.tap();
+        TellomiDiscover.Outcome missing = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.like("post-9", true, "recommend"),
+            new TellomiDiscover.HttpResult(404, "{\"error\":\"not_found\"}".getBytes(StandardCharsets.UTF_8))
+        );
+        assertEquals(TellomiDiscover.ClientError.NOT_FOUND, missing.error);
+        assertTrue(TellomiDiscoverReact.permanentLikeFailure(missing.error));
+        assertNull(TellomiDiscoverReact.onLikeHttp(invisible, hiddenPut, missing));
+        assertFalse(invisible.view().liked);
+        assertEquals(2, invisible.view().count);
+        assertEquals(TellomiDiscover.ClientError.NOT_FOUND, invisible.failure());
+
+        TellomiDiscoverReact.Like forbidden = TellomiDiscoverReact.Like.start("post-9", false, 2, false, "following");
+        TellomiDiscoverReact.Like.Request deniedPut = forbidden.tap();
+        forbidden.tap();
+        forbidden.tap();
+        TellomiDiscover.Outcome denied = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.like("post-9", true, "following"),
+            new TellomiDiscover.HttpResult(403, "{\"error\":\"nope\"}".getBytes(StandardCharsets.UTF_8))
+        );
+        assertEquals(TellomiDiscover.ClientError.UNAUTHORIZED, denied.error);
+        assertNull(TellomiDiscoverReact.onLikeHttp(forbidden, deniedPut, denied));
+        assertFalse(forbidden.view().liked);
+        assertEquals(2, forbidden.view().count);
+
+        TellomiDiscoverReact.Like page = TellomiDiscoverReact.Like.start("post-9", false, 2, false, "recommend");
+        TellomiDiscoverReact.Like.Request left = page.tap();
+        page.tap();
+        page.tap();
+        page.close();
+        assertNull(TellomiDiscoverReact.onLikeHttp(page, left, done));
+        assertFalse(page.view().liked);
+        assertEquals(2, page.view().count);
+        assertNull(page.failure());
+
+        String screen = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java");
+        String detail = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverPostFragment.java");
+        String call = "TellomiDiscover.Operation.like(request.postId, request.on, request.surface)";
+        assertTrue(screen.contains(call));
+        assertTrue(detail.contains(call));
+        assertTrue(screen.contains("TellomiDiscoverReact.onLikeHttp(session, request, outcome)"));
+        assertTrue(detail.contains("TellomiDiscoverReact.onLikeHttp(likeSession, request, outcome)"));
+        assertTrue(screen.contains("like.close()"));
+        assertTrue(detail.contains("likeSession.close()"));
+        assertTrue(screen.contains("session.failure()"));
+        assertTrue(detail.contains("likeSession.failure()"));
+    }
+
+    @Test
     public void commentPostIsTextOnlyAndRetriesTheSameNonce() {
         byte[] body = TellomiDiscoverReact.commentBody("  hello  ", null, NONCE);
         TellomiJson json = TellomiJson.parse(body);
@@ -288,6 +373,17 @@ public class TellomiDiscoverReactTest {
         assertEquals(TellomiDiscover.ClientError.COMMENTS_CLOSED, comments.error);
         assertEquals(0, closed.fetches);
         assertEquals(1, closed.calls.size());
+    }
+
+    private static String read(String relative) throws Exception {
+        java.io.File direct = new java.io.File(relative);
+        if (!direct.isFile()) {
+            direct = new java.io.File("TMessagesProj", relative.startsWith("TMessagesProj/") ? relative.substring("TMessagesProj/".length()) : relative);
+        }
+        if (!direct.isFile()) {
+            direct = new java.io.File("..", relative);
+        }
+        return new String(java.nio.file.Files.readAllBytes(direct.toPath()), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private static TellomiDiscover.ClientError error(int status, String code) {

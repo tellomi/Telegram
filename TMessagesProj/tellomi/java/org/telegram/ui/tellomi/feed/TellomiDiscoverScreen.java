@@ -117,6 +117,9 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
 
     void destroy() {
         destroyed = true;
+        for (TellomiDiscoverReact.Like like : likeSessions.values()) {
+            like.close();
+        }
         TellomiDiscoverPersonalization.removeListener(personalizationListener);
         loader.cancel();
     }
@@ -591,15 +594,14 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 if (destroyed) {
                     return;
                 }
-                boolean ok = outcome != null && outcome.ok();
-                TellomiDiscoverReact.Like.Request next = session.complete(request.generation, request.version, ok);
+                TellomiDiscoverReact.Like.Request next = TellomiDiscoverReact.onLikeHttp(session, request, outcome);
                 applyLike(session);
-                if (!ok && next == null) {
-                    banner = phrase(copy(), TellomiDiscoverReact.messageKey(outcome == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error));
-                }
                 if (next != null) {
                     sendLike(session, next);
                     return;
+                }
+                if (session.failure() != null) {
+                    banner = phrase(copy(), TellomiDiscoverReact.messageKey(session.failure()));
                 }
                 sync(false);
             }
