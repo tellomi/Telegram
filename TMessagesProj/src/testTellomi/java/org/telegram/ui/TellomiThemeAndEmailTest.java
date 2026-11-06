@@ -37,6 +37,33 @@ public class TellomiThemeAndEmailTest {
         assertEquals("other@tellomi.cn", TellomiEmailRoles.rememberCandidate("", " other@tellomi.cn ", "8613800138000"));
         assertEquals("ada@tellomi.cn", TellomiEmailRoles.rememberCandidate(null, "", "ada@tellomi.cn"));
         assertEquals("", TellomiEmailRoles.rememberCandidate("", "", "8613800138000"));
+        assertEquals("", TellomiEmailRoles.rememberCandidate("u***@tellomi.app", "", null));
+    }
+
+    @Test
+    public void serverMaskIsNotAFullAddressAndDoesNotBlockPhoneAttach() {
+        String mask = "u***@tellomi.app";
+        assertTrue(TellomiEmailRoles.isIdentityMask(mask));
+        assertFalse(TellomiEmailRoles.sendable(mask));
+        assertTrue(TellomiEmailRoles.matchesMask("User@Tellomi.app", mask));
+        assertFalse(TellomiEmailRoles.matchesMask("other@tellomi.app", mask));
+        assertFalse(TellomiEmailRoles.matchesMask(mask, mask));
+        assertEquals("User@Tellomi.app", TellomiEmailRoles.display(mask, "User@Tellomi.app"));
+        assertEquals(mask, TellomiEmailRoles.display(mask, "other@tellomi.app"));
+        assertEquals(mask, TellomiEmailRoles.display(mask, null));
+        assertEquals("", TellomiEmailRoles.display(null, "user@tellomi.app"));
+
+        assertTrue(TellomiEmailRoles.identityBound(mask, false, false));
+        assertTrue(TellomiEmailRoles.identityBound(mask, true, true));
+        assertFalse(TellomiEmailRoles.identityBound(null, true, true));
+        assertFalse(TellomiEmailRoles.countsAsRecovery(mask));
+
+        assertEquals(TellomiEmailRoles.SHOW_IDENTITY, TellomiEmailRoles.accountRow(true, mask, null));
+        assertEquals(TellomiEmailRoles.SHOW_IDENTITY, TellomiEmailRoles.accountRow(false, mask, "8613800138000"));
+        assertEquals(TellomiEmailRoles.WAIT, TellomiEmailRoles.accountRow(false, null, null));
+        assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(true, null, null));
+        assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(false, null, "8613800138000"));
+        assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(true, null, "8613800138000"));
     }
 
     @Test
@@ -45,11 +72,15 @@ public class TellomiThemeAndEmailTest {
         String account = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java").toPath()), StandardCharsets.UTF_8);
         assertTrue(login.contains("TellomiEmailRoles.rememberCandidate"));
         assertTrue(login.contains("TellomiAttachLoginEmailTitle"));
-        assertTrue(account.contains("TellomiEmailRoles.isSignInAddress"));
+        assertTrue(account.contains("loadLoginEmailPattern"));
+        assertTrue(account.contains("TellomiEmailRoles.accountRow"));
         assertTrue(account.contains("TellomiSignInEmailNotRecovery"));
+        assertTrue(account.contains("new LoginActivity().changeEmail"));
         assertEquals(1, count(login, "TellomiAccount.rememberEmail("));
         assertFalse(login.contains("TellomiAccount.rememberEmail(currentAccount, savedEmail)"));
         assertTrue(login.contains("TellomiLoginChrome.applyInput(tellomiCodeField)"));
+        assertTrue(login.contains("TellomiLoginEmailRefused"));
+        assertTrue(login.contains("!TellomiEmailRoles.sendable(email)"));
     }
 
     private static int count(String text, String needle) {
