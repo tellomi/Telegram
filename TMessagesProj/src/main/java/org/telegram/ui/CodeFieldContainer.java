@@ -101,7 +101,10 @@ public class CodeFieldContainer extends LinearLayout {
                 if (tellomiSquares) {
                     tellomiFillPaint.setColor(TellomiLoginChrome.fieldFill());
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(8), AndroidUtilities.dp(8), tellomiFillPaint);
-                    codeField.setTextColor(TellomiLoginChrome.text());
+                    int digit = TellomiLoginChrome.text();
+                    if (codeField.getCurrentTextColor() != digit) {
+                        TellomiLoginChrome.applyInput(codeField);
+                    }
                     if (codeField.getFocusedProgress() > 0.35f) {
                         paint.setStyle(Paint.Style.STROKE);
                         paint.setStrokeWidth(AndroidUtilities.dp(1.5f));

@@ -1020,3 +1020,22 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 | `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
 | `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |
+
+## Sign-in email, login-code email, and login ink
+
+A pure-email registration stores the address used as `auth.sendCode` / `auth.signUp` `phone_number`. That is the sign-in address. It is not `account.getPassword.login_email_pattern` and it is not the two-step recovery email (`has_recovery` / `email_unconfirmed_pattern`). The account page used to open `LoginActivity.changeEmail`, which calls `account.sendVerifyEmailCode` with `emailVerifyPurposeLoginChange` and then wrote that address into the sign-in cache. The screen copy talked about protecting or changing the account. After this change, a known sign-in address only explains itself. A phone account without one can still open the login-change screen, and the copy says the address receives login codes, does not replace the account, and is not the recovery email. Success no longer calls `TellomiAccount.rememberEmail`.
+
+Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailRoles.java` | Sign-in address versus recovery. Remember order: typed, shared, `user.phone`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiContrast.java` | Digit, hint, field, and selection colors, and the contrast check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | `applyInput`. Hint colors come from `TellomiContrast`. Social icons are tinted at creation. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | `updateColors` refreshes the email page with the login page. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Remember the shared address. Login-change copy. Do not cache that address as the sign-in email. Code and phone fields use `applyInput`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Square boxes apply the same ink when the digit color changes. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | A sign-in address opens an explanation. A phone account opens login-code email. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | The success line says the login-code email changed and the account did not. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The three email roles, in English and Chinese. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiThemeAndEmailTest.java` | Contrast pairs, recovery stays unset, and the login-change cache write is gone. |

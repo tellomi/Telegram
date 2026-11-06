@@ -365,10 +365,10 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             numberRow = items.size();
             items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
         }
-        if (email != null) {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, email, getString(R.string.TellomiChangeEmail)));
+        if (TellomiEmailRoles.isSignInAddress(email)) {
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, email, getString(R.string.TellomiSignInEmailTitle)));
         } else {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiBindEmail), getString(R.string.TellomiBindEmailHint)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiAttachLoginEmailTitle), getString(R.string.TellomiBindEmailHint)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
@@ -544,11 +544,20 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         } else if (item.id == INFO_PHONE) {
             presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
         } else if (item.id == INFO_EMAIL) {
-            presentFragment(new LoginActivity().changeEmail(() -> {
-                if (listView != null) {
-                    listView.adapter.update(true);
-                }
-            }));
+            String signIn = TellomiAccount.emailOf(currentAccount, getUserConfig().getCurrentUser());
+            if (TellomiEmailRoles.isSignInAddress(signIn)) {
+                showDialog(new AlertDialog.Builder(getContext())
+                        .setTitle(getString(R.string.TellomiSignInEmailTitle))
+                        .setMessage(LocaleController.formatString(R.string.TellomiSignInEmailBody, signIn) + "\n\n" + getString(R.string.TellomiSignInEmailNotRecovery))
+                        .setPositiveButton(getString(R.string.OK), null)
+                        .create());
+            } else {
+                presentFragment(new LoginActivity().changeEmail(() -> {
+                    if (listView != null) {
+                        listView.adapter.update(true);
+                    }
+                }));
+            }
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
         } else if (item.id == BUTTON_LOGOUT) {

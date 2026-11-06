@@ -463,7 +463,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         .setPositiveButton(getString(R.string.ChangeEmail), (dialog, which) -> presentFragment(new LoginActivity().changeEmail(() -> {
                             Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), null);
                             layout.setAnimation(R.raw.email_check_inbox);
-                            layout.textView.setText(getString(R.string.YourLoginEmailChangedSuccess));
+                            layout.textView.setText(getString(R.string.TellomiLoginEmailChanged));
                             int duration = Bulletin.DURATION_SHORT;
                             Bulletin.make(PrivacySettingsActivity.this, layout, duration).show();
 
