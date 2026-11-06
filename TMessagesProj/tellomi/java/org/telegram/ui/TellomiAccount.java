@@ -75,16 +75,19 @@ public final class TellomiAccount {
         }
     }
 
-    /** Saved sign-in address, or an email the server put in {@code user.phone}. */
+    /**
+     * Saved full sign-in address, or an email the server put in {@code user.phone}.
+     * A {@code login_email_pattern} mask is not a full address and is ignored.
+     */
     public static String emailOf(int account, TLRPC.User user) {
         SharedPreferences prefs = prefs();
         if (prefs != null) {
             String saved = prefs.getString(key(account), null);
-            if (TellomiEmailLogin.isValid(saved)) {
-                return saved;
+            if (TellomiEmailRoles.sendable(saved)) {
+                return TellomiEmailLogin.normalize(saved);
             }
         }
-        if (user != null && looksLikeEmail(user.phone)) {
+        if (user != null && TellomiEmailRoles.sendable(user.phone)) {
             return TellomiEmailLogin.normalize(user.phone);
         }
         return null;

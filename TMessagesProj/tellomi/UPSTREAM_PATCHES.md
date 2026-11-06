@@ -1023,13 +1023,17 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 
 ## Sign-in email, login-code email, and login ink
 
-A pure-email registration stores the address used as `auth.sendCode` / `auth.signUp` `phone_number`. That is the sign-in address. It is not `account.getPassword.login_email_pattern` and it is not the two-step recovery email (`has_recovery` / `email_unconfirmed_pattern`). The account page used to open `LoginActivity.changeEmail`, which calls `account.sendVerifyEmailCode` with `emailVerifyPurposeLoginChange` and then wrote that address into the sign-in cache. The screen copy talked about protecting or changing the account. After this change, a known sign-in address only explains itself. A phone account without one can still open the login-change screen, and the copy says the address receives login codes, does not replace the account, and is not the recovery email. Success no longer calls `TellomiAccount.rememberEmail`.
+Teamgram PR 227 (`2f791858`) keeps an email-only login identity in `users.email` and leaves `users.phone` NULL. `account.getPassword.login_email_pattern` is a read-only mask of that address (`u***@tellomi.app`), including when there is no cloud password. `has_recovery` and `email_unconfirmed_pattern` stay on the cloud-password record. `emailVerifyPurposeLoginChange` may confirm the same identity. Any other address, including another account's `users.email`, is `EMAIL_NOT_ALLOWED` and does not change `user.id`. A phone account has no identity mask and can still attach a free login email.
+
+The account page reads that mask. A matching on-device address may be shown, but the mask is never stored or sent as `phone_number`. Until `getPassword` returns, an account with no phone number waits instead of opening an empty bind form. A phone number still opens the attach form. Confirming the original address uses the existing login-change screen with an empty field. A mask or `EMAIL_NOT_ALLOWED` says the identity was not replaced. Success of that screen still does not write the sign-in cache.
+
+Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
 
 Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailRoles.java` | Sign-in address versus recovery. Remember order: typed, shared, `user.phone`. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailRoles.java` | Mask versus full address, account-row action, and recovery staying independent. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiContrast.java` | Digit, hint, field, and selection colors, and the contrast check. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | `applyInput`. Hint colors come from `TellomiContrast`. Social icons are tinted at creation. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | `updateColors` refreshes the email page with the login page. |

@@ -7659,6 +7659,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 onPasscodeError(false);
                 return;
             }
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL && !TellomiEmailRoles.sendable(email)) {
+                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.TellomiLoginEmailRefused));
+                return;
+            }
             nextPressed = true;
             needShowProgress(0);
             TL_account.sendVerifyEmailCode req = new TL_account.sendVerifyEmailCode();
@@ -7682,7 +7686,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     if (error.text.contains("EMAIL_INVALID")) {
                         onPasscodeError(false);
                     } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailNotAllowed));
+                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.TellomiLoginEmailRefused : R.string.EmailNotAllowed));
                     } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
                     } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
