@@ -18,7 +18,7 @@ public class TellomiTabNavigationTest {
         assertEquals("隐藏发现", chinese.hideFeed);
         assertEquals("隐藏联系人", chinese.hideContacts);
         assertEquals("导航栏", chinese.navigationTitle);
-        assertEquals("聊天和设置始终显示，不能关闭。", chinese.navigationFooter);
+        assertEquals("聊天始终显示，不能关闭。", chinese.navigationFooter);
         assertEquals("还没有内容", chinese.feedEmptyTitle);
         assertEquals("帖子会显示在这里。", chinese.feedEmptyText);
         assertEquals("这条帖子暂时无法打开。", chinese.feedPostUnavailable);
@@ -28,7 +28,7 @@ public class TellomiTabNavigationTest {
         assertEquals("Hide Discover", english.hideFeed);
         assertEquals("Hide Contacts", english.hideContacts);
         assertEquals("Navigation Bar", english.navigationTitle);
-        assertEquals("Chats and Settings always stay in the bar.", english.navigationFooter);
+        assertEquals("Chats always stays in the bar.", english.navigationFooter);
         assertEquals("Nothing here yet", english.feedEmptyTitle);
         assertEquals("Posts will show up here.", english.feedEmptyText);
         assertEquals("This post can't be opened yet.", english.feedPostUnavailable);
@@ -47,14 +47,13 @@ public class TellomiTabNavigationTest {
             TellomiTabNavigation.Row.FEED,
             TellomiTabNavigation.Row.CHATS,
             TellomiTabNavigation.Row.CALLS,
-            TellomiTabNavigation.Row.CONTACTS,
-            TellomiTabNavigation.Row.SETTINGS
+            TellomiTabNavigation.Row.CONTACTS
         ), TellomiTabNavigation.ROWS);
         assertTrue(TellomiTabNavigation.Row.FEED.toggleable);
         assertTrue(TellomiTabNavigation.Row.CALLS.toggleable);
         assertTrue(TellomiTabNavigation.Row.CONTACTS.toggleable);
         assertFalse(TellomiTabNavigation.Row.CHATS.toggleable);
-        assertFalse(TellomiTabNavigation.Row.SETTINGS.toggleable);
+        assertFalse(TellomiTabNavigation.ROWS.contains(TellomiTabNavigation.Row.SETTINGS));
 
         TellomiTabs.Visibility start = new TellomiTabs.Visibility(true, false, true);
         TellomiTabs.Visibility chatsOff = TellomiTabNavigation.apply(start, TellomiTabNavigation.Row.CHATS, false);
@@ -101,7 +100,8 @@ public class TellomiTabNavigationTest {
         assertTrue(hiddenFeed.calls);
         assertTrue(hiddenFeed.contacts);
         assertTrue(TellomiTabs.visible(hiddenFeed).contains(TellomiTabs.Tab.CHATS));
-        assertTrue(TellomiTabs.visible(hiddenFeed).contains(TellomiTabs.Tab.SETTINGS));
+        assertFalse(TellomiTabs.visible(hiddenFeed).contains(TellomiTabs.Tab.SETTINGS));
+        assertTrue(TellomiTabs.visible(hiddenFeed).contains(TellomiTabs.Tab.PROFILE));
         assertFalse(TellomiTabs.visible(hiddenFeed).contains(TellomiTabs.Tab.FEED));
 
         TellomiTabs.Visibility hiddenContacts = TellomiTabNavigation.hide(all, TellomiTabs.Tab.CONTACTS);

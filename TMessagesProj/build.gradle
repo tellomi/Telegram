@@ -520,9 +520,10 @@ task tellomiVerifyShippableDc {
     }
 }
 
-// Unit tests compile against android.jar, which has no com.sun.net.httpserver.
-// TellomiReleaseUpdateTest starts that JDK server. This is compile-only;
-// the test process uses the real jdk.httpserver module.
+// Unit tests compile against android.jar. com.sun.net.httpserver is not in
+// that jar or in the Java 8 platform Tellomi compiles for, and
+// TellomiReleaseUpdateTest starts one. Put the JDK classes on the unit-test
+// compile classpath only. The test process uses the real jdk.httpserver module.
 def tellomiJdkHttpserverClasses = {
     def home = System.getProperty("java.home")
     def rt = [new File(home, "lib/rt.jar"), new File(home, "jre/lib/rt.jar")].find { it.isFile() }

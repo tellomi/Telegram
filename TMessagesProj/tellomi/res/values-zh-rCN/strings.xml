@@ -278,7 +278,7 @@
     <string name="Tellomi_Discover_HideFeed">隐藏发现</string>
     <string name="Tellomi_Discover_HideContacts">隐藏联系人</string>
     <string name="Tellomi_Discover_NavigationTitle">导航栏</string>
-    <string name="Tellomi_Discover_NavigationFooter">聊天和设置始终显示，不能关闭。</string>
+    <string name="Tellomi_Discover_NavigationFooter">聊天始终显示，不能关闭。</string>
     <string name="Tellomi_Discover_PersonalizationSection">发现</string>
     <string name="Tellomi_Discover_Personalization">个性化推荐</string>
     <string name="Tellomi_Discover_PersonalizationInfo">关闭后，推荐不再根据你的浏览记录排序。</string>
