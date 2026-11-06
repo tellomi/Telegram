@@ -54,7 +54,7 @@ public final class TellomiTabNavigation {
         }
     }
 
-    /** Settings → Navigation Bar, after Language. Chats and Settings stay on. */
+    /** Settings → Navigation Bar, after Language. Chats stays on. Settings is not a tab. */
     public enum Row {
         FEED(1, true),
         CHATS(2, false),
@@ -72,7 +72,7 @@ public final class TellomiTabNavigation {
     }
 
     public static final List<Row> ROWS = Collections.unmodifiableList(Arrays.asList(
-        Row.FEED, Row.CHATS, Row.CALLS, Row.CONTACTS, Row.SETTINGS
+        Row.FEED, Row.CHATS, Row.CALLS, Row.CONTACTS
     ));
 
     /**
@@ -137,10 +137,10 @@ public final class TellomiTabNavigation {
         if (openFeed) {
             return TellomiTabs.Tab.FEED;
         }
-        return current == null ? TellomiTabs.Tab.CHATS : current;
+        return TellomiTabs.landing(current);
     }
 
-    /** Long-press hide. Chats, Settings, and Profile are unchanged (D-7, D-38). */
+    /** Long-press hide. Chats, the removed Settings tab, and Profile are unchanged. */
     public static TellomiTabs.Visibility hide(TellomiTabs.Visibility current, TellomiTabs.Tab tab) {
         if (tab == TellomiTabs.Tab.FEED) {
             return apply(current, Row.FEED, false);

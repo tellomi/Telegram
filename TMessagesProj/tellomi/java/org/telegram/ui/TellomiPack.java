@@ -80,7 +80,7 @@ public final class TellomiPack {
         entry("Tellomi.Discover.HideFeed", "Hide Discover", "隐藏发现"),
         entry("Tellomi.Discover.HideContacts", "Hide Contacts", "隐藏联系人"),
         entry("Tellomi.Discover.NavigationTitle", "Navigation Bar", "导航栏"),
-        entry("Tellomi.Discover.NavigationFooter", "Chats and Settings always stay in the bar.", "聊天和设置始终显示，不能关闭。"),
+        entry("Tellomi.Discover.NavigationFooter", "Chats always stays in the bar.", "聊天始终显示，不能关闭。"),
         entry("Tellomi.Discover.FeedEmptyTitle", "Nothing here yet", "还没有内容"),
         entry("Tellomi.Discover.FeedEmptyText", "Posts will show up here.", "帖子会显示在这里。"),
         entry("Tellomi.Discover.FeedPostUnavailable", "This post can't be opened yet.", "这条帖子暂时无法打开。"),

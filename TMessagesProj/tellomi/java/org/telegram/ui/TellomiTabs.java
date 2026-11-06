@@ -25,9 +25,10 @@ import java.util.List;
 /**
  * Visible bottom tabs for Tellomi (M2, D-4, D-5, D-7, D-8, D-36).
  *
- * Order when everything is on: Discover, Chats, Calls, Contacts, Settings, Profile.
- * A fresh install shows Discover, Chats, Settings, and Profile. Chats and Settings
- * cannot be removed. The pager starts on Chats.
+ * Order when everything is on: Discover, Chats, Calls, Contacts, Profile.
+ * A fresh install shows Discover, Chats, and Profile. Chats cannot be removed.
+ * Settings is not a bottom tab. Profile still opens Settings. The pager starts on Chats.
+ * A pager that was sitting on Settings lands on Profile.
  *
  * Visual indices match {@code MainTabsActivity}'s tab array: chats 0, contacts 1,
  * settings 2, calls 3, profile 4, discover 5.
@@ -94,10 +95,10 @@ public final class TellomiTabs {
         }
     }
 
-    /** D-4 / D-36 / D-7. Chats, Settings, and Profile are always present. At most six. */
+    /** Chats and Profile are always present. Settings is not a bottom tab. At most five. */
     public static List<Tab> visible(Visibility visibility) {
         Visibility value = visibility == null ? Visibility.fresh() : visibility;
-        ArrayList<Tab> tabs = new ArrayList<>(6);
+        ArrayList<Tab> tabs = new ArrayList<>(5);
         if (value.feed) {
             tabs.add(Tab.FEED);
         }
@@ -108,9 +109,35 @@ public final class TellomiTabs {
         if (value.contacts) {
             tabs.add(Tab.CONTACTS);
         }
-        tabs.add(Tab.SETTINGS);
         tabs.add(Tab.PROFILE);
         return tabs;
+    }
+
+    /**
+     * A saved selection of the removed Settings tab opens Profile.
+     * Other tabs stay put. A missing selection opens Chats.
+     */
+    public static Tab landing(Tab selected) {
+        if (selected == Tab.SETTINGS) {
+            return Tab.PROFILE;
+        }
+        return selected == null ? Tab.CHATS : selected;
+    }
+
+    /**
+     * Pager index after Settings leaves the bar. {@code before} is the old
+     * order, {@code savedPosition} is the index that was selected.
+     */
+    public static int restoredPagerPosition(List<Tab> before, int savedPosition, List<Tab> after) {
+        Tab selected = null;
+        if (before != null && savedPosition >= 0 && savedPosition < before.size()) {
+            selected = before.get(savedPosition);
+        }
+        int pos = indexOf(after, landing(selected));
+        if (pos < 0) {
+            pos = indexOf(after, Tab.CHATS);
+        }
+        return pos < 0 ? 0 : pos;
     }
 
     public static int indexOf(List<Tab> tabs, Tab tab) {
@@ -356,7 +383,12 @@ public final class TellomiTabs {
         show(activity, VISUAL_CHATS, true, animated);
         show(activity, VISUAL_CALLS, visibility.calls, animated);
         show(activity, VISUAL_CONTACTS, visibility.contacts, animated);
-        show(activity, VISUAL_SETTINGS, true, animated);
+        show(activity, VISUAL_SETTINGS, false, animated);
+        GlassTabView settingsTab = tabAt(activity, VISUAL_SETTINGS);
+        if (settingsTab != null) {
+            settingsTab.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            settingsTab.setContentDescription(null);
+        }
         show(activity, VISUAL_PROFILE, true, animated);
         activity.tabsView.requestLayout();
     }

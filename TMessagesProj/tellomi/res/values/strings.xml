@@ -259,7 +259,7 @@
     <string name="Tellomi_Discover_HideFeed">Hide Discover</string>
     <string name="Tellomi_Discover_HideContacts">Hide Contacts</string>
     <string name="Tellomi_Discover_NavigationTitle">Navigation Bar</string>
-    <string name="Tellomi_Discover_NavigationFooter">Chats and Settings always stay in the bar.</string>
+    <string name="Tellomi_Discover_NavigationFooter">Chats always stays in the bar.</string>
     <string name="Tellomi_Discover_PersonalizationSection">Discover</string>
     <string name="Tellomi_Discover_Personalization">Personalized recommendations</string>
     <string name="Tellomi_Discover_PersonalizationInfo">When this is off, For You is not ranked from your activity.</string>
