@@ -1023,11 +1023,11 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 
 ## Sign-in email, login-code email, and login ink
 
-Teamgram PR 227 (`2f791858`) keeps an email-only login identity in `users.email` and leaves `users.phone` NULL. `account.getPassword.login_email_pattern` is a read-only mask of that address (`u***@tellomi.app`), including when there is no cloud password. `has_recovery` and `email_unconfirmed_pattern` stay on the cloud-password record. `emailVerifyPurposeLoginChange` may confirm the same identity. Any other address, including another account's `users.email`, is `EMAIL_NOT_ALLOWED` and does not change `user.id`. A phone account has no identity mask and can still attach a free login email.
+Teamgram PR 227 head `b4a57578` (parent `2f791858`) keeps an email-only login identity in `users.email` and leaves `users.phone` NULL. `account.getPassword.login_email_pattern` is a read-only mask of that address (`u***@tellomi.app`), including when there is no cloud password. `has_recovery` and `email_unconfirmed_pattern` stay on the cloud-password record. `emailVerifyPurposeLoginChange` may confirm the same identity. Any other address, including another account's `users.email`, is `EMAIL_NOT_ALLOWED` and does not change `user.id`. A phone account has no identity mask and can still attach a free login email.
+
+Head `b4a57578` does not rewrite a divergent Redis login-email copy and does not mail it. `auth.requestPasswordRecovery` returns `PASSWORD_RECOVERY_NA` for an email-only account with no cloud password. This client calls that RPC only when `has_recovery` is set. `help.getPromoData` drops `SETUP_LOGIN_EMAIL` and `SETUP_LOGIN_EMAIL_NOSKIP`. The client drops those names from the saved set and does not open the attach form from them.
 
 The account page reads that mask. A matching on-device address may be shown, but the mask is never stored or sent as `phone_number`. Until `getPassword` returns, an account with no phone number waits instead of opening an empty bind form. A phone number still opens the attach form. Confirming the original address uses the existing login-change screen with an empty field. A mask or `EMAIL_NOT_ALLOWED` says the identity was not replaced. Success of that screen still does not write the sign-in cache.
-
-Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
 
 Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
 
@@ -1037,6 +1037,8 @@ Login fields on the forced black or white page set digit, hint, cursor, and sele
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiContrast.java` | Digit, hint, field, and selection colors, and the contrast check. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | `applyInput`. Hint colors come from `TellomiContrast`. Social icons are tinted at creation. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | `updateColors` refreshes the email page with the login page. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Drop `SETUP_LOGIN_EMAIL` and `SETUP_LOGIN_EMAIL_NOSKIP` from the saved set. `checkEmailSuggestion` stays off. |
+| `TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java` | The unused suggestion success line no longer says the account email changed. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Remember the shared address. Login-change copy. Do not cache that address as the sign-in email. Code and phone fields use `applyInput`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Square boxes apply the same ink when the digit color changes. |
 | `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | A sign-in address opens an explanation. A phone account opens login-code email. |
