@@ -1020,3 +1020,13 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 | `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
 | `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |
+
+## Built-in Night theme, checked pairs
+
+`TMessagesProj/src/main/assets/night.attheme` was read, not rendered. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble` (the outgoing bubble stays white and the text stays `#111111`), input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.
+
+No custom theme file and no system night animation was opened. Settings icon plates stay the existing dark neutrals with white glyphs. The intro page stays the fixed white page. Those were not recolored.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiNightThemeTest.java` | Reads `night.attheme` and checks the pairs above. |
