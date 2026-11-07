@@ -3050,6 +3050,11 @@ public class ChatActivity extends BaseFragment implements
             observersGroup.add(NotificationCenter.hashtagSearchUpdated);
         }
 
+        tellomiStealth = arguments != null && arguments.getBoolean("tellomi_stealth", false);
+        if (dialog_id != 0 && (tellomiStealth || org.telegram.ui.TellomiChatLockStore.locked(currentAccount, dialog_id))) {
+            org.telegram.ui.TellomiQuietOpen.enter(currentAccount, dialog_id, tellomiStealth);
+        }
+
         super.onFragmentCreate();
 
         if (chatMode == MODE_PINNED) {
@@ -3404,6 +3409,7 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onFragmentDestroy() {
+        org.telegram.ui.TellomiQuietOpen.release(currentAccount, dialog_id);
         super.onFragmentDestroy();
         if (messageMetricsView != null) {
             messageMetricsView.finish();
@@ -9023,6 +9029,7 @@ public class ChatActivity extends BaseFragment implements
         }
 
         onBottomItemsVisibilityChanged();
+        tellomiInstallLock();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         Timer.finish(t);
 
@@ -18952,6 +18959,17 @@ public class ChatActivity extends BaseFragment implements
 
     private void updateSecretStatus() {
         if (bottomOverlay == null) {
+            return;
+        }
+        if (tellomiStealth || !tellomiLockPassed && org.telegram.ui.TellomiChatLockStore.locked(currentAccount, dialog_id)) {
+            bottomOverlayText.setText(tellomiStealth ? LocaleController.getString(R.string.TellomiStealthBanner) : LocaleController.getString(R.string.TellomiChatLocked));
+            bottomOverlay.setVisibility(View.VISIBLE);
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setVisibility(View.INVISIBLE);
+            }
+            if (tellomiStealth && avatarContainer != null) {
+                avatarContainer.setSubtitle(org.telegram.ui.TellomiQuietOpen.BANNER);
+            }
             return;
         }
         boolean hideKeyboard = false;
@@ -47703,5 +47721,51 @@ public class ChatActivity extends BaseFragment implements
 
         abstract void drawChatBackgroundElements(Canvas canvas, @Nullable RectF position);
         abstract void drawChatForegroundElements(Canvas canvas, @Nullable RectF position);
+    }
+
+    private boolean tellomiStealth;
+    private boolean tellomiLockPassed;
+    private View tellomiLockOverlay;
+
+    private void tellomiInstallLock() {
+        if (tellomiLockPassed || contentView == null || dialog_id == 0 || !org.telegram.ui.TellomiChatLockStore.locked(currentAccount, dialog_id)) {
+            return;
+        }
+        if (chatListView != null) {
+            chatListView.setVisibility(View.INVISIBLE);
+        }
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.setVisibility(View.INVISIBLE);
+        }
+        if (tellomiLockOverlay != null) {
+            return;
+        }
+        android.widget.FrameLayout overlay = new android.widget.FrameLayout(contentView.getContext());
+        overlay.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        android.widget.TextView label = new android.widget.TextView(contentView.getContext());
+        label.setText(LocaleController.getString(R.string.TellomiChatLocked));
+        label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 18);
+        label.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        label.setGravity(Gravity.CENTER);
+        overlay.addView(label, org.telegram.ui.Components.LayoutHelper.createFrame(org.telegram.ui.Components.LayoutHelper.MATCH_PARENT, org.telegram.ui.Components.LayoutHelper.MATCH_PARENT, Gravity.CENTER, 24, 0, 24, 72));
+        android.widget.TextView button = new android.widget.TextView(contentView.getContext());
+        button.setText(LocaleController.getString(R.string.TellomiChatPasswordEnter));
+        button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 16);
+        button.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        button.setGravity(Gravity.CENTER);
+        button.setOnClickListener(v -> org.telegram.ui.TellomiChatLockUi.unlock(this, currentAccount, dialog_id, () -> {
+            tellomiLockPassed = true;
+            if (!tellomiStealth) {
+                org.telegram.ui.TellomiQuietOpen.release(currentAccount, dialog_id);
+            }
+            if (chatListView != null) {
+                chatListView.setVisibility(View.VISIBLE);
+            }
+            overlay.setVisibility(View.GONE);
+            updateSecretStatus();
+        }));
+        overlay.addView(button, org.telegram.ui.Components.LayoutHelper.createFrame(org.telegram.ui.Components.LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 24, 0, 24, 24));
+        contentView.addView(overlay, org.telegram.ui.Components.LayoutHelper.createFrame(org.telegram.ui.Components.LayoutHelper.MATCH_PARENT, org.telegram.ui.Components.LayoutHelper.MATCH_PARENT));
+        tellomiLockOverlay = overlay;
     }
 }

@@ -311,4 +311,25 @@
     <string name="Tellomi_Settings_Card_Phone">手机号</string>
     <string name="Tellomi_Settings_Card_Email">邮箱</string>
     <string name="Tellomi_Settings_Card_Username">用户名</string>
+    <string name="TellomiStealthView">秘密查看</string>
+    <string name="TellomiStealthBanner">秘密查看 · 不会标记已读</string>
+    <string name="TellomiChatPassword">设置密码</string>
+    <string name="TellomiChatPasswordNew">新密码</string>
+    <string name="TellomiChatPasswordConfirm">再输入一次</string>
+    <string name="TellomiChatPasswordCurrent">当前密码</string>
+    <string name="TellomiChatPasswordEnter">聊天密码</string>
+    <string name="TellomiChatPasswordChange">修改密码</string>
+    <string name="TellomiChatPasswordRemove">移除密码</string>
+    <string name="TellomiChatPasswordForgot">忘记密码</string>
+    <string name="TellomiChatPasswordApp">应用密码锁</string>
+    <string name="TellomiChatPasswordRules">请使用 4 到 6 位数字</string>
+    <string name="TellomiChatPasswordMismatch">两次输入不一致</string>
+    <string name="TellomiChatPasswordWrong">密码不正确</string>
+    <string name="TellomiChatPasswordSaved">密码只保存在这台设备上</string>
+    <string name="TellomiChatPasswordCleared">已清除这把聊天锁</string>
+    <string name="TellomiChatPasswordNeedApp">请先在设置里打开应用密码锁。忘记聊天密码时，只能在验证应用密码锁之后清除这把锁。</string>
+    <string name="TellomiChatPasswordBiometric">生物识别</string>
+    <string name="TellomiChatPasswordBiometricHint">也可以用生物识别打开这个聊天。数字密码仍然只留在这台设备上。</string>
+    <string name="TellomiChatPasswordSkip">只用数字</string>
+    <string name="TellomiChatLocked">已锁定</string>
 </resources>

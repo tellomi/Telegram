@@ -729,6 +729,9 @@ public class MessageObject {
     }
 
     public void markReactionsAsRead() {
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, getDialogId())) {
+            return;
+        }
         if (messageOwner.reactions == null || messageOwner.reactions.recent_reactions == null) {
             return;
         }

@@ -8792,6 +8792,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             previewMenu[0].addView(muteItem);
         }
 
+        if (!isCommunityCell && dialogId != 0) {
+            ActionBarMenuSubItem stealthItem = new ActionBarMenuSubItem(getParentActivity(), false, false);
+            stealthItem.setTextAndIcon(LocaleController.getString(R.string.TellomiStealthView), R.drawable.msg_secret);
+            stealthItem.setMinimumWidth(160);
+            stealthItem.setOnClickListener(e -> {
+                finishPreviewFragment();
+                org.telegram.ui.TellomiChatMenu.openStealth(DialogsActivity.this, dialogId);
+            });
+            previewMenu[0].addView(stealthItem);
+            ActionBarMenuSubItem lockItem = new ActionBarMenuSubItem(getParentActivity(), false, false);
+            lockItem.setTextAndIcon(LocaleController.getString(R.string.TellomiChatPassword), R.drawable.msg_permissions);
+            lockItem.setMinimumWidth(160);
+            lockItem.setOnClickListener(e -> {
+                finishPreviewFragment();
+                org.telegram.ui.TellomiChatLockUi.configure(DialogsActivity.this, currentAccount, dialogId);
+            });
+            previewMenu[0].addView(lockItem);
+        }
+
         if (!isCommunityCell) {
             ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
             deleteItem.setIconColor(getThemedColor(Theme.key_text_RedRegular));

@@ -2770,6 +2770,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     }
                 }
             }
+            if (org.telegram.ui.TellomiChatLockStore.locked(currentAccount, currentDialogId)) {
+                messageString = org.telegram.ui.TellomiChatLock.PREVIEW;
+                messageNameString = null;
+                buttonString = null;
+                thumbsCount = 0;
+                hasVideoThumb = false;
+            }
             if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && !hasTags() && currentDialogFolderId != 0 && currentDialogFolderDialogsCount > 1) {
                 messageStringFinal = messageNameString;
                 messageNameString = null;
