@@ -43,6 +43,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -99,6 +100,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private ViewPager viewPager;
     private BottomPagesView bottomPages;
     private TextView switchLanguageTextView;
+    private ImageView tellomiIntroLanguage;
     private GradientDrawable startMessagingButtonBackground;
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
@@ -256,6 +258,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 if (marginLayoutParams.topMargin != newTopMargin) {
                     marginLayoutParams.topMargin = newTopMargin;
                     themeFrameLayout.requestLayout();
+                }
+                if (tellomiIntroLanguage != null) {
+                    MarginLayoutParams langLp = (MarginLayoutParams) tellomiIntroLanguage.getLayoutParams();
+                    if (langLp.topMargin != newTopMargin) {
+                        langLp.topMargin = newTopMargin;
+                        tellomiIntroLanguage.requestLayout();
+                    }
                 }
             }
         };
@@ -444,6 +453,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }, NotificationCenter.reloadInterface);
             LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
         });
+
+        tellomiIntroLanguage = new ImageView(context);
+        tellomiIntroLanguage.setImageResource(R.drawable.msg2_language);
+        tellomiIntroLanguage.setScaleType(ImageView.ScaleType.CENTER);
+        tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
+        tellomiIntroLanguage.setContentDescription(LocaleController.getString(R.string.Language));
+        tellomiIntroLanguage.setOnClickListener(v -> {
+            if (startPressed) {
+                return;
+            }
+            presentFragment(new TellomiLanguageSelectActivity(info -> LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(this::tellomiReloadIntroCopy))));
+        });
+        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, 64, 0));
 
         frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
 
@@ -985,6 +1007,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         startMessagingButtonBackground.setColors(new int[]{ink, ink});
         fragmentView.setBackgroundColor(page);
         switchLanguageTextView.setTextColor(ink);
+        if (tellomiIntroLanguage != null) {
+            tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
+        }
         startMessagingButton.setTextColor(page);
         if (introArt != null) {
             introArt.setTint(ink);

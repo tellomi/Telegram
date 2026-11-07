@@ -1179,6 +1179,18 @@ Long-press on a dialog, and the profile menu, can open that chat without read re
 
 Login titles, hints, the empty agreement circle, OTP squares, and the primary button were painted with fixed light colors (`#111111`, `#C7C7CC`, `#C8C8CC`, `#8E8E93`). Those disappear in the other theme. They now start from `Theme.key_windowBackgroundWhiteBlackText`, `key_windowBackgroundWhiteHintText`, `key_windowBackgroundWhiteInputField`, `key_windowBackgroundWhiteInputFieldActivated`, `key_windowBackgroundWhiteBlueButton`, `key_checkboxSquareUnchecked`, `key_checkboxSquareBackground`, and `key_checkboxSquareCheck`. Where that key sits on the filled field or the page and misses WCAG AA (hint on the field was about 1.7:1, the dark empty ring about 2.4:1), `TellomiContrast.ensure` walks it toward the theme text color until body text clears 4.5:1 or a control edge clears 3:1. The phone placeholder is drawn by `HintEditText`'s own paint, which ignored `setHintTextColor`; `setHintInk` updates that paint. The welcome page had forced `#FFFFFF` / `#111111`, so it stayed light in the dark theme; it now uses the same page and text keys. Layout and auth RPCs are unchanged. OTP squares still show a red stroke when the code is wrong.
 
+## Login language, calling codes, code flood
+
+The login language icon opens `TellomiLanguageSelectActivity`. English and Chinese are full local bins. `langpack.getLanguages` used to mark English `pathToFile=remote`, so `applyLanguage` waited for `langpack.getLangPack` and the open page never redrew when that request did not return. Those two packs now drop the remote placeholder and apply the bundled bin immediately. `langpack.getLangPack`, `getLanguages`, `getStrings`, and `getDifference` stay `RequestFlagWithoutLogin`. The welcome page uses the same icon.
+
+Login country rows are limited to `TellomiCallingCodes.ALLOWED` (currently `86`). Other codes stay out of the list. Pasting `+1…` or another known code shows a dialog and does not change `+86`. `PHONE_NUMBER_FLOOD` and `PHONE_CODE_FLOOD` say the daily limit of 10 is used. `FLOOD_WAIT_60` says to wait 60 seconds and does not use that daily sentence. A daily flood blocks further `auth.resendCode` on that page. A failed `langpack.getLangPack` or `getDifference` still finishes the apply, so the page redraws from the local bin.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Drop the remote placeholder for English and Chinese before applying. Do not overwrite those built-in rows from `getLanguages`. A failed langpack request still finishes the apply. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Calling-code filter, paste warning, flood alert, resend stop. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Language icon on the welcome page. |
+
 ## Chat link cards
 
 External Open Graph is fetched on the phone (the same parser as Discover). `tell.cc` / `t.me` / `telegram.me` / `telegram.dog` still use `messages.getWebPagePreview` and `messages.sendMessage`. A client card is `messages.sendMedia` with `inputMediaWebPage#c21b8849` flags.3–6: title, description, site name, and an uploaded `InputPhoto`. The bubble and the composer keep the native `webPage` layout. `author=unverified` is not drawn.
