@@ -1155,3 +1155,22 @@ Before that installer opens, the file must be a zip, the package name must be th
 | `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | Resume continues a finished download or a permission return. Website updates stay skippable. |
 | `TMessagesProj/src/main/res/xml/provider_paths.xml` | `external-files-path` `Download/` for the update APK. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiApkUpdateTest.java` | State, a real zip, a bad signature, a bad package, and disagreeing hashes. |
+
+## Secret view and per-chat password
+
+Long-press on a dialog, and the profile menu, can open that chat without read receipts or add a local pin. Existing rows are unchanged. The pin is a salt and PBKDF2 hash in `tellomi_chat_lock_<account>`. It is not uploaded. Forgetting it requires the app passcode; if that passcode is not set, the chat lock stays.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiQuietOpen.java` | Holds one chat so reads, typing, and, for secret view, the online heartbeat are skipped. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLock.java` | Pin rules, hash, preview mask, and the app-passcode clear rule. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLockStore.java` | Per-account local preferences. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLockUi.java` | Set, change, biometric, unlock, and forgotten-pin dialogs. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatMenu.java` | Secret view arguments and the profile rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java` | Two extra long-press rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The same two rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | Banner, read-only bar, and the lock cover. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Quiet-open returns before read, reaction, mention, typing, and online RPCs. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java` | Secret view does not clear reaction unread locally. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java` | Locked chats use the generic notification text. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java` | Locked chats show 已锁定 in the list and in search. |

@@ -2544,6 +2544,12 @@ public class NotificationsController extends BaseController implements Notificat
         if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
             return LocaleController.getString(R.string.YouHaveNewMessage);
         }
+        if (messageObject != null && org.telegram.ui.TellomiChatLockStore.locked(currentAccount, messageObject.getDialogId())) {
+            if (preview != null) {
+                preview[0] = false;
+            }
+            return LocaleController.getString(R.string.YouHaveNewMessage);
+        }
         if (messageObject.isStoryPush || messageObject.isStoryMentionPush) {
             return "!" + messageObject.messageOwner.message;
         }

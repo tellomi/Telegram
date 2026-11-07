@@ -308,4 +308,25 @@
     <string name="Tellomi_Settings_Card_Phone">Phone</string>
     <string name="Tellomi_Settings_Card_Email">Email</string>
     <string name="Tellomi_Settings_Card_Username">Username</string>
+    <string name="TellomiStealthView">Secret view</string>
+    <string name="TellomiStealthBanner">Secret view · read receipts stay off</string>
+    <string name="TellomiChatPassword">Set password</string>
+    <string name="TellomiChatPasswordNew">New password</string>
+    <string name="TellomiChatPasswordConfirm">Confirm password</string>
+    <string name="TellomiChatPasswordCurrent">Current password</string>
+    <string name="TellomiChatPasswordEnter">Chat password</string>
+    <string name="TellomiChatPasswordChange">Change password</string>
+    <string name="TellomiChatPasswordRemove">Remove password</string>
+    <string name="TellomiChatPasswordForgot">Forgot password</string>
+    <string name="TellomiChatPasswordApp">App passcode</string>
+    <string name="TellomiChatPasswordRules">Use 4 to 6 digits</string>
+    <string name="TellomiChatPasswordMismatch">Those passwords do not match</string>
+    <string name="TellomiChatPasswordWrong">Wrong password</string>
+    <string name="TellomiChatPasswordSaved">Password saved on this device</string>
+    <string name="TellomiChatPasswordCleared">Chat password removed</string>
+    <string name="TellomiChatPasswordNeedApp">Set the app passcode first. A forgotten chat password can only be cleared after that passcode is checked.</string>
+    <string name="TellomiChatPasswordBiometric">Biometrics</string>
+    <string name="TellomiChatPasswordBiometricHint">Unlock this chat with biometrics as well as the digits. The digits stay on this device.</string>
+    <string name="TellomiChatPasswordSkip">Digits only</string>
+    <string name="TellomiChatLocked">Locked</string>
 </resources>

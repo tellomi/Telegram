@@ -2563,7 +2563,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (getParentActivity() == null) {
                     return;
                 }
-                if (id == -1) {
+                if (id == org.telegram.ui.TellomiChatMenu.PROFILE_STEALTH) {
+                    org.telegram.ui.TellomiChatMenu.openStealth(ProfileActivity.this, getDialogId());
+                } else if (id == org.telegram.ui.TellomiChatMenu.PROFILE_LOCK) {
+                    org.telegram.ui.TellomiChatLockUi.configure(ProfileActivity.this, currentAccount, getDialogId());
+                } else if (id == -1) {
                     if (sharedMediaLayout != null && sharedMediaLayout.scrollSlidingTextTabStrip != null && sharedMediaLayout.scrollSlidingTextTabStrip.isReordering()) {
                         stopTabsReorder();
                         return;
@@ -12136,6 +12140,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         Context context = actionBar.getContext();
         otherItem.removeAllSubItems();
+        org.telegram.ui.TellomiChatMenu.addProfileItems(otherItem, this, currentAccount, getDialogId());
         animatingItem = null;
 
         editItemVisible = false;

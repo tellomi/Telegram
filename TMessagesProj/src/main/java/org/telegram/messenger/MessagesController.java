@@ -10538,7 +10538,7 @@ public class MessagesController extends BaseController implements NotificationCe
         checkReadTasks();
 
         if (getUserConfig().isClientActivated()) {
-            if (!ignoreSetOnline && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
+            if (!ignoreSetOnline && !org.telegram.ui.TellomiQuietOpen.blockOnline(currentAccount) && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
                 if (ApplicationLoader.mainInterfacePausedStageQueueTime != 0 && Math.abs(ApplicationLoader.mainInterfacePausedStageQueueTime - System.currentTimeMillis()) > 1000) {
                     if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || Math.abs(System.currentTimeMillis() - lastStatusUpdateTime) >= 55000 || offlineSent)) {
                         statusSettingState = 1;
@@ -11399,6 +11399,9 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
         if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
+            return false;
+        }
+        if (org.telegram.ui.TellomiQuietOpen.blockTyping(currentAccount, dialogId)) {
             return false;
         }
         final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -14416,6 +14419,9 @@ public class MessagesController extends BaseController implements NotificationCe
         if (messageObject.scheduled) {
             return;
         }
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, messageObject.getDialogId())) {
+            return;
+        }
         ArrayList<Integer> arrayList = new ArrayList<>();
         if (messageObject.messageOwner.mentioned) {
             getMessagesStorage().markMentionMessageAsRead(-messageObject.messageOwner.peer_id.channel_id, messageObject.getId(), messageObject.getDialogId());
@@ -14499,7 +14505,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markMessageAsRead2(long dialogId, int mid, TLRPC.InputChannel inputChannel, int ttl, long taskId, boolean createDeleteTask) {
-        if (mid == 0 || ttl < 0) {
+        if (mid == 0 || ttl < 0 || org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
             return;
         }
         if (DialogObject.isChatDialog(dialogId) && inputChannel == null) {
@@ -14557,6 +14563,9 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void markMessageAsRead(long dialogId, long randomId, int ttl) {
         if (randomId == 0 || dialogId == 0 || ttl <= 0 && ttl != Integer.MIN_VALUE) {
+            return;
+        }
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
             return;
         }
         if (!DialogObject.isEncryptedDialog(dialogId)) {
@@ -14655,6 +14664,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markDialogAsReadNow(long dialogId, long replyId) {
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
+            return;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             if (replyId != 0) {
                 String key = dialogId + "_" + replyId;
@@ -14681,6 +14693,9 @@ public class MessagesController extends BaseController implements NotificationCe
         if (DialogObject.isEncryptedDialog(dialogId) || dialogId == getUserConfig().getClientUserId()) {
             return;
         }
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
+            return;
+        }
         getMessagesStorage().resetMentionsCount(dialogId, topicId, 0);
         TLRPC.TL_messages_readMentions req = new TLRPC.TL_messages_readMentions();
         req.peer = getInputPeer(dialogId);
@@ -14692,6 +14707,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markDialogAsRead(long dialogId, int maxPositiveId, int maxNegativeId, int maxDate, boolean popup, long threadId, int countDiff, boolean readNow, int scheduledCount) {
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
+            return;
+        }
         boolean createReadTask;
 
         if (threadId != 0) {
@@ -21639,6 +21657,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markReactionsAsRead(long dialogId, long topicId) {
+        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
+            return;
+        }
         if (topicId == 0) {
             TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
             if (dialog != null) {
