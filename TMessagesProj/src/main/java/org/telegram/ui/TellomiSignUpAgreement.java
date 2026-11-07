@@ -136,7 +136,7 @@ public class TellomiSignUpAgreement {
 
         TextView decline = new TextView(context);
         decline.setText(LocaleController.getString(R.string.TellomiDisagree));
-        decline.setTextColor(TellomiLoginChrome.MUTED);
+        decline.setTextColor(TellomiLoginChrome.muted());
         TellomiLoginChrome.textSize(decline, 15);
         decline.setGravity(Gravity.CENTER);
         decline.setPadding(0, AndroidUtilities.dp(14), 0, AndroidUtilities.dp(10));
@@ -197,7 +197,7 @@ public class TellomiSignUpAgreement {
                 } else {
                     box.setStyle(Paint.Style.STROKE);
                     box.setStrokeWidth(AndroidUtilities.dp(1.2f));
-                    box.setColor(0xFFC8C8CC);
+                    box.setColor(TellomiLoginChrome.uncheckedStroke());
                     canvas.drawCircle(cx, cy, r, box);
                 }
             }
@@ -248,7 +248,7 @@ public class TellomiSignUpAgreement {
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
-                ds.setColor(TellomiLoginChrome.MUTED);
+                ds.setColor(TellomiLoginChrome.muted());
                 ds.setUnderlineText(false);
             }
         };
@@ -263,7 +263,7 @@ public class TellomiSignUpAgreement {
     private static void appendPlain(SpannableStringBuilder sb, String s) {
         int start = sb.length();
         sb.append(s);
-        sb.setSpan(new android.text.style.ForegroundColorSpan(TellomiLoginChrome.MUTED), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new android.text.style.ForegroundColorSpan(TellomiLoginChrome.muted()), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     private static void appendDoc(SpannableStringBuilder sb, Context context, String s, String url) {
@@ -277,7 +277,7 @@ public class TellomiSignUpAgreement {
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
-                ds.setColor(TellomiLoginChrome.LINK);
+                ds.setColor(TellomiLoginChrome.link());
                 ds.setUnderlineText(false);
             }
         }, start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -292,7 +292,7 @@ public class TellomiSignUpAgreement {
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
-                ds.setColor(TellomiLoginChrome.LINK);
+                ds.setColor(TellomiLoginChrome.link());
                 ds.setUnderlineText(false);
             }
         };

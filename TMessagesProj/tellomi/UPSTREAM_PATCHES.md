@@ -242,7 +242,7 @@ Deferred: a full profile layout for email, binding a phone as a separate product
 | `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | Settings search「add account」uses the same helper. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Device locale and bundled zh/en resource lookup. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAccount.java` | New. Saved email, masked label, already-on-device match, Add Account routing. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Light palette kept. Dark mode uses a white primary button and light field text. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Login ink follows `Theme.key_windowBackgroundWhite*`, the blue button, and the checkbox keys. Hard-coded `#111111` / `#C7C7CC` / `#C8C8CC` no longer paint titles, hints, or the empty agreement circle. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` |「开始使用」, bind-phone copy,「该账号已登录」. |
 
 ## Login locale, welcome mark, Help, bind (14.0.3)
@@ -1174,3 +1174,7 @@ Long-press on a dialog, and the profile menu, can open that chat without read re
 | `TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java` | Secret view does not clear reaction unread locally. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java` | Locked chats use the generic notification text. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java` | Locked chats show 已锁定 in the list and in search. |
+
+## Login contrast
+
+Login titles, hints, the empty agreement circle, OTP squares, and the primary button were painted with fixed light colors (`#111111`, `#C7C7CC`, `#C8C8CC`, `#8E8E93`). Those disappear in the other theme. They now read `Theme.key_windowBackgroundWhiteBlackText`, `key_windowBackgroundWhiteHintText`, `key_windowBackgroundWhiteInputField`, `key_windowBackgroundWhiteInputFieldActivated`, `key_windowBackgroundWhiteBlueButton`, `key_checkboxSquareUnchecked`, `key_checkboxSquareBackground`, and `key_checkboxSquareCheck`. Layout and auth RPCs are unchanged. OTP squares still show a red stroke when the code is wrong.

@@ -79,7 +79,7 @@ public class TellomiAuthPage extends SlideView {
             subtitleView = new TextView(context);
             subtitleView.setText(LocaleController.getString(R.string.TellomiEmailSubtitle));
             TellomiLoginChrome.textSize(subtitleView, 13);
-            subtitleView.setTextColor(TellomiLoginChrome.MUTED);
+            subtitleView.setTextColor(TellomiLoginChrome.muted());
             subtitleView.setGravity(Gravity.LEFT);
             addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
         }
@@ -196,7 +196,7 @@ public class TellomiAuthPage extends SlideView {
             titleView.setTextColor(TellomiLoginChrome.text());
         }
         if (subtitleView != null) {
-            subtitleView.setTextColor(TellomiLoginChrome.MUTED);
+            subtitleView.setTextColor(TellomiLoginChrome.muted());
         }
         TellomiLoginChrome.applyInput(emailField);
         TellomiLoginChrome.grayField(emailOutline);
