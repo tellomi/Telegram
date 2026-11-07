@@ -1334,6 +1334,12 @@ public class LocaleController {
         if (localeInfo == null) {
             return 0;
         }
+        // English and Chinese ship a full local bin. A remote placeholder must
+        // not block the redraw on langpack.getLangPack.
+        if (TellomiDefaults.clearRemotePlaceholder(localeInfo.shortName, localeInfo.pathToFile)) {
+            localeInfo.pathToFile = null;
+            localeInfo.builtIn = true;
+        }
         // TELLOMI: built-in it/es/de/nl/ar/pt_br/ko/uk/ru are a short bin. Marking
         // the row remote runs langpack.getLangPack below. English stays the default
         // bin. Chinese stays on localization_zh.bin. A row already in the dict is
@@ -3261,7 +3267,7 @@ public class LocaleController {
                         localeInfo.serverIndex = a;
 
                         LocaleInfo existing = getLanguageFromDict(localeInfo.getKey());
-                        if (TellomiDefaults.bundledChinese(existing)) {
+                        if (TellomiDefaults.bundledChinese(existing) || (existing != null && TellomiDefaults.completeLocalBin(existing.shortName) && !"remote".equals(existing.pathToFile) && !"unofficial".equals(existing.pathToFile))) {
                             continue;
                         }
                         if (existing == null) {
@@ -3340,6 +3346,8 @@ public class LocaleController {
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                         if (response != null) {
                             AndroidUtilities.runOnUIThread(() -> saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone));
+                        } else {
+                            AndroidUtilities.runOnUIThread(onPartlyDone);
                         }
                     }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
                 }
@@ -3353,6 +3361,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
+                    } else {
+                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
                 }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             }
@@ -3370,6 +3380,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
+                    } else {
+                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
                 }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {

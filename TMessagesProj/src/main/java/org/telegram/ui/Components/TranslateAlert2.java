@@ -59,6 +59,7 @@ import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiTranslate;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
@@ -315,14 +316,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             reqId = null;
         }
 
-        final String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
-        if ("alternative".equalsIgnoreCase(method)) {
-            translateAlt();
-            return;
-        }/* else if ("system".equalsIgnoreCase(method)) {
-            translateSystem();
-            return;
-        }*/
+        // Tellomi does not call Google or on-device translation. "alternative" and "system" stay closed.
 
         String lang = toLanguage;
         if (lang != null) {
@@ -337,7 +331,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             req.flags |= 1;
             req.peer = reqPeer;
             req.id.add(reqMessageId);
-            req.to_lang = normalizeLanguage(lang);
+            req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(lang));
             reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     reqId = null;
@@ -374,12 +368,10 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             req.flags |= 1;
             req.peer = reqPeer;
             req.id = reqMessageId;
-            req.to_lang = normalizeLanguage(lang);
+            req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(lang));
             reqId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
                 reqId = null;
-                if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
-                    translateAlt();
-                } else if (res != null) {
+                if (res != null) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, res);
                     CharSequence translated = SpannableStringBuilder.valueOf(text.text);
@@ -412,13 +404,11 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 //            req.flags |= 4;
 //            req.from_lang = fromLanguage;
 //        }
-        req.to_lang = normalizeLanguage(lang);
+        req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(lang));
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             AndroidUtilities.runOnUIThread(() -> {
                 reqId = null;
-                if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
-                    translateAlt();
-                } else if (res instanceof TLRPC.TL_messages_translateResult &&
+                if (res instanceof TLRPC.TL_messages_translateResult &&
                     !((TLRPC.TL_messages_translateResult) res).result.isEmpty() &&
                     ((TLRPC.TL_messages_translateResult) res).result.get(0) != null &&
                     ((TLRPC.TL_messages_translateResult) res).result.get(0).text != null
@@ -521,123 +511,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     }
 
     public static void alternativeTranslate(String text, String fromLng, String toLng, Utilities.Callback2<String, Boolean> done) {
-        if (done == null) return;
-        if (fromLng == null) {
-            LanguageDetector.detectLanguage(text, lng -> {
-                alternativeTranslate(text, lng, toLng, done);
-            }, e -> {
-                alternativeTranslate(text, "en", toLng, done);
-            });
-            return;
+        if (done != null) {
+            done.run(null, false);
         }
-        final String etext = Uri.encode(text);
-        if (etext.length() > 5000) {
-            ArrayList<String> parts = cut(etext, 5000);
-            ArrayList<String> results = new ArrayList<>();
-            for (int i = 0; i < parts.size(); ++i) {
-                results.add(null);
-            }
-
-            final boolean[] fullyDone = new boolean[1];
-            for (int i = 0; i < parts.size(); ++i) {
-                final int index = i;
-                alternativeTranslateInternal(parts.get(i), fromLng, toLng, (res, rateLimit) -> {
-                    if (fullyDone[0]) return;
-                    if (res != null) {
-                        results.set(index, res);
-                        boolean allDone = true;
-                        for (int j = 0; j < results.size(); ++j) {
-                            if (results.get(j) == null) {
-                                allDone = false;
-                                break;
-                            }
-                        }
-                        if (allDone) {
-                            fullyDone[0] = true;
-                            done.run(TextUtils.join("", results), false);
-                        }
-                    } else {
-                        fullyDone[0] = true;
-                        done.run(null, rateLimit);
-                    }
-                });
-            }
-        } else {
-            alternativeTranslateInternal(etext, fromLng, toLng, done);
-        }
-    }
-    private static void alternativeTranslateInternal(String text, String fromLng, String toLng, Utilities.Callback2<String, Boolean> done) {
-        if (done == null) return;
-        new Thread() {
-            @Override
-            public void run() {
-                String uri;
-                HttpURLConnection connection = null;
-                try {
-                    uri = "https://translate.goo";
-                    uri += "gleapis.com/transl";
-                    uri += "ate_a";
-                    uri += "/singl";
-                    uri += "e?client=gtx&sl=" + Uri.encode(fromLng) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
-                    uri += text;
-                    connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setRequestProperty("User-Agent", userAgents[(int) Math.round(Math.random() * (userAgents.length - 1))]);
-                    connection.setRequestProperty("Content-Type", "application/json");
-
-                    StringBuilder textBuilder = new StringBuilder();
-                    try (Reader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))) {
-                        int c = 0;
-                        while ((c = reader.read()) != -1) {
-                            textBuilder.append((char) c);
-                        }
-                    }
-                    String jsonString = textBuilder.toString();
-
-                    JSONTokener tokener = new JSONTokener(jsonString);
-                    JSONArray array = new JSONArray(tokener);
-                    JSONArray array1 = array.getJSONArray(0);
-                    String sourceLanguage = null;
-                    try {
-                        sourceLanguage = array.getString(2);
-                    } catch (Exception e2) {}
-                    if (sourceLanguage != null && sourceLanguage.contains("-")) {
-                        sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
-                    }
-                    String result = "";
-                    for (int i = 0; i < array1.length(); ++i) {
-                        String blockText = array1.getJSONArray(i).getString(0);
-                        if (blockText != null && !blockText.equals("null"))
-                            result += /*(i > 0 ? "\n" : "") +*/ blockText;
-                    }
-                    if (text.length() > 0 && text.charAt(0) == '\n')
-                        result = "\n" + result;
-                    final String finalResult = result;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (done != null)
-                            done.run(finalResult, false);
-                    });
-                } catch (Exception e) {
-                    try {
-                        Log.e("translate", "failed to translate a text " + (connection != null ? connection.getResponseCode() : null) + " " + (connection != null ? connection.getResponseMessage() : null));
-                    } catch (IOException ioException) {
-                        ioException.printStackTrace();
-                    }
-                    e.printStackTrace();
-
-                    try {
-                        final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
-                        AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, rateLimit);
-                        });
-                    } catch (Exception e2) {
-                        AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, false);
-                        });
-                    }
-                }
-            }
-        }.start();
     }
 
 //    private ArrayList<Runnable> cancelTrackingDownloads = new ArrayList<>();
@@ -1363,7 +1239,8 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 
                 if (
                     localeInfo.pluralLangCode.equals(fromLanguage) ||
-                    !"remote".equals(localeInfo.pathToFile)
+                    !"remote".equals(localeInfo.pathToFile) ||
+                    TellomiTranslate.acceptedToLang(localeInfo.pluralLangCode) == null
                 ) {
                     continue;
                 }
@@ -1847,11 +1724,12 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     }
 
     public static String getToLanguage() {
-        return MessagesController.getGlobalMainSettings().getString("translate_to_language", LocaleController.getInstance().getCurrentLocale().getLanguage());
+        String saved = MessagesController.getGlobalMainSettings().getString("translate_to_language", LocaleController.getInstance().getCurrentLocale().getLanguage());
+        return TellomiTranslate.rpcToLang(saved);
     }
 
     public static void setToLanguage(String toLang) {
-        MessagesController.getGlobalMainSettings().edit().putString("translate_to_language", toLang).apply();
+        MessagesController.getGlobalMainSettings().edit().putString("translate_to_language", TellomiTranslate.rpcToLang(toLang)).apply();
     }
 
     public static void resetToLanguage() {

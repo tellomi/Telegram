@@ -144,6 +144,7 @@ import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TellomiCallingCodes;
 import org.telegram.messenger.TellomiDefaults;
 import org.telegram.messenger.TellomiLoginErrors;
 import org.telegram.messenger.UserConfig;
@@ -1350,6 +1351,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
      * Text for a failed auth.sendCode / auth.signIn. Never the literal LOC_ERR:null.
      * Includes the server error string when the RPC sent one.
      */
+    /** Daily cap or FLOOD_WAIT. True when the alert was shown. */
+    private boolean tellomiAlertCodeFlood(TLRPC.TL_error error) {
+        String text = TellomiLoginErrors.codeFloodText(error == null ? null : error.text, TellomiDefaults.uiIsChinese());
+        if (text == null) {
+            return false;
+        }
+        needShowAlert(getString(R.string.AppName), text);
+        return true;
+    }
+
     private String tellomiLoginFailureText(TLRPC.TL_error error) {
         String base = getString(R.string.ErrorOccurred);
         if (TextUtils.isEmpty(base) || base.startsWith("LOC_ERR")) {
@@ -1777,6 +1788,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void tellomiShowSendFailure(TLRPC.TL_error error) {
+        if (tellomiAlertCodeFlood(error)) {
+            return;
+        }
         String text;
         if (error == null || error.code == -1000 || TextUtils.isEmpty(error.text)) {
             text = getString(R.string.TellomiAuthTimeout);
@@ -2479,6 +2493,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private CountrySelectActivity.Country currentCountry;
 
         private ArrayList<CountrySelectActivity.Country> countriesArray = new ArrayList<>();
+        /** Every calling code from the catalog, including ones the login list hides. */
+        private final java.util.HashSet<String> tellomiKnownCallingCodes = new java.util.HashSet<>();
+        private long tellomiCallingCodeAlertAt;
         private HashMap<String, List<CountrySelectActivity.Country>> codesMap = new HashMap<>();
         private HashMap<String, List<String>> phoneFormatMap = new HashMap<>();
 
@@ -2806,6 +2823,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     ignoreOnTextChange = true;
                     String text = PhoneFormat.stripExceptNumbers(codeField.getText().toString());
                     codeField.setText(text);
+                    if (activityMode == MODE_LOGIN && text.length() > 0 && !TellomiCallingCodes.prefixOfAllowed(text)) {
+                        codeField.setText(TellomiDefaults.LOGIN_COUNTRY_CODE);
+                        ignoreOnTextChange = false;
+                        tellomiRejectForeignCode();
+                        return;
+                    }
                     if (text.length() == 0) {
                         setCountryButtonText(null);
                         phoneField.setHintText(null);
@@ -2923,7 +2946,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TextView codeChevron = new TextView(context);
                 codeChevron.setText("▾");
                 TellomiLoginChrome.textSize(codeChevron, 12);
-                codeChevron.setTextColor(0xFF8E8E93);
+                codeChevron.setTextColor(TellomiLoginChrome.fieldHint());
                 codeChevron.setGravity(Gravity.CENTER);
                 codeChevron.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(6), 0);
                 codeChevron.setOnClickListener(v -> countryOutlineView.callOnClick());
@@ -3044,8 +3067,27 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         return;
                     }
 
-                    String str = s.toString().substring(start, start + count).replaceAll("[^\\d]+", "");
+                    String rawInsert = s.toString().substring(start, start + count);
+                    String str = rawInsert.replaceAll("[^\\d]+", "");
                     if (str.isEmpty()) {
+                        return;
+                    }
+                    boolean explicitInternational = rawInsert.indexOf('+') >= 0 || rawInsert.startsWith("00");
+                    for (int prefix = Math.min(4, str.length()); prefix >= 1; prefix--) {
+                        String foreign = str.substring(0, prefix);
+                        if (!tellomiKnownCallingCodes.contains(foreign) || TellomiCallingCodes.allowed(foreign)) {
+                            continue;
+                        }
+                        if (!TellomiCallingCodes.foreignPrefix(foreign, explicitInternational, true)) {
+                            continue;
+                        }
+                        if (!explicitInternational && str.length() - prefix < 6) {
+                            continue;
+                        }
+                        ignoreOnPhoneChange = true;
+                        phoneField.setText("");
+                        ignoreOnPhoneChange = false;
+                        tellomiRejectForeignCode();
                         return;
                     }
 
@@ -3099,6 +3141,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         }
                     }
                     ignoreOnPhoneChange = true;
+                    String digitsOnly = builder.toString().replace(" ", "");
+                    if (tellomiLooksForeign(digitsOnly)) {
+                        s.clear();
+                        ignoreOnPhoneChange = false;
+                        tellomiRejectForeignCode();
+                        if (tellomiPhoneClear != null) {
+                            tellomiPhoneClear.setVisibility(GONE);
+                        }
+                        tellomiRefreshPrimaryButton();
+                        return;
+                    }
                     String hint = phoneField.getHintText();
                     if (hint != null) {
                         for (int a = 0; a < builder.length(); a++) {
@@ -3206,6 +3259,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     countryWithCode.name = args[2];
                     countryWithCode.code = args[0];
                     countryWithCode.shortname = args[1];
+                    tellomiKnownCallingCodes.add(countryWithCode.code);
+                    if (activityMode == MODE_LOGIN && !TellomiCallingCodes.allowed(countryWithCode.code)) {
+                        continue;
+                    }
                     if (!TextUtils.equals(countryWithCode.code, "FT")) {
                         final String localizedName = LocaleController.getCountryName(countryWithCode.shortname);
                         if (!TextUtils.isEmpty(localizedName) && !TextUtils.equals(countryWithCode.shortname, localizedName)) {
@@ -3296,13 +3353,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 ViewGroup.MarginLayoutParams subLp = (ViewGroup.MarginLayoutParams) subtitleView.getLayoutParams();
                 subLp.leftMargin = 0;
                 subLp.rightMargin = 0;
-                titleView.setTextColor(TellomiLoginChrome.TEXT);
+                titleView.setTextColor(TellomiLoginChrome.text());
                 if (emailField != null) {
                     emailField.setHint(getString(R.string.TellomiEmailHint));
-                    emailField.setHintTextColor(0xFFC7C7CC);
+                    emailField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 }
                 phoneField.setHintText(getString(R.string.TellomiPhoneHint));
-                phoneField.setHintTextColor(0xFFC7C7CC);
+                phoneField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 tellomiOpenScreen(TELLOMI_PHONE_CODE, false);
             }
 
@@ -3333,6 +3390,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                     }
                                     countryWithCode.code = countryCode.country_code;
                                     countryWithCode.shortname = c.iso2;
+                                    tellomiKnownCallingCodes.add(countryWithCode.code);
+                                    if (activityMode == MODE_LOGIN && !TellomiCallingCodes.allowed(countryWithCode.code)) {
+                                        continue;
+                                    }
 
                                     countriesArray.add(countryWithCode);
                                     List<CountrySelectActivity.Country> countryList = codesMap.get(countryCode.country_code);
@@ -3594,10 +3655,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             ImageView view = new ImageView(getContext());
             view.setImageResource(R.drawable.msg_close);
             view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            view.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            view.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.OVAL);
-            bg.setColor(0xFFC7C7CC);
+            bg.setColor(TellomiLoginChrome.fieldFill());
             view.setBackground(bg);
             int pad = AndroidUtilities.dp(7);
             view.setPadding(pad, pad, pad, pad);
@@ -3649,7 +3710,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 titleView.setText(getString(tellomiEmailMode ? R.string.TellomiEmailTitle : R.string.TellomiLoginTitle));
                 titleView.setGravity(home ? Gravity.CENTER : Gravity.LEFT);
                 subtitleView.setGravity(Gravity.LEFT);
-                subtitleView.setTextColor(TellomiLoginChrome.MUTED);
+                subtitleView.setTextColor(TellomiLoginChrome.muted());
                 TellomiLoginChrome.textSize(subtitleView, 13);
                 subtitleView.setText(getString(R.string.TellomiEmailSubtitle));
                 subtitleView.setVisibility(tellomiEmailMode ? VISIBLE : GONE);
@@ -3753,7 +3814,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < row.getChildCount(); i++) {
                 View child = row.getChildAt(i);
                 if (child instanceof TextView) {
-                    ((TextView) child).setTextColor(TellomiLoginChrome.MUTED);
+                    ((TextView) child).setTextColor(TellomiLoginChrome.muted());
                 } else {
                     child.setBackgroundColor(TellomiLoginChrome.lineColor());
                 }
@@ -3928,7 +3989,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     } else if (error.text.contains("PHONE_NUMBER_BANNED")) {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.TellomiEmailBanned));
                     } else if (error.text.contains("PHONE_NUMBER_FLOOD") || error.text.startsWith("FLOOD_WAIT") || error.text.contains("PHONE_PASSWORD_FLOOD")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                        tellomiAlertCodeFlood(error);
                     } else {
                         tellomiShowSendFailure(error);
                     }
@@ -3954,7 +4015,34 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         }
 
+        private boolean tellomiLooksForeign(String digits) {
+            if (digits == null || digits.length() < 8 || activityMode != MODE_LOGIN) {
+                return false;
+            }
+            int max = Math.min(4, digits.length());
+            for (int len = max; len >= 2; len--) {
+                String code = digits.substring(0, len);
+                if (tellomiKnownCallingCodes.contains(code) && !TellomiCallingCodes.allowed(code) && digits.length() - len >= 6) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void tellomiRejectForeignCode() {
+            long now = System.currentTimeMillis();
+            if (now - tellomiCallingCodeAlertAt < 1500) {
+                return;
+            }
+            tellomiCallingCodeAlertAt = now;
+            needShowAlert(getString(R.string.AppName), TellomiCallingCodes.rejectedText(TellomiDefaults.uiIsChinese()));
+        }
+
         public void selectCountry(CountrySelectActivity.Country country) {
+            if (activityMode == MODE_LOGIN && country != null && !TellomiCallingCodes.allowed(country.code)) {
+                tellomiRejectForeignCode();
+                return;
+            }
             ignoreOnTextChange = true;
             String code = country.code;
             codeField.setText(code);
@@ -4497,7 +4585,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         } else if (error.text.contains("PHONE_NUMBER_INVALID")) {
                             needShowInvalidAlert(LoginActivity.this, phone, phoneInputData, false);
                         } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                            tellomiAlertCodeFlood(error);
                         } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("PhoneNumberFlood", R.string.PhoneNumberFlood));
                         } else if (error.text.contains("PHONE_NUMBER_BANNED")) {
@@ -4509,7 +4597,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             setPage(VIEW_PHONE_INPUT, true, null, true);
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                            tellomiAlertCodeFlood(error);
                         } else if (req instanceof TLRPC.TL_auth_sendCode && TellomiLoginErrors.isSmsCodeCreateFailed(error.text)) {
                             // TELLOMI: auth.sendCode SMS_CODE_CREATE_FAILED is not in the upstream list.
                             // tellomiShowSendFailure would show the raw error string. Same alert as the neighbors.
@@ -4912,6 +5000,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         private Timer timeTimer;
         private Timer codeTimer;
+        /** PHONE_CODE_FLOOD: further auth.resendCode taps on this page only show the alert. */
+        private boolean tellomiCodeFlooded;
         private int openTime;
         private final Object timerSync = new Object();
         private int time = 60000;
@@ -5119,7 +5209,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (tellomiOtp) {
                     tellomiWrongCode = new TextView(context);
                     tellomiWrongCode.setText(getString(R.string.TellomiSmsCodeError));
-                    tellomiWrongCode.setTextColor(TellomiLoginChrome.ERROR);
+                    tellomiWrongCode.setTextColor(TellomiLoginChrome.errorColor());
                     TellomiLoginChrome.textSize(tellomiWrongCode, 13);
                     tellomiWrongCode.setVisibility(GONE);
                     addView(tellomiWrongCode, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -5136,7 +5226,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
                     tellomiUseSmsView = new TextView(context);
                     tellomiUseSmsView.setText(getString(R.string.TellomiUseSms));
-                    tellomiUseSmsView.setTextColor(TellomiLoginChrome.LINK);
+                    tellomiUseSmsView.setTextColor(TellomiLoginChrome.link());
                     TellomiLoginChrome.textSize(tellomiUseSmsView, 16);
                     tellomiUseSmsView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                     tellomiUseSmsView.setPadding(0, AndroidUtilities.dp(14), 0, AndroidUtilities.dp(4));
@@ -5182,9 +5272,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             timeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             timeText.setGravity(Gravity.TOP | Gravity.LEFT);
             timeText.setOnClickListener(v -> {
-//                if (isRequestingFirebaseSms || isResendingCode) {
-//                    return;
-//                }
+                if (isRequestingFirebaseSms || isResendingCode || tellomiCodeFlooded) {
+                    if (tellomiCodeFlooded) {
+                        TLRPC.TL_error flood = new TLRPC.TL_error();
+                        flood.text = "PHONE_CODE_FLOOD";
+                        tellomiAlertCodeFlood(flood);
+                    }
+                    return;
+                }
                 if (time > 0 && timeTimer != null) {
                     return;
                 }
@@ -5222,7 +5317,25 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 fillNextCodeParams(nextCodeParams, nextCodeAuth);
                             });
                         } else if (error != null && error.text != null) {
-                            AndroidUtilities.runOnUIThread(() -> lastError = error.text);
+                            AndroidUtilities.runOnUIThread(() -> {
+                                isResendingCode = false;
+                                lastError = error.text;
+                                if (TellomiLoginErrors.isDailyCodeFlood(error.text)) {
+                                    tellomiCodeFlooded = true;
+                                }
+                                Integer wait = TellomiLoginErrors.floodWaitSeconds(error.text);
+                                if (wait != null && wait > 0) {
+                                    time = wait * 1000;
+                                    lastCurrentTime = System.currentTimeMillis();
+                                    destroyTimer();
+                                    createTimer();
+                                }
+                                if (!tellomiAlertCodeFlood(error)) {
+                                    needShowAlert(getString(R.string.AppName), error.text);
+                                }
+                            });
+                        } else {
+                            AndroidUtilities.runOnUIThread(() -> isResendingCode = false);
                         }
                     }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                 } else if (nextType == AUTH_TYPE_FLASH_CALL) {
@@ -5536,7 +5649,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiLoginButton.applyTheme();
             }
             if (tellomiUseSmsView != null) {
-                tellomiUseSmsView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiUseSmsView.setTextColor(TellomiLoginChrome.link());
                 tellomiUseSmsView.setText(getString(R.string.TellomiUseSms));
             }
 
@@ -5547,12 +5660,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             timeText.setTextColor(Theme.getColor(timeTextColorTag));
 
             if (currentType != AUTH_TYPE_FRAGMENT_SMS) {
-                problemText.setTextColor(activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE || currentType == AUTH_TYPE_CALL || currentType == AUTH_TYPE_FLASH_CALL) ? TellomiLoginChrome.LINK : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+                problemText.setTextColor(activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE || currentType == AUTH_TYPE_CALL || currentType == AUTH_TYPE_FLASH_CALL) ? TellomiLoginChrome.link() : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
             }
             wrongCode.setTextColor(Theme.getColor(Theme.key_text_RedBold));
             if ((activityMode == MODE_LOGIN || tellomiBindPhone) && titleTextView != null && confirmTextView != null) {
                 titleTextView.setTextColor(TellomiLoginChrome.text());
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
             }
         }
 
@@ -5601,6 +5714,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         private void resendCode() {
+            if (tellomiCodeFlooded) {
+                TLRPC.TL_error flood = new TLRPC.TL_error();
+                flood.text = "PHONE_CODE_FLOOD";
+                tellomiAlertCodeFlood(flood);
+                return;
+            }
             if (nextPressed || isResendingCode || isRequestingFirebaseSms) {
                 return;
             }
@@ -5653,8 +5772,18 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             onBackPressed(true);
                             setPage(VIEW_PHONE_INPUT, true, null, true);
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.CodeExpired));
-                        } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.FloodWait));
+                        } else if (error.text.startsWith("FLOOD_WAIT") || TellomiLoginErrors.isCodeFlood(error.text)) {
+                            if (TellomiLoginErrors.isDailyCodeFlood(error.text)) {
+                                tellomiCodeFlooded = true;
+                            }
+                            Integer wait = TellomiLoginErrors.floodWaitSeconds(error.text);
+                            if (wait != null && wait > 0) {
+                                time = wait * 1000;
+                                lastCurrentTime = System.currentTimeMillis();
+                                destroyTimer();
+                                createTimer();
+                            }
+                            tellomiAlertCodeFlood(error);
                         } else {
                             tellomiShowSendFailure(error);
                         }
@@ -5662,6 +5791,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         tellomiShowSendFailure(error);
                     }
                 }
+                isResendingCode = false;
                 tryHideProgress(false);
             }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
             tryShowProgress(reqId);
@@ -6308,7 +6438,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                     setPage(VIEW_PHONE_INPUT, true, null, true);
                                     needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                                 } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                    needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                                    tellomiAlertCodeFlood(error);
                                 } else {
                                     needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
                                 }
@@ -6487,7 +6617,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                         setPage(VIEW_PHONE_INPUT, true, null, true);
                                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                                     } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                                        tellomiAlertCodeFlood(error);
                                     } else {
                                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
                                     }
@@ -6974,7 +7104,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 } else {
                                     timeString = LocaleController.formatPluralString("Minutes", time / 60);
                                 }
-                                needShowAlert(getString(R.string.WrongCodeTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                tellomiAlertCodeFlood(error);
                             } else {
                                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
                             }
@@ -7114,7 +7244,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             } else {
                                 timeString = LocaleController.formatPluralString("Minutes", time / 60);
                             }
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                            tellomiAlertCodeFlood(error);
                         } else {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
                         }
@@ -7688,7 +7818,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.TellomiLoginEmailRefused : R.string.EmailNotAllowed));
                     } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                        tellomiAlertCodeFlood(error);
                     } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("PhoneNumberFlood", R.string.PhoneNumberFlood));
                     } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
@@ -7698,7 +7828,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         setPage(VIEW_PHONE_INPUT, true, null, true);
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                     } else if (error.text.startsWith("FLOOD_WAIT")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                        tellomiAlertCodeFlood(error);
                     } else {
                         tellomiShowSendFailure(error);
                     }
@@ -7770,6 +7900,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private boolean resetRequestPending;
         private Bundle currentParams;
         private boolean nextPressed;
+        /** PHONE_CODE_FLOOD: further auth.resendCode taps on this page only show the alert. */
+        private boolean tellomiCodeFlooded;
         private GoogleSignInAccount googleAccount;
 
         private int resetAvailablePeriod, resetPendingDate;
@@ -7846,7 +7978,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TellomiLoginChrome.textSize(titleView, 22);
                 titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                 confirmTextView.setGravity(Gravity.LEFT);
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
                 ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) titleView.getLayoutParams();
                 titleLp.leftMargin = 0;
                 titleLp.rightMargin = 0;
@@ -7868,13 +8000,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
                 tellomiResendView = new TextView(context);
                 TellomiLoginChrome.textSize(tellomiResendView, 14);
-                tellomiResendView.setTextColor(TellomiLoginChrome.MUTED);
+                tellomiResendView.setTextColor(TellomiLoginChrome.muted());
                 tellomiResendView.setGravity(Gravity.RIGHT);
                 tellomiResendView.setVisibility(GONE);
                 addView(tellomiResendView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT, 0, 12, 0, 0));
                 tellomiMissingView = new TextView(context);
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
-                tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiMissingView.setTextColor(TellomiLoginChrome.link());
                 TellomiLoginChrome.textSize(tellomiMissingView, 15);
                 tellomiMissingView.setGravity(Gravity.LEFT);
                 tellomiMissingView.setPadding(0, AndroidUtilities.dp(8), 0, 0);
@@ -8023,6 +8155,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (resendCodeView.getVisibility() != View.VISIBLE || resendCodeView.getAlpha() != 1f) {
                     return;
                 }
+                if (tellomiCodeFlooded) {
+                    TLRPC.TL_error flood = new TLRPC.TL_error();
+                    flood.text = "PHONE_CODE_FLOOD";
+                    tellomiAlertCodeFlood(flood);
+                    return;
+                }
 
                 showResendCodeView(false);
 
@@ -8038,7 +8176,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             TLRPC.TL_auth_sentCode sentCode = (TLRPC.TL_auth_sentCode) response;
                             fillNextCodeParams(params, sentCode);
                         } else if (error != null && error.text != null) {
-                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
+                            if (TellomiLoginErrors.isDailyCodeFlood(error.text)) {
+                                tellomiCodeFlooded = true;
+                            }
+                            if (!tellomiAlertCodeFlood(error)) {
+                                AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
+                                showResendCodeView(true);
+                            }
                         }
                     });
                 }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
@@ -8143,7 +8287,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             tellomiCodeError = new TextView(context);
             tellomiCodeError.setText(getString(R.string.TellomiEmailCodeError));
-            tellomiCodeError.setTextColor(TellomiLoginChrome.ERROR);
+            tellomiCodeError.setTextColor(TellomiLoginChrome.errorColor());
             TellomiLoginChrome.textSize(tellomiCodeError, 13);
             tellomiCodeError.setVisibility(GONE);
             addView(tellomiCodeError, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -8171,7 +8315,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             titleView.setText(getString(R.string.TellomiEmailOtpTitle));
             titleView.setGravity(Gravity.LEFT);
             confirmTextView.setGravity(Gravity.LEFT);
-            confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+            confirmTextView.setTextColor(TellomiLoginChrome.muted());
             ViewGroup.LayoutParams confirmLp = confirmTextView.getLayoutParams();
             confirmLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             if (confirmLp instanceof LinearLayout.LayoutParams) {
@@ -8216,7 +8360,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (tellomiResendSeconds <= 0) {
                 tellomiResendView.setText(getString(R.string.TellomiResend));
-                tellomiResendView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiResendView.setTextColor(TellomiLoginChrome.link());
                 tellomiResendView.setOnClickListener(v -> {
                     if (resendCodeView != null) {
                         resendCodeView.setAlpha(1f);
@@ -8229,7 +8373,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             tellomiResendView.setText(LocaleController.formatString(R.string.TellomiResendIn, tellomiResendSeconds));
-            tellomiResendView.setTextColor(TellomiLoginChrome.MUTED);
+            tellomiResendView.setTextColor(TellomiLoginChrome.muted());
             tellomiResendView.setOnClickListener(null);
             tellomiResendSeconds--;
             postDelayed(tellomiResendTick, 1000);
@@ -8290,11 +8434,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (tellomiMissingView != null) {
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
-                tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiMissingView.setTextColor(TellomiLoginChrome.link());
             }
             if (activityMode == MODE_LOGIN) {
                 titleView.setTextColor(TellomiLoginChrome.text());
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
             }
             if (tellomiCodeField != null) {
                 TellomiLoginChrome.applyInput(tellomiCodeField);
@@ -8763,7 +8907,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             setPage(VIEW_PHONE_INPUT, true, null, true);
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                            tellomiAlertCodeFlood(error);
                         } else {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
                         }
@@ -9142,7 +9286,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         } else {
                             timeString = LocaleController.formatPluralString("Minutes", time / 60);
                         }
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        tellomiAlertCodeFlood(error);
                     } else {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
                     }
@@ -9500,7 +9644,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             } else {
                                 timeString = LocaleController.formatPluralString("Minutes", time / 60);
                             }
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                            tellomiAlertCodeFlood(error);
                         } else {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error.text);
                         }
@@ -9950,7 +10094,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TellomiLoginChrome.textSize(descriptionTextView, 14);
                 TellomiLoginChrome.textSize(firstNameField, 17);
                 titleTextView.setTextColor(TellomiLoginChrome.text());
-                descriptionTextView.setTextColor(TellomiLoginChrome.night() ? 0xFF8E8E93 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                descriptionTextView.setTextColor(TellomiLoginChrome.muted());
                 firstNameField.setTextColor(TellomiLoginChrome.text());
                 firstNameField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 TellomiLoginChrome.grayField(firstNameOutlineView);
@@ -10442,10 +10586,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors() {
-        int tellomiPage = TellomiLoginChrome.night() ? Color.BLACK : Color.WHITE;
+        int tellomiPage = TellomiLoginChrome.pageFill();
         fragmentView.setBackgroundColor(activityMode == MODE_LOGIN ? tellomiPage : Theme.getColor(Theme.key_windowBackgroundWhite));
         if (activityMode == MODE_LOGIN && getParentActivity() != null) {
-            AndroidUtilities.setLightStatusBar(getParentActivity(), !TellomiLoginChrome.night());
+            AndroidUtilities.setLightStatusBar(getParentActivity(), TellomiContrast.readable(0xFF111111, tellomiPage));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 getParentActivity().getWindow().setNavigationBarColor(tellomiPage);
             }
@@ -10464,7 +10608,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         floatingButton.updateColors();
         int tellomiCta = TellomiLoginChrome.ctaFill(true);
-        int tellomiCtaPressed = TellomiLoginChrome.night() ? 0xFFD0D0D0 : 0xFF2A2A2A;
+        int tellomiCtaPressed = TellomiLoginChrome.ctaPressed(true);
         floatingButton.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), tellomiCta, tellomiCtaPressed));
         floatingButtonIcon.setColor(TellomiLoginChrome.ctaLabel(true));
         floatingButtonIcon.setBackgroundColor(tellomiCta);
@@ -11130,7 +11274,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 setPage(VIEW_PHONE_INPUT, true, null, true);
                                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.CodeExpired));
                             } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.FloodWait));
+                                tellomiAlertCodeFlood(error);
                             } else {
                                 tellomiShowSendFailure(error);
                             }
@@ -11450,7 +11594,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 setPage(VIEW_PHONE_INPUT, true, null, true);
                                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("CodeExpired", R.string.CodeExpired));
                             } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
+                                tellomiAlertCodeFlood(error);
                             } else {
                                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
                             }
@@ -11521,7 +11665,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             setPage(VIEW_PHONE_INPUT, true, null, true);
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.CodeExpired));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.FloodWait));
+                            tellomiAlertCodeFlood(error);
                         } else {
                             tellomiShowSendFailure(error);
                         }

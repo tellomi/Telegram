@@ -63,6 +63,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiTranslate;
 import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -1138,7 +1139,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             addChecked(o, list, true, TranslateAlert2.capitalFirst(TranslateAlert2.languageName(to_lang)), null);
         }
         for (final TranslateController.Language lng : suggestedLanguages) {
-            if (!TextUtils.equals(lng.code, to_lang)) {
+            if (!TextUtils.equals(lng.code, to_lang) && TellomiTranslate.acceptedToLang(lng.code) != null) {
                 addChecked(o, list, false, lng.displayName, () -> {
                     cancelRequest();
                     to_lang = lng.code;
@@ -1153,6 +1154,9 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         list.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
         for (final TranslateController.Language lng : allLanguages) {
+            if (TellomiTranslate.acceptedToLang(lng.code) == null) {
+                continue;
+            }
             addChecked(o, list, TextUtils.equals(lng.code, to_lang), lng.displayName, () -> {
                 cancelRequest();
                 to_lang = lng.code;
@@ -1253,7 +1257,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         final TLRPC.TL_messages_composeMessageWithAI req = new TLRPC.TL_messages_composeMessageWithAI();
         req.text = fromText;
         if (tab == TAB_TRANSLATE) {
-            req.translate_to_lang = normalizeLanguage(to_lang);
+            req.translate_to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(to_lang));
             req.tone = TL_aicompose.InputAiComposeTone.fromDefault(translateTone);
             req.emojify = emojify;
         } else if (tab == TAB_STYLE) {
@@ -1379,7 +1383,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         req.flags |= TLObject.FLAG_4;
         req.text = toInput(textRich);
         if (tab == TAB_TRANSLATE) {
-            req.translate_to_lang = normalizeLanguage(to_lang);
+            req.translate_to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(to_lang));
             req.tone = TL_aicompose.InputAiComposeTone.fromDefault(translateTone);
             req.emojify = emojify;
         } else if (tab == TAB_STYLE) {

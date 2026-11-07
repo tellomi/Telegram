@@ -94,6 +94,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -118,6 +119,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiDefaults;
+import org.telegram.messenger.TellomiDraftTranscribe;
 import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -217,6 +220,7 @@ import org.telegram.ui.iv.RichHtml;
 import org.telegram.ui.iv.RichMessageConvert;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -756,6 +760,8 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private TLRPC.TL_document audioToSend;
     private String audioToSendPath;
+    private TextView tellomiDraftTranscribe;
+    private boolean tellomiDraftBusy;
     private MessageObject audioToSendMessageObject;
     private VideoEditedInfo videoToSendMessageObject;
 
@@ -4024,6 +4030,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             @Override
             public void setVisibility(int visibility) {
                 super.setVisibility(visibility);
+                if (tellomiDraftTranscribe != null) {
+                    tellomiDraftTranscribe.setVisibility(videoToSendMessageObject == null && audioToSendPath != null ? VISIBLE : GONE);
+                }
                 updateSendAsButton();
             }
         };
@@ -4088,9 +4097,108 @@ public class ChatActivityEnterView extends FrameLayout implements
         sizeNotifierLayout.addView(videoTimeHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 52));
 
         audioTimelineView = new RecordedAudioPlayerView(getContext(), resourcesProvider);
-        recordedAudioPanel.addView(audioTimelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, DEFAULT_HEIGHT, 0, 4, 0));
+        recordedAudioPanel.addView(audioTimelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, DEFAULT_HEIGHT, 0, 72, 0));
+
+        tellomiDraftTranscribe = new TextView(getContext());
+        tellomiDraftTranscribe.setText(TellomiDefaults.uiIsChinese() ? "转文字" : "To text");
+        tellomiDraftTranscribe.setTextColor(getThemedColor(Theme.key_chat_messagePanelVoicePressed));
+        tellomiDraftTranscribe.setGravity(Gravity.CENTER);
+        tellomiDraftTranscribe.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        tellomiDraftTranscribe.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        tellomiDraftTranscribe.setOnClickListener(v -> tellomiTranscribeDraft());
+        recordedAudioPanel.addView(tellomiDraftTranscribe, LayoutHelper.createFrame(68, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
         updateFieldRight(lastAttachVisible);
+    }
+
+    private void tellomiTranscribeDraft() {
+        if (tellomiDraftBusy || audioToSendPath == null || getContext() == null) {
+            return;
+        }
+        File file = new File(audioToSendPath);
+        boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
+        String problem = TellomiDraftTranscribe.localError(loggedIn, file.length(), audioToSendPath);
+        if (problem != null) {
+            Toast.makeText(getContext(), TellomiDraftTranscribe.message(problem, TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
+            return;
+        }
+        tellomiDraftBusy = true;
+        tellomiDraftTranscribe.setEnabled(false);
+        final String path = audioToSendPath;
+        new Thread(() -> {
+            byte[] audio = null;
+            try {
+                FileInputStream in = new FileInputStream(file);
+                try {
+                    audio = new byte[(int) file.length()];
+                    int offset = 0;
+                    while (offset < audio.length) {
+                        int read = in.read(audio, offset, audio.length - offset);
+                        if (read < 0) {
+                            break;
+                        }
+                        offset += read;
+                    }
+                    if (offset != audio.length) {
+                        audio = null;
+                    }
+                } finally {
+                    in.close();
+                }
+            } catch (Exception ignored) {
+                audio = null;
+            }
+            final byte[] body = audio;
+            AndroidUtilities.runOnUIThread(() -> tellomiSendDraft(path, body));
+        }, "tellomi-draft-transcribe").start();
+    }
+
+    private void tellomiSendDraft(String path, byte[] body) {
+        if (getContext() == null || path == null || !path.equals(audioToSendPath) || body == null || body.length == 0) {
+            tellomiDraftBusy = false;
+            if (tellomiDraftTranscribe != null) {
+                tellomiDraftTranscribe.setEnabled(true);
+            }
+            if (getContext() != null && path != null && path.equals(audioToSendPath)) {
+                Toast.makeText(getContext(), TellomiDraftTranscribe.message("MEDIA_EMPTY", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        TLRPC.TL_messages_transcribeDraft req = new TLRPC.TL_messages_transcribeDraft();
+        req.audio = body;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            tellomiDraftBusy = false;
+            if (tellomiDraftTranscribe != null) {
+                tellomiDraftTranscribe.setEnabled(true);
+            }
+            if (getContext() == null || !path.equals(audioToSendPath)) {
+                return;
+            }
+            if (error != null) {
+                Toast.makeText(getContext(), TellomiDraftTranscribe.message(error.text, TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (!(response instanceof TLRPC.TL_messages_transcribedAudio)) {
+                Toast.makeText(getContext(), TellomiDraftTranscribe.message("TRANSCRIPTION_FAILED", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
+                return;
+            }
+            TLRPC.TL_messages_transcribedAudio result = (TLRPC.TL_messages_transcribedAudio) response;
+            if (result.pending || result.text == null || result.text.trim().isEmpty()) {
+                Toast.makeText(getContext(), TellomiDraftTranscribe.message("TRANSCRIPTION_FAILED", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (messageEditText != null) {
+                CharSequence existing = messageEditText.getText();
+                String next = result.text.trim();
+                if (existing != null && existing.length() > 0) {
+                    messageEditText.setText(existing + "\n" + next);
+                } else {
+                    messageEditText.setText(next);
+                }
+                messageEditText.setSelection(messageEditText.length());
+            }
+            resetRecordedState();
+        }));
     }
 
     private void resetRecordedState() {

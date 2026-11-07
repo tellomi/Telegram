@@ -217,9 +217,28 @@ public final class TellomiDefaults {
     }
 
     /**
-     * Simplified and Traditional Chinese ship in {@code localization_zh.bin}
-     * ({@code src/main/res/values-zh}). They must stay built-in. A remote row with
-     * no downloaded file used to replace them and leave every string on the English bin.
+     * English and both Chinese packs ship a full local bin. They must apply
+     * without waiting for {@code langpack.getLangPack}. A catalog reply that
+     * sets {@code pathToFile} to {@code remote} used to leave the login page
+     * unchanged until that request returned.
+     */
+    public static boolean completeLocalBin(String shortName) {
+        if (shortName == null || shortName.length() == 0) {
+            return false;
+        }
+        String code = shortName.replace('-', '_').toLowerCase(Locale.US);
+        return "en".equals(code) || "zh".equals(code) || LANG_ZH_HANS.equals(code.replace('_', '-')) || LANG_ZH_HANT.equals(code.replace('_', '-'));
+    }
+
+    /** True when a built-in English or Chinese row should drop a {@code remote} placeholder. */
+    public static boolean clearRemotePlaceholder(String shortName, String pathToFile) {
+        return completeLocalBin(shortName) && "remote".equals(pathToFile);
+    }
+
+    /**
+     * Simplified and Traditional Chinese ship in {@code localization_zh.bin}.
+     * They must stay built-in. A remote row with no downloaded file used to
+     * replace them and leave every string on the English bin.
      */
     public static boolean bundledChinese(LocaleController.LocaleInfo info) {
         if (info == null || !info.builtIn || info.pathToFile != null || info.shortName == null) {

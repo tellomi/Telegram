@@ -28,12 +28,19 @@ public final class TellomiDiscoverLink {
         public final String title;
         public final String description;
         public final String image;
+        /** {@code og:site_name}. Discover posts do not upload this field. */
+        public final String siteName;
 
         public Preview(String url, String title, String description, String image) {
+            this(url, title, description, image, null);
+        }
+
+        public Preview(String url, String title, String description, String image, String siteName) {
             this.url = url;
             this.title = title;
             this.description = description;
             this.image = image;
+            this.siteName = siteName;
         }
 
         public String titleLine() {
@@ -210,7 +217,8 @@ public final class TellomiDiscoverLink {
         if (image == null) {
             image = imageMeta(html, pageUrl, "twitter:image:src");
         }
-        return new Preview(pageUrl, clip(title, TITLE_LIMIT), clip(description, DESCRIPTION_LIMIT), image);
+        String siteName = meta(html, "og:site_name", 64);
+        return new Preview(pageUrl, clip(title, TITLE_LIMIT), clip(description, DESCRIPTION_LIMIT), image, siteName);
     }
 
     /** One stored object, the shape {@code POST /v1/feed/posts} sends. */

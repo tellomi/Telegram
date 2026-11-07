@@ -242,7 +242,7 @@ Deferred: a full profile layout for email, binding a phone as a separate product
 | `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | Settings search「add account」uses the same helper. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Device locale and bundled zh/en resource lookup. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAccount.java` | New. Saved email, masked label, already-on-device match, Add Account routing. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Light palette kept. Dark mode uses a white primary button and light field text. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Login ink follows `Theme.key_windowBackgroundWhite*`, the blue button, and the checkbox keys. Hard-coded `#111111` / `#C7C7CC` / `#C8C8CC` no longer paint titles, hints, or the empty agreement circle. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` |「开始使用」, bind-phone copy,「该账号已登录」. |
 
 ## Login locale, welcome mark, Help, bind (14.0.3)
@@ -1155,3 +1155,77 @@ Before that installer opens, the file must be a zip, the package name must be th
 | `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | Resume continues a finished download or a permission return. Website updates stay skippable. |
 | `TMessagesProj/src/main/res/xml/provider_paths.xml` | `external-files-path` `Download/` for the update APK. |
 | `TMessagesProj/src/test/java/org/telegram/messenger/TellomiApkUpdateTest.java` | State, a real zip, a bad signature, a bad package, and disagreeing hashes. |
+
+## Secret view and per-chat password
+
+Long-press on a dialog, and the profile menu, can open that chat without read receipts or add a local pin. Existing rows are unchanged. The pin is a salt and PBKDF2 hash in `tellomi_chat_lock_<account>`. It is not uploaded. Forgetting it requires the app passcode; if that passcode is not set, the chat lock stays.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiQuietOpen.java` | Holds one chat so reads, typing, and, for secret view, the online heartbeat are skipped. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLock.java` | Pin rules, hash, preview mask, and the app-passcode clear rule. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLockStore.java` | Per-account local preferences. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatLockUi.java` | Set, change, biometric, unlock, and forgotten-pin dialogs. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiChatMenu.java` | Secret view arguments and the profile rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java` | Two extra long-press rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | The same two rows. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | Banner, read-only bar, and the lock cover. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Quiet-open returns before read, reaction, mention, typing, and online RPCs. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java` | Secret view does not clear reaction unread locally. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java` | Locked chats use the generic notification text. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java` | Locked chats show 已锁定 in the list and in search. |
+
+## Login contrast
+
+Login titles, hints, the empty agreement circle, OTP squares, and the primary button were painted with fixed light colors (`#111111`, `#C7C7CC`, `#C8C8CC`, `#8E8E93`). Those disappear in the other theme. They now start from `Theme.key_windowBackgroundWhiteBlackText`, `key_windowBackgroundWhiteHintText`, `key_windowBackgroundWhiteInputField`, `key_windowBackgroundWhiteInputFieldActivated`, `key_windowBackgroundWhiteBlueButton`, `key_checkboxSquareUnchecked`, `key_checkboxSquareBackground`, and `key_checkboxSquareCheck`. Where that key sits on the filled field or the page and misses WCAG AA (hint on the field was about 1.7:1, the dark empty ring about 2.4:1), `TellomiContrast.ensure` walks it toward the theme text color until body text clears 4.5:1 or a control edge clears 3:1. The phone placeholder is drawn by `HintEditText`'s own paint, which ignored `setHintTextColor`; `setHintInk` updates that paint. The welcome page had forced `#FFFFFF` / `#111111`, so it stayed light in the dark theme; it now uses the same page and text keys. Layout and auth RPCs are unchanged. OTP squares still show a red stroke when the code is wrong.
+
+## Login language, calling codes, code flood
+
+The login language icon opens `TellomiLanguageSelectActivity`. English and Chinese are full local bins. `langpack.getLanguages` used to mark English `pathToFile=remote`, so `applyLanguage` waited for `langpack.getLangPack` and the open page never redrew when that request did not return. Those two packs now drop the remote placeholder and apply the bundled bin immediately. `langpack.getLangPack`, `getLanguages`, `getStrings`, and `getDifference` stay `RequestFlagWithoutLogin`. The welcome page uses the same icon.
+
+Login country rows are limited to `TellomiCallingCodes.ALLOWED` (currently `86`). Other codes stay out of the list. Pasting `+1…` or another known code shows a dialog and does not change `+86`. `PHONE_NUMBER_FLOOD` and `PHONE_CODE_FLOOD` say the daily limit of 10 is used. `FLOOD_WAIT_60` says to wait 60 seconds and does not use that daily sentence. A daily flood blocks further `auth.resendCode` on that page. A failed `langpack.getLangPack` or `getDifference` still finishes the apply, so the page redraws from the local bin.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Drop the remote placeholder for English and Chinese before applying. Do not overwrite those built-in rows from `getLanguages`. A failed langpack request still finishes the apply. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Calling-code filter, paste warning, flood alert, resend stop. |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Language icon on the welcome page. |
+
+## Chat link cards
+
+External Open Graph is fetched on the phone (the same parser as Discover). `tell.cc` / `t.me` / `telegram.me` / `telegram.dog` still use `messages.getWebPagePreview` and `messages.sendMessage`. A client card is `messages.sendMedia` with `inputMediaWebPage#c21b8849` flags.3–6: title, description, site name, and an uploaded `InputPhoto`. The bubble and the composer keep the native `webPage` layout. `author=unverified` is not drawn.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/TLRPC.java` | `TL_inputMediaWebPage` reads and writes flags.3–6. Official clients that leave those bits unset encode the same as before. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | An external link in the composer is fetched on the phone. The native link panel is unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | External cards go out as `messages.sendMedia`. The image is uploaded with `messages.uploadMedia` first. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java` | The bubble skips `author=unverified`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java` | The viewer skips the same author string. |
+
+## Draft transcription and English-to-Chinese translation
+
+Unsent voice uses `messages.transcribeDraft#7e11da47`. The bytes stay in that request. The recording is not sent, and already-sent voice still uses `messages.transcribeAudio#269e9a49`. The composer shows 转文字 only on an unsent voice file. Files over 8MB, empty files, and names other than ogg, opus, wav, or mp4 are refused on the phone.
+
+`messages.translateText`, `messages.translateRichMessage`, `messages.summarizeText`, and `composeMessageWithAI` `translate_to_lang` always send `zh-hans`. Google, the `alternative` / `system` app-config values, and the Cocoon sheet are not used. Manual and automatic translation stay off until `tellomi_translate_enabled` is true and the matching app-config string is exactly `enabled`. A missing string stays `disabled`. The settings switches, the single-message sheet, the whole-chat bar, and `messages.togglePeerTranslations` stay. They no longer ask for Telegram Premium.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/TLRPC.java` | `TL_messages_transcribeDraft` writes the audio bytes and reads `messages.transcribedAudio`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | 转文字 on the unsent voice panel. The text goes into the field and the recording is discarded. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Translation strings default to `disabled` and count only when the value is `enabled` and `tellomi_translate_enabled` is set. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java` | Whole-chat requests use `zh-hans`. The Google and on-device branches are gone. Premium is not required. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java` | Single-message requests use `zh-hans`. The Google request is gone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java` | The same target language. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java` | The bar menu is hide / do-not-translate. The target list is Simplified Chinese. Cocoon is not shown. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/AIEditorAlert.java` | `translate_to_lang` is `zh-hans`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The bar toggles translation for a translatable chat. It does not open Premium. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java` | The whole-chat switch is not locked behind Premium. |
+
+## Bottom-bar labels
+
+Settings → Navigation Bar can hide the words under the icons. Discover, Chats, and Profile stay in the bar. The default is the words visible. The preference is `tellomi_hide_tab_labels`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `setLabelShown` hides the word and keeps the icon and the content description. |
