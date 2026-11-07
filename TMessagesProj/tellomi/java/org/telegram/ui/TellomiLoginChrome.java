@@ -43,7 +43,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.OutlineTextContainerView
+import org.telegram.ui.Components.OutlineTextContainerView;
 
 public final class TellomiLoginChrome {
 
