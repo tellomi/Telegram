@@ -38,7 +38,9 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TellomiApkDownload;
 import org.telegram.messenger.TellomiApkInstall;
+import org.telegram.messenger.TellomiApkUpdate;
 import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
@@ -61,6 +63,7 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
     private boolean watching;
     private boolean downloading;
     private boolean released;
+    private Runnable apkPoll;
 
     public TellomiSoftUpdateDialog(Context context, TLRPC.TL_help_appUpdate update, int account) {
         super(context);
@@ -194,13 +197,12 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
 
     private void onSwiped() {
         int action = TellomiAppUpdate.primaryAction(update == null ? null : update.url, update != null && update.document instanceof TLRPC.TL_document);
+        if (action == TellomiAppUpdate.DOWNLOAD_IN_APP) {
+            startInAppDownload(update.url.trim(), update.id);
+            return;
+        }
         if (action == TellomiAppUpdate.OPEN_URL) {
-            String url = update.url.trim();
-            if (TellomiAppUpdate.preferSystemBrowser(url)) {
-                Browser.openUrlInSystemBrowser(getContext(), url);
-            } else {
-                Browser.openUrl(getContext(), url);
-            }
+            Browser.openUrl(getContext(), update.url.trim());
             dismiss();
             return;
         }
@@ -226,6 +228,78 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
             return;
         }
         slider.reset();
+    }
+
+    private void startInAppDownload(String url, int versionCode) {
+        TellomiApkUpdate.Session session = TellomiApkDownload.begin(getContext(), url, versionCode);
+        if (session.state == TellomiApkUpdate.FAILED || session.state == TellomiApkUpdate.IDLE) {
+            slider.reset();
+            AndroidUtilities.runOnUIThread(() -> slider.setLabels(
+                    LocaleController.getString(messageRes(session.error)),
+                    LocaleController.getString(R.string.TellomiSoftUpdateGo)
+            ));
+            return;
+        }
+        downloading = true;
+        slider.showBusy(LocaleController.formatString(R.string.TellomiSoftUpdateDownloading, TellomiApkDownload.progress(getContext())));
+        if (apkPoll != null) {
+            AndroidUtilities.cancelRunOnUIThread(apkPoll);
+        }
+        apkPoll = () -> {
+            if (!isShowing()) {
+                return;
+            }
+            TellomiApkUpdate.Session now = TellomiApkDownload.refresh(getContext());
+            if (now.state == TellomiApkUpdate.DOWNLOADING) {
+                slider.showBusy(LocaleController.formatString(R.string.TellomiSoftUpdateDownloading, TellomiApkDownload.progress(getContext())));
+                AndroidUtilities.runOnUIThread(apkPoll, 500);
+                return;
+            }
+            downloading = false;
+            if (now.state != TellomiApkUpdate.READY) {
+                slider.reset();
+                slider.setLabels(
+                        LocaleController.getString(messageRes(now.error)),
+                        LocaleController.getString(R.string.TellomiSoftUpdateGo)
+                );
+                return;
+            }
+            int error = TellomiApkDownload.checkFile(getContext(), now, TellomiApkDownload.publishedHash(getContext()));
+            if (error != TellomiApkUpdate.OK) {
+                slider.reset();
+                slider.setLabels(
+                        LocaleController.getString(messageRes(error)),
+                        LocaleController.getString(R.string.TellomiSoftUpdateGo)
+                );
+                return;
+            }
+            Activity activity = AndroidUtilities.findActivity(getContext());
+            if (activity == null) {
+                activity = AndroidUtilities.getActivity(getContext());
+            }
+            if (activity != null && TellomiApkDownload.openInstaller(activity, now)) {
+                dismiss();
+                return;
+            }
+            slider.reset();
+        };
+        AndroidUtilities.runOnUIThread(apkPoll, 500);
+    }
+
+    private static int messageRes(int error) {
+        if (error == TellomiApkUpdate.BAD_PACKAGE) {
+            return R.string.TellomiUpdateBadPackage;
+        }
+        if (error == TellomiApkUpdate.BAD_SIGNATURE) {
+            return R.string.TellomiUpdateBadSignature;
+        }
+        if (error == TellomiApkUpdate.VERSION_NOT_NEWER) {
+            return R.string.TellomiUpdateNotNewer;
+        }
+        if (error == TellomiApkUpdate.HOST_REJECTED) {
+            return R.string.TellomiUpdateBadSource;
+        }
+        return R.string.TellomiUpdateBadFile;
     }
 
     private void watchFile() {
@@ -283,7 +357,12 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
             return;
         }
         unwatch();
-        if (downloading && update != null && update.document != null) {
+        if (apkPoll != null) {
+            AndroidUtilities.cancelRunOnUIThread(apkPoll);
+            apkPoll = null;
+        }
+        downloading = false;
+        if (update != null && update.document != null && fileName != null) {
             downloading = false;
             FileLoader.getInstance(account).cancelLoadFile(update.document);
         }

@@ -44449,7 +44449,11 @@ public class ChatActivity extends BaseFragment implements
         private Drawable getBackgroundDrawableFromTheme(EmojiThemes chatTheme, int prevPhase) {
             Drawable drawable;
             if (chatTheme.showAsDefaultStub) {
-                drawable = TellomiWallpaperDraw.createDefault(isDark);
+                Theme.ThemeInfo themeInfo = EmojiThemes.getDefaultThemeInfo(isDark);
+                SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
+                String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
+                Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
+                drawable = settings.wallpaper;
             } else {
                 int backgroundColor = getColor(Theme.key_chat_wallpaper);
                 int gradientColor1 = getColor(Theme.key_chat_wallpaper_gradient_to1);
@@ -44457,7 +44461,10 @@ public class ChatActivity extends BaseFragment implements
                 int gradientColor3 = getColor(Theme.key_chat_wallpaper_gradient_to3);
 
                 MotionBackgroundDrawable motionDrawable = new MotionBackgroundDrawable();
-                motionDrawable.setPatternBitmap(chatTheme.getWallpaper(isDark ? 1 : 0).settings.intensity);
+                TLRPC.WallPaper themeWallpaper = chatTheme.getWallpaper(isDark ? 1 : 0);
+                if (themeWallpaper != null && themeWallpaper.settings != null) {
+                    motionDrawable.setPatternBitmap(themeWallpaper.settings.intensity);
+                }
                 motionDrawable.setGiftDrawable(chatTheme.getEmojiAnimatedSticker());
                 motionDrawable.setColors(backgroundColor, gradientColor1, gradientColor2, gradientColor3, 0,true);
                 motionDrawable.setPhase(prevPhase);
@@ -44485,7 +44492,8 @@ public class ChatActivity extends BaseFragment implements
                         if (patternIntensityAnimator != null) {
                             patternIntensityAnimator.cancel();
                         }
-                        int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
+                        TLRPC.WallPaper loadedWallpaper = chatTheme.getWallpaper(isDarkTheme ? 1 : 0);
+                        int intensity = loadedWallpaper != null && loadedWallpaper.settings != null ? loadedWallpaper.settings.intensity : 0;
                         motionDrawable.setPatternGiftPositions(pair.second.giftPatternPositions);
                         motionDrawable.setGiftPatternRandomSeed(wallpaperRandomSeed);
                         motionDrawable.setPatternBitmap(intensity, bitmap);

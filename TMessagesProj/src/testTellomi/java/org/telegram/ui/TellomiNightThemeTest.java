@@ -13,8 +13,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Built-in {@code night.attheme} pairs for the screens checked on 2026-11-06.
- * This reads the theme file. It does not render a window.
+ * Built-in {@code night.attheme} after the Telegram palette was restored.
+ * This reads the theme file and checks contrast. It does not render a window.
  */
 public class TellomiNightThemeTest {
 
@@ -23,7 +23,6 @@ public class TellomiNightThemeTest {
         Map<String, Integer> theme = load(find("TMessagesProj/src/main/assets/night.attheme"));
         assertFalse(theme.containsKey("telegram_color_dialogsLogo"));
         assertEquals(0xFFFFFFFF, (int) theme.get("windowBackgroundWhiteBlackText"));
-        assertEquals(0xFFFFFFFF, (int) theme.get("chat_outBubble"));
 
         assertAtLeast(theme, "chats_name", "dialogBackground", 4.5);
         assertAtLeast(theme, "chat_messageTextIn", "chat_inBubble", 4.5);

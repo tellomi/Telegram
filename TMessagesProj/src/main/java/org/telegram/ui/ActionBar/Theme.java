@@ -127,8 +127,6 @@ import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.TypingDotsDrawable;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.RoundVideoProgressShadow;
-import org.telegram.ui.TellomiWallpaperCatalog;
-import org.telegram.ui.TellomiWallpaperDraw;
 import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.ThemePreviewActivity;
 
@@ -824,14 +822,6 @@ public class Theme {
             }
             if (backgroundRotation != 45) {
                 currentColors.put(key_chat_wallpaper_gradient_rotation, backgroundRotation);
-            }
-            if (TellomiWallpaperCatalog.isBuiltinTheme(parentTheme == null ? null : parentTheme.name)) {
-                currentColors.put(key_chat_inBubble, TellomiWallpaperCatalog.inBubble(isDarkTheme));
-                currentColors.put(key_chat_outBubble, TellomiWallpaperCatalog.outBubble(accentColor, isDarkTheme));
-                currentColors.delete(key_chat_outBubbleGradient1);
-                currentColors.delete(key_chat_outBubbleGradient2);
-                currentColors.delete(key_chat_outBubbleGradient3);
-                currentColors.put(key_chat_outBubbleGradientAnimated, 0);
             }
 
             int outBubble = currentColors.get(key_chat_outBubble);
@@ -1584,14 +1574,14 @@ public class Theme {
 
         public int getPreviewOutColor() {
             if (firstAccentIsDefault && currentAccentId == DEFALT_THEME_ACCENT_ID) {
-                return 0xffe0e0e0;
+                return 0xfff0fee0;
             }
             return previewOutColor;
         }
 
         public int getPreviewBackgroundColor() {
             if (firstAccentIsDefault && currentAccentId == DEFALT_THEME_ACCENT_ID) {
-                return TellomiWallpaperCatalog.defaultWallpaper(false).colors[0];
+                return 0xffcfd9e3;
             }
             return previewBackgroundColor;
         }
@@ -1784,10 +1774,10 @@ public class Theme {
 
                 //override default themes
                 if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night")) {
-                    themeAccent.myMessagesAccentColor = 0;
-                    themeAccent.myMessagesGradientAccentColor1 = 0;
-                    themeAccent.myMessagesGradientAccentColor2 = 0;
-                    themeAccent.myMessagesGradientAccentColor3 = 0;
+                    themeAccent.myMessagesAccentColor = 0xff258DE5;
+                    themeAccent.myMessagesGradientAccentColor1 = 0xff4272DF;
+                    themeAccent.myMessagesGradientAccentColor2 = 0xff8146D7;
+                    themeAccent.myMessagesGradientAccentColor3 = 0xff9F3EAA;
                     if (name.equals("Night")) {
                         themeAccent.patternIntensity = -0.57f;
                         themeAccent.backgroundOverrideColor = 0xff6c7fa6;
@@ -1799,11 +1789,7 @@ public class Theme {
                 themeAccentsMap.put(themeAccent.id, themeAccent);
                 themeAccents.add(themeAccent);
             }
-            ThemeAccent accentBase = themeAccentsMap.get(0);
-            if (accentBase == null && !themeAccents.isEmpty()) {
-                accentBase = themeAccents.get(0);
-            }
-            accentBaseColor = accentBase != null ? accentBase.accentColor : 0;
+            accentBaseColor = themeAccentsMap.get(0).accentColor;
         }
 
         @UiThread
@@ -2265,7 +2251,6 @@ public class Theme {
     private static boolean isWallpaperMotion;
     private static int patternIntensity;
     private static boolean isPatternWallpaper;
-    private static boolean tellomiSolidBubbleShadow;
 
     public static Paint dividerPaint;
     public static Paint dividerExtraPaint;
@@ -3912,13 +3897,25 @@ public class Theme {
         ThemeInfo themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
-        themeInfo.previewBackgroundColor = 0xffefe7dd;
-        themeInfo.previewInColor = TellomiWallpaperCatalog.IN_BUBBLE_LIGHT;
-        themeInfo.previewOutColor = TellomiWallpaperCatalog.outBubble(TellomiWallpaperCatalog.ACCENT_DEFAULT, false);
+        themeInfo.previewBackgroundColor = 0xff95beec;
+        themeInfo.previewInColor = 0xffffffff;
+        themeInfo.previewOutColor = 0xffd0e6ff;
         themeInfo.firstAccentIsDefault = true;
         themeInfo.currentAccentId = DEFALT_THEME_ACCENT_ID;
         themeInfo.sortIndex = 1;
-        applyTellomiAccents(themeInfo);
+        themeInfo.setAccentColorOptions(
+                new int[]    { 0xFF5890C5,                     0xFF239853,                    0xFFCE5E82,                    0xFF7F63C3,                    0xFF2491AD,                    0xFF299C2F,                    0xFF8854B4,                    0xFF328ACF,                    0xFF43ACC7,                    0xFF52AC44,                    0xFFCD5F93,                    0xFFD28036,                    0xFF8366CC,                    0xFFCE4E57,                    0xFFD3AE40,                    0xFF7B88AB },
+                new int[]    { 0xFFB8E18D,                     0xFFFAFBCC,                    0xFFFFF9DC,                    0xFFC14F6E,                    0xFFD1BD1B,                    0xFFFFFAC9,                    0xFFFCF6D8,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    { 0x00000000,                     0xFFF2FBC9,                    0xFFFBF4DF, 	                         0,	                             0,                    0xFFFDEDB4,                    0xFFFCF7B6,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    { 0x00000000,                     0xFFdfe2a0,                    0xFFf1b290,                    0xFFd7c1e9,                    0xFFd7b89e,                    0xFFec9e73,                    0xFFcbb0e4,                    0xff9bbce7,                    0xff91c5ec,                    0xff9bc982,                    0xffe4a1c1,                    0xffe3ae7d,                    0xffb8aaea,                    0xffeb9c79,                    0xffd3bc74,                    0xffa0aace },
+                new int[]    { 0x00000000,                     0xFFbad89d,                    0xFFeccf94,                    0xFFe8bdd6,                    0xFFe6dec2,                    0xFFe8d085,                    0xFFebc8e9,                    0xffc0d9f3,                    0xffbfdfec,                    0xffe0dd93,                    0xffe9bed6,                    0xffecd5a2,                    0xffc5c9ee,                    0xfff0bd99,                    0xffe9df9e,                    0xffcacedd },
+                new int[]    { 0x00000000,                     0xFFe2dea7,                    0xFFe7b384,                    0xFFd2aee9,                    0xFFdac5ae,                    0xFFeea677,                    0xFFdfa8d1,                    0xff95c3eb,                    0xffb5e1d9,                    0xffbed595,                    0xffcca8e1,                    0xffdfb076,                    0xffb3b1e2,                    0xffe79db4,                    0xffe0c88b,                    0xffa6add2 },
+                new int[]    { 0x00000000,                     0xFF9ec790,                    0xFFebdea8,                    0xFFeccb88,                    0xFFe5dcbf,                    0xFFede4a9,                    0xFFedc8a8,                    0xffbbd5e8,                    0xffbfdbe8,                    0xffd1db97,                    0xffefcbd7,                    0xffecd694,                    0xffdfbeed,                    0xfff3b182,                    0xffe5d397,                    0xffcacee8 },
+                new int[]    {         99,                              9,                            10,                            11,                            12,                            13,                            14,                             0,                             1,                             2,                             3,                             4,                             5,                             6,                             7,                             8 },
+                new String[] {         "",  "p-pXcflrmFIBAAAAvXYQk-mCwZU", "JqSUrO0-mFIBAAAAWwTvLzoWGQI", "O-wmAfBPSFADAAAA4zINVfD_bro", "RepJ5uE_SVABAAAAr4d0YhgB850", "-Xc-np9y2VMCAAAARKr0yNNPYW0", "fqv01SQemVIBAAAApND8LDRUhRU", "fqv01SQemVIBAAAApND8LDRUhRU", "RepJ5uE_SVABAAAAr4d0YhgB850", "lp0prF8ISFAEAAAA_p385_CvG0w", "heptcj-hSVACAAAAC9RrMzOa-cs", "PllZ-bf_SFAEAAAA8crRfwZiDNg", "dhf9pceaQVACAAAAbzdVo4SCiZA", "Ujx2TFcJSVACAAAARJ4vLa50MkM", "p-pXcflrmFIBAAAAvXYQk-mCwZU", "dk_wwlghOFACAAAAfz9xrxi6euw" },
+                new int[]    {          0,                            180,                            45,                             0,                            45,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
+                new int[]    {          0,                             52,                            46,                            57,                            45,                            64,                            52,                            35,                            36,                            41,                            50,                            50,                            35,                            38,                            37,                            30 }
+                );
         sortAccents(themeInfo);
         themes.add(currentDayTheme = defaultTheme = themeInfo);
         themesDict.put("Blue", themeInfo);
@@ -3926,11 +3923,23 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Dark Blue";
         themeInfo.assetName = "darkblue.attheme";
-        themeInfo.previewBackgroundColor = 0xff0b141a;
-        themeInfo.previewInColor = TellomiWallpaperCatalog.IN_BUBBLE_DARK;
-        themeInfo.previewOutColor = TellomiWallpaperCatalog.outBubble(TellomiWallpaperCatalog.ACCENT_DEFAULT, true);
+        themeInfo.previewBackgroundColor = 0xff5f6e82;
+        themeInfo.previewInColor = 0xff76869c;
+        themeInfo.previewOutColor = 0xff82a8e3;
         themeInfo.sortIndex = 3;
-        applyTellomiAccents(themeInfo);
+        themeInfo.setAccentColorOptions(
+                new int[]    {                    0xFF927BD4,                    0xFF698AFB,                    0xFF23A7F0,                    0xFF7B71D1,                    0xFF69B955,                    0xFF2990EA,                    0xFF7082E9,                    0xFF66BAED,                    0xff3685fa,                    0xff46c8ed,                    0xff64AC5F,                    0xffeb7cb1,                    0xffee902a,                    0xffa281f0,                    0xffd34324,                    0xffeebd34,                    0xff7f8fab,                    0xff3581e3 },
+                new int[]    {                    0xFF9D5C99,                    0xFF635545,                    0xFF31818B,                    0xFFAD6426,                    0xFF4A7034,                    0xFF335D82,                    0xFF36576F,                    0xFF597563,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFF604DA8,                    0xFF685D4C,                    0xFF1B6080,                    0xFF99354E,                    0xFF275D3B,                    0xFF317A98,                    0xFF376E87,                    0xFF5E7370,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFF271e2e,                    0xFF171a22,                    0xFF071e1f,                    0xFF100f13,                    0xFF0e1811,                    0xFF0b131c,                    0xFF1d2129,                    0xFF202c2a,                    0xff0e141a,                    0xff162325,                    0xff161d15,                    0xff24191e,                    0xff251b13,                    0xff1f1d29,                    0xff22160e,                    0xff272115,                    0xff171a1b,                    0xff0e141a },
+                new int[]    {                    0xFF110e13,                    0xFF26262e,                    0xFF141d26,                    0xFF221a27,                    0xFF1f2818,                    0xFF192330,                    0xFF12161a,                    0xFF141a1e,                    0xff172431,                    0xff0e1718,                    0xff172719,                    0xff23171c,                    0xff201408,                    0xff14131c,                    0xff2d1d16,                    0xff1a160d,                    0xff212328,                    0xff172431 },
+                new int[]    {                    0xFF2b1e2b,                    0xFF15151b,                    0xFF0c151a,                    0xFF0e0f13,                    0xFF0b170f,                    0xFF131822,                    0xFF17242d,                    0xFF16202b,                    0xff0f171e,                    0xff1e2e2e,                    0xff141e14,                    0xff2b1929,                    0xff2e1f15,                    0xff292331,                    0xff23140c,                    0xff292414,                    0xff181a1d,                    0xff0f171e },
+                new int[]    {                    0xFF161227,                    0xFF1a1916,                    0xFF0d272c,                    0xFF271d29,                    0xFF171d19,                    0xFF172331,                    0xFF111521,                    0xFF051717,                    0xff141c2b,                    0xff121f1f,                    0xff1c261a,                    0xff1f141d,                    0xff1b130a,                    0xff17131b,                    0xff2d1924,                    0xff1e170e,                    0xff212228,                    0xff141c2b },
+                new int[]    {                            11,                            12,                            13,                            14,                            15,                            16,                            17,                            18,                             0,                             1,                             2,                             3,                             4,                             5,                             6,                             7,                             8,                             9 },
+                new String[] { "O-wmAfBPSFADAAAA4zINVfD_bro", "RepJ5uE_SVABAAAAr4d0YhgB850", "dk_wwlghOFACAAAAfz9xrxi6euw", "9LW_RcoOSVACAAAAFTk3DTyXN-M", "PllZ-bf_SFAEAAAA8crRfwZiDNg", "-Xc-np9y2VMCAAAARKr0yNNPYW0", "kO4jyq55SFABAAAA0WEpcLfahXk", "CJNyxPMgSVAEAAAAvW9sMwc51cw", "fqv01SQemVIBAAAApND8LDRUhRU", "RepJ5uE_SVABAAAAr4d0YhgB850", "CJNyxPMgSVAEAAAAvW9sMwc51cw", "9LW_RcoOSVACAAAAFTk3DTyXN-M", "9GcNVISdSVADAAAAUcw5BYjELW4", "F5oWoCs7QFACAAAAgf2bD_mg8Bw", "9ShF73d1MFIIAAAAjWnm8_ZMe8Q", "3rX-PaKbSFACAAAAEiHNvcEm6X4", "dk_wwlghOFACAAAAfz9xrxi6euw", "fqv01SQemVIBAAAApND8LDRUhRU" },
+                new int[]    {                           225,                            45,                           225,                           135,                            45,                           225,                            45,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
+                new int[]    {                            40,                            40,                            31,                            50,                            25,                            34,                            35,                            35,                            38,                            29,                            24,                            34,                            34,                            31,                            29,                            37,                            21,                            38 }
+                );
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Dark Blue", currentNightTheme = themeInfo);
@@ -3938,11 +3947,23 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic Blue";
         themeInfo.assetName = "arctic.attheme";
-        themeInfo.previewBackgroundColor = 0xffefe7dd;
-        themeInfo.previewInColor = TellomiWallpaperCatalog.IN_BUBBLE_LIGHT;
-        themeInfo.previewOutColor = TellomiWallpaperCatalog.outBubble(TellomiWallpaperCatalog.ACCENT_DEFAULT, false);
+        themeInfo.previewBackgroundColor = 0xffe1e9f0;
+        themeInfo.previewInColor = 0xffffffff;
+        themeInfo.previewOutColor = 0xff6ca1eb;
         themeInfo.sortIndex = 5;
-        applyTellomiAccents(themeInfo);
+        themeInfo.setAccentColorOptions(
+                new int[]    {                    0xFF40B1E2,                    0xFF41B05D,                    0xFFCE8C20,                    0xFF57A3EB,                    0xFFDE8534,                    0xFFCC6189,                    0xFF3490EB,                    0xFF43ACC7,                    0xFF52AC44,                    0xFFCD5F93,                    0xFFD28036,                    0xFF8366CC,                    0xFFCE4E57,                    0xFFD3AE40,                    0xFF7B88AB },
+                new int[]    {                    0xFF319FCA,                    0xFF28A359,                    0xFF8C5A3F,                    0xFF3085D3,                    0xFFC95870,                    0xFF7871CD,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFF4EBEE2,                    0xFF6BBC59,                    0xFF9E563C,                    0xFF48C2D8,                    0xFFD87047,                    0xFFBE6EAF,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFFc5e2f0,                    0xFFdadea9,                    0xFFd6c9a5,                    0xFFe3f3f3,                    0xFFeee5b0,                    0xFFe5dfec,                    0xffe0e7ed,                    0xffbfe0eb,                    0xffc2e0af,                    0xffefd9e4,                    0xfff1dfbd,                    0xffe1dbec,                    0xffedd8d8,                    0xffebe1cd,                    0xffdcdee5 },
+                new int[]    {                    0xFFe8f4f3,                    0xFFbce3ac,                    0xFFe6dbaf,                    0xFFc8e6ee,                    0xFFeebeaa,                    0xFFe1c6ec,                    0xffbed7f3,                    0xffbfe0eb,                    0xffcbe19a,                    0xffecc6d9,                    0xffe8c79b,                    0xffbdc1ec,                    0xffeecac0,                    0xffebe2b5,                    0xffc3cadf },
+                new int[]    {                    0xFFb4daf0,                    0xFFcde7a9,                    0xFFe8c091,                    0xFFd9eff3,                    0xFFeecf92,                    0xFFf6eaf6,                    0xffe0e8f3,                    0xffcaebec,                    0xffb8de89,                    0xfff1d8e6,                    0xfff3d7a6,                    0xffd6d8f5,                    0xffedddcd,                    0xffebdcc9,                    0xffe7edf1 },
+                new int[]    {                    0xFFcff0ef,                    0xFFa8cf9b,                    0xFFe1d09f,                    0xFFb4d6e8,                    0xFFeeaf87,                    0xFFe5c5cf,                    0xffc8dbf3,                    0xffaedceb,                    0xffcee5a2,                    0xfff0c0d9,                    0xffdfb48e,                    0xffbdbaf2,                    0xfff1c9bb,                    0xffe7d7ae,                    0xffc5c6da },
+                new int[]    {                             9,                            10,                            11,                            12,                            13,                            14,                             0,                             1,                             2,                             3,                             4,                             5,                             6,                             7,                             8 },
+                new String[] { "MIo6r0qGSFAFAAAAtL8TsDzNX60", "dhf9pceaQVACAAAAbzdVo4SCiZA", "fqv01SQemVIBAAAApND8LDRUhRU", "p-pXcflrmFIBAAAAvXYQk-mCwZU", "JqSUrO0-mFIBAAAAWwTvLzoWGQI", "F5oWoCs7QFACAAAAgf2bD_mg8Bw", "fqv01SQemVIBAAAApND8LDRUhRU", "RepJ5uE_SVABAAAAr4d0YhgB850", "PllZ-bf_SFAEAAAA8crRfwZiDNg", "pgJfpFNRSFABAAAACDT8s5sEjfc", "ptuUd96JSFACAAAATobI23sPpz0", "dhf9pceaQVACAAAAbzdVo4SCiZA", "JqSUrO0-mFIBAAAAWwTvLzoWGQI", "9iklpvIPQVABAAAAORQXKur_Eyc", "F5oWoCs7QFACAAAAgf2bD_mg8Bw" },
+                new int[]    {                           315,                           315,                           225,                           315,                             0,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
+                new int[]    {                            50,                            50,                            58,                            47,                            46,                            50,                            49,                            46,                            51,                            50,                            49,                            34,                            54,                            50,                            40 }
+                );
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Arctic Blue", themeInfo);
@@ -3950,11 +3971,23 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Day";
         themeInfo.assetName = "day.attheme";
-        themeInfo.previewBackgroundColor = 0xffefe7dd;
-        themeInfo.previewInColor = TellomiWallpaperCatalog.IN_BUBBLE_LIGHT;
-        themeInfo.previewOutColor = TellomiWallpaperCatalog.outBubble(TellomiWallpaperCatalog.ACCENT_DEFAULT, false);
+        themeInfo.previewBackgroundColor = 0xffffffff;
+        themeInfo.previewInColor = 0xffebeef4;
+        themeInfo.previewOutColor = 0xff7cb2fe;
         themeInfo.sortIndex = 2;
-        applyTellomiAccents(themeInfo);
+        themeInfo.setAccentColorOptions(
+                new int[]    { 0xFF56A2C9, 0xFFCC6E83, 0xFFD08E47, 0xFFCC6462, 0xFF867CD2, 0xFF4C91DF, 0xFF57B4D9, 0xFF54B169, 0xFFD9BF3F, 0xFFCC6462, 0xFFCC6E83, 0xFF9B7BD2, 0xFFD79144, 0xFF7B88AB },
+                new int[]    { 0xFF6580DC, 0xFF6C6DD2, 0xFFCB5481, 0xFFC34A4A, 0xFF5C8EDF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+                new int[]    { 0xFF3EC1D6, 0xFFC86994, 0xFFDBA12F, 0xFFD08E3B, 0xFF51B5CB, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+                new int[]    { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+                new int[]    { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+                null,
+                null,
+                new int[]    {          9,         10,         11,         12,         13,          0,          1,          2,          3,          4,          5,          6,          7,          8 },
+                new String[] {         "",         "",         "",         "",         "",         "",         "",         "",         "",         "",         "",         "",         "",         "" },
+                new int[]    {          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0 },
+                new int[]    {          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0 }
+                );
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Day", themeInfo);
@@ -3962,11 +3995,23 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Night";
         themeInfo.assetName = "night.attheme";
-        themeInfo.previewBackgroundColor = 0xff0b141a;
-        themeInfo.previewInColor = TellomiWallpaperCatalog.IN_BUBBLE_DARK;
-        themeInfo.previewOutColor = TellomiWallpaperCatalog.outBubble(TellomiWallpaperCatalog.ACCENT_DEFAULT, true);
+        themeInfo.previewBackgroundColor = 0xff535659;
+        themeInfo.previewInColor = 0xff747A84;
+        themeInfo.previewOutColor = 0xff75A2E6;
         themeInfo.sortIndex = 4;
-        applyTellomiAccents(themeInfo);
+        themeInfo.setAccentColorOptions(
+                new int[]    {                    0xFF6ABE3F,                    0xFF8D78E3,                    0xFFDE5E7E,                    0xFF5977E8,                    0xFFDBC11A,                    0xff3e88f7,                    0xff4ab5d3,                    0xff4ab841,                    0xffd95576,                    0xffe27d2b,                    0xff936cda,                    0xffd04336,                    0xffe8ae1c,                    0xff7988a3 },
+                new int[]    {                    0xFF8A5294,                    0xFFB46C1B,                    0xFFAF4F6F,                    0xFF266E8D,                    0xFF744EB7,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFF6855BB,                    0xFFA53B4A,                    0xFF62499C,                    0xFF2F919D,                    0xFF298B95,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000,                    0x00000000 },
+                new int[]    {                    0xFF16131c,                    0xFF1e1118,                    0xFF0f0b10,                    0xFF090c0c,                    0xFF071519,                    0xff0d0e17,                    0xff111b1c,                    0xff0c110c,                    0xff0e0b0d,                    0xff1d160f,                    0xff09090a,                    0xff1c1210,                    0xff1d1b18,                    0xff0e1012 },
+                new int[]    {                    0xFF201827,                    0xFF100f13,                    0xFF1b151a,                    0xFF141f22,                    0xFF0c0c0f,                    0xff090a0c,                    0xff0a0e0e,                    0xff080908,                    0xff1a1618,                    0xff13100d,                    0xff1e1a21,                    0xff0f0d0c,                    0xff0c0b08,                    0xff070707 },
+                new int[]    {                    0xFF0e0b13,                    0xFF211623,                    0xFF130e12,                    0xFF0d0f11,                    0xFF10191f,                    0xff181c28,                    0xff142121,                    0xff121812,                    0xff130e11,                    0xff1a130f,                    0xff0b0a0b,                    0xff120d0b,                    0xff15140f,                    0xff101214 },
+                new int[]    {                    0xFF1e192a,                    0xFF111016,                    0xFF21141a,                    0xFF111a1b,                    0xFF0a0d13,                    0xff0e0f12,                    0xff070c0b,                    0xff0b0d0b,                    0xff22121e,                    0xff0f0c0c,                    0xff110f17,                    0xff070606,                    0xff0c0a0a,                    0xff09090b },
+                new int[]    {                             9,                            10,                            11,                            12,                            13,                             0,                             1,                             2,                             3,                             4,                             5,                             6,                             7,                             8 },
+                new String[] { "YIxYGEALQVADAAAAA3QbEH0AowY", "9LW_RcoOSVACAAAAFTk3DTyXN-M", "O-wmAfBPSFADAAAA4zINVfD_bro", "F5oWoCs7QFACAAAAgf2bD_mg8Bw", "-Xc-np9y2VMCAAAARKr0yNNPYW0", "fqv01SQemVIBAAAApND8LDRUhRU", "F5oWoCs7QFACAAAAgf2bD_mg8Bw", "ptuUd96JSFACAAAATobI23sPpz0", "p-pXcflrmFIBAAAAvXYQk-mCwZU", "Nl8Pg2rBQVACAAAA25Lxtb8SDp0", "dhf9pceaQVACAAAAbzdVo4SCiZA", "9GcNVISdSVADAAAAUcw5BYjELW4", "9LW_RcoOSVACAAAAFTk3DTyXN-M", "dk_wwlghOFACAAAAfz9xrxi6euw" },
+                new int[]    {                            45,                           135,                             0,                           180,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0,                             0 },
+                new int[]    {                            34,                            47,                            52,                            48,                            54,                            50,                            37,                            56,                            48,                            49,                            40,                            64,                            38,                            48 }
+                );
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
@@ -4062,8 +4107,7 @@ public class Theme {
             for (ThemeInfo info : themesDict.values()) {
                 if (info.assetName != null && info.accentBaseColor != 0) {
                     String accents = themeConfig.getString("accents_" + info.assetName, null);
-                    int fallbackAccent = info.firstAccentIsDefault ? DEFALT_THEME_ACCENT_ID : TellomiWallpaperCatalog.homeAccentId(info.getKey());
-                    info.currentAccentId = themeConfig.getInt("accent_current_" + info.assetName, fallbackAccent);
+                    info.currentAccentId = themeConfig.getInt("accent_current_" + info.assetName, info.firstAccentIsDefault ? DEFALT_THEME_ACCENT_ID : 0);
                     ArrayList<ThemeAccent> newAccents = new ArrayList<>();
                     if (!TextUtils.isEmpty(accents)) {
                         try {
@@ -4197,7 +4241,7 @@ public class Theme {
                         sortAccents(info);
                     }
                     if (info.themeAccentsMap != null && info.themeAccentsMap.get(info.currentAccentId) == null) {
-                        info.currentAccentId = info.firstAccentIsDefault ? DEFALT_THEME_ACCENT_ID : TellomiWallpaperCatalog.homeAccentId(info.getKey());
+                        info.currentAccentId = info.firstAccentIsDefault ? DEFALT_THEME_ACCENT_ID : 0;
                     }
                     info.loadWallpapers(themeConfig);
                     ThemeAccent accent = info.getAccent(false);
@@ -4278,21 +4322,6 @@ public class Theme {
         }
         applyTheme(applyingTheme, false, false, switchToTheme == 2);
         AndroidUtilities.runOnUIThread(Theme::checkAutoNightThemeConditions);
-    }
-
-    private static void applyTellomiAccents(ThemeInfo themeInfo) {
-        int[] accents = TellomiWallpaperCatalog.ACCENTS;
-        int[] ids = TellomiWallpaperCatalog.accentIds(themeInfo.name);
-        boolean dark = "Dark Blue".equals(themeInfo.name) || "Night".equals(themeInfo.name);
-        int[] outgoing = new int[accents.length];
-        int[] zero = new int[accents.length];
-        String[] slugs = new String[accents.length];
-        for (int i = 0; i < accents.length; i++) {
-            outgoing[i] = TellomiWallpaperCatalog.outBubble(accents[i], dark);
-            slugs[i] = "";
-        }
-        themeInfo.setAccentColorOptions(accents, outgoing, zero, null, null, null, null, ids, slugs, zero, zero);
-        themeInfo.accentBaseColor = TellomiWallpaperCatalog.ACCENT_DEFAULT;
     }
 
     private static void sortAccents(ThemeInfo info) {
@@ -8641,12 +8670,6 @@ public class Theme {
             }
         }
         Drawable drawable = wallpaperOverride != null ? wallpaperOverride : currentWallpaper;
-        if (drawable instanceof ColorDrawable) {
-            serviceColor = TellomiWallpaperCatalog.SERVICE_CHIP;
-            servicePressedColor = TellomiWallpaperCatalog.SERVICE_CHIP_PRESSED;
-            serviceMessageColor = serviceColor;
-            serviceSelectedMessageColor = servicePressedColor;
-        }
         boolean drawServiceGradient = (drawable instanceof MotionBackgroundDrawable || drawable instanceof BitmapDrawable) && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND);
         if (drawServiceGradient) {
             Bitmap newBitmap = null;
@@ -8708,12 +8731,6 @@ public class Theme {
             setDrawableColorByKey(chat_botInviteDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botLinkDrawable, key_chat_serviceIcon);
             chat_botButtonPaint.setColor(getColor(key_chat_botButtonText));
-            if (drawable instanceof ColorDrawable) {
-                chat_actionTextPaint.setColor(0xffffffff);
-                chat_actionTextPaint2.setColor(0xffffffff);
-                chat_actionTextPaint3.setColor(0xffffffff);
-                chat_actionTextPaint.linkColor = 0xffffffff;
-            }
         }
 
         chat_actionBackgroundPaint.setColor(serviceColor);
@@ -9000,14 +9017,6 @@ public class Theme {
                     return serviceMessageColor;
                 } else if (key == key_chat_serviceBackgroundSelected) {
                     return serviceSelectedMessageColor;
-                } else if (key == key_chat_inBubble || key == key_chat_outBubble) {
-                    boolean dark = currentTheme.isDark();
-                    if (key == key_chat_inBubble) {
-                        return TellomiWallpaperCatalog.inBubble(dark);
-                    }
-                    ThemeAccent accent = currentTheme.getAccent(false);
-                    int accentColor = accent != null && accent.accentColor != 0 ? accent.accentColor : TellomiWallpaperCatalog.ACCENT_DEFAULT;
-                    return TellomiWallpaperCatalog.outBubble(accentColor, dark);
                 }
                 return getDefaultColor(key);
             }
@@ -9217,9 +9226,6 @@ public class Theme {
         if (currentTheme.firstAccentIsDefault && currentTheme.currentAccentId == DEFALT_THEME_ACCENT_ID) {
             return false;
         }
-        if (tellomiStockDefaultWallpaper(currentTheme, currentTheme.overrideWallpaper)) {
-            return false;
-        }
         return currentColors.indexOfKey(key_chat_wallpaper) >= 0 || themedWallpaperFileOffset > 0 || !TextUtils.isEmpty(themedWallpaperLink);
     }
 
@@ -9335,7 +9341,6 @@ public class Theme {
         isWallpaperMotion = settings.isWallpaperMotion != null ? settings.isWallpaperMotion : isWallpaperMotion;
         isPatternWallpaper = settings.isPatternWallpaper != null ? settings.isPatternWallpaper : isPatternWallpaper;
         isCustomTheme = settings.isCustomTheme != null ? settings.isCustomTheme : isCustomTheme;
-        tellomiSolidBubbleShadow = settings.wallpaper instanceof ColorDrawable;
         patternIntensity = intensity;
         wallpaper = settings.wallpaper != null ? settings.wallpaper : wallpaper;
         Drawable drawable = settings.wallpaper;
@@ -9383,26 +9388,6 @@ public class Theme {
     ) {
         BackgroundDrawableSettings settings = new BackgroundDrawableSettings();
         settings.wallpaper = local ? null : wallpaper;
-        overrideWallpaper = preferUserWallpaper(currentTheme, overrideWallpaper);
-        if (tellomiStockDefaultWallpaper(currentTheme, overrideWallpaper)) {
-            boolean dark = currentTheme != null && currentTheme.isDark();
-            settings.wallpaper = TellomiWallpaperDraw.createDefault(dark);
-            settings.isCustomTheme = false;
-            settings.isPatternWallpaper = true;
-            settings.isWallpaperMotion = false;
-            flattenLiteWallpaper(settings);
-            return settings;
-        }
-        if (overrideWallpaper != null && TellomiWallpaperCatalog.isBuiltin(overrideWallpaper.slug)) {
-            TellomiWallpaperCatalog.Wallpaper builtin = TellomiWallpaperCatalog.byId(overrideWallpaper.slug);
-            boolean dark = currentTheme != null && currentTheme.isDark();
-            settings.wallpaper = TellomiWallpaperDraw.create(builtin, dark);
-            settings.isCustomTheme = false;
-            settings.isPatternWallpaper = builtin != null && builtin.pattern != null;
-            settings.isWallpaperMotion = false;
-            flattenLiteWallpaper(settings);
-            return settings;
-        }
         boolean overrideTheme = (!hasPreviousTheme || isApplyingAccent) && overrideWallpaper != null;
         if (overrideWallpaper != null) {
             settings.isWallpaperMotion = overrideWallpaper.isMotion;
@@ -9465,6 +9450,8 @@ public class Theme {
                         if (wallpaperDocument != null) {
                             File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
                             patternBitmap = SvgHelper.getBitmap(f, w, h, false, SvgHelper.ScaleMode.ByWidth);
+                        } else {
+                            patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.WHITE, 1f, SvgHelper.ScaleMode.ByWidth);
                         }
                         if (patternBitmap != null) {
                             FileOutputStream stream = null;
@@ -9537,7 +9524,7 @@ public class Theme {
         if (settings.wallpaper == null) {
             int selectedColor = overrideWallpaper != null ? overrideWallpaper.color : 0;
             try {
-                if (isStockOverride(overrideWallpaper)) {
+                if (overrideWallpaper == null || overrideWallpaper.isDefault()) {
                     settings.wallpaper = createDefaultWallpaper();
                     settings.isCustomTheme = false;
                 } else if (!overrideWallpaper.isColor() || overrideWallpaper.gradientColor1 != 0) {
@@ -9592,7 +9579,7 @@ public class Theme {
                                 settings.isCustomTheme = true;
                             }
                         }
-                        if (settings.wallpaper == null && isStockOverride(overrideWallpaper)) {
+                        if (settings.wallpaper == null) {
                             settings.wallpaper = createDefaultWallpaper();
                             settings.isCustomTheme = false;
                         }
@@ -9609,11 +9596,6 @@ public class Theme {
             }
         }
 
-        flattenLiteWallpaper(settings);
-        return settings;
-    }
-
-    private static void flattenLiteWallpaper(BackgroundDrawableSettings settings) {
         if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND) && settings.wallpaper instanceof MotionBackgroundDrawable) {
             MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) settings.wallpaper;
             int w, h;
@@ -9630,67 +9612,7 @@ public class Theme {
             settings.wallpaper.draw(canvas);
             settings.wallpaper = new BitmapDrawable(bitmap);
         }
-    }
-
-    /** Solid preset. The default chat wallpaper is the bundled doodle, not this color. */
-    public static final int TELLOMI_WALLPAPER_LIGHT = TellomiWallpaperCatalog.SOLID_LIGHT;
-    public static final int TELLOMI_WALLPAPER_DARK = TellomiWallpaperCatalog.SOLID_DARK;
-
-    /**
-     * Day and night defaults are the bundled doodle. A wallpaper the user picked
-     * (a color including black, a file, a theme wallpaper, or any other slug)
-     * is kept. Built-in accents other than the home accent of Blue and Dark Blue
-     * keep their own colors.
-     */
-    public static boolean tellomiStockDefaultWallpaper(ThemeInfo theme, OverrideWallpaperInfo overrideWallpaper) {
-        if (!isStockOverride(overrideWallpaper)) {
-            return false;
-        }
-        if (theme == null) {
-            return true;
-        }
-        ThemeAccent accent = theme.getAccent(false);
-        if (accent != null && !isStockOverride(accent.overrideWallpaper)) {
-            return false;
-        }
-        if (theme.firstAccentIsDefault && theme.currentAccentId == DEFALT_THEME_ACCENT_ID) {
-            return true;
-        }
-        return accent != null && isHome(accent) && ("Blue".equals(theme.getKey()) || "Dark Blue".equals(theme.getKey()));
-    }
-
-    private static boolean isStockOverride(OverrideWallpaperInfo overrideWallpaper) {
-        if (overrideWallpaper == null) {
-            return true;
-        }
-        return TellomiWallpaperCatalog.isStockWallpaperChoice(
-                overrideWallpaper.slug,
-                overrideWallpaper.color,
-                overrideWallpaper.gradientColor1,
-                overrideWallpaper.gradientColor2,
-                overrideWallpaper.gradientColor3,
-                overrideWallpaper.fileName
-        );
-    }
-
-    /** A choice saved on the accent wins over a missing or stock override. */
-    private static OverrideWallpaperInfo preferUserWallpaper(ThemeInfo theme, OverrideWallpaperInfo overrideWallpaper) {
-        if (!isStockOverride(overrideWallpaper) || theme == null) {
-            return overrideWallpaper;
-        }
-        ThemeAccent accent = theme.getAccent(false);
-        if (accent != null && !isStockOverride(accent.overrideWallpaper)) {
-            return accent.overrideWallpaper;
-        }
-        return overrideWallpaper;
-    }
-
-    public static int tellomiDefaultWallpaperColor(boolean dark) {
-        return dark ? TELLOMI_WALLPAPER_DARK : TELLOMI_WALLPAPER_LIGHT;
-    }
-
-    public static int tellomiDefaultWallpaperColor(ThemeInfo theme) {
-        return tellomiDefaultWallpaperColor(theme != null && theme.isDark());
+        return settings;
     }
 
     public static Drawable createDefaultWallpaper() {
@@ -9698,7 +9620,14 @@ public class Theme {
     }
 
     public static Drawable createDefaultWallpaper(int w, int h) {
-        return TellomiWallpaperDraw.createDefault(currentTheme != null && currentTheme.isDark());
+        MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884, w != 0);
+        if (w <= 0 || h <= 0) {
+            w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+        }
+        motionBackgroundDrawable.setPatternBitmap(34, SvgHelper.getBitmap(R.raw.default_pattern, w, h, Color.BLACK, 1f, SvgHelper.ScaleMode.ByWidth));
+        motionBackgroundDrawable.setPatternColorFilter(motionBackgroundDrawable.getPatternColor());
+        return motionBackgroundDrawable;
     }
 
     private static Bitmap loadScreenSizedBitmap(FileInputStream stream, int offset) {
@@ -9918,10 +9847,6 @@ public class Theme {
 
     public static boolean isWallpaperMotion() {
         return isWallpaperMotion;
-    }
-
-    public static boolean tellomiSolidBubbleShadow() {
-        return tellomiSolidBubbleShadow;
     }
 
     public static boolean isPatternWallpaper() {

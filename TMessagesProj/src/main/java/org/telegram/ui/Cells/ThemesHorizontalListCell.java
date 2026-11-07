@@ -57,6 +57,7 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.ThemeActivity;
+import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ThemeSetUrlActivity;
 
 import java.io.File;
@@ -741,7 +742,8 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         }
 
         SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
-        editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark() ? "lastDarkTheme" : "lastDayTheme", themeInfo.getKey());
+        boolean nightChoice = currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark();
+        editor.putString(nightChoice ? "lastDarkTheme" : "lastDayTheme", TelegramThemeFlow.themeKey(themeInfo.getKey(), nightChoice));
         editor.commit();
 
         if (currentType == ThemeActivity.THEME_TYPE_NIGHT) {

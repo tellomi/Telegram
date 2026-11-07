@@ -98,6 +98,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -532,9 +534,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             WallpapersListActivity.ColorWallpaper object = (WallpapersListActivity.ColorWallpaper) currentWallpaper;
             isMotion = object.motion;
             selectedPattern = object.pattern;
-            if (object.builtinId != null) {
-                currentIntensity = object.intensity;
-            }
             if (selectedPattern != null) {
                 currentIntensity = object.intensity;
                 if (currentIntensity < 0 && !Theme.getActiveTheme().isDark()) {
@@ -2336,7 +2335,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     Theme.applyThemeFile(new File(applyingTheme.pathToFile), applyingTheme.name, applyingTheme.info, false);
                     MessagesController.getInstance(applyingTheme.account).saveTheme(applyingTheme, null, false, false);
                     SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
-                    editor.putString("lastDayTheme", applyingTheme.getKey());
+                    editor.putString("lastDayTheme", org.telegram.ui.theme.TelegramThemeFlow.themeKey(applyingTheme.getKey(), false));
                     editor.commit();
                 }
                 BaseFragment lastFragment = getParentLayout().getFragmentStack().get(Math.max(0, getParentLayout().getFragmentStack().size() - 2));
@@ -2634,13 +2633,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                 slug = Theme.DEFAULT_BACKGROUND_SLUG;
                 color = 0;
-            } else if (wallPaper.builtinId != null) {
-                slug = wallPaper.builtinId;
-                color = backgroundColor;
-                gradientColor1 = backgroundGradientColor1;
-                gradientColor2 = backgroundGradientColor2;
-                gradientColor3 = backgroundGradientColor3;
-                rotation = backgroundRotation;
             } else {
                 if (selectedPattern != null) {
                     slug = selectedPattern.slug;
@@ -2674,7 +2666,8 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         Theme.OverrideWallpaperInfo wallpaperInfo = new Theme.OverrideWallpaperInfo();
         wallpaperInfo.fileName = fileName;
         wallpaperInfo.originalFileName = originalFileName;
-        wallpaperInfo.slug = slug;
+        TelegramThemeFlow.Selection appliedWallpaper = TelegramThemeFlow.applyWallpaper(null, slug, color, false);
+        wallpaperInfo.slug = slug == null ? appliedWallpaper.wallpaperSlug : slug;
         wallpaperInfo.isBlurred = isBlurred;
         wallpaperInfo.isMotion = isMotion;
         wallpaperInfo.color = color;
@@ -4503,15 +4496,18 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 }
                 setBackgroundColor(wallPaper.gradientColor2, 2, true, false);
                 setBackgroundColor(wallPaper.gradientColor3, 3, true, false);
-                if (wallPaper.builtinId != null) {
-                    backgroundImage.setImageBitmap(null);
-                    Drawable builtin = TellomiWallpaperDraw.create(TellomiWallpaperCatalog.byId(wallPaper.builtinId), Theme.isCurrentThemeDark());
-                    backgroundImage.setBackground(builtin);
-                    themeDelegate.applyChatServiceMessageColor(AndroidUtilities.calcDrawableColor(builtin), builtin, builtin, currentIntensity);
-                } else if (selectedPattern != null) {
+                if (selectedPattern != null) {
                     backgroundImage.setImage(ImageLocation.getForDocument(selectedPattern.document), imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
                 } else if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
-                    backgroundImage.setImageBitmap(null);
+                    int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                    int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                    int patternColor;
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        patternColor = 0x57000000;
+                    } else {
+                        patternColor = MotionBackgroundDrawable.getPatternColor(wallPaper.color, wallPaper.gradientColor1, wallPaper.gradientColor2, wallPaper.gradientColor3);
+                    }
+                    backgroundImage.setImageBitmap(SvgHelper.getBitmap(R.raw.default_pattern, w, h, patternColor));
                 }
             } else if (currentWallpaper instanceof WallpapersListActivity.FileWallpaper) {
                 if (currentWallpaperBitmap != null) {
