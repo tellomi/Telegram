@@ -1052,3 +1052,13 @@ The selected page is not stored. `ViewPagerActivity.clearViews` keeps the curren
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabsTest.java` | Orders, the Chats start path, and the profile settings button. |
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Footer copy and the shorter row list. |
 | `TMessagesProj/build.gradle` | Unit-test compile can see `com.sun.net.httpserver` for the existing release-update test. Production compile is unchanged. |
+
+## Built-in Night theme, checked pairs
+
+`TMessagesProj/src/main/assets/night.attheme` was read, not rendered. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble` (the outgoing bubble stays white and the text stays `#111111`), input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.
+
+No custom theme file and no system night animation was opened. Settings icon plates stay the existing dark neutrals with white glyphs. The intro page stays the fixed white page. Those were not recolored.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiNightThemeTest.java` | Reads `night.attheme` and checks the pairs above. |
