@@ -1178,3 +1178,15 @@ Long-press on a dialog, and the profile menu, can open that chat without read re
 ## Login contrast
 
 Login titles, hints, the empty agreement circle, OTP squares, and the primary button were painted with fixed light colors (`#111111`, `#C7C7CC`, `#C8C8CC`, `#8E8E93`). Those disappear in the other theme. They now start from `Theme.key_windowBackgroundWhiteBlackText`, `key_windowBackgroundWhiteHintText`, `key_windowBackgroundWhiteInputField`, `key_windowBackgroundWhiteInputFieldActivated`, `key_windowBackgroundWhiteBlueButton`, `key_checkboxSquareUnchecked`, `key_checkboxSquareBackground`, and `key_checkboxSquareCheck`. Where that key sits on the filled field or the page and misses WCAG AA (hint on the field was about 1.7:1, the dark empty ring about 2.4:1), `TellomiContrast.ensure` walks it toward the theme text color until body text clears 4.5:1 or a control edge clears 3:1. The phone placeholder is drawn by `HintEditText`'s own paint, which ignored `setHintTextColor`; `setHintInk` updates that paint. The welcome page had forced `#FFFFFF` / `#111111`, so it stayed light in the dark theme; it now uses the same page and text keys. Layout and auth RPCs are unchanged. OTP squares still show a red stroke when the code is wrong.
+
+## Chat link cards
+
+External Open Graph is fetched on the phone (the same parser as Discover). `tell.cc` / `t.me` / `telegram.me` / `telegram.dog` still use `messages.getWebPagePreview` and `messages.sendMessage`. A client card is `messages.sendMedia` with `inputMediaWebPage#c21b8849` flags.3–6: title, description, site name, and an uploaded `InputPhoto`. The bubble and the composer keep the native `webPage` layout. `author=unverified` is not drawn.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/TLRPC.java` | `TL_inputMediaWebPage` reads and writes flags.3–6. Official clients that leave those bits unset encode the same as before. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | An external link in the composer is fetched on the phone. The native link panel is unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | External cards go out as `messages.sendMedia`. The image is uploaded with `messages.uploadMedia` first. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java` | The bubble skips `author=unverified`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java` | The viewer skips the same author string. |
