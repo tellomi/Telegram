@@ -1087,3 +1087,15 @@ No custom theme file and no system night animation was opened. Settings icon pla
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiNightThemeTest.java` | Reads `night.attheme` and checks the pairs above. |
+
+## Send glyph and the contact paper plane
+
+The chat send button, the photo picker, the attach sheet, share, and the rich editor all draw `R.drawable.send_plane_24` through `ChatActivityEnterView.SendButton`. Pressed, inactive, and the open state reuse that same drawable. Light and dark only change `key_chat_messagePanelSend` and the glyph tint (`SendButtonColors.contrastGlyph`). The appear animation rotates that drawable and then settles. The loading state is an arc. Schedule mode uses `input_schedule`. The voice-record circle uses `attach_send`, which the flavor already draws as an up arrow. `send_outline` stays the dashed ephemeral ring.
+
+`send_plane_24` is now an up arrow with the points written in the path, so a group rotation is not required. `ic_launcher_dr` was still the blue paper plane. Incoming-call UI, notification people, and the contacts account use that name. The flavor file is the existing launcher PNG at each density. `intro_tg_plane` has no runtime reference and was left as it is.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Up arrow, no transform group. |
+| `TMessagesProj/tellomi/res/drawable-*/ic_launcher_dr.png` | Same bytes as `mipmap-*/ic_launcher.png`. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSendGlyphTest.java` | Arrow bounds, and the contact icon matches the launcher file. |
