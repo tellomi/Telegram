@@ -1053,6 +1053,29 @@ The selected page is not stored. `ViewPagerActivity.clearViews` keeps the curren
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Footer copy and the shorter row list. |
 | `TMessagesProj/build.gradle` | Unit-test compile can see `com.sun.net.httpserver` for the existing release-update test. Production compile is unchanged. |
 
+## Sign-in email, login-code email, and login ink
+
+Teamgram PR 227 (`2f791858`) keeps an email-only login identity in `users.email` and leaves `users.phone` NULL. `account.getPassword.login_email_pattern` is a read-only mask of that address (`u***@tellomi.app`), including when there is no cloud password. `has_recovery` and `email_unconfirmed_pattern` stay on the cloud-password record. `emailVerifyPurposeLoginChange` may confirm the same identity. Any other address, including another account's `users.email`, is `EMAIL_NOT_ALLOWED` and does not change `user.id`. A phone account has no identity mask and can still attach a free login email.
+
+The account page reads that mask. A matching on-device address may be shown, but the mask is never stored or sent as `phone_number`. Until `getPassword` returns, an account with no phone number waits instead of opening an empty bind form. A phone number still opens the attach form. Confirming the original address uses the existing login-change screen with an empty field. A mask or `EMAIL_NOT_ALLOWED` says the identity was not replaced. Success of that screen still does not write the sign-in cache.
+
+Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
+
+Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailRoles.java` | Mask versus full address, account-row action, and recovery staying independent. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiContrast.java` | Digit, hint, field, and selection colors, and the contrast check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | `applyInput`. Hint colors come from `TellomiContrast`. Social icons are tinted at creation. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | `updateColors` refreshes the email page with the login page. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Remember the shared address. Login-change copy. Do not cache that address as the sign-in email. Code and phone fields use `applyInput`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Square boxes apply the same ink when the digit color changes. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | A sign-in address opens an explanation. A phone account opens login-code email. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | The success line says the login-code email changed and the account did not. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The three email roles, in English and Chinese. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiThemeAndEmailTest.java` | Contrast pairs, recovery stays unset, and the login-change cache write is gone. |
+
 ## Built-in Night theme, checked pairs
 
 `TMessagesProj/src/main/assets/night.attheme` was read, not rendered. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble` (the outgoing bubble stays white and the text stays `#111111`), input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.

@@ -2078,14 +2078,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void tellomiRememberSignedInEmail(TLRPC.User user) {
-        String email = null;
+        String typed = null;
         if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
-            email = ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiTypedEmail();
+            typed = ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiTypedEmail();
         }
-        if (!TellomiEmailLogin.isValid(TellomiEmailLogin.normalize(email)) && user != null && TellomiAccount.looksLikeEmail(user.phone)) {
-            email = user.phone;
-        }
-        if (TellomiEmailLogin.isValid(TellomiEmailLogin.normalize(email))) {
+        String email = TellomiEmailRoles.rememberCandidate(typed, tellomiSharedEmail, user == null ? null : user.phone);
+        if (TellomiEmailRoles.isSignInAddress(email)) {
             TellomiAccount.rememberEmail(currentAccount, email);
         }
     }
@@ -3448,12 +3446,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 codeField.setTextColor(TellomiLoginChrome.text());
                 codeDividerView.setBackgroundColor(TellomiLoginChrome.lineColor());
                 if (phoneField != null) {
-                    phoneField.setTextColor(TellomiLoginChrome.text());
-                    phoneField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                    TellomiLoginChrome.applyInput(phoneField);
                 }
                 if (emailField != null) {
-                    emailField.setTextColor(TellomiLoginChrome.text());
-                    emailField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                    TellomiLoginChrome.applyInput(emailField);
+                }
+                if (codeField != null) {
+                    TellomiLoginChrome.applyInput(codeField);
                 }
                 TellomiLoginChrome.grayField(phoneOutlineView);
                 if (emailOutlineView != null) {
@@ -5551,6 +5550,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 problemText.setTextColor(activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE || currentType == AUTH_TYPE_CALL || currentType == AUTH_TYPE_FLASH_CALL) ? TellomiLoginChrome.LINK : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
             }
             wrongCode.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            if ((activityMode == MODE_LOGIN || tellomiBindPhone) && titleTextView != null && confirmTextView != null) {
+                titleTextView.setTextColor(TellomiLoginChrome.text());
+                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+            }
         }
 
         private void applyLottieColors(RLottieDrawable drawable) {
@@ -7432,7 +7435,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             titleView.setTypeface(AndroidUtilities.bold());
-            titleView.setText(getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.EnterNewEmail : R.string.AddEmailTitle));
+            titleView.setText(getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.TellomiAttachLoginEmailTitle : R.string.AddEmailTitle));
             titleView.setGravity(Gravity.CENTER);
             titleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 16, 32, 0));
@@ -7441,7 +7444,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setGravity(Gravity.CENTER);
             subtitleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            subtitleView.setText(getString(R.string.AddEmailSubtitle));
+            subtitleView.setText(getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.TellomiAttachLoginEmailBody : R.string.AddEmailSubtitle));
             addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 8, 32, 0));
 
             emailOutlineView = new OutlineTextContainerView(context);
@@ -7629,7 +7632,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 googleAccount = null;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(verifyEmail, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response instanceof TL_account.TL_emailVerified && activityMode == MODE_CHANGE_LOGIN_EMAIL) {
-                        TellomiAccount.rememberEmail(currentAccount, email);
                         finishFragment();
                         if (emailChangeFinishCallback != null) {
                             emailChangeFinishCallback.run();
@@ -7657,6 +7659,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 onPasscodeError(false);
                 return;
             }
+            if (activityMode == MODE_CHANGE_LOGIN_EMAIL && !TellomiEmailRoles.sendable(email)) {
+                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.TellomiLoginEmailRefused));
+                return;
+            }
             nextPressed = true;
             needShowProgress(0);
             TL_account.sendVerifyEmailCode req = new TL_account.sendVerifyEmailCode();
@@ -7680,7 +7686,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     if (error.text.contains("EMAIL_INVALID")) {
                         onPasscodeError(false);
                     } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
-                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailNotAllowed));
+                        needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(activityMode == MODE_CHANGE_LOGIN_EMAIL ? R.string.TellomiLoginEmailRefused : R.string.EmailNotAllowed));
                     } else if (error.text.contains("PHONE_PASSWORD_FLOOD")) {
                         needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
                     } else if (error.text.contains("PHONE_NUMBER_FLOOD")) {
@@ -8093,8 +8099,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             tellomiCodeField.setSingleLine(true);
             tellomiCodeField.setInputType(InputType.TYPE_CLASS_NUMBER);
             tellomiCodeField.setHint(getString(R.string.TellomiEmailCodeHint));
-            tellomiCodeField.setTextColor(TellomiLoginChrome.text());
-            tellomiCodeField.setHintTextColor(TellomiLoginChrome.fieldHint());
+            TellomiLoginChrome.applyInput(tellomiCodeField);
             tellomiCodeField.setBackground(null);
             tellomiCodeField.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(14));
             tellomiCodeField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
@@ -8287,9 +8292,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
                 tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
             }
+            if (activityMode == MODE_LOGIN) {
+                titleView.setTextColor(TellomiLoginChrome.text());
+                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+            }
             if (tellomiCodeField != null) {
-                tellomiCodeField.setTextColor(TellomiLoginChrome.text());
-                tellomiCodeField.setHintTextColor(TellomiLoginChrome.fieldHint());
+                TellomiLoginChrome.applyInput(tellomiCodeField);
             }
             if (tellomiCodeOutline != null) {
                 TellomiLoginChrome.grayField(tellomiCodeOutline);
@@ -8698,8 +8706,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     } else {
                         animateSuccess(() -> {
                             if (response instanceof TL_account.TL_emailVerified && activityMode == MODE_CHANGE_LOGIN_EMAIL) {
-                                String savedEmail = currentParams != null ? currentParams.getString("email") : null;
-                                TellomiAccount.rememberEmail(currentAccount, savedEmail);
                                 finishFragment();
                                 if (emailChangeFinishCallback != null) {
                                     emailChangeFinishCallback.run();
