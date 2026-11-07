@@ -48,6 +48,12 @@ public class TellomiApkUpdateTest {
 
     @Test
     public void rejectedHostAndForeignLinkNeverStart() {
+        TellomiApkUpdate.Session unnamed = TellomiApkUpdate.startDownload(null, "https://dl.tellomi.cn/android/Tellomi.apk", 0);
+        assertEquals(TellomiApkUpdate.DOWNLOADING, unnamed.state);
+        assertTrue(TellomiApkUpdate.shouldCancelOnDismiss(unnamed));
+        assertFalse(TellomiApkUpdate.shouldCancelOnDismiss(TellomiApkUpdate.permissionNeeded(unnamed)));
+        assertFalse(TellomiApkUpdate.shouldCancelOnDismiss(TellomiApkUpdate.downloadFinished(unnamed, true, "/files/Tellomi-update.apk")));
+
         TellomiApkUpdate.Session foreign = TellomiApkUpdate.startDownload(null, "https://example.com/Tellomi.apk", 10);
         assertEquals(TellomiApkUpdate.FAILED, foreign.state);
         assertEquals(TellomiApkUpdate.HOST_REJECTED, foreign.error);
