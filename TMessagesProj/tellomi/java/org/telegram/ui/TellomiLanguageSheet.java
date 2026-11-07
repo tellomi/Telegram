@@ -174,7 +174,7 @@ public final class TellomiLanguageSheet {
 
         TextView cancel = new TextView(context);
         cancel.setText(LocaleController.getString(R.string.Cancel));
-        cancel.setTextColor(TellomiLoginChrome.MUTED);
+        cancel.setTextColor(TellomiLoginChrome.muted());
         TellomiLoginChrome.textSize(cancel, 16);
         cancel.setGravity(Gravity.CENTER);
         cancel.setMinimumHeight(AndroidUtilities.dp(48));

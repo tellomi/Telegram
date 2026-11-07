@@ -2923,7 +2923,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TextView codeChevron = new TextView(context);
                 codeChevron.setText("▾");
                 TellomiLoginChrome.textSize(codeChevron, 12);
-                codeChevron.setTextColor(0xFF8E8E93);
+                codeChevron.setTextColor(TellomiLoginChrome.fieldHint());
                 codeChevron.setGravity(Gravity.CENTER);
                 codeChevron.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(6), 0);
                 codeChevron.setOnClickListener(v -> countryOutlineView.callOnClick());
@@ -3296,13 +3296,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 ViewGroup.MarginLayoutParams subLp = (ViewGroup.MarginLayoutParams) subtitleView.getLayoutParams();
                 subLp.leftMargin = 0;
                 subLp.rightMargin = 0;
-                titleView.setTextColor(TellomiLoginChrome.TEXT);
+                titleView.setTextColor(TellomiLoginChrome.text());
                 if (emailField != null) {
                     emailField.setHint(getString(R.string.TellomiEmailHint));
-                    emailField.setHintTextColor(0xFFC7C7CC);
+                    emailField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 }
                 phoneField.setHintText(getString(R.string.TellomiPhoneHint));
-                phoneField.setHintTextColor(0xFFC7C7CC);
+                phoneField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 tellomiOpenScreen(TELLOMI_PHONE_CODE, false);
             }
 
@@ -3594,10 +3594,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             ImageView view = new ImageView(getContext());
             view.setImageResource(R.drawable.msg_close);
             view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            view.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+            view.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.OVAL);
-            bg.setColor(0xFFC7C7CC);
+            bg.setColor(TellomiLoginChrome.fieldFill());
             view.setBackground(bg);
             int pad = AndroidUtilities.dp(7);
             view.setPadding(pad, pad, pad, pad);
@@ -3649,7 +3649,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 titleView.setText(getString(tellomiEmailMode ? R.string.TellomiEmailTitle : R.string.TellomiLoginTitle));
                 titleView.setGravity(home ? Gravity.CENTER : Gravity.LEFT);
                 subtitleView.setGravity(Gravity.LEFT);
-                subtitleView.setTextColor(TellomiLoginChrome.MUTED);
+                subtitleView.setTextColor(TellomiLoginChrome.muted());
                 TellomiLoginChrome.textSize(subtitleView, 13);
                 subtitleView.setText(getString(R.string.TellomiEmailSubtitle));
                 subtitleView.setVisibility(tellomiEmailMode ? VISIBLE : GONE);
@@ -3753,7 +3753,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < row.getChildCount(); i++) {
                 View child = row.getChildAt(i);
                 if (child instanceof TextView) {
-                    ((TextView) child).setTextColor(TellomiLoginChrome.MUTED);
+                    ((TextView) child).setTextColor(TellomiLoginChrome.muted());
                 } else {
                     child.setBackgroundColor(TellomiLoginChrome.lineColor());
                 }
@@ -5119,7 +5119,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (tellomiOtp) {
                     tellomiWrongCode = new TextView(context);
                     tellomiWrongCode.setText(getString(R.string.TellomiSmsCodeError));
-                    tellomiWrongCode.setTextColor(TellomiLoginChrome.ERROR);
+                    tellomiWrongCode.setTextColor(TellomiLoginChrome.errorColor());
                     TellomiLoginChrome.textSize(tellomiWrongCode, 13);
                     tellomiWrongCode.setVisibility(GONE);
                     addView(tellomiWrongCode, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -5136,7 +5136,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
                     tellomiUseSmsView = new TextView(context);
                     tellomiUseSmsView.setText(getString(R.string.TellomiUseSms));
-                    tellomiUseSmsView.setTextColor(TellomiLoginChrome.LINK);
+                    tellomiUseSmsView.setTextColor(TellomiLoginChrome.link());
                     TellomiLoginChrome.textSize(tellomiUseSmsView, 16);
                     tellomiUseSmsView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                     tellomiUseSmsView.setPadding(0, AndroidUtilities.dp(14), 0, AndroidUtilities.dp(4));
@@ -5536,7 +5536,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 tellomiLoginButton.applyTheme();
             }
             if (tellomiUseSmsView != null) {
-                tellomiUseSmsView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiUseSmsView.setTextColor(TellomiLoginChrome.link());
                 tellomiUseSmsView.setText(getString(R.string.TellomiUseSms));
             }
 
@@ -5547,12 +5547,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             timeText.setTextColor(Theme.getColor(timeTextColorTag));
 
             if (currentType != AUTH_TYPE_FRAGMENT_SMS) {
-                problemText.setTextColor(activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE || currentType == AUTH_TYPE_CALL || currentType == AUTH_TYPE_FLASH_CALL) ? TellomiLoginChrome.LINK : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+                problemText.setTextColor(activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE || currentType == AUTH_TYPE_CALL || currentType == AUTH_TYPE_FLASH_CALL) ? TellomiLoginChrome.link() : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
             }
             wrongCode.setTextColor(Theme.getColor(Theme.key_text_RedBold));
             if ((activityMode == MODE_LOGIN || tellomiBindPhone) && titleTextView != null && confirmTextView != null) {
                 titleTextView.setTextColor(TellomiLoginChrome.text());
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
             }
         }
 
@@ -7846,7 +7846,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TellomiLoginChrome.textSize(titleView, 22);
                 titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
                 confirmTextView.setGravity(Gravity.LEFT);
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
                 ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) titleView.getLayoutParams();
                 titleLp.leftMargin = 0;
                 titleLp.rightMargin = 0;
@@ -7868,13 +7868,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 addView(tellomiLoginButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
                 tellomiResendView = new TextView(context);
                 TellomiLoginChrome.textSize(tellomiResendView, 14);
-                tellomiResendView.setTextColor(TellomiLoginChrome.MUTED);
+                tellomiResendView.setTextColor(TellomiLoginChrome.muted());
                 tellomiResendView.setGravity(Gravity.RIGHT);
                 tellomiResendView.setVisibility(GONE);
                 addView(tellomiResendView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT, 0, 12, 0, 0));
                 tellomiMissingView = new TextView(context);
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
-                tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiMissingView.setTextColor(TellomiLoginChrome.link());
                 TellomiLoginChrome.textSize(tellomiMissingView, 15);
                 tellomiMissingView.setGravity(Gravity.LEFT);
                 tellomiMissingView.setPadding(0, AndroidUtilities.dp(8), 0, 0);
@@ -8143,7 +8143,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             tellomiCodeError = new TextView(context);
             tellomiCodeError.setText(getString(R.string.TellomiEmailCodeError));
-            tellomiCodeError.setTextColor(TellomiLoginChrome.ERROR);
+            tellomiCodeError.setTextColor(TellomiLoginChrome.errorColor());
             TellomiLoginChrome.textSize(tellomiCodeError, 13);
             tellomiCodeError.setVisibility(GONE);
             addView(tellomiCodeError, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
@@ -8171,7 +8171,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             titleView.setText(getString(R.string.TellomiEmailOtpTitle));
             titleView.setGravity(Gravity.LEFT);
             confirmTextView.setGravity(Gravity.LEFT);
-            confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+            confirmTextView.setTextColor(TellomiLoginChrome.muted());
             ViewGroup.LayoutParams confirmLp = confirmTextView.getLayoutParams();
             confirmLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             if (confirmLp instanceof LinearLayout.LayoutParams) {
@@ -8216,7 +8216,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (tellomiResendSeconds <= 0) {
                 tellomiResendView.setText(getString(R.string.TellomiResend));
-                tellomiResendView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiResendView.setTextColor(TellomiLoginChrome.link());
                 tellomiResendView.setOnClickListener(v -> {
                     if (resendCodeView != null) {
                         resendCodeView.setAlpha(1f);
@@ -8229,7 +8229,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             tellomiResendView.setText(LocaleController.formatString(R.string.TellomiResendIn, tellomiResendSeconds));
-            tellomiResendView.setTextColor(TellomiLoginChrome.MUTED);
+            tellomiResendView.setTextColor(TellomiLoginChrome.muted());
             tellomiResendView.setOnClickListener(null);
             tellomiResendSeconds--;
             postDelayed(tellomiResendTick, 1000);
@@ -8290,11 +8290,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (tellomiMissingView != null) {
                 tellomiMissingView.setText(getString(R.string.TellomiOtpMissing));
-                tellomiMissingView.setTextColor(TellomiLoginChrome.LINK);
+                tellomiMissingView.setTextColor(TellomiLoginChrome.link());
             }
             if (activityMode == MODE_LOGIN) {
                 titleView.setTextColor(TellomiLoginChrome.text());
-                confirmTextView.setTextColor(TellomiLoginChrome.MUTED);
+                confirmTextView.setTextColor(TellomiLoginChrome.muted());
             }
             if (tellomiCodeField != null) {
                 TellomiLoginChrome.applyInput(tellomiCodeField);
@@ -9950,7 +9950,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TellomiLoginChrome.textSize(descriptionTextView, 14);
                 TellomiLoginChrome.textSize(firstNameField, 17);
                 titleTextView.setTextColor(TellomiLoginChrome.text());
-                descriptionTextView.setTextColor(TellomiLoginChrome.night() ? 0xFF8E8E93 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                descriptionTextView.setTextColor(TellomiLoginChrome.muted());
                 firstNameField.setTextColor(TellomiLoginChrome.text());
                 firstNameField.setHintTextColor(TellomiLoginChrome.fieldHint());
                 TellomiLoginChrome.grayField(firstNameOutlineView);
@@ -10442,10 +10442,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors() {
-        int tellomiPage = TellomiLoginChrome.night() ? Color.BLACK : Color.WHITE;
+        int tellomiPage = TellomiLoginChrome.pageFill();
         fragmentView.setBackgroundColor(activityMode == MODE_LOGIN ? tellomiPage : Theme.getColor(Theme.key_windowBackgroundWhite));
         if (activityMode == MODE_LOGIN && getParentActivity() != null) {
-            AndroidUtilities.setLightStatusBar(getParentActivity(), !TellomiLoginChrome.night());
+            AndroidUtilities.setLightStatusBar(getParentActivity(), TellomiContrast.readable(0xFF111111, tellomiPage));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 getParentActivity().getWindow().setNavigationBarColor(tellomiPage);
             }
@@ -10464,7 +10464,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         floatingButton.updateColors();
         int tellomiCta = TellomiLoginChrome.ctaFill(true);
-        int tellomiCtaPressed = TellomiLoginChrome.night() ? 0xFFD0D0D0 : 0xFF2A2A2A;
+        int tellomiCtaPressed = TellomiLoginChrome.ctaPressed(true);
         floatingButton.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), tellomiCta, tellomiCtaPressed));
         floatingButtonIcon.setColor(TellomiLoginChrome.ctaLabel(true));
         floatingButtonIcon.setBackgroundColor(tellomiCta);

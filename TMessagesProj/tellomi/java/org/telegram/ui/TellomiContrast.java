@@ -22,6 +22,8 @@ public final class TellomiContrast {
 
     /** WCAG AA body text. */
     public static final double MIN_TEXT = 4.5;
+    /** WCAG AA for a control boundary (the empty checkbox ring, field stroke, divider). */
+    public static final double MIN_UI = 3.0;
 
     private TellomiContrast() {
     }
@@ -55,6 +57,53 @@ public final class TellomiContrast {
 
     public static boolean readable(int foreground, int background) {
         return ratio(foreground, background) >= MIN_TEXT;
+    }
+
+    /**
+     * Keep a theme color when it already clears {@code minRatio} on {@code background}.
+     * Otherwise walk it toward {@code strong} (the page's text ink) until it does.
+     * Login fields paint the hint key on a filled input, where that key is below AA.
+     */
+    public static int ensure(int preferred, int strong, int background, double minRatio) {
+        if (ratio(preferred, background) >= minRatio) {
+            return preferred | 0xFF000000;
+        }
+        if (ratio(strong, background) < minRatio) {
+            return strong | 0xFF000000;
+        }
+        float lo = 0f;
+        float hi = 1f;
+        int best = strong;
+        for (int i = 0; i < 16; i++) {
+            float mid = (lo + hi) / 2f;
+            int mixed = blend(preferred, strong, mid);
+            if (ratio(mixed, background) >= minRatio) {
+                best = mixed;
+                hi = mid;
+            } else {
+                lo = mid;
+            }
+        }
+        return best | 0xFF000000;
+    }
+
+    public static int blend(int from, int to, float amount) {
+        if (amount <= 0f) {
+            return from;
+        }
+        if (amount >= 1f) {
+            return to;
+        }
+        int fr = (from >> 16) & 0xFF;
+        int fg = (from >> 8) & 0xFF;
+        int fb = from & 0xFF;
+        int tr = (to >> 16) & 0xFF;
+        int tg = (to >> 8) & 0xFF;
+        int tb = to & 0xFF;
+        int r = Math.round(fr + (tr - fr) * amount);
+        int g = Math.round(fg + (tg - fg) * amount);
+        int b = Math.round(fb + (tb - fb) * amount);
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
     private static double luminance(int color) {

@@ -596,13 +596,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
 
-            headerTextView.setTextColor(0xFF111111);
+            headerTextView.setTextColor(TellomiLoginChrome.text());
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));
 
-            messageTextView.setTextColor(0xFF111111);
+            messageTextView.setTextColor(TellomiLoginChrome.text());
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setLineSpacing(dpf2(2.33f), 1f);
             messageTextView.setGravity(Gravity.CENTER);
@@ -979,17 +979,17 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors(boolean fromTheme) {
-        int tellomiCta = 0xFF111111;
-        int tellomiCtaPressed = 0xFF2A2A2A;
-        int tellomiInk = 0xFF111111;
-        startMessagingButtonBackground.setColors(new int[]{tellomiCta, tellomiCta});
-        fragmentView.setBackgroundColor(0xFFFFFFFF);
-        switchLanguageTextView.setTextColor(tellomiInk);
-        startMessagingButton.setTextColor(0xFFFFFFFF);
+        int page = TellomiLoginChrome.pageFill();
+        int ink = TellomiLoginChrome.text();
+        int pressed = ColorUtils.blendARGB(ink, page, 0.16f);
+        startMessagingButtonBackground.setColors(new int[]{ink, ink});
+        fragmentView.setBackgroundColor(page);
+        switchLanguageTextView.setTextColor(ink);
+        startMessagingButton.setTextColor(page);
         if (introArt != null) {
-            introArt.setTint(tellomiInk);
+            introArt.setTint(ink);
         }
-        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, tellomiCtaPressed));
+        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, pressed));
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
         if (fromTheme) {
@@ -1007,9 +1007,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < viewPager.getChildCount(); i++) {
                 View ch = viewPager.getChildAt(i);
                 TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
-                headerTextView.setTextColor(0xFF111111);
+                headerTextView.setTextColor(ink);
                 TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
-                messageTextView.setTextColor(0xFF111111);
+                messageTextView.setTextColor(ink);
             }
         } else Intro.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
     }

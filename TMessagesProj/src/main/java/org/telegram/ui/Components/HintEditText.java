@@ -45,6 +45,12 @@ public class HintEditText extends EditTextBoldCursor {
         setText(getText());
     }
 
+    /** Login paints this hint on a filled field, so the ink can differ from the theme hint key. */
+    public void setHintInk(int color) {
+        hintPaint.setColor(color);
+        invalidate();
+    }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);

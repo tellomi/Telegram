@@ -242,7 +242,7 @@ Deferred: a full profile layout for email, binding a phone as a separate product
 | `TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java` | Settings search「add account」uses the same helper. |
 | `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiDefaults.java` | Device locale and bundled zh/en resource lookup. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAccount.java` | New. Saved email, masked label, already-on-device match, Add Account routing. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Light palette kept. Dark mode uses a white primary button and light field text. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | Login ink follows `Theme.key_windowBackgroundWhite*`, the blue button, and the checkbox keys. Hard-coded `#111111` / `#C7C7CC` / `#C8C8CC` no longer paint titles, hints, or the empty agreement circle. |
 | `TMessagesProj/tellomi/res/values/strings.xml`, `values-zh/strings.xml` |「开始使用」, bind-phone copy,「该账号已登录」. |
 
 ## Login locale, welcome mark, Help, bind (14.0.3)
@@ -1174,3 +1174,7 @@ Long-press on a dialog, and the profile menu, can open that chat without read re
 | `TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java` | Secret view does not clear reaction unread locally. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java` | Locked chats use the generic notification text. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java` | Locked chats show 已锁定 in the list and in search. |
+
+## Login contrast
+
+Login titles, hints, the empty agreement circle, OTP squares, and the primary button were painted with fixed light colors (`#111111`, `#C7C7CC`, `#C8C8CC`, `#8E8E93`). Those disappear in the other theme. They now start from `Theme.key_windowBackgroundWhiteBlackText`, `key_windowBackgroundWhiteHintText`, `key_windowBackgroundWhiteInputField`, `key_windowBackgroundWhiteInputFieldActivated`, `key_windowBackgroundWhiteBlueButton`, `key_checkboxSquareUnchecked`, `key_checkboxSquareBackground`, and `key_checkboxSquareCheck`. Where that key sits on the filled field or the page and misses WCAG AA (hint on the field was about 1.7:1, the dark empty ring about 2.4:1), `TellomiContrast.ensure` walks it toward the theme text color until body text clears 4.5:1 or a control edge clears 3:1. The phone placeholder is drawn by `HintEditText`'s own paint, which ignored `setHintTextColor`; `setHintInk` updates that paint. The welcome page had forced `#FFFFFF` / `#111111`, so it stayed light in the dark theme; it now uses the same page and text keys. Layout and auth RPCs are unchanged. OTP squares still show a red stroke when the code is wrong.
