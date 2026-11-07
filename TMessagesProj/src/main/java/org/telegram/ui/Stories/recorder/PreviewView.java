@@ -10,7 +10,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -1976,7 +1975,6 @@ public class PreviewView extends FrameLayout {
             String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
             Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
             drawable = settings.wallpaper;
-            drawable = new ColorDrawable(Color.BLACK);
         } else {
             SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
             int backgroundColor = currentColors.get(Theme.key_chat_wallpaper, Theme.getColor(Theme.key_chat_wallpaper));
@@ -1986,7 +1984,10 @@ public class PreviewView extends FrameLayout {
 
             MotionBackgroundDrawable motionDrawable = new MotionBackgroundDrawable();
             motionDrawable.isPreview = preview;
-            motionDrawable.setPatternBitmap(chatTheme.getWallpaper(isDark ? 1 : 0).settings.intensity);
+            TLRPC.WallPaper themeWallpaper = chatTheme.getWallpaper(isDark ? 1 : 0);
+            if (themeWallpaper != null && themeWallpaper.settings != null) {
+                motionDrawable.setPatternBitmap(themeWallpaper.settings.intensity);
+            }
             motionDrawable.setColors(backgroundColor, gradientColor1, gradientColor2, gradientColor3, 0,true);
             motionDrawable.setPhase(prevPhase);
             int patternColor = motionDrawable.getPatternColor();
@@ -1998,7 +1999,8 @@ public class PreviewView extends FrameLayout {
                 long themeId = pair.first;
                 Bitmap bitmap = pair.second.bitmap;
                 if (themeId == chatTheme.getThemeId(isDark ? 1 : 0) && bitmap != null) {
-                    int intensity = chatTheme.getWallpaper(isDarkTheme ? 1 : 0).settings.intensity;
+                    TLRPC.WallPaper loadedWallpaper = chatTheme.getWallpaper(isDarkTheme ? 1 : 0);
+                    int intensity = loadedWallpaper != null && loadedWallpaper.settings != null ? loadedWallpaper.settings.intensity : 0;
                     motionDrawable.setPatternBitmap(intensity, bitmap);
                     motionDrawable.setPatternColorFilter(patternColor);
                     motionDrawable.setPatternAlpha(1f);

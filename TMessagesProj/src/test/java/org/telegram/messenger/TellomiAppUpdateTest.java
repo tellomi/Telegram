@@ -48,9 +48,11 @@ public class TellomiAppUpdateTest {
     }
 
     @Test
-    public void urlOpensEvenWhenADocumentIsPresent() {
-        assertEquals(TellomiAppUpdate.OPEN_URL, TellomiAppUpdate.primaryAction("https://www.tellomi.cn/dl/android/14.0.4-1801699/Tellomi.apk", true));
-        assertEquals(TellomiAppUpdate.OPEN_URL, TellomiAppUpdate.primaryAction(" https://dl.tellomi.cn/android/Tellomi.apk ", false));
+    public void releaseApkDownloadsInsideTheApp() {
+        assertEquals(TellomiAppUpdate.DOWNLOAD_IN_APP, TellomiAppUpdate.primaryAction("https://www.tellomi.cn/dl/android/14.0.4-1801699/Tellomi.apk", true));
+        assertEquals(TellomiAppUpdate.DOWNLOAD_IN_APP, TellomiAppUpdate.primaryAction(" https://dl.tellomi.cn/android/Tellomi.apk ", false));
+        assertEquals(TellomiAppUpdate.OPEN_URL, TellomiAppUpdate.primaryAction("https://www.tellomi.cn/download/", false));
+        assertFalse(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/Tellomi.apk"));
     }
 
     @Test
@@ -61,9 +63,9 @@ public class TellomiAppUpdateTest {
     }
 
     @Test
-    public void apkLinkUsesTheSystemBrowser() {
-        assertTrue(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/14.0.7-1802949/Tellomi.apk"));
-        assertTrue(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/Tellomi.apk?x=1"));
+    public void apkLinkDoesNotUseTheSystemBrowser() {
+        assertFalse(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/14.0.7-1802949/Tellomi.apk"));
+        assertFalse(TellomiAppUpdate.preferSystemBrowser("https://dl.tellomi.cn/android/Tellomi.apk?x=1"));
         assertFalse(TellomiAppUpdate.preferSystemBrowser("https://www.tellomi.cn/download/"));
         assertFalse(TellomiAppUpdate.preferSystemBrowser(null));
     }
@@ -148,8 +150,9 @@ public class TellomiAppUpdateTest {
         assertTrue(launch.contains("SharedConfig.rememberUpdateCheckVersion(installedVersion)"));
         assertTrue(launch.contains("checkAppUpdate(false, null)"));
         String dialog = read("TMessagesProj/tellomi/java/org/telegram/ui/TellomiSoftUpdateDialog.java");
-        assertTrue(dialog.contains("TellomiAppUpdate.preferSystemBrowser("));
-        assertTrue(dialog.contains("Browser.openUrlInSystemBrowser("));
+        assertTrue(dialog.contains("TellomiAppUpdate.DOWNLOAD_IN_APP"));
+        assertTrue(dialog.contains("TellomiApkDownload.begin("));
+        assertFalse(dialog.contains("Browser.openUrlInSystemBrowser("));
     }
 
     private static String read(String relative) throws Exception {

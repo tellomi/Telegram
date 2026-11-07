@@ -44,14 +44,21 @@ public final class TellomiReleaseUpdate {
         public final String fallbackUrl;
         public final String notes;
         public final boolean fromFallback;
+        /** Optional sha256 from this feed. A hash from one feed is not a signature. */
+        public final String sha256;
 
         Manifest(String versionName, int versionCode, String url, String fallbackUrl, String notes, boolean fromFallback) {
+            this(versionName, versionCode, url, fallbackUrl, notes, fromFallback, null);
+        }
+
+        Manifest(String versionName, int versionCode, String url, String fallbackUrl, String notes, boolean fromFallback, String sha256) {
             this.versionName = versionName;
             this.versionCode = versionCode;
             this.url = url;
             this.fallbackUrl = fallbackUrl;
             this.notes = notes;
             this.fromFallback = fromFallback;
+            this.sha256 = sha256;
         }
     }
 
@@ -120,10 +127,21 @@ public final class TellomiReleaseUpdate {
         if (candidate.versionCode < current.versionCode) {
             return current;
         }
+        if (hashesDisagree(current.sha256, candidate.sha256)) {
+            return null;
+        }
         if (current.fromFallback && !candidate.fromFallback) {
             return candidate;
         }
         return current;
+    }
+
+    /** Two published hashes for one version that do not match. A missing hash is not a disagreement. */
+    public static boolean hashesDisagree(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return !left.trim().equalsIgnoreCase(right.trim());
     }
 
     public static Manifest parse(String json, boolean fromFallback) {
@@ -162,7 +180,8 @@ public final class TellomiReleaseUpdate {
                 emptyToNull(fields.get("url")),
                 emptyToNull(fields.get("fallbackUrl")),
                 emptyToNull(fields.get("notes")),
-                fromFallback);
+                fromFallback,
+                normalizeSha256(fields.get("sha256")));
     }
 
     /**
@@ -348,6 +367,24 @@ public final class TellomiReleaseUpdate {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    static String normalizeSha256(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim().toLowerCase(Locale.US);
+        if (trimmed.length() != 64) {
+            return null;
+        }
+        for (int i = 0; i < trimmed.length(); i++) {
+            char ch = trimmed.charAt(i);
+            boolean hex = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+            if (!hex) {
+                return null;
+            }
+        }
+        return trimmed;
     }
 
     private static String emptyToNull(String value) {

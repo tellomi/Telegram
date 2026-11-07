@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.BlendMode;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -32,14 +33,13 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.TellomiWallpaperCatalog;
-import org.telegram.ui.TellomiWallpaperDraw;
 import org.telegram.ui.WallpapersListActivity;
 
 public class WallpaperCell extends FrameLayout {
@@ -164,15 +164,7 @@ public class WallpaperCell extends FrameLayout {
                 }
             } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
                 WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
-                if (wallPaper.builtinId != null) {
-                    imageView.setImageBitmap(null);
-                    imageView.getImageReceiver().setColorFilter(null);
-                    imageView.setBackground(TellomiWallpaperDraw.create(TellomiWallpaperCatalog.byId(wallPaper.builtinId), Theme.isCurrentThemeDark()));
-                } else if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
-                    imageView.setImageBitmap(null);
-                    imageView.getImageReceiver().setColorFilter(null);
-                    imageView.setBackgroundColor(wallPaper.color);
-                } else if (wallPaper.path != null || wallPaper.pattern != null) {
+                if (wallPaper.path != null || wallPaper.pattern != null || Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
                     int patternColor;
                     if (wallPaper.gradientColor2 != 0) {
                         MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(wallPaper.color, wallPaper.gradientColor1, wallPaper.gradientColor2, wallPaper.gradientColor3, true);
@@ -188,7 +180,13 @@ public class WallpaperCell extends FrameLayout {
                     } else {
                         patternColor = AndroidUtilities.getPatternColor(wallPaper.color);
                     }
-                    if (wallPaper.path != null) {
+                    if (Theme.DEFAULT_BACKGROUND_SLUG.equals(wallPaper.slug)) {
+                        if (wallPaper.defaultCache == null) {
+                            wallPaper.defaultCache = SvgHelper.getBitmap(R.raw.default_pattern, 100, 180, Color.BLACK);
+                        }
+                        imageView.setImageBitmap(wallPaper.defaultCache);
+                        imageView.getImageReceiver().setAlpha(Math.abs(wallPaper.intensity));
+                    } else if (wallPaper.path != null) {
                         imageView.setImage(wallPaper.path.getAbsolutePath(), imageFilter, null);
                     } else {
                         TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.pattern.document.thumbs, 100);

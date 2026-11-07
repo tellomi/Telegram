@@ -102,6 +102,11 @@
     <string name="TellomiSoftUpdateSlide">滑动更新</string>
     <string name="TellomiSoftUpdateGo">更新</string>
     <string name="TellomiSoftUpdateDownloading">下载中 %1$d%%</string>
+    <string name="TellomiUpdateBadPackage">这个文件不是 Tellomi。更新没有安装。</string>
+    <string name="TellomiUpdateBadSignature">更新的签名和当前安装不一致。更新没有安装。</string>
+    <string name="TellomiUpdateNotNewer">这个文件不是更高的版本。更新没有安装。</string>
+    <string name="TellomiUpdateBadSource">下载地址不是 Tellomi 的发布域名。更新没有安装。</string>
+    <string name="TellomiUpdateBadFile">下载失败或文件已损坏。再滑一次可以重试。</string>
     <string name="TellomiSoftUpdateClose">关闭</string>
     <string name="TellomiDeleteAccountNow">立即删除账号</string>
     <string name="TellomiDeleteAccountConsequences">删除账号后：\n• 与你的私聊会从双方删除。\n• 你将退出所有群组和频道。\n• 个人资料和头像会被移除。\n• 已经发到群组里的消息会保留。</string>

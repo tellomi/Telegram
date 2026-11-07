@@ -421,6 +421,8 @@ AI compose: `showAiButton` in the chat field, attach alert, and photo caption, p
 
 ## Default chat wallpaper
 
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The stock chat background is no longer the flat color described here.
+
 The stock chat background is a flat color. Light (Blue, accent 99) is `#F2F2F2`. Dark (Dark Blue, accent 0) is `#000000`. `createDefaultWallpaper()` no longer builds the four-stop green gradient or draws `R.raw.default_pattern`. `createBackgroundDrawable` takes that path for the stock day and night themes before the accent gradient is painted.
 
 A saved wallpaper whose slug is not `d` is left as the user set it. Other built-in accents keep the colors stored on the accent. Their pattern files are Telegram cloud slugs (`account.getMultiWallPapers`); this server does not have them. When that file is missing the client used to paint and cache `R.raw.default_pattern`. It no longer does. The accent gradient stays; the Telegram pattern does not.
@@ -469,6 +471,8 @@ Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phas
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Send glyph is MingCute arrow-up. The disk is `key_chat_messagePanelSend`: black by day, white at night. The arrow is the opposite color. |
 
 ## Monochrome default theme
+
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The built-in palette is Telegram's again.
 
 The default accent (id 99) does not pass through `fillAccentColors`, so the Blue and Dark Blue `.attheme` files and `ThemeColors` defaults are the colors the app actually draws. Day accent is `#111111`. Night accent is white. Outgoing bubbles are `#E0E0E0` on the `#F2F2F2` wallpaper and `#2C2C2E` on black, not Telegram green `#EFFFDE`. Checks, links, switches, checkboxes, the compose FAB, and unread badges follow the same black/white pair. `TELEGRAM_COLOR` is `#111111`. The home accent of Dark Blue and Night no longer paints a blue outgoing gradient. Theme settings lists only Blue and Dark Blue, without the accent swatches. The other built-in theme files are gray too, in case a saved choice still points at them.
 
@@ -710,6 +714,8 @@ The Discover tab stays on the empty screen until `help.getAppConfig` includes `t
 | `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | After the emoji-blocklist hook, `TellomiDiscoverFlags.capture` reads `tellomi_discover_feed_enabled` and `tellomi_discover_feed_base_url` from the same `help.getAppConfig` object. |
 
 ## Chat wallpaper and accent colors
+
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The wallpaper screen is no longer the bundled doodle list.
 
 The server `account.getWallPapers` result stays empty. Wallpapers are bundled. The default chat background is a doodle on a gradient (light `#EFE7DD`, dark `#0B141A` to `#16232B`), not a flat color. The wallpaper screen shows those ten built-in backgrounds plus one solid (`#F0F2F5` / `#101418`). Incoming bubbles are `#FFFFFF` / `#202C33`. On a solid wallpaper the bubble draws a 0.5dp shadow and the date chip is a translucent black. Built-in theme accents are the twelve shared hex values, default `#3390EC`. Pattern art is Tabler and Lucide icons plus Pattern Monster dots and Hero Patterns topography. Settings → Open-source licenses names them. Login and the session are untouched.
 
@@ -1080,7 +1086,7 @@ Login fields on the forced black or white page set digit, hint, cursor, and sele
 
 ## Built-in Night theme, checked pairs
 
-`TMessagesProj/src/main/assets/night.attheme` was read, not rendered. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble` (the outgoing bubble stays white and the text stays `#111111`), input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.
+`TMessagesProj/src/main/assets/night.attheme` is the Telegram file from `3de37c8cf` again. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble`, input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.
 
 No custom theme file and no system night animation was opened. Settings icon plates stay the existing dark neutrals with white glyphs. The intro page stays the fixed white page. Those were not recolored.
 
@@ -1099,3 +1105,42 @@ The chat send button, the photo picker, the attach sheet, share, and the rich ed
 | `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Up arrow, no transform group. |
 | `TMessagesProj/tellomi/res/drawable-*/ic_launcher_dr.png` | Same bytes as `mipmap-*/ic_launcher.png`. |
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiSendGlyphTest.java` | Arrow bounds, and the contact icon matches the launcher file. |
+
+## Telegram theme colors, chat themes, and wallpapers
+
+The client overrides that replaced Telegram's palette are reverted to `3de37c8cf`. That snapshot is still the upstream baseline (DrKLO "update to 13.1.1"). Built-in themes are Blue, Dark Blue, Arctic Blue, Day, and Night again, with Telegram's accent rows. The default wallpaper is Telegram's pattern, not the bundled doodle. The doodle catalog class remains only so the open-source license page can still name those assets.
+
+`account.getChatThemes` on the Tellomi server returns themes with an emoticon and accent colors and no wallpaper document (`app/bff/accountassets/chatthemes.go`). The preview used to read `themeSettings.wallpaper.settings` and crashed, so those rows could not be drawn. A missing wallpaper now paints the accent. `account.getWallPapers` returns `wallPaperNoFile` solids, including black `#000000` (`wallcatalog.go`). A color of zero used to be treated as "no color" and the black row was dropped. An explicit background flag, including black, stays in the list. `account.getUniqueGiftChatThemes` failing no longer blocks the emoji list. A failed `account.getWallPapers` leaves the local color presets in place.
+
+The baseline chat-theme stub assigned the theme wallpaper and then replaced it with `ColorDrawable(Color.BLACK)`, so the default stub could not be seen. The stub keeps the theme wallpaper.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/assets/*.attheme` | Restored to `3de37c8cf`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java`, `ThemeColors.java`, `MessageDrawable.java` | Restored. Tellomi bubble, accent, and doodle wallpaper overrides are gone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list and accent row follow `TelegramThemeFlow`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | Local color presets are Telegram's. A failed wallpaper RPC does not clear them. Black `wallPaperNoFile` stays visible. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java`, `ThemeSmallPreviewView.java` | Default pattern drawing is back. A chat theme with no wallpaper document still draws. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Default-pattern preview is back. The sample link stays `TellomiBrand`. The preview title stays the app name. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java`, `Stories/recorder/PreviewView.java` | Default chat-theme stub uses the theme wallpaper. A missing wallpaper document does not crash the pattern load. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/ChatThemeController.java`, `ChatThemeBottomSheet.java` | A failed gift-theme RPC still loads emoji themes. A failed emoji RPC keeps the cache and shows the default row. |
+| `TMessagesProj/src/main/java/org/telegram/ui/theme/TelegramThemeFlow.java` | List, preview fill, wallpaper merge, and day/night persistence decisions. |
+| `TMessagesProj/src/test/java/org/telegram/ui/theme/TelegramThemeFlowTest.java` | Those decisions, including a missing wallpaper and a failed request. |
+
+## In-app APK download
+
+The website release check already reads `https://www.tellomi.cn/dl/android/latest.json` and `https://dl.tellomi.cn/android/latest.json`. The swipe used to open that APK in the system browser. It now downloads with `DownloadManager` from an allowlisted https host, shows progress, and then opens the system installer. Closing the card cancels a download that is still running. It does not cancel a file that is already waiting on the unknown-sources screen. A second swipe does not enqueue another copy of the same job. After a process restart the saved download id is queried again. The first unknown-sources grant uses the existing settings screen; returning to the app continues with the same file. A document that is already on disk is checked the same way before the installer opens. A bad package, signature, or version deletes that file and the card says why, instead of installing it. The installer is the system one. Nothing installs silently and nothing is uninstalled.
+
+Before that installer opens, the file must be a zip, the package name must be this app's, the signing certificate must equal the certificate of the running install, and `versionCode` must be higher. A sha256 in `latest.json` is checked only as an extra file hash. Two feeds that publish different hashes for the same version are not offered. A hash is never accepted instead of the signature. The website offer stays `can_not_skip = false`. No new force-update rule was added. `help.getAppUpdate` `can_not_skip` is unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiAppUpdate.java` | An allowlisted APK url is `DOWNLOAD_IN_APP`, not a browser. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiApkUpdate.java` | Download state, zip markers, package, signature, version, and hash disagreement. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiApkDownload.java` | `DownloadManager`, FileProvider, and the system installer. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiReleaseUpdate.java` | Optional `sha256`. Conflicting hashes drop the offer. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSoftUpdateDialog.java` | Progress, retry, and the installer. The card can still be closed. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/BlockingUpdateView.java` | The same in-app download when a forced server update carries an APK url. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | Resume continues a finished download or a permission return. Website updates stay skippable. |
+| `TMessagesProj/src/main/res/xml/provider_paths.xml` | `external-files-path` `Download/` for the update APK. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiApkUpdateTest.java` | State, a real zip, a bad signature, a bad package, and disagreeing hashes. |

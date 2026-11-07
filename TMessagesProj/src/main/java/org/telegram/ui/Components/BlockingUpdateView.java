@@ -24,6 +24,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.TellomiApkDownload;
 import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
@@ -141,6 +142,11 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 46, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
         acceptButton.setOnClickListener(view1 -> {
             int action = TellomiAppUpdate.primaryAction(appUpdate == null ? null : appUpdate.url, appUpdate != null && appUpdate.document instanceof TLRPC.TL_document);
+            if (action == TellomiAppUpdate.DOWNLOAD_IN_APP) {
+                TellomiApkDownload.begin(getContext(), appUpdate.url.trim(), appUpdate.id);
+                showProgress(true);
+                return;
+            }
             if (action == TellomiAppUpdate.OPEN_URL) {
                 Browser.openUrl(getContext(), appUpdate.url.trim());
                 return;

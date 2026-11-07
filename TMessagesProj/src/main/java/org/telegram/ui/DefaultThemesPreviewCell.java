@@ -37,6 +37,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ThemeSmallPreviewView;
+import org.telegram.ui.theme.TelegramThemeFlow;
 
 import java.util.ArrayList;
 
@@ -132,7 +133,8 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
             if (info != null) {
                 SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
-                editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || info.isDark() ? "lastDarkTheme" : "lastDayTheme", info.getKey());
+                boolean nightChoice = currentType == ThemeActivity.THEME_TYPE_NIGHT || info.isDark();
+                editor.putString(nightChoice ? "lastDarkTheme" : "lastDayTheme", TelegramThemeFlow.themeKey(info.getKey(), nightChoice));
                 editor.commit();
             }
 
@@ -431,7 +433,8 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         }
         if (currentType != ThemeActivity.THEME_TYPE_OTHER) {
             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
-            editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark() ? "lastDarkTheme" : "lastDayTheme", themeInfo.getKey());
+            boolean nightChoice = currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark();
+            editor.putString(nightChoice ? "lastDarkTheme" : "lastDayTheme", TelegramThemeFlow.themeKey(themeInfo.getKey(), nightChoice));
             editor.commit();
         }
         if (currentType == ThemeActivity.THEME_TYPE_NIGHT) {

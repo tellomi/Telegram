@@ -100,6 +100,11 @@
     <string name="TellomiSoftUpdateGo">Update</string>
     <string name="TellomiSoftUpdateDownloading">Downloading %1$d%%</string>
     <string name="TellomiSoftUpdateClose">Close</string>
+    <string name="TellomiUpdateBadPackage">This file is not the Tellomi app. The update was not installed.</string>
+    <string name="TellomiUpdateBadSignature">The update signature does not match this install. The update was not installed.</string>
+    <string name="TellomiUpdateNotNewer">This file is not a newer version. The update was not installed.</string>
+    <string name="TellomiUpdateBadSource">The download address is not a Tellomi release host. The update was not installed.</string>
+    <string name="TellomiUpdateBadFile">The download failed or the file is damaged. Slide again to retry.</string>
     <string name="TellomiDeleteAccountNow">Delete account now</string>
     <string name="TellomiDeleteAccountConsequences">Deleting this account:\n• Private chats are deleted for both sides.\n• You leave your groups and channels.\n• Your profile and photos are removed.\n• Messages you already sent in groups stay.</string>
     <string name="TellomiDeleteAccountConfirmTitle">Delete your account?</string>
