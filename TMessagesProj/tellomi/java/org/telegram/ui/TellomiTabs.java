@@ -53,6 +53,9 @@ public final class TellomiTabs {
 
     static final String PREF_SHOW_FEED = "tellomi_show_feed_tab";
     static final String PREF_SHOW_CONTACTS = "tellomi_show_contacts_tab";
+    static final String PREF_HIDE_LABELS = "tellomi_hide_tab_labels";
+    /** Fresh installs show Discover, Chats, and Profile, with the words visible. */
+    public static final boolean LABELS_HIDDEN_DEFAULT = false;
 
     /** Upstream bar cap: 328dp plus two 8dp margins. */
     private static final int UPSTREAM_BAR_MAX_DP = 328 + 16;
@@ -364,7 +367,29 @@ public final class TellomiTabs {
             settingsTab.setContentDescription(null);
         }
         show(activity, VISUAL_PROFILE, true, animated);
+        applyLabelVisibility(activity);
         activity.tabsView.requestLayout();
+    }
+
+    /** Words under the icons. Default is shown. Does not change which tabs are in the bar. */
+    public static boolean labelsHidden(int account) {
+        return MessagesController.getMainSettings(account).getBoolean(PREF_HIDE_LABELS, LABELS_HIDDEN_DEFAULT);
+    }
+
+    public static void setLabelsHidden(int account, boolean hidden) {
+        MessagesController.getMainSettings(account).edit().putBoolean(PREF_HIDE_LABELS, hidden).apply();
+    }
+
+    public static void applyLabelVisibility(MainTabsActivity activity) {
+        if (activity == null || activity.tabs == null) {
+            return;
+        }
+        boolean shown = !labelsHidden(activity.getCurrentAccount());
+        for (int i = 0; i < activity.tabs.length; i++) {
+            if (activity.tabs[i] != null) {
+                activity.tabs[i].setLabelShown(shown);
+            }
+        }
     }
 
     private static void applyProfileNavLabel(GlassTabView profile) {

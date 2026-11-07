@@ -764,10 +764,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean giftTextFieldIcon;
 
     public boolean isTranslationsManualEnabled() {
-        return config.tellomiTranslateEnabled.get() && !"disabled".equals(translationsManualEnabled);
+        return config.tellomiTranslateEnabled.get() && TellomiTranslate.configEnabled(translationsManualEnabled);
     }
     public boolean isTranslationsAutoEnabled() {
-        return config.tellomiTranslateEnabled.get() && !"disabled".equals(translationsAutoEnabled);
+        return config.tellomiTranslateEnabled.get() && TellomiTranslate.configEnabled(translationsAutoEnabled);
     }
 
     public final AppGlobalConfig config = new AppGlobalConfig();
@@ -1743,8 +1743,8 @@ public class MessagesController extends BaseController implements NotificationCe
         todoItemsMax = mainPreferences.getInt("todoItemsMax", isTest ? 10 : 30);
         todoTitleLengthMax = mainPreferences.getInt("todoTitleLengthMax", 32);
         todoItemLengthMax = mainPreferences.getInt("todoItemLengthMax", 64);
-        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "enabled");
-        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "enabled");
+        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "disabled");
+        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "disabled");
         whitelistedBots = mainPreferences.getStringSet("whitelistedBots", new HashSet<>()).stream().map(s -> tryParseLong(s, 0)).collect(Collectors.toCollection(HashSet::new));
         starsGroupcallMessageAmountMax = mainPreferences.getInt("starsGroupcallMessageAmountMax", 10_000);
         starsGroupcallMessageLimits = parseTiersString(mainPreferences.getString("starsGroupcallMessageLimits", null));

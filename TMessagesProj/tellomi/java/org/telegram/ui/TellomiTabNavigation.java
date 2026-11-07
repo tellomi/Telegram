@@ -20,17 +20,19 @@ public final class TellomiTabNavigation {
         public final String hideContacts;
         public final String navigationTitle;
         public final String navigationFooter;
+        public final String hideTabLabels;
         public final String feedEmptyTitle;
         public final String feedEmptyText;
         public final String feedPostUnavailable;
 
         Copy(String feed, String hideFeed, String hideContacts, String navigationTitle, String navigationFooter,
-             String feedEmptyTitle, String feedEmptyText, String feedPostUnavailable) {
+             String hideTabLabels, String feedEmptyTitle, String feedEmptyText, String feedPostUnavailable) {
             this.feed = feed;
             this.hideFeed = hideFeed;
             this.hideContacts = hideContacts;
             this.navigationTitle = navigationTitle;
             this.navigationFooter = navigationFooter;
+            this.hideTabLabels = hideTabLabels;
             this.feedEmptyTitle = feedEmptyTitle;
             this.feedEmptyText = feedEmptyText;
             this.feedPostUnavailable = feedPostUnavailable;
@@ -47,6 +49,7 @@ public final class TellomiTabNavigation {
                 TellomiPack.text("Tellomi.Discover.HideContacts", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.NavigationTitle", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.NavigationFooter", languageCode, source),
+                TellomiPack.text("Tellomi.Discover.HideTabLabels", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.FeedEmptyTitle", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.FeedEmptyText", languageCode, source),
                 TellomiPack.text("Tellomi.Discover.FeedPostUnavailable", languageCode, source)

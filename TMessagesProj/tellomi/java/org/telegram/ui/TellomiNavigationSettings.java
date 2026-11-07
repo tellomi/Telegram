@@ -96,10 +96,28 @@ public class TellomiNavigationSettings extends BaseFragment {
             }
             items.add(item);
         }
+        items.add(UItem.asSwitch(HIDE_LABELS_ID, copy.hideTabLabels).setChecked(TellomiTabs.labelsHidden(currentAccount)));
         items.add(UItem.asShadow(copy.navigationFooter));
     }
 
+    private static final int HIDE_LABELS_ID = 6;
+
     private void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.id == HIDE_LABELS_ID) {
+            TellomiTabs.setLabelsHidden(currentAccount, !item.checked);
+            if (parentLayout != null) {
+                for (int i = 0; i < parentLayout.getFragmentStack().size(); i++) {
+                    BaseFragment fragment = parentLayout.getFragmentStack().get(i);
+                    if (fragment instanceof MainTabsActivity) {
+                        TellomiTabs.applyLabelVisibility((MainTabsActivity) fragment);
+                    }
+                }
+            }
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+            return;
+        }
         TellomiTabNavigation.Row row = TellomiTabNavigation.row(item.id);
         if (row == null || !row.toggleable || !TellomiTabs.enabled()) {
             return;
