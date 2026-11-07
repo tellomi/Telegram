@@ -1190,3 +1190,22 @@ External Open Graph is fetched on the phone (the same parser as Discover). `tell
 | `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | External cards go out as `messages.sendMedia`. The image is uploaded with `messages.uploadMedia` first. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java` | The bubble skips `author=unverified`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java` | The viewer skips the same author string. |
+
+## Draft transcription and English-to-Chinese translation
+
+Unsent voice uses `messages.transcribeDraft#7e11da47`. The bytes stay in that request. The recording is not sent, and already-sent voice still uses `messages.transcribeAudio#269e9a49`. The composer shows 转文字 only on an unsent voice file. Files over 8MB, empty files, and names other than ogg, opus, wav, or mp4 are refused on the phone.
+
+`messages.translateText`, `messages.translateRichMessage`, `messages.summarizeText`, and `composeMessageWithAI` `translate_to_lang` always send `zh-hans`. Google, the `alternative` / `system` app-config values, and the Cocoon sheet are not used. Manual and automatic translation stay off until `tellomi_translate_enabled` is true and the matching app-config string is exactly `enabled`. A missing string stays `disabled`. The settings switches, the single-message sheet, the whole-chat bar, and `messages.togglePeerTranslations` stay. They no longer ask for Telegram Premium.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/TLRPC.java` | `TL_messages_transcribeDraft` writes the audio bytes and reads `messages.transcribedAudio`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | 转文字 on the unsent voice panel. The text goes into the field and the recording is discarded. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Translation strings default to `disabled` and count only when the value is `enabled` and `tellomi_translate_enabled` is set. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java` | Whole-chat requests use `zh-hans`. The Google and on-device branches are gone. Premium is not required. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java` | Single-message requests use `zh-hans`. The Google request is gone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java` | The same target language. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java` | The bar menu is hide / do-not-translate. The target list is Simplified Chinese. Cocoon is not shown. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/AIEditorAlert.java` | `translate_to_lang` is `zh-hans`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The bar toggles translation for a translatable chat. It does not open Premium. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java` | The whole-chat switch is not locked behind Premium. |

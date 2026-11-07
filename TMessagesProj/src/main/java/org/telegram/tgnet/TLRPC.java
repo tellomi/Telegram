@@ -63039,6 +63039,21 @@ public class TLRPC {
         }
     }
 
+    public static class TL_messages_transcribeDraft extends TLObject {
+        public static final int constructor = 0x7e11da47;
+
+        public byte[] audio;
+
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_messages_transcribedAudio.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeByteArray(audio == null ? new byte[0] : audio);
+        }
+    }
+
     public static class TL_messages_transcribeAudio extends TLObject {
         public static final int constructor = 0x269e9a49;
 

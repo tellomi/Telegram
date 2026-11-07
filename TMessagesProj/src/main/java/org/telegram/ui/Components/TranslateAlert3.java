@@ -41,6 +41,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TellomiTranslate;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -79,10 +80,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
         closeView.setOnClickListener(v -> this.dismiss());
 
-        to_lang = TranslateAlert2.getToLanguage();
-        if (to_lang == null) {
-            to_lang = TranslateController.currentLanguage();
-        }
+        to_lang = TellomiTranslate.rpcToLang(TranslateAlert2.getToLanguage());
 
         ignoreTouchActionBar = false;
         headerMoveTop = dp(12);
@@ -114,13 +112,6 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
                     AndroidUtilities.addToClipboard(translated);
                 }
             } else if (item.id == 2) {
-                if (!UserConfig.getInstance(currentAccount).isPremium()) {
-                    final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
-                    if (fragment == null) return;
-                    new PremiumFeatureBottomSheet(getContext(), PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, true, resourcesProvider)
-                        .show();
-                    return;
-                }
                 MessagesController.getInstance(currentAccount).getTranslateController().toggleTranslatingDialog(dialogId);
                 dismiss();
             }
@@ -178,7 +169,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         return this;
     }
     public TranslateAlert3 setToLanguage(String to_lang) {
-        this.to_lang = to_lang;
+        this.to_lang = TellomiTranslate.rpcToLang(to_lang);
         return this;
     }
     public TranslateAlert3 setText(CharSequence text) {
@@ -264,7 +255,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             addChecked(o, list, true, TranslateAlert2.capitalFirst(TranslateAlert2.languageName(to_lang)), null);
         }
         for (final TranslateController.Language lng : suggestedLanguages) {
-            if (!TextUtils.equals(lng.code, to_lang)) {
+            if (!TextUtils.equals(lng.code, to_lang) && TellomiTranslate.acceptedToLang(lng.code) != null) {
                 addChecked(o, list, false, lng.displayName, () -> {
                     cancelRequest();
                     to_lang = lng.code;
@@ -279,6 +270,9 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         list.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
         for (final TranslateController.Language lng : allLanguages) {
+            if (TellomiTranslate.acceptedToLang(lng.code) == null) {
+                continue;
+            }
             addChecked(o, list, TextUtils.equals(lng.code, to_lang), lng.displayName, () -> {
                 cancelRequest();
                 to_lang = lng.code;
@@ -387,7 +381,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             final TLRPC.TL_messages_summarizeText req = new TLRPC.TL_messages_summarizeText();
 
             req.flags |= TLObject.FLAG_0;
-            req.to_lang = to_lang;
+            req.to_lang = TellomiTranslate.rpcToLang(to_lang);
 
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             req.id = messageId;
@@ -417,7 +411,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         } else {
 
             final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
-            req.to_lang = to_lang;
+            req.to_lang = TellomiTranslate.rpcToLang(to_lang);
 
             if (dialogId != 0 && messageId != 0) {
                 req.flags |= TLObject.FLAG_0;
