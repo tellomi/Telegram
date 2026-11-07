@@ -63,6 +63,7 @@ public class TellomiDiscoverLinkTest {
         assertEquals("From the page", preview.description);
         assertEquals("https://example.com/cover.jpg", preview.image);
         assertEquals("example.com", preview.siteLine());
+        assertNull(preview.siteName);
 
         String bare = "<title>Only title</title><meta name=\"description\" content=\"About\">";
         TellomiDiscoverLink.Preview fallback = TellomiDiscoverLink.parseHtml(bare, "https://example.com/post");
@@ -77,6 +78,11 @@ public class TellomiDiscoverLinkTest {
         TellomiDiscoverLink.Preview dropped = TellomiDiscoverLink.parseHtml(hostile, "https://example.com/post");
         assertEquals("Hi", dropped.title);
         assertEquals("https://cdn.example/ok.jpg", dropped.image);
+
+        String named = "<meta property=\"og:site_name\" content=\"Example News\">"
+            + "<meta property=\"og:title\" content=\"Hello\">";
+        TellomiDiscoverLink.Preview site = TellomiDiscoverLink.parseHtml(named, "https://example.com/post");
+        assertEquals("Example News", site.siteName);
 
         String protocol = "<meta property=\"og:image\" content=\"//cdn.example/a.jpg\">";
         assertEquals("https://cdn.example/a.jpg", TellomiDiscoverLink.parseHtml(protocol, "https://example.com/post").image);

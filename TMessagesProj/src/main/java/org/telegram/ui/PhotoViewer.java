@@ -14135,7 +14135,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (siteName != null) {
                     siteName = siteName.toLowerCase();
                     if (siteName.equals("instagram") || siteName.equals("twitter") || "telegram_album".equals(webPage.type)) {
-                        if (!TextUtils.isEmpty(webPage.author)) {
+                        if (!TextUtils.isEmpty(webPage.author) && !org.telegram.ui.tellomi.feed.TellomiChatLink.hideAuthor(webPage.author)) {
                             nameOverride = webPage.author;
                         }
                         if (webPage.cached_page instanceof TL_iv.TL_page) {
