@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -29,19 +30,48 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
     private static final int MENU_REPORT = 2;
 
     private final String postId;
+    private final String surface;
+    private final boolean capabilitiesKnown;
     private TellomiDiscover.Loader loader;
     private TellomiDiscover.Post shown;
     private TextView bodyView;
     private LinearLayout column;
+    private LinearLayout commentList;
+    private TextView likeButton;
+    private TextView commentStatus;
+    private EditText commentInput;
+    private TextView replyLabel;
     private boolean started;
+    private boolean reactions;
+    private boolean commentsOn;
+    private String replyParent;
+    private TellomiDiscoverReact.Like likeSession;
+    private boolean destroyed;
+    private final TellomiDiscoverReact.Comments commentThread = new TellomiDiscoverReact.Comments();
 
     public TellomiDiscoverPostFragment(String postId) {
+        this(postId, "recommend", false, false, false);
+    }
+
+    public TellomiDiscoverPostFragment(String postId, String surface, boolean reactions, boolean comments) {
+        this(postId, surface, reactions, comments, true);
+    }
+
+    private TellomiDiscoverPostFragment(String postId, String surface, boolean reactions, boolean comments, boolean capabilitiesKnown) {
         super(new Bundle());
         this.postId = postId;
+        this.surface = TellomiDiscoverReact.surface(surface);
+        this.reactions = reactions;
+        this.commentsOn = comments;
+        this.capabilitiesKnown = capabilitiesKnown;
     }
 
     @Override
     public void onFragmentDestroy() {
+        destroyed = true;
+        if (likeSession != null) {
+            likeSession.close();
+        }
         if (loader != null) {
             loader.cancel();
         }
@@ -131,9 +161,266 @@ public class TellomiDiscoverPostFragment extends BaseFragment implements Tellomi
                 addLink(post);
                 addForward(post);
                 addPoll(post);
-                addComments(post);
+                if (capabilitiesKnown) {
+                    addInteraction();
+                } else {
+                    loadCapabilities();
+                }
             }
         });
+    }
+
+    private void loadCapabilities() {
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.capabilities(), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (outcome != null && outcome.ok() && outcome.value.capabilities != null) {
+                    reactions = TellomiDiscoverReact.feature(outcome.value.capabilities, "reactions");
+                    commentsOn = TellomiDiscoverReact.feature(outcome.value.capabilities, "comments");
+                }
+                addInteraction();
+            }
+        });
+    }
+
+    private void addInteraction() {
+        if (column == null || shown == null) {
+            return;
+        }
+        if (reactions) {
+            likeSession = TellomiDiscoverReact.Like.start(shown.id, shown.liked, shown.likeCount, shown.likesHidden, surface);
+            likeButton = action(likeCaption(likeSession.view()));
+            likeButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    toggleLike();
+                }
+            });
+            column.addView(likeButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+        if (!commentsOn) {
+            addComments(shown);
+            return;
+        }
+        commentStatus = action("");
+        commentStatus.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourceProvider));
+        column.addView(commentStatus, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        commentList = new LinearLayout(column.getContext());
+        commentList.setOrientation(LinearLayout.VERTICAL);
+        column.addView(commentList, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        replyLabel = action("");
+        column.addView(replyLabel, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        commentInput = new EditText(column.getContext());
+        commentInput.setHint(phrase("Tellomi.Discover.CommentHint"));
+        commentInput.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        commentInput.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        commentInput.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+        column.addView(commentInput, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        TextView send = action(phrase("Tellomi.Discover.Comment"));
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendComment();
+            }
+        });
+        column.addView(send, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        TellomiDiscoverReact.Comments.Load load = commentThread.open(postId);
+        sendCommentLoad(load);
+    }
+
+    private void toggleLike() {
+        if (likeSession == null) {
+            return;
+        }
+        TellomiDiscoverReact.Like.Request request = likeSession.tap();
+        paintLike();
+        if (request != null) {
+            sendLike(request);
+        }
+    }
+
+    private void sendLike(final TellomiDiscoverReact.Like.Request request) {
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.like(request.postId, request.on, request.surface), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (destroyed || likeSession == null) {
+                    return;
+                }
+                TellomiDiscoverReact.Like.Request next = TellomiDiscoverReact.onLikeHttp(likeSession, request, outcome);
+                paintLike();
+                if (next != null) {
+                    sendLike(next);
+                    return;
+                }
+                if (likeSession.failure() != null) {
+                    setCommentStatus(likeSession.failure());
+                }
+            }
+        });
+    }
+
+    private void paintLike() {
+        if (likeButton == null || likeSession == null) {
+            return;
+        }
+        likeButton.setText(likeCaption(likeSession.view()));
+    }
+
+    private String likeCaption(TellomiDiscoverReact.Like.View view) {
+        String label = phrase(view.liked ? "Tellomi.Discover.Liked" : "Tellomi.Discover.Like");
+        if (!view.hidden && view.count > 0) {
+            return label + " " + view.count;
+        }
+        return label;
+    }
+
+    private void sendCommentLoad(final TellomiDiscoverReact.Comments.Load load) {
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.comments(load.postId, load.cursor), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (outcome != null && outcome.ok() && outcome.value.commentPage != null && commentThread.accept(load.generation, load.version, outcome.value.commentPage)) {
+                    setCommentStatus(null);
+                } else {
+                    commentThread.failLoad(load.generation, load.version);
+                    if (outcome == null || !outcome.ok()) {
+                        setCommentStatus(outcome == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error);
+                    }
+                }
+                renderComments();
+            }
+        });
+    }
+
+    private void sendComment() {
+        if (commentInput == null) {
+            return;
+        }
+        TellomiDiscoverReact.Comments.Send send = commentThread.submit(commentInput.getText().toString(), replyParent, java.util.UUID.randomUUID().toString());
+        if (send == null) {
+            return;
+        }
+        if (!send.ready()) {
+            setCommentStatus(send.error);
+            return;
+        }
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.comment(send.postId, send.text, send.parentId, send.nonce), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                if (outcome != null && outcome.ok() && commentThread.finishSend(send.generation, send.version, outcome.value.commentCreated)) {
+                    if (commentInput != null) {
+                        commentInput.setText("");
+                    }
+                    replyParent = null;
+                    setCommentStatus(null);
+                } else {
+                    commentThread.failSend(send.generation, send.version);
+                    setCommentStatus(outcome == null || outcome.ok() ? TellomiDiscover.ClientError.UNREADABLE : outcome.error);
+                }
+                renderComments();
+            }
+        });
+    }
+
+    private void deleteComment(final String commentId) {
+        final TellomiDiscoverReact.Comments.Delete delete = commentThread.delete(commentId);
+        if (delete == null) {
+            return;
+        }
+        loader.run(true, TellomiDiscoverFlags.configuration(currentAccount), TellomiDiscover.Operation.deleteComment(delete.commentId), new TellomiDiscover.Completion() {
+            @Override
+            public void onResult(TellomiDiscover.Outcome outcome) {
+                boolean ok = outcome != null && outcome.ok();
+                commentThread.finishDelete(delete.generation, delete.version, delete.commentId, ok);
+                if (!ok) {
+                    setCommentStatus(outcome != null && outcome.error == TellomiDiscover.ClientError.NOT_FOUND ? TellomiDiscover.ClientError.NOT_FOUND : (outcome == null ? TellomiDiscover.ClientError.UNAVAILABLE : outcome.error));
+                    if (outcome != null && outcome.error == TellomiDiscover.ClientError.NOT_FOUND && commentStatus != null) {
+                        commentStatus.setText(phrase("Tellomi.Discover.CommentNotFound"));
+                    }
+                }
+                renderComments();
+            }
+        });
+    }
+
+    private void renderComments() {
+        if (commentList == null) {
+            return;
+        }
+        commentList.removeAllViews();
+        java.util.List<TellomiDiscover.Comment> rows = new java.util.ArrayList<>(commentThread.visible());
+        rows.addAll(commentThread.pendingRows());
+        for (int i = 0; i < rows.size(); i++) {
+            final TellomiDiscover.Comment comment = rows.get(i);
+            boolean pending = comment.state != null && !"ok".equals(comment.state);
+            LinearLayout line = new LinearLayout(column.getContext());
+            line.setOrientation(LinearLayout.HORIZONTAL);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            TextView text = new TextView(column.getContext());
+            text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            String label = comment.authorName == null || comment.authorName.isEmpty() ? "" : comment.authorName + "  ";
+            label = label + (comment.text == null ? "" : comment.text);
+            if (pending) {
+                label = label + "  " + phrase("Tellomi.Discover.CommentPending");
+            }
+            if (comment.parentId != null) {
+                label = phrase("Tellomi.Discover.Reply") + "  " + label;
+            }
+            text.setText(label);
+            text.setPadding(0, dp(8), 0, dp(8));
+            if (!pending) {
+                text.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        replyParent = commentThread.replyTo(comment);
+                        if (replyLabel != null) {
+                            replyLabel.setText(replyParent == null ? "" : phrase("Tellomi.Discover.Reply"));
+                        }
+                    }
+                });
+            }
+            line.addView(text, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            if (commentThread.canDelete(comment.id)) {
+                TextView delete = action(phrase("Tellomi.Discover.DeleteComment"));
+                delete.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        deleteComment(comment.id);
+                    }
+                });
+                line.addView(delete, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            }
+            commentList.addView(line, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+        if (commentThread.hasMore()) {
+            TextView more = action(phrase("Tellomi.Discover.LoadMore"));
+            more.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    TellomiDiscoverReact.Comments.Load load = commentThread.more();
+                    if (load != null) {
+                        sendCommentLoad(load);
+                    }
+                }
+            });
+            commentList.addView(more, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+    }
+
+    private void setCommentStatus(TellomiDiscover.ClientError error) {
+        if (commentStatus == null) {
+            return;
+        }
+        commentStatus.setText(error == null ? "" : phrase(TellomiDiscoverReact.messageKey(error)));
+    }
+
+    private TextView action(String text) {
+        TextView view = new TextView(column.getContext());
+        view.setText(text);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourceProvider));
+        view.setPadding(0, dp(8), 0, dp(8));
+        return view;
     }
 
     private void addImages(TellomiDiscover.Post post) {

@@ -357,7 +357,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         final TLRPC.User user = getUserConfig().getCurrentUser();
         items.add(UItem.asHeader(getString(R.string.EditAccountInfoHeader)));
         String phone = TellomiAccount.phoneOf(user);
-        String email = TellomiAccount.emailOf(currentAccount, user);
+        String cachedEmail = TellomiAccount.emailOf(currentAccount, user);
+        String email = TellomiEmailRoles.display(loginEmailPattern, cachedEmail);
         if (phone != null) {
             numberRow = items.size();
             items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, PhoneFormat.getInstance().format("+" + phone), getString(R.string.TapToChangePhone)));
@@ -365,10 +366,13 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             numberRow = items.size();
             items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, getString(R.string.TellomiBindPhone), getString(R.string.TellomiBindPhoneHint)));
         }
-        if (email != null) {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, email, getString(R.string.TellomiChangeEmail)));
+        int emailAction = TellomiEmailRoles.accountRow(loginEmailLoaded, loginEmailPattern, user == null ? null : user.phone);
+        if (emailAction == TellomiEmailRoles.SHOW_IDENTITY) {
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, email, getString(R.string.TellomiSignInEmailTitle)));
+        } else if (emailAction == TellomiEmailRoles.WAIT) {
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiSignInEmailTitle), getString(R.string.TellomiEmailChecking)));
         } else {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiBindEmail), getString(R.string.TellomiBindEmailHint)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_EMAIL, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.tellomi_ic_email, getString(R.string.TellomiAttachLoginEmailTitle), getString(R.string.TellomiBindEmailHint)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
@@ -544,11 +548,30 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         } else if (item.id == INFO_PHONE) {
             presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
         } else if (item.id == INFO_EMAIL) {
-            presentFragment(new LoginActivity().changeEmail(() -> {
-                if (listView != null) {
-                    listView.adapter.update(true);
-                }
-            }));
+            TLRPC.User current = getUserConfig().getCurrentUser();
+            int action = TellomiEmailRoles.accountRow(loginEmailLoaded, loginEmailPattern, current == null ? null : current.phone);
+            if (action == TellomiEmailRoles.WAIT) {
+                return;
+            }
+            if (action == TellomiEmailRoles.SHOW_IDENTITY) {
+                String shown = TellomiEmailRoles.display(loginEmailPattern, TellomiAccount.emailOf(currentAccount, current));
+                showDialog(new AlertDialog.Builder(getContext())
+                        .setTitle(getString(R.string.TellomiSignInEmailTitle))
+                        .setMessage(LocaleController.formatString(R.string.TellomiIdentityMaskBody, shown) + "\n\n" + getString(R.string.TellomiSignInEmailNotRecovery))
+                        .setPositiveButton(getString(R.string.TellomiConfirmLoginEmail), (dialog, which) -> presentFragment(new LoginActivity().changeEmail(() -> {
+                            if (listView != null) {
+                                listView.adapter.update(true);
+                            }
+                        })))
+                        .setNegativeButton(getString(R.string.Cancel), null)
+                        .create());
+            } else {
+                presentFragment(new LoginActivity().changeEmail(() -> {
+                    if (listView != null) {
+                        listView.adapter.update(true);
+                    }
+                }));
+            }
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
         } else if (item.id == BUTTON_LOGOUT) {
@@ -586,9 +609,26 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         }
     }
 
+    private String loginEmailPattern;
+    private boolean loginEmailLoaded;
+
+    private void loadLoginEmailPattern() {
+        TL_account.getPassword req = new TL_account.getPassword();
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response instanceof TL_account.Password) {
+                loginEmailPattern = ((TL_account.Password) response).login_email_pattern;
+                loginEmailLoaded = true;
+                if (listView != null) {
+                    listView.adapter.update(true);
+                }
+            }
+        }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        loadLoginEmailPattern();
         channels.invalidate();
         channels.subscribe(() -> {
             if (listView != null) {

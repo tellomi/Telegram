@@ -66,6 +66,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -149,8 +150,83 @@ public class WallpapersListActivity extends BaseFragment implements Notification
     private final static int forward = 3;
     private final static int delete = 4;
 
-    private static final int[][] defaultColorsLight = TellomiWallpaperCatalog.solidPresets(false);
-    private static final int[][] defaultColorsDark = TellomiWallpaperCatalog.solidPresets(true);
+    private static final int[][] defaultColorsLight = new int[][]{
+            new int[]{0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884},
+            new int[]{0xff8dc0eb, 0xffb9d1ea, 0xffc6b1ef, 0xffebd7ef},
+            new int[]{0xff97beeb, 0xffb1e9ea, 0xffc6b1ef, 0xffefb7dc},
+            new int[]{0xff8adbf2, 0xff888dec, 0xffe39fea, 0xff679ced},
+            new int[]{0xffb0cdeb, 0xff9fb0ea, 0xffbbead5, 0xffb2e3dd},
+            new int[]{0xffdaeac8, 0xffa2b4ff, 0xffeccbff, 0xffb9e2ff},
+            new int[]{0xffdceb92, 0xff8fe1d6, 0xff67a3f2, 0xff85d685},
+            new int[]{0xffeaa36e, 0xfff0e486, 0xfff29ebf, 0xffe8c06e},
+            new int[]{0xffffc3b2, 0xffe2c0ff, 0xffffe7b2, 0xfff8cece},
+            new int[]{0xffD3DFEA},
+            new int[]{0xffA5C5DB},
+            new int[]{0xff6F99C8},
+            new int[]{0xffD2E3A9},
+            new int[]{0xffA4D48E},
+            new int[]{0xff7DBB6E},
+            new int[]{0xffE6DDAE},
+            new int[]{0xffD5BE91},
+            new int[]{0xffCBA479},
+            new int[]{0xffEBC0B9},
+            new int[]{0xffE0A79D},
+            new int[]{0xffC97870},
+            new int[]{0xffEBB9C8},
+            new int[]{0xffE09DB7},
+            new int[]{0xffD27593},
+            new int[]{0xffDAC2ED},
+            new int[]{0xffD3A5E7},
+            new int[]{0xffB587D2},
+            new int[]{0xffC2C2ED},
+            new int[]{0xffA5A5E7},
+            new int[]{0xff7F7FD0},
+            new int[]{0xffC2E2ED},
+            new int[]{0xffA5D6E7},
+            new int[]{0xff7FBAD0},
+            new int[]{0xffD6C2B9},
+            new int[]{0xff9C8882},
+            new int[]{0xff000000}
+    };
+
+    private static final int[][] defaultColorsDark = new int[][]{
+            new int[]{0xff1e3557, 0xff151a36, 0xff1c4352, 0xff2a4541},
+            new int[]{0xff1d223f, 0xff1d1832, 0xff1b2943, 0xff141631},
+            new int[]{0xff203439, 0xff102028, 0xff1d3c3a, 0xff172635},
+            new int[]{0xff1c2731, 0xff1a1c25, 0xff27303b, 0xff1b1b21},
+            new int[]{0xff3a1c3a, 0xff24193c, 0xff392e3e, 0xff1a1632},
+            new int[]{0xff2c211b, 0xff44332a, 0xff22191f, 0xff3b2d36},
+            new int[]{0xff1e3557, 0xff182036, 0xff1c4352, 0xff16263a},
+            new int[]{0xff111236, 0xff14424f, 0xff0b2334, 0xff3b315d},
+            new int[]{0xff2d4836, 0xff172b19, 0xff364331, 0xff103231},
+            new int[]{0xff1D2D3C},
+            new int[]{0xff111B26},
+            new int[]{0xff0B141E},
+            new int[]{0xff1F361F},
+            new int[]{0xff131F15},
+            new int[]{0xff0E1710},
+            new int[]{0xff2F2E27},
+            new int[]{0xff2A261F},
+            new int[]{0xff191817},
+            new int[]{0xff432E30},
+            new int[]{0xff2E1C1E},
+            new int[]{0xff1F1314},
+            new int[]{0xff432E3C},
+            new int[]{0xff2E1C28},
+            new int[]{0xff1F131B},
+            new int[]{0xff3C2E43},
+            new int[]{0xff291C2E},
+            new int[]{0xff1D1221},
+            new int[]{0xff312E43},
+            new int[]{0xff1E1C2E},
+            new int[]{0xff141221},
+            new int[]{0xff2F3F3F},
+            new int[]{0xff212D30},
+            new int[]{0xff141E20},
+            new int[]{0xff272524},
+            new int[]{0xff191716},
+            new int[]{0xff000000}
+    };
 
     private static final int[] searchColors = new int[]{
             0xff0076ff,
@@ -225,8 +301,6 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         public boolean isGradient;
         public TLRPC.WallPaper parentWallpaper;
         public Bitmap defaultCache;
-        /** Catalog id when this row is a bundled Tellomi wallpaper. */
-        public String builtinId;
 
         public String getHash() {
             String string = String.valueOf(color) +
@@ -369,25 +443,6 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             }
         }
         return super.onFragmentCreate();
-    }
-
-    private ColorWallpaper toColorWallpaper(TellomiWallpaperCatalog.Wallpaper wallpaper, boolean themeDark) {
-        int[] colors = wallpaper.colorsFor(themeDark);
-        String slug = TellomiWallpaperCatalog.isDefaultId(wallpaper.id, themeDark) ? Theme.DEFAULT_BACKGROUND_SLUG : wallpaper.id;
-        ColorWallpaper colorWallpaper;
-        if (colors.length >= 4) {
-            colorWallpaper = new ColorWallpaper(slug, colors[0], colors[1], colors[2], colors[3]);
-        } else if (colors.length == 3) {
-            colorWallpaper = new ColorWallpaper(slug, colors[0], colors[1], colors[2], colors[2]);
-        } else if (colors.length == 2) {
-            colorWallpaper = new ColorWallpaper(slug, colors[0], colors[1], colors[1], colors[0]);
-        } else {
-            colorWallpaper = new ColorWallpaper(slug, colors[0], 0, 45);
-            colorWallpaper.isGradient = false;
-        }
-        colorWallpaper.intensity = wallpaper.intensity();
-        colorWallpaper.builtinId = wallpaper.id;
-        return colorWallpaper;
     }
 
     public static void fillDefaultColors(ArrayList<Object> wallPapers, boolean isDark) {
@@ -981,17 +1036,8 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         }
                         wallPapers.add(wallPaper);
                     }
-                } else if (wallPaper.settings.background_color != 0) {
-                    ColorWallpaper colorWallpaper;
-                    if (wallPaper.settings.second_background_color != 0 && wallPaper.settings.third_background_color != 0) {
-                        colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.third_background_color, wallPaper.settings.fourth_background_color);
-                    } else {
-                        colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.rotation);
-                    }
-                    colorWallpaper.slug = wallPaper.slug;
-                    colorWallpaper.intensity = wallPaper.settings.intensity / 100.0f;
-                    colorWallpaper.gradientRotation = AndroidUtilities.getWallpaperRotation(wallPaper.settings.rotation, false);
-                    colorWallpaper.parentWallpaper = wallPaper;
+                } else if (includeServerColorWallpaper(wallPaper)) {
+                    ColorWallpaper colorWallpaper = serverColorWallpaper(wallPaper);
                     if (wallPaper.id < 0) {
                         String hash = colorWallpaper.getHash();
                         if (localDict.containsKey(hash)) {
@@ -1003,9 +1049,6 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                         }
                         localWallPapers.add(colorWallpaper);
                         localDict.put(hash, colorWallpaper);
-                    }
-                    if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
-                        continue;
                     }
                     wallPapers.add(colorWallpaper);
                 }
@@ -1032,6 +1075,39 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         }
     }
 
+    private boolean includeServerColorWallpaper(TLRPC.WallPaper wallPaper) {
+        if (wallPaper == null || wallPaper.settings == null) {
+            return false;
+        }
+        return TelegramThemeFlow.showColorWallpaper(
+                wallPaper instanceof TLRPC.TL_wallPaperNoFile,
+                wallPaper.settings.flags,
+                wallPaper.settings.background_color,
+                wallPaper.settings.second_background_color,
+                Theme.isCurrentThemeDark(),
+                wallPaper.settings.intensity
+        );
+    }
+
+    private ColorWallpaper serverColorWallpaper(TLRPC.WallPaper wallPaper) {
+        TLRPC.WallPaperSettings settings = wallPaper.settings;
+        int color = TelegramThemeFlow.opaqueColor(TelegramThemeFlow.backgroundExplicit(settings.flags, settings.background_color), settings.background_color);
+        int second = TelegramThemeFlow.opaqueColor(TelegramThemeFlow.secondExplicit(settings.flags, settings.second_background_color), settings.second_background_color);
+        int third = TelegramThemeFlow.opaqueColor((settings.flags & TelegramThemeFlow.THIRD_BACKGROUND_FLAG) != 0 || settings.third_background_color != 0, settings.third_background_color);
+        int fourth = TelegramThemeFlow.opaqueColor((settings.flags & TelegramThemeFlow.FOURTH_BACKGROUND_FLAG) != 0 || settings.fourth_background_color != 0, settings.fourth_background_color);
+        ColorWallpaper colorWallpaper;
+        if (second != 0 && third != 0) {
+            colorWallpaper = new ColorWallpaper(null, color, second, third, fourth);
+        } else {
+            colorWallpaper = new ColorWallpaper(null, color, second, settings.rotation);
+        }
+        colorWallpaper.slug = wallPaper.slug;
+        colorWallpaper.intensity = settings.intensity / 100.0f;
+        colorWallpaper.gradientRotation = AndroidUtilities.getWallpaperRotation(settings.rotation, false);
+        colorWallpaper.parentWallpaper = wallPaper;
+        return colorWallpaper;
+    }
+
     private void loadWallpapers(boolean force) {
         long acc = 0;
         if (!force) {
@@ -1050,7 +1126,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         TL_account.getWallPapers req = new TL_account.getWallPapers();
         req.hash = acc;
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (response instanceof TL_account.TL_wallPapers) {
+            boolean parsedList = response instanceof TL_account.TL_wallPapers;
+            if (TelegramThemeFlow.keepCurrentWallpaperList(error != null, parsedList)) {
+                // A missing method or a dropped response leaves the color presets on screen.
+            } else if (parsedList) {
                 TL_account.TL_wallPapers res = (TL_account.TL_wallPapers) response;
                 patterns.clear();
                 patternsDict.clear();
@@ -1078,21 +1157,8 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             }
                             wallPapers.add(wallPaper);
                         }
-                    } else if (wallPaper.settings.background_color != 0) {
-                        if (!Theme.isCurrentThemeDark() && wallPaper.settings != null && wallPaper.settings.intensity < 0) {
-                            continue;
-                        }
-                        ColorWallpaper colorWallpaper;
-                        if (wallPaper.settings.second_background_color != 0 && wallPaper.settings.third_background_color != 0) {
-                            colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.third_background_color, wallPaper.settings.fourth_background_color);
-                        } else {
-                            colorWallpaper = new ColorWallpaper(null, wallPaper.settings.background_color, wallPaper.settings.second_background_color, wallPaper.settings.rotation);
-                        }
-                        colorWallpaper.slug = wallPaper.slug;
-                        colorWallpaper.intensity = wallPaper.settings.intensity / 100.0f;
-                        colorWallpaper.gradientRotation = AndroidUtilities.getWallpaperRotation(wallPaper.settings.rotation, false);
-                        colorWallpaper.parentWallpaper = wallPaper;
-                        wallPapers.add(colorWallpaper);
+                    } else if (includeServerColorWallpaper(wallPaper)) {
+                        wallPapers.add(serverColorWallpaper(wallPaper));
                     }
                 }
                 fillWallpapersWithCustom();
@@ -1112,6 +1178,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         if (currentType != TYPE_ALL && currentType != TYPE_CHANNEL_PATTERNS) {
             return;
         }
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         if (addedColorWallpaper != null) {
             wallPapers.remove(addedColorWallpaper);
             addedColorWallpaper = null;
@@ -1120,22 +1187,13 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             wallPapers.remove(addedFileWallpaper);
             addedFileWallpaper = null;
         }
-        if (catsWallpaper != null) {
+        if (catsWallpaper == null) {
+            catsWallpaper = new ColorWallpaper(Theme.DEFAULT_BACKGROUND_SLUG, 0xffdbddbb, 0xff6ba587, 0xffd5d88d, 0xff88b884);
+            catsWallpaper.intensity = 0.34f;
+            //catsWallpaper.slug = "fqv01SQemVIBAAAApND8LDRUhRU";
+        } else {
             wallPapers.remove(catsWallpaper);
-            catsWallpaper = null;
         }
-        for (int i = wallPapers.size() - 1; i >= 0; i--) {
-            Object existing = wallPapers.get(i);
-            if (existing instanceof ColorWallpaper && ((ColorWallpaper) existing).builtinId != null) {
-                wallPapers.remove(i);
-            }
-        }
-        boolean themeDark = Theme.isCurrentThemeDark();
-        ArrayList<ColorWallpaper> tellomiWallpapers = new ArrayList<>();
-        for (TellomiWallpaperCatalog.Wallpaper wallpaper : TellomiWallpaperCatalog.all()) {
-            tellomiWallpapers.add(toColorWallpaper(wallpaper, themeDark));
-        }
-        wallPapers.addAll(0, tellomiWallpapers);
         if (themeWallpaper != null) {
             wallPapers.remove(themeWallpaper);
         }
@@ -1268,9 +1326,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             themeWallpaper = null;
         }
         Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
-        if (TellomiWallpaperCatalog.isBuiltin(selectedBackgroundSlug)) {
-            // The bundled row is already in the list.
-        } else if (TextUtils.isEmpty(selectedBackgroundSlug) || !Theme.DEFAULT_BACKGROUND_SLUG.equals(selectedBackgroundSlug) && object == null) {
+        if (TextUtils.isEmpty(selectedBackgroundSlug) || !Theme.DEFAULT_BACKGROUND_SLUG.equals(selectedBackgroundSlug) && object == null) {
             if (!Theme.COLOR_BACKGROUND_SLUG.equals(selectedBackgroundSlug) && selectedColor != 0) {
                 if (themeInfo.overrideWallpaper != null) {
                     addedColorWallpaper = new ColorWallpaper(selectedBackgroundSlug, selectedColor, selectedGradientColor1, selectedGradientColor2, selectedGradientColor3, selectedGradientRotation, selectedIntensity, selectedBackgroundMotion, new File(ApplicationLoader.getFilesDirFixed(), themeInfo.overrideWallpaper.fileName));
@@ -1299,6 +1355,11 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 addedColorWallpaper = new ColorWallpaper(selectedBackgroundSlug, selectedColor, selectedGradientColor1, selectedGradientRotation);
             }
             wallPapers.add(0, addedColorWallpaper);
+        }
+        if (Theme.DEFAULT_BACKGROUND_SLUG.equals(selectedBackgroundSlug) || wallPapers.isEmpty()) {
+            wallPapers.add(0, catsWallpaper);
+        } else {
+            wallPapers.add(1, catsWallpaper);
         }
         updateRows();
     }

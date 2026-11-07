@@ -67,6 +67,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ActionBar.theme.ThemeKey;
@@ -518,7 +519,16 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
 
                 @Override
                 public void onError(TLRPC.TL_error error) {
-                    Toast.makeText(getContext(), error.text, Toast.LENGTH_SHORT).show();
+                    themesLoading = false;
+                    if (error != null && error.text != null) {
+                        Toast.makeText(getContext(), error.text, Toast.LENGTH_SHORT).show();
+                    }
+                    if (TelegramThemeFlow.showChatThemeList(true)) {
+                        int cached = chatThemeController.getEmojiThemes(ChatThemeController.THEME_LIST_WITH_EMOJI).size();
+                        if (TelegramThemeFlow.visibleChatThemes(cached, 0, true, true) > 0) {
+                            onDataLoaded(chatThemeController.getEmojiThemes(TelegramThemeFlow.chatThemeListFlags()));
+                        }
+                    }
                 }
             }, false);
         } else {
@@ -537,7 +547,11 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
 
                 @Override
                 public void onError(TLRPC.TL_error error) {
-                    Toast.makeText(getContext(), error.text, Toast.LENGTH_SHORT).show();
+                    themesLoading = false;
+                    if (TelegramThemeFlow.loadEmojiThemesAfterGiftFailure()) {
+                        chatThemeController.markGiftThemesFinishedEmpty();
+                        loadNext();
+                    }
                 }
             });
         }

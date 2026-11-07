@@ -124,6 +124,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiApkDownload;
 import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.TellomiReleaseUpdate;
 import org.telegram.messenger.TellomiFeatures;
@@ -6332,6 +6333,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         update.text = manifest.notes == null ? "" : manifest.notes;
         update.can_not_skip = false;
         update.id = manifest.versionCode;
+        TellomiApkDownload.rememberHash(this, manifest.sha256);
         SharedConfig.setNewAppVersionAvailable(update, manifest.versionCode);
         if (ApplicationLoader.applicationLoaderInstance != null) {
             ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, update, account);
@@ -7328,6 +7330,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.can_not_skip) {
             showUpdateActivity(UserConfig.selectedAccount, SharedConfig.pendingAppUpdate, true);
         }
+        TellomiApkDownload.onHostResume(this);
         checkAppUpdate(false, null);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

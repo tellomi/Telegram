@@ -1856,6 +1856,9 @@ public class MessagesController extends BaseController implements NotificationCe
         } else {
             pendingSuggestions = new HashSet<>();
         }
+        if (dropSetupLoginEmailSuggestions()) {
+            mainPreferences.edit().putStringSet("pendingSuggestions", pendingSuggestions).apply();
+        }
         if (dismissedSuggestions != null) {
             dismissedSuggestions = new HashSet<>(dismissedSuggestions);
         } else {
@@ -10972,6 +10975,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         promoDialog = dialogs_dict.get(did);
                         pendingSuggestions = new HashSet<>(res.pending_suggestions);
+                        dropSetupLoginEmailSuggestions();
                         dismissedSuggestions = new HashSet<>(res.dismissed_suggestions);
                         customPendingSuggestion = res.custom_pending_suggestion;
                         getNotificationCenter().postNotificationName(NotificationCenter.newSuggestionsAvailable);
@@ -25276,29 +25280,27 @@ public class MessagesController extends BaseController implements NotificationCe
 
     private boolean emailSuggestionWasShown;
 
+    private boolean dropSetupLoginEmailSuggestions() {
+        if (pendingSuggestions == null) {
+            return false;
+        }
+        boolean removed = false;
+        java.util.Iterator<String> it = pendingSuggestions.iterator();
+        while (it.hasNext()) {
+            if (org.telegram.ui.TellomiEmailRoles.isSetupLoginEmailSuggestion(it.next())) {
+                it.remove();
+                removed = true;
+            }
+        }
+        return removed;
+    }
+
     public boolean hasSetupEmailSuggestion() {
-        return pendingSuggestions.contains("SETUP_LOGIN_EMAIL")
-            || pendingSuggestions.contains("SETUP_LOGIN_EMAIL_NOSKIP");
+        return false;
     }
 
     public int checkEmailSuggestion() {
-        if (emailSuggestionWasShown) {
-            return EMAIL_SUGGESTION_FALSE;
-        }
-
-        if (lastCheckPromoInfoTime + 10 < getConnectionsManager().getCurrentTime()) {
-            return EMAIL_SUGGESTION_FALSE;
-        }
-
-        final boolean needSetupEmail = pendingSuggestions.contains("SETUP_LOGIN_EMAIL");
-        final boolean needSetupEmailNoSkip = pendingSuggestions.contains("SETUP_LOGIN_EMAIL_NOSKIP");
-
-        if (needSetupEmailNoSkip) {
-            return EMAIL_SUGGESTION_TRUE_FORCED;
-        } else if (needSetupEmail) {
-            return EMAIL_SUGGESTION_TRUE;
-        }
-
+        // Head b4a57578 does not offer SETUP_LOGIN_EMAIL. A saved copy must not open the form.
         return EMAIL_SUGGESTION_FALSE;
     }
 

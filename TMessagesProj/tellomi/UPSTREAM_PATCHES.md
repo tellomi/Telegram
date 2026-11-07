@@ -116,7 +116,7 @@ List icons that used Telegram's colored rounded plates are black, white, or gray
 
 ## CI APK
 
-GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these.
+GitHub Actions only. A local `./gradlew :TMessagesProj_App:assembleAfatDebug` does not set these. Ordinary push and pull_request runs compile native code, Java, and resources. They do not install the release keystore or upload an installable APK. Run workflow, a `v*` tag, and `release/android` still package.
 
 | File | Change |
 | --- | --- |
@@ -421,6 +421,8 @@ AI compose: `showAiButton` in the chat field, attach alert, and photo caption, p
 
 ## Default chat wallpaper
 
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The stock chat background is no longer the flat color described here.
+
 The stock chat background is a flat color. Light (Blue, accent 99) is `#F2F2F2`. Dark (Dark Blue, accent 0) is `#000000`. `createDefaultWallpaper()` no longer builds the four-stop green gradient or draws `R.raw.default_pattern`. `createBackgroundDrawable` takes that path for the stock day and night themes before the accent gradient is painted.
 
 A saved wallpaper whose slug is not `d` is left as the user set it. Other built-in accents keep the colors stored on the accent. Their pattern files are Telegram cloud slugs (`account.getMultiWallPapers`); this server does not have them. When that file is missing the client used to paint and cache `R.raw.default_pattern`. It no longer does. The accent gradient stays; the Telegram pattern does not.
@@ -469,6 +471,8 @@ Left for later (`tellomi/icons/remaining.txt`, plus everything outside this phas
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Send glyph is MingCute arrow-up. The disk is `key_chat_messagePanelSend`: black by day, white at night. The arrow is the opposite color. |
 
 ## Monochrome default theme
+
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The built-in palette is Telegram's again.
 
 The default accent (id 99) does not pass through `fillAccentColors`, so the Blue and Dark Blue `.attheme` files and `ThemeColors` defaults are the colors the app actually draws. Day accent is `#111111`. Night accent is white. Outgoing bubbles are `#E0E0E0` on the `#F2F2F2` wallpaper and `#2C2C2E` on black, not Telegram green `#EFFFDE`. Checks, links, switches, checkboxes, the compose FAB, and unread badges follow the same black/white pair. `TELEGRAM_COLOR` is `#111111`. The home accent of Dark Blue and Night no longer paints a blue outgoing gradient. Theme settings lists only Blue and Dark Blue, without the accent swatches. The other built-in theme files are gray too, in case a saved choice still points at them.
 
@@ -710,6 +714,8 @@ The Discover tab stays on the empty screen until `help.getAppConfig` includes `t
 | `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | After the emoji-blocklist hook, `TellomiDiscoverFlags.capture` reads `tellomi_discover_feed_enabled` and `tellomi_discover_feed_base_url` from the same `help.getAppConfig` object. |
 
 ## Chat wallpaper and accent colors
+
+Superseded by "Telegram theme colors, chat themes, and wallpapers" below. The wallpaper screen is no longer the bundled doodle list.
 
 The server `account.getWallPapers` result stays empty. Wallpapers are bundled. The default chat background is a doodle on a gradient (light `#EFE7DD`, dark `#0B141A` to `#16232B`), not a flat color. The wallpaper screen shows those ten built-in backgrounds plus one solid (`#F0F2F5` / `#101418`). Incoming bubbles are `#FFFFFF` / `#202C33`. On a solid wallpaper the bubble draws a 0.5dp shadow and the date chip is a translucent black. Built-in theme accents are the twelve shared hex values, default `#3390EC`. Pattern art is Tabler and Lucide icons plus Pattern Monster dots and Hero Patterns topography. Settings → Open-source licenses names them. Login and the session are untouched.
 
@@ -1020,3 +1026,132 @@ The recommend request reads that switch. On matches the production URL: `GET /v1
 | `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Recommend `Operation.feed` reads the switch and refetches when it changes. |
 | `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | English and Chinese copy. |
 | `TMessagesProj/src/test/java/.../TellomiDiscoverPersonalizationTest.java` | Off sends `personalized=false`. On omits it. |
+
+## Discover likes and public text comments
+
+Likes and text comments use the discover bearer on the content-engine. `PUT` and `DELETE /v1/feed/posts/{id}/like` send an empty body and `surface` (`recommend` by default, also `following`, `hot`, `search`, `profile`). Success is 204. `POST /v1/feed/posts/{id}/comments` sends `text`, optional `parent_id`, and `client_nonce`. It does not send `media_keys` or `operation_id`. `GET` the same path pages public comments, oldest first, 50 at a time. `DELETE /v1/feed/posts/{commentId}` deletes that comment only.
+
+A card reads `me.liked`, `stats.likes`, and `stats.likes_hidden`. A hidden count is not shown as 0. A pending comment is not added to the public count. One like request is in flight. Its confirmed count changes only when that request succeeds. Taps during the flight stay as the desired state. An uncertain failure of the older request sends one idempotent like or unlike for that latest state, then stops. A 403 or 404 does not send again; the button returns to the confirmed count and the error stays on screen. Leaving the list or the post drops a late response. `401 credential_expired` refreshes the discover token once. `404 feed_hidden` hides the feed. Comment errors stay on the post; they are not sent as a private message. Voting, forwarding, and reporting are unchanged. Stories are unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/.../TellomiDiscover.java` | Like, comment list, comment create, and comment delete calls. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverParse.java` | `me.liked`, hidden like counts, comment pages. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverReact.java` | Like serialization and comment page state. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverScreen.java` | Like control on a post row when `reactions` is in capabilities. |
+| `TMessagesProj/tellomi/java/.../TellomiDiscoverPostFragment.java` | Like, comment field, list, and paging when the capabilities allow them. |
+| `TMessagesProj/tellomi/java/.../TellomiPack.java` and discover strings | The like and comment phrases. |
+| `TMessagesProj/src/test/java/.../TellomiDiscoverReactTest.java` | Contract, failure restore, paging, and nonce retry. |
+
+## Settings leaves the bottom bar
+
+The bottom bar no longer includes Settings. Profile stays, and its existing settings button still opens `SettingsActivity`. Discover, Chats, Calls, and Contacts keep their order. Chats is still the pager start. The settings glass tab is hidden and removed from accessibility. `tg://settings` and the profile button still present `SettingsActivity` on the stack. The navigation page no longer lists Settings, and its footer no longer says Settings stays in the bar.
+
+The selected page is not stored. `ViewPagerActivity.clearViews` keeps the current pager index only on that live object. `createView` uses it if the object is still alive, and otherwise calls `getStartPosition`, which is Chats. `MainTabsActivity` does not implement `saveSelfArgs`. There is no old Settings selection to move, so nothing maps that tab onto Profile.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Settings is not in `visible`. The glass tab stays hidden. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | The navigation list omits Settings. A post link still opens Discover. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | The page comment matches the shorter list. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiPack.java` and the navigation footer strings | Chats is the tab that cannot be turned off. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabsTest.java` | Orders, the Chats start path, and the profile settings button. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Footer copy and the shorter row list. |
+| `TMessagesProj/build.gradle` | Unit-test compile can see `com.sun.net.httpserver` for the existing release-update test. Production compile is unchanged. |
+
+## Sign-in email, login-code email, and login ink
+
+Teamgram PR 227 head `b4a57578` (parent `2f791858`) keeps an email-only login identity in `users.email` and leaves `users.phone` NULL. `account.getPassword.login_email_pattern` is a read-only mask of that address (`u***@tellomi.app`), including when there is no cloud password. `has_recovery` and `email_unconfirmed_pattern` stay on the cloud-password record. `emailVerifyPurposeLoginChange` may confirm the same identity. Any other address, including another account's `users.email`, is `EMAIL_NOT_ALLOWED` and does not change `user.id`. A phone account has no identity mask and can still attach a free login email.
+
+Head `b4a57578` does not rewrite a divergent Redis login-email copy and does not mail it. `auth.requestPasswordRecovery` returns `PASSWORD_RECOVERY_NA` for an email-only account with no cloud password. This client calls that RPC only when `has_recovery` is set. `help.getPromoData` drops `SETUP_LOGIN_EMAIL` and `SETUP_LOGIN_EMAIL_NOSKIP`. The client drops those names from the saved set and does not open the attach form from them.
+
+The account page reads that mask. A matching on-device address may be shown, but the mask is never stored or sent as `phone_number`. Until `getPassword` returns, an account with no phone number waits instead of opening an empty bind form. A phone number still opens the attach form. Confirming the original address uses the existing login-change screen with an empty field. A mask or `EMAIL_NOT_ALLOWED` says the identity was not replaced. Success of that screen still does not write the sign-in cache.
+
+Login fields on the forced black or white page set digit, hint, cursor, and selection together. The old night hint `#8E8E93` on field `#2C2C2E`, and the old day hint `#C7C7CC` on `#F3F4F6`, failed a 4.5 contrast check. Square code boxes and the email code field use the same ink. Social icons are tinted with that ink. The drawable files still contain `#111111`; that color is not the dark-mode icon color.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiEmailRoles.java` | Mask versus full address, account-row action, and recovery staying independent. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiContrast.java` | Digit, hint, field, and selection colors, and the contrast check. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiLoginChrome.java` | `applyInput`. Hint colors come from `TellomiContrast`. Social icons are tinted at creation. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiAuthPage.java` | `updateColors` refreshes the email page with the login page. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java` | Drop `SETUP_LOGIN_EMAIL` and `SETUP_LOGIN_EMAIL_NOSKIP` from the saved set. `checkEmailSuggestion` stays off. |
+| `TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java` | The unused suggestion success line no longer says the account email changed. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Remember the shared address. Login-change copy. Do not cache that address as the sign-in email. Code and phone fields use `applyInput`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/CodeFieldContainer.java` | Square boxes apply the same ink when the digit color changes. |
+| `TMessagesProj/src/main/java/org/telegram/ui/UserInfoActivity.java` | A sign-in address opens an explanation. A phone account opens login-code email. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PrivacySettingsActivity.java` | The success line says the login-code email changed and the account did not. |
+| `TMessagesProj/tellomi/res/values/strings.xml` and `values-zh*` | The three email roles, in English and Chinese. |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiThemeAndEmailTest.java` | Contrast pairs, recovery stays unset, and the login-change cache write is gone. |
+
+## Built-in Night theme, checked pairs
+
+`TMessagesProj/src/main/assets/night.attheme` is the Telegram file from `3de37c8cf` again. These pairs are at least 4.5:1: chat-list name on `dialogBackground`, incoming text on `chat_inBubble`, outgoing text on `chat_outBubble`, input text on `chat_messagePanelBackground`, search text on `dialogBackground`, dialog text on `dialogBackground`, action-bar title and icon on `actionBarDefault`, and page text on `windowBackgroundWhite`. `telegram_color_dialogsLogo` is absent, so the chat-list wordmark uses `windowBackgroundWhiteBlackText`, which this file sets to white. `dialogTextGray3` on `dialogBackground` is about 4.05:1. That secondary gray was left as it is.
+
+No custom theme file and no system night animation was opened. Settings icon plates stay the existing dark neutrals with white glyphs. The intro page stays the fixed white page. Those were not recolored.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/testTellomi/java/org/telegram/ui/TellomiNightThemeTest.java` | Reads `night.attheme` and checks the pairs above. |
+
+## Send glyph and the contact paper plane
+
+The chat send button, the photo picker, the attach sheet, share, and the rich editor all draw `R.drawable.send_plane_24` through `ChatActivityEnterView.SendButton`. Pressed, inactive, and the open state reuse that same drawable. Light and dark only change `key_chat_messagePanelSend` and the glyph tint (`SendButtonColors.contrastGlyph`). The appear animation rotates that drawable and then settles. The loading state is an arc. Schedule mode uses `input_schedule`. The voice-record circle uses `attach_send`, which the flavor already draws as an up arrow. `send_outline` stays the dashed ephemeral ring.
+
+`send_plane_24` is now an up arrow with the points written in the path, so a group rotation is not required. `ic_launcher_dr` was still the blue paper plane. Incoming-call UI, notification people, and the contacts account use that name. The flavor file is the existing launcher PNG at each density. `intro_tg_plane` has no runtime reference and was left as it is.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/res/drawable/send_plane_24.xml` | Up arrow, no transform group. |
+| `TMessagesProj/tellomi/res/drawable-*/ic_launcher_dr.png` | Same bytes as `mipmap-*/ic_launcher.png`. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiSendGlyphTest.java` | Arrow bounds, and the contact icon matches the launcher file. |
+
+## Profile tab label
+
+The bottom-bar profile tab shows 我 when the app language is Chinese. The page title and every other language keep their existing strings. The tab still opens the same profile page. Settings stays off the bar.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiProfileNav.java` | Chinese nav label `我`. Other languages return null. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | `profileNavLabel` delegates to that class. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Applies that label and the same accessibility name on the profile tab. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Chinese codes, other languages, and the shorter label on a 320dp bar. |
+
+## Telegram theme colors, chat themes, and wallpapers
+
+The client overrides that replaced Telegram's palette are reverted to `3de37c8cf`. That snapshot is still the upstream baseline (DrKLO "update to 13.1.1"). Built-in themes are Blue, Dark Blue, Arctic Blue, Day, and Night again, with Telegram's accent rows. The default wallpaper is Telegram's pattern, not the bundled doodle. The doodle catalog class remains only so the open-source license page can still name those assets.
+
+`account.getChatThemes` on the Tellomi server returns themes with an emoticon and accent colors and no wallpaper document (`app/bff/accountassets/chatthemes.go`). The preview used to read `themeSettings.wallpaper.settings` and crashed, so those rows could not be drawn. A missing wallpaper now paints the accent. `account.getWallPapers` returns `wallPaperNoFile` solids, including black `#000000` (`wallcatalog.go`). A color of zero used to be treated as "no color" and the black row was dropped. An explicit background flag, including black, stays in the list. `account.getUniqueGiftChatThemes` failing no longer blocks the emoji list. A failed `account.getWallPapers` leaves the local color presets in place.
+
+The baseline chat-theme stub assigned the theme wallpaper and then replaced it with `ColorDrawable(Color.BLACK)`, so the default stub could not be seen. The stub keeps the theme wallpaper.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/assets/*.attheme` | Restored to `3de37c8cf`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/Theme.java`, `ThemeColors.java`, `MessageDrawable.java` | Restored. Tellomi bubble, accent, and doodle wallpaper overrides are gone. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemeActivity.java` | Built-in list and accent row follow `TelegramThemeFlow`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/WallpapersListActivity.java` | Local color presets are Telegram's. A failed wallpaper RPC does not clear them. Black `wallPaperNoFile` stays visible. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/WallpaperCell.java`, `ThemeSmallPreviewView.java` | Default pattern drawing is back. A chat theme with no wallpaper document still draws. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java` | Default-pattern preview is back. The sample link stays `TellomiBrand`. The preview title stays the app name. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java`, `Stories/recorder/PreviewView.java` | Default chat-theme stub uses the theme wallpaper. A missing wallpaper document does not crash the pattern load. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/ChatThemeController.java`, `ChatThemeBottomSheet.java` | A failed gift-theme RPC still loads emoji themes. A failed emoji RPC keeps the cache and shows the default row. |
+| `TMessagesProj/src/main/java/org/telegram/ui/theme/TelegramThemeFlow.java` | List, preview fill, wallpaper merge, and day/night persistence decisions. |
+| `TMessagesProj/src/test/java/org/telegram/ui/theme/TelegramThemeFlowTest.java` | Those decisions, including a missing wallpaper and a failed request. |
+
+## In-app APK download
+
+The website release check already reads `https://www.tellomi.cn/dl/android/latest.json` and `https://dl.tellomi.cn/android/latest.json`. The swipe used to open that APK in the system browser. It now downloads with `DownloadManager` from an allowlisted https host, shows progress, and then opens the system installer. Closing the card cancels a download that is still running. It does not cancel a file that is already waiting on the unknown-sources screen. A second swipe does not enqueue another copy of the same job. After a process restart the saved download id is queried again. The first unknown-sources grant uses the existing settings screen; returning to the app continues with the same file. A document that is already on disk is checked the same way before the installer opens. A bad package, signature, or version deletes that file and the card says why, instead of installing it. The installer is the system one. Nothing installs silently and nothing is uninstalled.
+
+Before that installer opens, the file must be a zip, the package name must be this app's, the signing certificate must equal the certificate of the running install, and `versionCode` must be higher. A sha256 in `latest.json` is checked only as an extra file hash. Two feeds that publish different hashes for the same version are not offered. A hash is never accepted instead of the signature. The website offer stays `can_not_skip = false`. No new force-update rule was added. `help.getAppUpdate` `can_not_skip` is unchanged.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiAppUpdate.java` | An allowlisted APK url is `DOWNLOAD_IN_APP`, not a browser. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiApkUpdate.java` | Download state, zip markers, package, signature, version, and hash disagreement. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiApkDownload.java` | `DownloadManager`, FileProvider, and the system installer. |
+| `TMessagesProj/tellomi/java/org/telegram/messenger/TellomiReleaseUpdate.java` | Optional `sha256`. Conflicting hashes drop the offer. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiSoftUpdateDialog.java` | Progress, retry, and the installer. The card can still be closed. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/BlockingUpdateView.java` | The same in-app download when a forced server update carries an APK url. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java` | Resume continues a finished download or a permission return. Website updates stay skippable. |
+| `TMessagesProj/src/main/res/xml/provider_paths.xml` | `external-files-path` `Download/` for the update APK. |
+| `TMessagesProj/src/test/java/org/telegram/messenger/TellomiApkUpdateTest.java` | State, a real zip, a bad signature, a bad package, and disagreeing hashes. |

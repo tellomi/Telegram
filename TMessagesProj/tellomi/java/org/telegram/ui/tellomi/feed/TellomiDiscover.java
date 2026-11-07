@@ -51,6 +51,15 @@ public final class TellomiDiscover {
         UNAVAILABLE,
         UNAUTHORIZED,
         NOT_FOUND,
+        PROFILE_REQUIRED,
+        INVALID_TEXT,
+        INVALID_NONCE,
+        INVALID_PARENT,
+        COMMENTS_CLOSED,
+        REPLY_NOT_ALLOWED,
+        HARASSMENT_GUARD,
+        NOT_COMMENTABLE,
+        BAD_CURSOR,
         NEARBY_UNAVAILABLE,
         UNREADABLE,
         MEDIA_LIMIT,
@@ -467,7 +476,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Operation {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH, REPORT, REPOST, VOTE, NOTIFICATIONS }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, NEARBY, CARDS, PUBLISH, REPORT, REPOST, VOTE, NOTIFICATIONS, LIKE, UNLIKE, COMMENTS, COMMENT, DELETE_COMMENT }
 
         public final Kind kind;
         public final FeedKind feedKind;
@@ -490,6 +499,8 @@ public final class TellomiDiscover {
         public final TellomiDiscoverLink.Preview linkPreview;
         /** Engine card keys, in pick order. Null omits {@code media}. */
         public final List<String> mediaKeys;
+        /** Like query {@code surface}. Null on every other call. */
+        public final String surface;
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit) {
             this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, null, null, null);
@@ -504,6 +515,10 @@ public final class TellomiDiscover {
         }
 
         private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId, String quoteOf, List<String> pollOptions, int voteIndex, TellomiDiscoverLink.Preview linkPreview, List<String> mediaKeys) {
+            this(kind, feedKind, cursor, personalized, city, ids, text, visibility, audienceToken, clientNonce, textLimit, reportOption, reportDetail, commentId, quoteOf, pollOptions, voteIndex, linkPreview, mediaKeys, null);
+        }
+
+        private Operation(Kind kind, FeedKind feedKind, String cursor, boolean personalized, String city, List<String> ids, String text, Visibility visibility, String audienceToken, String clientNonce, int textLimit, String reportOption, String reportDetail, String commentId, String quoteOf, List<String> pollOptions, int voteIndex, TellomiDiscoverLink.Preview linkPreview, List<String> mediaKeys, String surface) {
             this.kind = kind;
             this.feedKind = feedKind;
             this.cursor = cursor;
@@ -523,6 +538,7 @@ public final class TellomiDiscover {
             this.voteIndex = voteIndex;
             this.linkPreview = linkPreview;
             this.mediaKeys = mediaKeys;
+            this.surface = surface;
         }
 
         public static Operation capabilities() {
@@ -584,6 +600,36 @@ public final class TellomiDiscover {
 
         public static Operation notifications(String cursor) {
             return new Operation(Kind.NOTIFICATIONS, null, cursor, false, null, null, null, null, null, null, 0);
+        }
+
+        public static Operation like(String postId, boolean on, String surface) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(on ? Kind.LIKE : Kind.UNLIKE, null, null, false, null, ids, null, null, null, null, 0, null, null, null, null, null, -1, null, null, surface);
+        }
+
+        public static Operation comments(String postId, String cursor) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(Kind.COMMENTS, null, cursor, false, null, ids, null, null, null, null, 0);
+        }
+
+        /** Text only. {@code parentId} is an approved comment on this post. No media and no operation id. */
+        public static Operation comment(String postId, String text, String parentId, String clientNonce) {
+            List<String> ids = new ArrayList<>();
+            if (postId != null) {
+                ids.add(postId);
+            }
+            return new Operation(Kind.COMMENT, null, null, false, null, ids, text, null, null, clientNonce, TellomiDiscoverReact.COMMENT_TEXT_LIMIT, null, null, parentId);
+        }
+
+        /** Deletes the caller's own comment. This is not a post delete. */
+        public static Operation deleteComment(String commentId) {
+            return new Operation(Kind.DELETE_COMMENT, null, null, false, null, null, null, null, null, null, 0, null, null, commentId);
         }
 
         public static Operation report(String postId, String commentId, String optionId, String detail) {
@@ -763,6 +809,46 @@ public final class TellomiDiscover {
             }
             String notesUrl = url(base, "/v1/feed/me/notifications", query.isEmpty() ? null : query);
             return notesUrl == null ? null : new HttpCall("GET", notesUrl, null, trimmed, true, null);
+        }
+        if (operation.kind == Operation.Kind.LIKE || operation.kind == Operation.Kind.UNLIKE) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : postId(operation.ids.get(0));
+            if (postId == null) {
+                return null;
+            }
+            List<QueryItem> query = new ArrayList<>();
+            query.add(new QueryItem("surface", TellomiDiscoverReact.surface(operation.surface)));
+            String likeUrl = url(base, "/v1/feed/posts/" + postId + "/like", query);
+            String method = operation.kind == Operation.Kind.LIKE ? "PUT" : "DELETE";
+            return likeUrl == null ? null : new HttpCall(method, likeUrl, null, trimmed, true, null);
+        }
+        if (operation.kind == Operation.Kind.COMMENTS) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : postId(operation.ids.get(0));
+            if (postId == null) {
+                return null;
+            }
+            List<QueryItem> query = new ArrayList<>();
+            if (operation.cursor != null && !operation.cursor.isEmpty()) {
+                query.add(new QueryItem("cursor", operation.cursor));
+            }
+            String commentsUrl = url(base, "/v1/feed/posts/" + postId + "/comments", query.isEmpty() ? null : query);
+            return commentsUrl == null ? null : new HttpCall("GET", commentsUrl, null, trimmed, true, null);
+        }
+        if (operation.kind == Operation.Kind.COMMENT) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : postId(operation.ids.get(0));
+            byte[] comment = TellomiDiscoverReact.commentBody(operation.text, operation.commentId, operation.clientNonce);
+            if (postId == null || comment == null) {
+                return null;
+            }
+            String commentUrl = url(base, "/v1/feed/posts/" + postId + "/comments", null);
+            return commentUrl == null ? null : new HttpCall("POST", commentUrl, comment, trimmed, true, "application/json");
+        }
+        if (operation.kind == Operation.Kind.DELETE_COMMENT) {
+            String commentId = postId(operation.commentId);
+            if (commentId == null) {
+                return null;
+            }
+            String deleteUrl = url(base, "/v1/feed/posts/" + commentId, null);
+            return deleteUrl == null ? null : new HttpCall("DELETE", deleteUrl, null, trimmed, true, null);
         }
         byte[] body = publishBody(operation.text, operation.visibility, operation.audienceToken, operation.clientNonce, operation.textLimit, operation.city, operation.quoteOf, operation.pollOptions, operation.linkPreview, operation.mediaKeys);
         if (body == null) {
@@ -1166,6 +1252,10 @@ public final class TellomiDiscover {
         public final int commentCount;
         public final int repostCount;
         public final int imageCount;
+        /** {@code me.liked}. Missing is not liked. */
+        public boolean liked;
+        /** {@code stats.likes_hidden}. A hidden count is not shown as zero. */
+        public boolean likesHidden;
         /** Image rows from {@code card.media}. Empty when the card has no usable key. */
         public List<Image> images = Collections.emptyList();
         public final String quoteState;
@@ -1240,6 +1330,8 @@ public final class TellomiDiscover {
         public final int commentCount;
         public final int repostCount;
         public final int imageCount;
+        public boolean liked;
+        public boolean likesHidden;
         /** Image rows from {@code card.media}. Empty when the card has no usable key. */
         public List<Image> images = Collections.emptyList();
         public final String quoteState;
@@ -1275,10 +1367,55 @@ public final class TellomiDiscover {
     public static final class Comment {
         public final String id;
         public final String text;
+        /** Null on a comment embedded in an older card. {@code ok} is public. */
+        public final String state;
+        public final String authorName;
+        public final String postId;
+        public final String rootId;
+        public final String parentId;
+        /** {@code me.author}. A comment this client just sent is also its own. */
+        public final boolean own;
 
         public Comment(String id, String text) {
+            this(id, text, null, null, null, null, null, false);
+        }
+
+        public Comment(String id, String text, String state, String authorName, String postId, String rootId, String parentId, boolean own) {
             this.id = id;
             this.text = text;
+            this.state = state;
+            this.authorName = authorName;
+            this.postId = postId;
+            this.rootId = rootId;
+            this.parentId = parentId;
+            this.own = own;
+        }
+    }
+
+    /** {@code 201} or idempotent {@code 200} from {@code POST /v1/feed/posts/{id}/comments}. */
+    public static final class CommentCreated {
+        public final String id;
+        public final String state;
+        public final int version;
+        /** Absent when the retry body omits {@code held}. */
+        public final Boolean held;
+
+        public CommentCreated(String id, String state, int version, Boolean held) {
+            this.id = id;
+            this.state = state;
+            this.version = version;
+            this.held = held;
+        }
+    }
+
+    public static final class CommentPage {
+        public final List<Comment> comments;
+        /** Opaque. Null when the engine omits it. */
+        public final String cursor;
+
+        public CommentPage(List<Comment> comments, String cursor) {
+            this.comments = comments;
+            this.cursor = cursor;
         }
     }
 
@@ -1374,7 +1511,7 @@ public final class TellomiDiscover {
     }
 
     public static final class Decoded {
-        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED, DONE, NOTICES, VOTED }
+        public enum Kind { CAPABILITIES, STATUS, ENGINE_CONFIG, FEED, CARDS, CREATED, REPORTED, DONE, NOTICES, VOTED, COMMENT_PAGE, COMMENT_CREATED }
 
         public final Kind kind;
         public final Capabilities capabilities;
@@ -1385,6 +1522,8 @@ public final class TellomiDiscover {
         public final CreatedPost created;
         public NoticePage notices;
         public VoteTally vote;
+        public CommentPage commentPage;
+        public CommentCreated commentCreated;
 
         private Decoded(Kind kind, Capabilities capabilities, boolean status, EngineConfig engineConfig, FeedPage feed, List<Card> cards, CreatedPost created) {
             this.kind = kind;
@@ -1437,6 +1576,18 @@ public final class TellomiDiscover {
         static Decoded voted(VoteTally tally) {
             Decoded decoded = new Decoded(Kind.VOTED, null, false, null, null, null, null);
             decoded.vote = tally;
+            return decoded;
+        }
+
+        static Decoded commentPage(CommentPage page) {
+            Decoded decoded = new Decoded(Kind.COMMENT_PAGE, null, false, null, null, null, null);
+            decoded.commentPage = page;
+            return decoded;
+        }
+
+        static Decoded commentCreated(CommentCreated created) {
+            Decoded decoded = new Decoded(Kind.COMMENT_CREATED, null, false, null, null, null, null);
+            decoded.commentCreated = created;
             return decoded;
         }
     }
@@ -1581,12 +1732,12 @@ public final class TellomiDiscover {
                         completion.onResult(Outcome.failure(result == null || result.error == null ? ClientError.UNAVAILABLE : result.error));
                         return;
                     }
-                    if (needsCredential(operation) && (result.status == 401 || result.status == 403)) {
-                        credential = null;
+                    if (needsCredential(operation) && TellomiDiscoverReact.refetchCredential(result)) {
                         if (!retryUnauthorized) {
                             completion.onResult(Outcome.failure(ClientError.UNAUTHORIZED));
                             return;
                         }
+                        credential = null;
                         issue(ticket, new Configuration(true, baseUrl), operation, false, completion);
                         return;
                     }
@@ -1627,6 +1778,20 @@ public final class TellomiDiscover {
         if (operation.kind == Operation.Kind.NOTIFICATIONS) {
             return null;
         }
+        if (operation.kind == Operation.Kind.LIKE || operation.kind == Operation.Kind.UNLIKE || operation.kind == Operation.Kind.COMMENTS) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            return postId(postId) == null ? ClientError.NOT_FOUND : null;
+        }
+        if (operation.kind == Operation.Kind.COMMENT) {
+            String postId = operation.ids == null || operation.ids.isEmpty() ? null : operation.ids.get(0);
+            if (postId(postId) == null) {
+                return ClientError.NOT_FOUND;
+            }
+            return TellomiDiscoverReact.commentError(operation.text, operation.commentId, operation.clientNonce);
+        }
+        if (operation.kind == Operation.Kind.DELETE_COMMENT) {
+            return postId(operation.commentId) == null ? ClientError.NOT_FOUND : null;
+        }
         if (operation.city != null && !trim(operation.city).isEmpty() && TellomiDiscoverCity.knownCode(operation.city) == null) {
             return ClientError.INVALID_CITY;
         }
@@ -1637,6 +1802,10 @@ public final class TellomiDiscover {
     }
 
     public static Outcome decodeHttp(Operation operation, HttpResult result) {
+        Outcome reaction = TellomiDiscoverReact.decode(operation, result);
+        if (reaction != null) {
+            return reaction;
+        }
         if (result.status == 404 && "feed_hidden".equals(TellomiDiscoverParse.errorCode(result.body))) {
             return Outcome.failure(ClientError.HIDDEN);
         }
@@ -1894,6 +2063,35 @@ public final class TellomiDiscover {
         }
     }
 
+    public static Post withLike(Post post, boolean liked, int likeCount, boolean likesHidden) {
+        Post next = new Post(
+            post.id,
+            post.text,
+            post.authorName,
+            post.authorHandle,
+            post.tellomiNumber,
+            post.unavailable,
+            post.aiGenerated,
+            post.badge,
+            likeCount,
+            post.commentCount,
+            post.repostCount,
+            post.imageCount,
+            post.quoteState,
+            post.quoteText,
+            post.ipRegionLabel,
+            post.city
+        );
+        next.liked = liked;
+        next.likesHidden = likesHidden;
+        next.images = post.images;
+        next.comments = post.comments;
+        next.shareable = post.shareable;
+        next.poll = post.poll;
+        next.linkPreview = post.linkPreview;
+        return next;
+    }
+
     public static PostSummary postSummary(Post post, Copy copy, boolean list) {
         String title = post.authorName == null ? "" : post.authorName;
         if (post.authorHandle != null && !post.authorHandle.isEmpty()) {
@@ -1953,7 +2151,7 @@ public final class TellomiDiscover {
         if (post.ipRegionLabel != null && !post.ipRegionLabel.isEmpty()) {
             meta.add(post.ipRegionLabel);
         }
-        if (post.likeCount > 0) {
+        if (!post.likesHidden && post.likeCount > 0) {
             meta.add(formatCount(copy.likes, post.likeCount));
         }
         if (post.commentCount > 0) {

@@ -1,7 +1,5 @@
 package org.telegram.messenger;
 
-import java.util.Locale;
-
 /**
  * Gates for the shipped App module's update check.
  * That module reads the release feeds in {@link TellomiReleaseUpdate}.
@@ -13,10 +11,12 @@ import java.util.Locale;
 public final class TellomiAppUpdate {
 
     public static final int NONE = 0;
-    /** Open {@code help.appUpdate#url} in the browser. */
+    /** Open a non-APK {@code help.appUpdate#url} in the browser. */
     public static final int OPEN_URL = 1;
     /** Install {@code help.appUpdate#document} when no url is set. */
     public static final int INSTALL_APK = 2;
+    /** Download an allowlisted https APK inside the app, then open the system installer. */
+    public static final int DOWNLOAD_IN_APP = 3;
 
     private TellomiAppUpdate() {
     }
@@ -83,11 +83,16 @@ public final class TellomiAppUpdate {
     }
 
     /**
-     * A non-empty url wins, including when a document is also present.
-     * A document alone installs. Neither opens a store listing.
+     * An allowlisted https APK is downloaded in the app. Any other non-empty
+     * url still opens in the browser. A document with no url installs that
+     * file. Neither path opens a store listing.
      */
     public static int primaryAction(String url, boolean hasDocument) {
-        if (url != null && url.trim().length() > 0) {
+        String trimmed = url == null ? "" : url.trim();
+        if (TellomiReleaseUpdate.acceptableApkUrl(trimmed) != null) {
+            return DOWNLOAD_IN_APP;
+        }
+        if (trimmed.length() > 0) {
             return OPEN_URL;
         }
         if (hasDocument) {
@@ -96,20 +101,11 @@ public final class TellomiAppUpdate {
         return NONE;
     }
 
-    /** A direct APK link is handed to the system browser so it can download and install. */
+    /**
+     * The website APK is no longer handed to the system browser.
+     * {@link #primaryAction} returns {@link #DOWNLOAD_IN_APP} for that link.
+     */
     public static boolean preferSystemBrowser(String url) {
-        if (url == null) {
-            return false;
-        }
-        String path = url.trim().toLowerCase(Locale.US);
-        int query = path.indexOf('?');
-        if (query >= 0) {
-            path = path.substring(0, query);
-        }
-        int fragment = path.indexOf('#');
-        if (fragment >= 0) {
-            path = path.substring(0, fragment);
-        }
-        return path.endsWith(".apk");
+        return false;
     }
 }

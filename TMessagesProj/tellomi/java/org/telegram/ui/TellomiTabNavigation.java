@@ -54,7 +54,7 @@ public final class TellomiTabNavigation {
         }
     }
 
-    /** Settings → Navigation Bar, after Language. Chats and Settings stay on. */
+    /** Settings → Navigation Bar, after Language. Chats stays on. Settings is not a tab. */
     public enum Row {
         FEED(1, true),
         CHATS(2, false),
@@ -72,7 +72,7 @@ public final class TellomiTabNavigation {
     }
 
     public static final List<Row> ROWS = Collections.unmodifiableList(Arrays.asList(
-        Row.FEED, Row.CHATS, Row.CALLS, Row.CONTACTS, Row.SETTINGS
+        Row.FEED, Row.CHATS, Row.CALLS, Row.CONTACTS
     ));
 
     /**
@@ -140,7 +140,16 @@ public final class TellomiTabNavigation {
         return current == null ? TellomiTabs.Tab.CHATS : current;
     }
 
-    /** Long-press hide. Chats, Settings, and Profile are unchanged (D-7, D-38). */
+    /**
+     * Bottom-bar label for the profile tab. Chinese shows 我.
+     * Any other language returns null so the stock tab string stays.
+     * This is not the profile page title.
+     */
+    public static String profileNavLabel(String languageCode) {
+        return TellomiProfileNav.label(languageCode);
+    }
+
+    /** Long-press hide. Chats, the removed Settings tab, and Profile are unchanged. */
     public static TellomiTabs.Visibility hide(TellomiTabs.Visibility current, TellomiTabs.Tab tab) {
         if (tab == TellomiTabs.Tab.FEED) {
             return apply(current, Row.FEED, false);

@@ -24,7 +24,6 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.TellomiWallpaperCatalog;
 import org.telegram.ui.Components.blur3.utils.NinePatchBuilder;
 
 import java.nio.ByteBuffer;
@@ -99,7 +98,6 @@ public class MessageDrawable extends Drawable {
     public float crossfadeProgress;
     public boolean isCrossfadeBackground;
     public boolean lastDrawWithShadow;
-    private boolean lastSolidShadow;
     private Bitmap crosfadeFromBitmap;
     private Shader crosfadeFromBitmapShader;
 
@@ -366,11 +364,9 @@ public class MessageDrawable extends Drawable {
         }
 
         boolean drawWithShadow = shadow && gradientShader == null && !isSelected && !isCrossfadeBackground;
-        boolean solidShadow = drawWithShadow && Theme.tellomiSolidBubbleShadow();
         int shadowColor = getColor(isOut ? Theme.key_chat_outBubbleShadow : Theme.key_chat_inBubbleShadow);
-        if (lastDrawWithShadow != drawWithShadow || lastSolidShadow != solidShadow || currentBackgroundDrawableRadius[idx2][idx] != newRad || (drawWithShadow && shadowDrawableColor[idx] != shadowColor) || backgroundDrawableColor[idx2][idx] != color) {
+        if (lastDrawWithShadow != drawWithShadow || currentBackgroundDrawableRadius[idx2][idx] != newRad || (drawWithShadow && shadowDrawableColor[idx] != shadowColor) || backgroundDrawableColor[idx2][idx] != color) {
             currentBackgroundDrawableRadius[idx2][idx] = newRad;
-            lastSolidShadow = solidShadow;
             try {
                 Bitmap bitmap = Bitmap.createBitmap(dp(50), dp(40), Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(bitmap);
@@ -386,18 +382,11 @@ public class MessageDrawable extends Drawable {
                     shadowPaint.setShader(gradientShader);
                     shadowPaint.setColorFilter(new PorterDuffColorFilter(shadowColor, PorterDuff.Mode.MULTIPLY));
 
-                    if (solidShadow) {
-                        shadowPaint.setColorFilter(null);
-                        shadowPaint.setShadowLayer(AndroidUtilities.dpf2(TellomiWallpaperCatalog.SOLID_BUBBLE_SHADOW_DP), 0, AndroidUtilities.dpf2(TellomiWallpaperCatalog.SOLID_BUBBLE_SHADOW_DP), TellomiWallpaperCatalog.SOLID_BUBBLE_SHADOW_COLOR);
-                        int inset = AndroidUtilities.dp(1);
-                        setBounds(-inset, -inset, bitmap.getWidth() + inset, bitmap.getHeight() + inset);
+                    shadowPaint.setShadowLayer(2, 0, 1, 0xffffffff);
+                    if (AndroidUtilities.density > 1) {
+                        setBounds(-1, -1, bitmap.getWidth() + 1, bitmap.getHeight() + 1);
                     } else {
-                        shadowPaint.setShadowLayer(2, 0, 1, 0xffffffff);
-                        if (AndroidUtilities.density > 1) {
-                            setBounds(-1, -1, bitmap.getWidth() + 1, bitmap.getHeight() + 1);
-                        } else {
-                            setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                        }
+                        setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
                     }
                     draw(canvas, shadowPaint);
 
