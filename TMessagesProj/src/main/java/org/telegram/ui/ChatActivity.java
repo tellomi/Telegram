@@ -39952,6 +39952,14 @@ public class ChatActivity extends BaseFragment implements
         }
 
         @Override
+        public void didPressTellomiTranslate(ChatMessageCell cell) {
+            if (cell == null || cell.getMessageObject() == null) {
+                return;
+            }
+            getMessagesController().getTranslateController().translateSingle(cell.getMessageObject());
+        }
+
+        @Override
         public void didPressSummarize(ChatMessageCell cell, boolean byReply) {
             final MessageObject msg = cell.getMessageObject();
             msg.messageOwner.summarizedOpen = !msg.messageOwner.summarizedOpen;
