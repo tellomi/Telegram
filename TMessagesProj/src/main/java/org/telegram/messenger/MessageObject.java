@@ -3673,6 +3673,8 @@ public class MessageObject {
     }
 
     public boolean translated = false;
+    /** This bubble is showing Chinese from the side control, not from whole-chat translation. */
+    public boolean sideTranslateOpen = false;
     public boolean summarized = false;
     public boolean updateTranslation(boolean force) {
         boolean replyUpdated = replyMessageObject != null && replyMessageObject != this && replyMessageObject.updateTranslation(force);
@@ -3732,6 +3734,15 @@ public class MessageObject {
                 generateCaption();
             }
             return replyUpdated || true;
+        } else if (sideTranslateOpen && translatedText != null && !TextUtils.isEmpty(translatedText.text)) {
+            summarized = false;
+            if (!translated) {
+                translated = true;
+                applyNewText(translatedText.text);
+                generateCaption();
+                return replyUpdated || true;
+            }
+            return replyUpdated || false;
         } else if (messageOwner != null && (force || translated || summarized)) {
             translated = false;
             summarized = false;
