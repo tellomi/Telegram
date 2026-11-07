@@ -42,6 +42,34 @@ public class TellomiTabNavigationTest {
     }
 
     @Test
+    public void chineseProfileTabSaysMeAndOtherLanguagesStay() {
+        assertEquals("我", TellomiProfileNav.label("zh"));
+        assertEquals("我", TellomiProfileNav.label("zh-Hans"));
+        assertEquals("我", TellomiProfileNav.label("zh-CN"));
+        assertEquals("我", TellomiProfileNav.label("zh_SG"));
+        assertEquals("我", TellomiProfileNav.label("zh-Hant"));
+        assertEquals("我", TellomiProfileNav.label("zh-TW"));
+        assertEquals("我", TellomiProfileNav.label("zh-HK"));
+        assertNull(TellomiProfileNav.label("en"));
+        assertNull(TellomiProfileNav.label("en-US"));
+        assertNull(TellomiProfileNav.label("ja"));
+        assertNull(TellomiProfileNav.label("de"));
+        assertNull(TellomiProfileNav.label(null));
+        assertNull(TellomiProfileNav.label(""));
+        assertEquals(TellomiProfileNav.label("zh-CN"), TellomiTabNavigation.profileNavLabel("zh-CN"));
+    }
+
+    @Test
+    public void meLabelFitsTheExistingBarAt12And10AndWhenEnlarged() {
+        int[] zh12 = {27, 27, 27, 40, 14};
+        int[] zh10 = {23, 23, 23, 33, 12};
+        int[] enlarged = {27, 27, 27, 40, 23};
+        assertTrue(TellomiTabs.labelsFit(360, 5, zh12, zh10));
+        assertTrue(TellomiTabs.labelsFit(320, 5, enlarged, zh10));
+        assertTrue(TellomiTabs.labelsFit(360, 3, new int[]{27, 27, 14}, new int[]{23, 23, 12}));
+    }
+
+    @Test
     public void navigationRowsLeaveChatsAndSettingsOn() {
         assertEquals(Arrays.asList(
             TellomiTabNavigation.Row.FEED,

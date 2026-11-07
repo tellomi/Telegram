@@ -1106,6 +1106,17 @@ The chat send button, the photo picker, the attach sheet, share, and the rich ed
 | `TMessagesProj/tellomi/res/drawable-*/ic_launcher_dr.png` | Same bytes as `mipmap-*/ic_launcher.png`. |
 | `TMessagesProj/src/test/java/org/telegram/ui/TellomiSendGlyphTest.java` | Arrow bounds, and the contact icon matches the launcher file. |
 
+## Profile tab label
+
+The bottom-bar profile tab shows 我 when the app language is Chinese. The page title and every other language keep their existing strings. The tab still opens the same profile page. Settings stays off the bar.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiProfileNav.java` | Chinese nav label `我`. Other languages return null. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabNavigation.java` | `profileNavLabel` delegates to that class. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Applies that label and the same accessibility name on the profile tab. |
+| `TMessagesProj/src/test/java/org/telegram/ui/TellomiTabNavigationTest.java` | Chinese codes, other languages, and the shorter label on a 320dp bar. |
+
 ## Telegram theme colors, chat themes, and wallpapers
 
 The client overrides that replaced Telegram's palette are reverted to `3de37c8cf`. That snapshot is still the upstream baseline (DrKLO "update to 13.1.1"). Built-in themes are Blue, Dark Blue, Arctic Blue, Day, and Night again, with Telegram's accent rows. The default wallpaper is Telegram's pattern, not the bundled doodle. The doodle catalog class remains only so the open-source license page can still name those assets.

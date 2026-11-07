@@ -140,6 +140,15 @@ public final class TellomiTabNavigation {
         return current == null ? TellomiTabs.Tab.CHATS : current;
     }
 
+    /**
+     * Bottom-bar label for the profile tab. Chinese shows 我.
+     * Any other language returns null so the stock tab string stays.
+     * This is not the profile page title.
+     */
+    public static String profileNavLabel(String languageCode) {
+        return TellomiProfileNav.label(languageCode);
+    }
+
     /** Long-press hide. Chats, the removed Settings tab, and Profile are unchanged. */
     public static TellomiTabs.Visibility hide(TellomiTabs.Visibility current, TellomiTabs.Tab tab) {
         if (tab == TellomiTabs.Tab.FEED) {

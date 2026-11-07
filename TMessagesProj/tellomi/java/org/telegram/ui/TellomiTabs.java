@@ -345,6 +345,7 @@ public final class TellomiTabs {
         activity.tabsView.setPadding(side, vertical, side, vertical);
         if (activity.tabs.length > VISUAL_PROFILE && activity.tabs[VISUAL_PROFILE] != null) {
             activity.tabs[VISUAL_PROFILE].setLabelHorizontalPadding(AndroidUtilities.dp(count >= 5 ? 0 : 8));
+            applyProfileNavLabel(activity.tabs[VISUAL_PROFILE]);
         }
         setPriority(activity, VISUAL_FEED, 0);
         setPriority(activity, VISUAL_CHATS, 1);
@@ -364,6 +365,23 @@ public final class TellomiTabs {
         }
         show(activity, VISUAL_PROFILE, true, animated);
         activity.tabsView.requestLayout();
+    }
+
+    private static void applyProfileNavLabel(GlassTabView profile) {
+        String code = "";
+        try {
+            LocaleController.LocaleInfo info = LocaleController.getInstance().getCurrentLocaleInfo();
+            if (info != null && info.shortName != null) {
+                code = info.shortName;
+            }
+        } catch (Throwable ignored) {
+        }
+        String label = TellomiTabNavigation.profileNavLabel(code);
+        if (label == null) {
+            return;
+        }
+        profile.setText(label);
+        profile.setContentDescription(label);
     }
 
     private static void setPriority(MainTabsActivity activity, int visualIndex, int priority) {
