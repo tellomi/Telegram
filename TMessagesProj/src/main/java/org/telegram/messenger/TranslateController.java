@@ -1022,6 +1022,75 @@ public class TranslateController extends BaseController {
         int reqId = -1;
     }
 
+    /** One incoming message, from the control on the right of the bubble. */
+    public void translateSingle(MessageObject message) {
+        if (message == null || message.messageOwner == null || !getMessagesController().isTranslationsManualEnabled()) {
+            return;
+        }
+        if (message.sideTranslateOpen) {
+            message.sideTranslateOpen = false;
+            message.updateTranslation(true);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
+            return;
+        }
+        if (message.messageOwner.translatedText != null && !TextUtils.isEmpty(message.messageOwner.translatedText.text)) {
+            message.sideTranslateOpen = true;
+            message.updateTranslation(false);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
+            return;
+        }
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, message);
+        pushToTranslate(message, TellomiTranslate.TO_LANG, (isTranscription, id, text, lang) -> {
+            if (message.getId() != id) {
+                return;
+            }
+            if (text == null || TextUtils.isEmpty(text.text)) {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, message);
+                return;
+            }
+            message.messageOwner.translatedToLanguage = lang;
+            if (isTranscription) {
+                message.messageOwner.translatedVoiceTranscription = text;
+            } else {
+                message.messageOwner.translatedText = text;
+            }
+            message.sideTranslateOpen = true;
+            message.updateTranslation(false);
+            getMessagesStorage().updateMessageCustomParams(message.getDialogId(), message.messageOwner);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
+        });
+    }
+
+    /** Detect the language so the side control can appear on English messages. */
+    public void noteLanguage(MessageObject messageObject) {
+        if (!getMessagesController().isTranslationsManualEnabled() || !LanguageDetector.hasSupport()) {
+            return;
+        }
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.originalLanguage != null) {
+            return;
+        }
+        final String detectText = getDetectLanguageText(messageObject);
+        if (TextUtils.isEmpty(detectText)) {
+            return;
+        }
+        final int hash = hash(messageObject);
+        if (pendingLanguageChecks.contains(hash)) {
+            return;
+        }
+        pendingLanguageChecks.add(hash);
+        final long dialogId = messageObject.getDialogId();
+        Utilities.stageQueue.postRunnable(() -> LanguageDetector.detectLanguage(detectText, lng -> AndroidUtilities.runOnUIThread(() -> {
+            messageObject.messageOwner.originalLanguage = lng == null ? UNKNOWN_LANGUAGE : lng;
+            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
+            pendingLanguageChecks.remove((Integer) hash);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, messageObject);
+        }), err -> AndroidUtilities.runOnUIThread(() -> {
+            messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
+            pendingLanguageChecks.remove((Integer) hash);
+        })));
+    }
+
     private void pushToTranslate(
         MessageObject message,
         String language,

@@ -1229,3 +1229,14 @@ Settings → Navigation Bar can hide the words under the icons. Discover, Chats,
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `setLabelShown` hides the word and keeps the icon and the content description. |
+
+## Side translate control
+
+Incoming English messages can show a 32dp control in the margin to the right of the bubble. The bubble width is not changed. If that margin is already full, the control is not drawn and the long-press Translate row stays. The control is hidden unless `tellomi_translate_enabled` and `translations_manual_enabled` are both exactly on. Other languages are not offered. A second tap restores the original text. The request is the same `messages.translateText` path with `zh-hans`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java` | Draws and hits the control outside the bubble. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The tap calls `TranslateController.translateSingle`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java` | One-message translate and language detection for the control. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java` | A side-open flag keeps that one bubble in Chinese without turning on the whole chat. |
