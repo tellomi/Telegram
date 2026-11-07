@@ -57,7 +57,7 @@ public final class TellomiApkUpdate {
     /** A second tap on the same download does not start another one. */
     public static Session startDownload(Session current, String url, int versionCode) {
         String accepted = TellomiReleaseUpdate.acceptableApkUrl(url);
-        if (accepted == null || versionCode <= 0) {
+        if (accepted == null) {
             return failed(current, HOST_REJECTED);
         }
         if (current != null && current.state == DOWNLOADING && accepted.equals(current.url) && current.downloadId >= 0) {
@@ -106,6 +106,11 @@ public final class TellomiApkUpdate {
             return session;
         }
         return new Session(READY, session.url, session.versionCode, session.downloadId, session.localPath, OK, false, false);
+    }
+
+    /** Closing the card cancels an in-progress download. A permission round-trip is kept. */
+    public static boolean shouldCancelOnDismiss(Session session) {
+        return session != null && session.state == DOWNLOADING && !session.awaitingPermission;
     }
 
     public static boolean shouldOpenInstaller(Session session, boolean permissionGranted) {

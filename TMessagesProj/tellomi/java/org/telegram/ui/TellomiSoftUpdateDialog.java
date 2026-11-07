@@ -220,6 +220,14 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
                 dismiss();
                 return;
             }
+            if (TellomiApkInstall.lastCheck != TellomiApkUpdate.OK) {
+                slider.reset();
+                slider.setLabels(
+                        LocaleController.getString(messageRes(TellomiApkInstall.lastCheck)),
+                        LocaleController.getString(R.string.TellomiSoftUpdateGo)
+                );
+                return;
+            }
             fileName = FileLoader.getAttachFileName(update.document);
             downloading = true;
             watchFile();
@@ -362,6 +370,7 @@ public class TellomiSoftUpdateDialog extends Dialog implements NotificationCente
             apkPoll = null;
         }
         downloading = false;
+        TellomiApkDownload.cancel(getContext());
         if (update != null && update.document != null && fileName != null) {
             downloading = false;
             FileLoader.getInstance(account).cancelLoadFile(update.document);

@@ -320,7 +320,36 @@ public final class TellomiApkDownload {
         return new File(dir, fileName(versionCode));
     }
 
+    public static void cancel(Context context) {
+        if (context == null) {
+            return;
+        }
+        TellomiApkUpdate.Session session = load(context);
+        if (!TellomiApkUpdate.shouldCancelOnDismiss(session)) {
+            return;
+        }
+        DownloadManager manager = manager(context);
+        if (manager != null && session.downloadId >= 0) {
+            try {
+                manager.remove(session.downloadId);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        if (session.localPath != null) {
+            new File(session.localPath).delete();
+        }
+        File named = localFile(context, session.versionCode);
+        if (named.isFile()) {
+            named.delete();
+        }
+        save(context, TellomiApkUpdate.idle());
+    }
+
     private static String fileName(int versionCode) {
+        if (versionCode <= 0) {
+            return "Tellomi-update.apk";
+        }
         return "Tellomi-" + versionCode + ".apk";
     }
 
