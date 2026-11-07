@@ -90,6 +90,12 @@ public final class TellomiLoginErrors {
         if (seconds == null || seconds <= 0) {
             return chinese ? "验证码发送过于频繁，请稍后再试" : "Too many codes were requested. Please try again later.";
         }
+        // FLOOD_WAIT is the short resend lock, usually 60 seconds. It is not the daily cap.
+        if (seconds < 120) {
+            return chinese
+                    ? "发送太频繁，请 " + seconds + " 秒后再试"
+                    : "Please wait " + seconds + " seconds before requesting another code.";
+        }
         if (seconds >= 3600) {
             int hours = Math.max(1, (seconds + 3599) / 3600);
             return chinese

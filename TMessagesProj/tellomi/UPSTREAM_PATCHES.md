@@ -1183,11 +1183,11 @@ Login titles, hints, the empty agreement circle, OTP squares, and the primary bu
 
 The login language icon opens `TellomiLanguageSelectActivity`. English and Chinese are full local bins. `langpack.getLanguages` used to mark English `pathToFile=remote`, so `applyLanguage` waited for `langpack.getLangPack` and the open page never redrew when that request did not return. Those two packs now drop the remote placeholder and apply the bundled bin immediately. `langpack.getLangPack`, `getLanguages`, `getStrings`, and `getDifference` stay `RequestFlagWithoutLogin`. The welcome page uses the same icon.
 
-Login country rows are limited to `TellomiCallingCodes.ALLOWED` (currently `86`). Other codes stay out of the list. Pasting `+1…` or another known code shows a dialog and does not change `+86`. `PHONE_CODE_FLOOD`, `PHONE_NUMBER_FLOOD`, and `FLOOD_WAIT_X` show a Chinese or English sentence. A daily flood blocks further `auth.resendCode` on that page instead of sending again.
+Login country rows are limited to `TellomiCallingCodes.ALLOWED` (currently `86`). Other codes stay out of the list. Pasting `+1…` or another known code shows a dialog and does not change `+86`. `PHONE_NUMBER_FLOOD` and `PHONE_CODE_FLOOD` say the daily limit of 10 is used. `FLOOD_WAIT_60` says to wait 60 seconds and does not use that daily sentence. A daily flood blocks further `auth.resendCode` on that page. A failed `langpack.getLangPack` or `getDifference` still finishes the apply, so the page redraws from the local bin.
 
 | File | Change |
 | --- | --- |
-| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Drop the remote placeholder for English and Chinese before applying. Do not overwrite those built-in rows from `getLanguages`. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Drop the remote placeholder for English and Chinese before applying. Do not overwrite those built-in rows from `getLanguages`. A failed langpack request still finishes the apply. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Calling-code filter, paste warning, flood alert, resend stop. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Language icon on the welcome page. |
 

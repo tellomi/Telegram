@@ -38,6 +38,13 @@ public class TellomiLoginLimitsTest {
         assertTrue(daily.contains("明天"));
         assertEquals(30, TellomiLoginErrors.floodWaitSeconds("FLOOD_WAIT_30").intValue());
         assertEquals(120, TellomiLoginErrors.floodWaitSeconds("FLOOD_WAIT_120").intValue());
+        String shortWait = TellomiLoginErrors.codeFloodText("FLOOD_WAIT_60", true);
+        assertTrue(shortWait.contains("60"));
+        assertFalse(shortWait.contains("今天"));
+        assertFalse(shortWait.contains("10"));
+        String numberFlood = TellomiLoginErrors.codeFloodText("PHONE_NUMBER_FLOOD", true);
+        assertTrue(numberFlood.contains("今天"));
+        assertFalse(numberFlood.contains("60 秒"));
         assertTrue(TellomiLoginErrors.codeFloodText("FLOOD_WAIT_45", true).contains("45"));
         assertTrue(TellomiLoginErrors.codeFloodText("FLOOD_WAIT_120", true).contains("2"));
         assertTrue(TellomiLoginErrors.codeFloodText("FLOOD_WAIT_7200", true).contains("2"));

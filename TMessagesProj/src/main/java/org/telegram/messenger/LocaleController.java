@@ -3346,6 +3346,8 @@ public class LocaleController {
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                         if (response != null) {
                             AndroidUtilities.runOnUIThread(() -> saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone));
+                        } else {
+                            AndroidUtilities.runOnUIThread(onPartlyDone);
                         }
                     }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
                 }
@@ -3359,6 +3361,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
+                    } else {
+                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
                 }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             }
@@ -3376,6 +3380,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
+                    } else {
+                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
                 }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {
