@@ -30107,6 +30107,12 @@ public class TLRPC {
         public boolean force_large_media;
         public boolean force_small_media;
         public boolean optional;
+        /** Tellomi flags.4. Official layer 232 stops at flags.2. */
+        public String description;
+        /** Tellomi flags.5, stored by the server as the provider string. */
+        public String site_name;
+        /** Tellomi flags.6. An already uploaded photo. */
+        public InputPhoto photo;
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
@@ -30114,6 +30120,18 @@ public class TLRPC {
             force_small_media = hasFlag(flags, FLAG_1);
             optional = hasFlag(flags, FLAG_2);
             url = stream.readString(exception);
+            if (hasFlag(flags, FLAG_3)) {
+                title = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                description = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                site_name = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                photo = InputPhoto.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
@@ -30121,8 +30139,24 @@ public class TLRPC {
             flags = setFlag(flags, FLAG_0, force_large_media);
             flags = setFlag(flags, FLAG_1, force_small_media);
             flags = setFlag(flags, FLAG_2, optional);
+            flags = setFlag(flags, FLAG_3, title != null && !title.isEmpty());
+            flags = setFlag(flags, FLAG_4, description != null && !description.isEmpty());
+            flags = setFlag(flags, FLAG_5, site_name != null && !site_name.isEmpty());
+            flags = setFlag(flags, FLAG_6, photo != null);
             stream.writeInt32(flags);
             stream.writeString(url);
+            if (hasFlag(flags, FLAG_3)) {
+                stream.writeString(title);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                stream.writeString(description);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                stream.writeString(site_name);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                photo.serializeToStream(stream);
+            }
         }
     }
 

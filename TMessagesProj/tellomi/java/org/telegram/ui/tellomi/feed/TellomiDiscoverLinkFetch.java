@@ -188,6 +188,74 @@ final class TellomiDiscoverLinkFetch {
         }
     }
 
+    /**
+     * Image bytes from the phone's network. Refuses a private, loopback, or
+     * link-local address before the connection, and again after each redirect.
+     * Stops at {@link #MAX_BYTES}. Returns null when the target is not a public image.
+     */
+    public static byte[] imageBytes(String url) {
+        String current = url;
+        for (int hop = 0; hop <= MAX_HOPS; hop++) {
+            if (!reachablePublic(current)) {
+                return null;
+            }
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(current).openConnection();
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(TIMEOUT_MS);
+                connection.setReadTimeout(TIMEOUT_MS);
+                connection.setRequestProperty("Accept", "image/*");
+                connection.setRequestProperty("User-Agent", USER_AGENT);
+                connection.setUseCaches(false);
+                int status = connection.getResponseCode();
+                if (status >= 300 && status < 400) {
+                    String next = redirect(current, connection.getHeaderField("Location"));
+                    if (next == null) {
+                        return null;
+                    }
+                    current = next;
+                    continue;
+                }
+                if (status < 200 || status >= 300) {
+                    return null;
+                }
+                String type = connection.getContentType();
+                if (type != null && !type.toLowerCase(Locale.US).startsWith("image/")) {
+                    return null;
+                }
+                return readLimited(connection.getInputStream());
+            } catch (Exception ignored) {
+                return null;
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static byte[] readLimited(InputStream stream) throws Exception {
+        if (stream == null) {
+            return new byte[0];
+        }
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int read;
+            while ((read = stream.read(buffer)) >= 0 && total < MAX_BYTES) {
+                int take = Math.min(read, MAX_BYTES - total);
+                out.write(buffer, 0, take);
+                total += take;
+            }
+            return out.toByteArray();
+        } finally {
+            stream.close();
+        }
+    }
+
     private static byte[] readHead(InputStream stream) throws Exception {
         if (stream == null) {
             return new byte[0];

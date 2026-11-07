@@ -215,6 +215,8 @@ import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.tellomi.feed.TellomiChatLink;
+import org.telegram.ui.tellomi.feed.TellomiChatLinkPage;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -14322,6 +14324,37 @@ public class ChatActivity extends BaseFragment implements
             }
             final String firstUrl = urls == null || urls.isEmpty() ? null : urls.get(0).toString();
 
+            if (TellomiChatLinkPage.clientFetch(firstUrl)) {
+                final int myId = ++waitingForWebpageId;
+                final String checked = textToCheck == null ? firstUrl : textToCheck.toString();
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (waitingForWebpageId != myId) {
+                        return;
+                    }
+                    TLRPC.TL_webPagePending pending = new TLRPC.TL_webPagePending();
+                    pending.url = firstUrl;
+                    pendingLinkSearchString = firstUrl;
+                    foundWebPage = pending;
+                    showFieldPanelForWebPage(true, pending, false);
+                });
+                TellomiChatLinkPage.load(firstUrl, checked, page -> {
+                    if (waitingForWebpageId != myId) {
+                        return;
+                    }
+                    if (!(page instanceof TLRPC.TL_webPage)) {
+                        foundWebPage = null;
+                        fallbackFieldPanel();
+                        return;
+                    }
+                    foundWebPage = page;
+                    if (messagePreviewParams != null) {
+                        messagePreviewParams.updateLink(currentAccount, foundWebPage, chatActivityEnterView == null ? null : chatActivityEnterView.getFieldText(), replyingMessageObject == threadMessageObject ? null : replyingMessageObject, replyingQuote, editingMessageObject);
+                    }
+                    showFieldPanelForWebPage(true, foundWebPage, false);
+                });
+                return;
+            }
+
             if (currentEncryptedChat != null && messagesController.secretWebpagePreview == 2) {
                 AndroidUtilities.runOnUIThread(() -> {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
@@ -15539,7 +15572,7 @@ public class ChatActivity extends BaseFragment implements
                         replyObjectTextView.setText(webPage.title);
                     } else if (webPage.description != null) {
                         replyObjectTextView.setText(webPage.description);
-                    } else if (webPage.author != null) {
+                    } else if (webPage.author != null && !TellomiChatLink.hideAuthor(webPage.author)) {
                         replyObjectTextView.setText(webPage.author);
                     } else {
                         replyObjectTextView.setText(webPage.display_url);

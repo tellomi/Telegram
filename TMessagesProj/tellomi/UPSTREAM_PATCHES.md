@@ -1190,3 +1190,15 @@ Login country rows are limited to `TellomiCallingCodes.ALLOWED` (currently `86`)
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | Drop the remote placeholder for English and Chinese before applying. Do not overwrite those built-in rows from `getLanguages`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Calling-code filter, paste warning, flood alert, resend stop. |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Language icon on the welcome page. |
+
+## Chat link cards
+
+External Open Graph is fetched on the phone (the same parser as Discover). `tell.cc` / `t.me` / `telegram.me` / `telegram.dog` still use `messages.getWebPagePreview` and `messages.sendMessage`. A client card is `messages.sendMedia` with `inputMediaWebPage#c21b8849` flags.3–6: title, description, site name, and an uploaded `InputPhoto`. The bubble and the composer keep the native `webPage` layout. `author=unverified` is not drawn.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/tgnet/TLRPC.java` | `TL_inputMediaWebPage` reads and writes flags.3–6. Official clients that leave those bits unset encode the same as before. |
+| `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | An external link in the composer is fetched on the phone. The native link panel is unchanged. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java` | External cards go out as `messages.sendMedia`. The image is uploaded with `messages.uploadMedia` first. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java` | The bubble skips `author=unverified`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java` | The viewer skips the same author string. |

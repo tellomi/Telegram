@@ -7909,6 +7909,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         author = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.author : null;
+                        if (org.telegram.ui.tellomi.feed.TellomiChatLink.hideAuthor(author == null ? null : author.toString())) {
+                            author = null;
+                        }
                         description = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.description : null;
                         photo = webPage.photo;
                         webDocument = null;
