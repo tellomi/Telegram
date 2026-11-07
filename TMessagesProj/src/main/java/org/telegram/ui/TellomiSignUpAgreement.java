@@ -115,6 +115,7 @@ public class TellomiSignUpAgreement {
 
         TextView body = new TextView(context);
         body.setText(bodyText(context));
+        body.setTextColor(TellomiLoginChrome.muted());
         body.setMovementMethod(LinkMovementMethod.getInstance());
         body.setHighlightColor(Color.TRANSPARENT);
         TellomiLoginChrome.textSize(body, 14);
@@ -196,7 +197,7 @@ public class TellomiSignUpAgreement {
                     canvas.drawLine(cx - s * 0.2f, cy + s * 0.75f, cx + s * 1.15f, cy - s * 0.7f, box);
                 } else {
                     box.setStyle(Paint.Style.STROKE);
-                    box.setStrokeWidth(AndroidUtilities.dp(1.2f));
+                    box.setStrokeWidth(AndroidUtilities.dp(2f));
                     box.setColor(TellomiLoginChrome.uncheckedStroke());
                     canvas.drawCircle(cx, cy, r, box);
                 }

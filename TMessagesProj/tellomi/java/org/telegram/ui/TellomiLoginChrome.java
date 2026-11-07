@@ -93,24 +93,29 @@ public final class TellomiLoginChrome {
     }
 
     public static int fieldHint() {
-        return Theme.getColor(Theme.key_windowBackgroundWhiteHintText);
+        // The hint key is authored for the page. On the filled field it falls under 4.5:1.
+        int preferred = Theme.getColor(Theme.key_windowBackgroundWhiteHintText);
+        return TellomiContrast.ensure(preferred, text(), fieldFill(), TellomiContrast.MIN_TEXT);
     }
 
     public static int muted() {
-        return Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6);
+        int preferred = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6);
+        return TellomiContrast.ensure(preferred, text(), pageFill(), TellomiContrast.MIN_TEXT);
     }
 
     public static int link() {
-        return Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4);
+        int preferred = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4);
+        return TellomiContrast.ensure(preferred, text(), pageFill(), TellomiContrast.MIN_TEXT);
     }
 
     public static int errorColor() {
         return Theme.getColor(Theme.key_text_RedBold);
     }
 
-    /** Empty agreement circle. The old #C8C8CC stroke disappeared on a light page. */
+    /** Empty agreement circle. Thickened in the span; ink is lifted if the theme ring is under 3:1. */
     public static int uncheckedStroke() {
-        return Theme.getColor(Theme.key_checkboxSquareUnchecked);
+        int preferred = Theme.getColor(Theme.key_checkboxSquareUnchecked);
+        return TellomiContrast.ensure(preferred, text(), pageFill(), TellomiContrast.MIN_TEXT);
     }
 
     /**
@@ -122,7 +127,12 @@ public final class TellomiLoginChrome {
             return;
         }
         field.setTextColor(text());
-        field.setHintTextColor(fieldHint());
+        int hint = fieldHint();
+        field.setHintTextColor(hint);
+        field.setHintColor(hint);
+        if (field instanceof org.telegram.ui.Components.HintEditText) {
+            ((org.telegram.ui.Components.HintEditText) field).setHintInk(hint);
+        }
         field.setCursorColor(focusStroke());
         field.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated) & 0x55FFFFFF);
     }
@@ -150,8 +160,10 @@ public final class TellomiLoginChrome {
         return Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated);
     }
 
+    /** Field outline, social border, and the “或” rule. The input fill itself is under 3:1 on the page. */
     public static int lineColor() {
-        return Theme.getColor(Theme.key_windowBackgroundWhiteInputField);
+        int preferred = Theme.getColor(Theme.key_windowBackgroundWhiteInputField);
+        return TellomiContrast.ensure(preferred, text(), pageFill(), TellomiContrast.MIN_UI);
     }
 
     public static int checkedFill() {
@@ -438,8 +450,8 @@ public final class TellomiLoginChrome {
         ActionButton(Context context, String label) {
             super(context);
             background = new GradientDrawable();
-            background.setColor(ctaFill(false));
             background.setCornerRadius(AndroidUtilities.dp(10));
+            applyFill(false);
             setBackground(background);
             setForeground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
             setMinimumHeight(AndroidUtilities.dp(48));
@@ -485,16 +497,25 @@ public final class TellomiLoginChrome {
         public void setReady(boolean ready) {
             this.ready = ready;
             if (dotsView.getVisibility() == VISIBLE) {
-                background.setColor(ctaFill(true));
+                applyFill(true);
                 return;
             }
-            background.setColor(ctaFill(ready));
+            applyFill(ready);
             labelView.setTextColor(ctaLabel(ready));
         }
 
         public void applyTheme() {
             setReady(ready);
             tintProgress();
+        }
+
+        private void applyFill(boolean showReady) {
+            background.setColor(ctaFill(showReady));
+            if (showReady) {
+                background.setStroke(0, Color.TRANSPARENT);
+            } else {
+                background.setStroke(Math.max(1, AndroidUtilities.dp(1)), lineColor());
+            }
         }
 
         private void tintProgress() {
@@ -508,7 +529,7 @@ public final class TellomiLoginChrome {
             dotsView.setVisibility(busy ? VISIBLE : GONE);
             dotsView.setTextColor(ctaLabel(true));
             progressView.setVisibility(GONE);
-            background.setColor(ctaFill(busy || ready));
+            applyFill(busy || ready);
             if (!busy) {
                 labelView.setTextColor(ctaLabel(ready));
             }

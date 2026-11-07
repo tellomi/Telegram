@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -23,5 +24,24 @@ public class TellomiContrastTest {
         assertTrue(TellomiContrast.readable(TellomiContrast.HINT_NIGHT, TellomiContrast.FIELD_NIGHT));
         assertTrue(TellomiContrast.readable(TellomiContrast.DIGIT_NIGHT, TellomiContrast.PAGE_NIGHT));
         assertTrue(TellomiContrast.readable(TellomiContrast.DIGIT_DAY, TellomiContrast.PAGE_DAY));
+    }
+
+    @Test
+    public void hintOnTheFilledFieldIsLiftedUntilBodyTextPasses() {
+        int light = TellomiContrast.ensure(0xFFA8A8A8, 0xFF111111, 0xFFD8D8D8, TellomiContrast.MIN_TEXT);
+        assertTrue(TellomiContrast.readable(light, 0xFFD8D8D8));
+        int dark = TellomiContrast.ensure(0xFF788898, 0xFFFFFFFF, 0xFF485868, TellomiContrast.MIN_TEXT);
+        assertTrue(TellomiContrast.readable(dark, 0xFF485868));
+    }
+
+    @Test
+    public void checkboxRingIsLiftedToTheUiBoundary() {
+        int stroke = TellomiContrast.ensure(0xFF546679, 0xFFFFFFFF, 0xFF1D2733, TellomiContrast.MIN_UI);
+        assertTrue(TellomiContrast.ratio(stroke, 0xFF1D2733) >= TellomiContrast.MIN_UI);
+    }
+
+    @Test
+    public void inkThatAlreadyClearsIsUnchanged() {
+        assertEquals(0xFF737373, TellomiContrast.ensure(0xFF737373, 0xFF111111, 0xFFFFFFFF, TellomiContrast.MIN_UI));
     }
 }
