@@ -64,6 +64,10 @@ public class TellomiThemeAndEmailTest {
         assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(true, null, null));
         assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(false, null, "8613800138000"));
         assertEquals(TellomiEmailRoles.ATTACH_LOGIN_EMAIL, TellomiEmailRoles.accountRow(true, null, "8613800138000"));
+        assertTrue(TellomiEmailRoles.isSetupLoginEmailSuggestion("SETUP_LOGIN_EMAIL"));
+        assertTrue(TellomiEmailRoles.isSetupLoginEmailSuggestion("SETUP_LOGIN_EMAIL_NOSKIP"));
+        assertFalse(TellomiEmailRoles.isSetupLoginEmailSuggestion("VALIDATE_PASSWORD"));
+        assertFalse(TellomiEmailRoles.identityBound(null, false, false));
     }
 
     @Test
@@ -81,6 +85,11 @@ public class TellomiThemeAndEmailTest {
         assertTrue(login.contains("TellomiLoginChrome.applyInput(tellomiCodeField)"));
         assertTrue(login.contains("TellomiLoginEmailRefused"));
         assertTrue(login.contains("!TellomiEmailRoles.sendable(email)"));
+        String controller = new String(Files.readAllBytes(find("TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java").toPath()), StandardCharsets.UTF_8);
+        int check = controller.indexOf("public int checkEmailSuggestion()");
+        assertTrue(check > 0);
+        assertTrue(controller.substring(check, check + 220).contains("return EMAIL_SUGGESTION_FALSE"));
+        assertTrue(controller.contains("dropSetupLoginEmailSuggestions"));
     }
 
     private static int count(String text, String needle) {
