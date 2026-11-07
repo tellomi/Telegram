@@ -696,6 +696,18 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         textView.setText(text);
     }
 
+    /** Hides the word under the icon. The tab and its content description stay. */
+    public void setLabelShown(boolean shown) {
+        textView.setVisibility(shown ? VISIBLE : GONE);
+        float shift = shown ? 0f : AndroidUtilities.dp(8);
+        imageView.setTranslationY(shift);
+        imageViewFill.setTranslationY(shift);
+        if (backupImageView != null) {
+            backupImageView.setTranslationY(shift);
+        }
+        setContentDescription(shown ? null : textView.getText());
+    }
+
     public void setLabelHorizontalPadding(int px) {
         textView.setPadding(px, textView.getPaddingTop(), px, textView.getPaddingBottom());
     }

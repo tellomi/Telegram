@@ -1209,3 +1209,11 @@ Unsent voice uses `messages.transcribeDraft#7e11da47`. The bytes stay in that re
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/AIEditorAlert.java` | `translate_to_lang` is `zh-hans`. |
 | `TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java` | The bar toggles translation for a translatable chat. It does not open Premium. |
 | `TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java` | The whole-chat switch is not locked behind Premium. |
+
+## Bottom-bar labels
+
+Settings → Navigation Bar can hide the words under the icons. Discover, Chats, and Profile stay in the bar. The default is the words visible. The preference is `tellomi_hide_tab_labels`.
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `setLabelShown` hides the word and keeps the icon and the content description. |
