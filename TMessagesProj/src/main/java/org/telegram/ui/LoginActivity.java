@@ -804,21 +804,21 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (savedInstanceState != null) {
             currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
             syncContacts = savedInstanceState.getInt("syncContacts", 1) == 1;
-            if (currentViewNum >= VIEW_CODE_MESSAGE && currentViewNum <= VIEW_CODE_CALL) {
+            if (!tellomiKeepCodePage && currentViewNum >= VIEW_CODE_MESSAGE && currentViewNum <= VIEW_CODE_CALL) {
                 int time = savedInstanceState.getInt("open");
                 if (time != 0 && Math.abs(System.currentTimeMillis() / 1000 - time) >= 24 * 60 * 60) {
                     currentViewNum = VIEW_PHONE_INPUT;
                     savedInstanceState = null;
                     clearCurrentState();
                 }
-            } else if (currentViewNum == VIEW_PASSWORD) {
+            } else if (!tellomiKeepCodePage && currentViewNum == VIEW_PASSWORD) {
                 LoginActivityPasswordView view = (LoginActivityPasswordView) views[VIEW_PASSWORD];
                 if (view.currentPassword == null) {
                     currentViewNum = VIEW_PHONE_INPUT;
                     savedInstanceState = null;
                     clearCurrentState();
                 }
-            } else if (currentViewNum == VIEW_RECOVER) {
+            } else if (!tellomiKeepCodePage && currentViewNum == VIEW_RECOVER) {
                 LoginActivityRecoverView view = (LoginActivityRecoverView) views[VIEW_RECOVER];
                 if (view.passwordString == null) {
                     currentViewNum = VIEW_PHONE_INPUT;

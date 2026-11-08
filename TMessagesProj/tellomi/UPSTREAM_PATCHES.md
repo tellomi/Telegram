@@ -17,6 +17,8 @@ Paths below are relative to the repo root. "Upstream" means the file exists in D
 
 The circle behind send stays the existing round-rect fill (`key_chat_messagePanelSend`), which is the Android counterpart of iOS `sendButtonBackgroundView` tinted with `panelControlAccentColor`. The arrow drawable itself has no disc. iOS master `a22220ab` and candidate `d3b51fb` have the same two SVG paths and the same attachment, sticker, and microphone PDF blobs.
 
+The language and day/night hit targets grow with the system font scale. They shrink together only when that size would cover the back control or leave the window. Traditional strings keep a real `zh-rTW` / `zh-Hant` value when it differs from simplified. Otherwise `TellomiChineseScript` converts the simplified text and leaves `%` specifiers and `<...>` tags unchanged. A language redraw keeps the welcome page the user already opened and does not drop a password, recovery, or code step back to the phone form.
+
 ## Launcher icon
 
 | File | Change |

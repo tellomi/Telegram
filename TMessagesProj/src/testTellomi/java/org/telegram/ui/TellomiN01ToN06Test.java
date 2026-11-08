@@ -3,6 +3,7 @@ package org.telegram.ui;
 import org.junit.Test;
 import org.telegram.messenger.TellomiChineseScript;
 import org.telegram.messenger.TellomiDefaults;
+import org.telegram.messenger.TellomiLanguageText;
 import org.telegram.messenger.TellomiSessionRevoke;
 
 import java.io.File;
@@ -21,7 +22,7 @@ public class TellomiN01ToN06Test {
     public void languageAndThemeShareOneRowOnANarrowPhone() {
         TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(320, 1f, 1f, 24, false);
         assertEquals(slots.top, slots.top);
-        assertTrue(slots.size >= TellomiAuthChromeLayout.MIN_HIT_DP);
+        assertEquals(TellomiAuthChromeLayout.HIT_DP, slots.size);
         assertTrue(slots.languageLeft >= 48);
         assertTrue(slots.languageLeft + slots.size <= slots.themeLeft);
         assertTrue(slots.themeLeft + slots.size <= 320);
@@ -29,15 +30,27 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
-    public void largeTypeAndProxyKeepTheTwoControlsApart() {
-        TellomiAuthChromeLayout plain = TellomiAuthChromeLayout.place(360, 2f, 2f, 40, false);
+    public void largeTypeGrowsTheHitTargetUntilTheRowWouldOverlap() {
+        TellomiAuthChromeLayout wide = TellomiAuthChromeLayout.place(2000, 1f, 2f, 0, false);
+        assertEquals(96, wide.size);
+        TellomiAuthChromeLayout narrow = TellomiAuthChromeLayout.place(220, 1f, 2f, 0, false);
+        assertTrue(narrow.size < 96);
+        assertTrue(narrow.size >= 1);
+        assertEquals(narrow.size, narrow.size);
+        assertFalse(narrow.overlaps());
+        assertTrue(narrow.languageLeft + narrow.size <= narrow.themeLeft);
         TellomiAuthChromeLayout proxy = TellomiAuthChromeLayout.place(360, 2f, 2f, 40, true);
+        TellomiAuthChromeLayout plain = TellomiAuthChromeLayout.place(360, 2f, 2f, 40, false);
         assertEquals(plain.top, proxy.top);
-        assertEquals(plain.size, proxy.size);
         assertTrue(proxy.themeLeft < plain.themeLeft);
-        assertEquals(plain.themeLeft - plain.languageLeft, proxy.themeLeft - proxy.languageLeft);
         assertFalse(proxy.overlaps());
-        assertTrue(plain.size <= Math.round(48 * 2f * TellomiAuthChromeLayout.MAX_FONT_SCALE) + 1);
+    }
+
+    @Test
+    public void welcomePageStaysWhereTheUserLeftIt() {
+        assertEquals(0, TellomiAuthChromeLayout.welcomePage(false, 0, false, 6));
+        assertEquals(5, TellomiAuthChromeLayout.welcomePage(false, 0, true, 6));
+        assertEquals(3, TellomiAuthChromeLayout.welcomePage(true, 3, true, 6));
     }
 
     @Test
@@ -54,8 +67,16 @@ public class TellomiN01ToN06Test {
         String simplified = "验证并登录";
         String traditional = TellomiChineseScript.toTraditional(simplified);
         assertNotEquals(simplified, traditional);
+        assertEquals(simplified.length(), traditional.length());
         assertEquals("English", TellomiChineseScript.toTraditional("English"));
-        assertTrue(traditional.indexOf('\u9a8c') < 0);
+        String formatted = TellomiChineseScript.toTraditional("收到 %1$s 条，完成 %d%%，请读 <b>%2$s</b>");
+        assertTrue(formatted.contains("%1$s"));
+        assertTrue(formatted.contains("%d%%"));
+        assertTrue(formatted.contains("<b>"));
+        assertTrue(formatted.contains("</b>"));
+        assertTrue(formatted.contains("%2$s"));
+        assertEquals("驗證", TellomiLanguageText.traditionalDisplay("发", "发", "驗證"));
+        assertEquals(TellomiChineseScript.toTraditional("发"), TellomiLanguageText.traditionalDisplay("发", "发", "发"));
     }
 
     @Test

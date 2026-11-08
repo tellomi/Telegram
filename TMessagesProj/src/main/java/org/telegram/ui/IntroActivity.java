@@ -110,6 +110,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private RLottieDrawable darkThemeDrawable;
 
     private int lastPage = 0;
+    /** True after the user leaves the first welcome page. A redraw keeps that page. */
+    private boolean tellomiIntroPageChosen;
     private boolean justCreated = false;
     private boolean startPressed = false;
     private CharSequence[] titles;
@@ -159,10 +161,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             return;
         }
         ViewGroup.LayoutParams raw = view.getLayoutParams();
-        if (!(raw instanceof MarginLayoutParams)) {
+        if (!(raw instanceof ViewGroup.MarginLayoutParams)) {
             return;
         }
-        MarginLayoutParams lp = (MarginLayoutParams) raw;
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) raw;
         if (lp.topMargin == top && lp.width == size && lp.height == size && lp.rightMargin == right) {
             return;
         }
@@ -327,6 +329,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                     }
                     if (lastPage != viewPager.getCurrentItem()) {
                         lastPage = viewPager.getCurrentItem();
+                        tellomiIntroPageChosen = true;
                     }
                 }
             }
@@ -461,13 +464,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             return;
         }
         if (justCreated) {
-            if (LocaleController.isRTL) {
-                viewPager.setCurrentItem(6);
-                lastPage = 6;
-            } else {
-                viewPager.setCurrentItem(0);
-                lastPage = 0;
-            }
+            int page = TellomiAuthChromeLayout.welcomePage(tellomiIntroPageChosen, lastPage, LocaleController.isRTL, 6);
+            viewPager.setCurrentItem(page);
+            lastPage = page;
             justCreated = false;
         }
         AndroidUtilities.lockOrientation(getParentActivity(), ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);

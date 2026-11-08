@@ -4707,18 +4707,23 @@ public class LocaleController {
         // Flavor values-zh is not in localization_*.bin. When the active language is
         // Chinese, a bundled Chinese string that differs from English replaces the bin.
         // This follows the app language, not the phone locale.
-        if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
-            boolean traditional = TellomiDefaults.traditionalUi();
-            String zh = TellomiDefaults.scriptResource(stringRes, traditional);
+        if (TellomiDefaults.traditionalUi()) {
+            if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
+                value = TellomiLanguageText.traditionalDisplay(
+                        value,
+                        TellomiDefaults.chineseResource(stringRes),
+                        TellomiDefaults.scriptResource(stringRes, true));
+            } else if (value != null) {
+                value = TellomiChineseScript.toTraditional(value);
+            }
+        } else if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
+            String zh = TellomiDefaults.chineseResource(stringRes);
             String en = TellomiDefaults.englishResource(stringRes);
             // The English localization bin wins over values-zh for every key it contains.
             // A bundled Chinese string that differs from English replaces that hit.
             if (zh != null && zh.length() > 0 && (en == null || !zh.equals(en))) {
                 value = zh;
             }
-        }
-        if (value != null && TellomiDefaults.traditionalUi()) {
-            value = TellomiChineseScript.toTraditional(value);
         }
         return TellomiBrand.rewrite(value);
     }

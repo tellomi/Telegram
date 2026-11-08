@@ -33,6 +33,12 @@ public final class TellomiChineseScript {
         "饋馬駛駐駕驗騙驟魯鮑鴉麥黃齊齡" +
         "";
 
+    /**
+     * One simplified character becomes one traditional character.
+     * Format specifiers ({@code %1$s}, {@code %d}, {@code %%}) and markup
+     * tags are copied unchanged, so {@code String.format} and spannable
+     * placeholders still find them.
+     */
     public static String toTraditional(String value) {
         if (value == null || value.length() == 0 || SIMP.length() != TRAD.length()) {
             return value;
@@ -40,6 +46,23 @@ public final class TellomiChineseScript {
         StringBuilder sb = null;
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
+            if (c == '%') {
+                int end = formatSpecifierEnd(value, i);
+                if (sb != null) {
+                    sb.append(value, i, end);
+                }
+                i = end - 1;
+                continue;
+            }
+            if (c == '<') {
+                int end = value.indexOf('>', i);
+                end = end < 0 ? i + 1 : end + 1;
+                if (sb != null) {
+                    sb.append(value, i, end);
+                }
+                i = end - 1;
+                continue;
+            }
             int at = SIMP.indexOf(c);
             if (at >= 0) {
                 if (sb == null) {
@@ -52,5 +75,27 @@ public final class TellomiChineseScript {
             }
         }
         return sb == null ? value : sb.toString();
+    }
+
+    /** Index just after a printf specifier that starts at {@code start}. */
+    static int formatSpecifierEnd(String value, int start) {
+        int i = start + 1;
+        if (i >= value.length()) {
+            return value.length();
+        }
+        if (value.charAt(i) == '%') {
+            return i + 1;
+        }
+        while (i < value.length()) {
+            char c = value.charAt(i);
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                return i + 1;
+            }
+            if (c == ' ' || c == '\n' || c == '<' || c == '%') {
+                return start + 1;
+            }
+            i++;
+        }
+        return value.length();
     }
 }
