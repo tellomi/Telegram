@@ -379,6 +379,9 @@ public class TellomiSettingsLayoutTest {
         if (!file.isFile()) {
             file = new File("TMessagesProj", relative);
         }
+        if (!file.isFile()) {
+            file = new File("..", relative);
+        }
         assertTrue(file.getPath(), file.isFile());
         return file;
     }

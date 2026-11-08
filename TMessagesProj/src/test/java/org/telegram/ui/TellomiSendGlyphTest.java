@@ -11,27 +11,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * The chat send control draws {@code R.drawable.send_plane_24}.
- * This checks that flavor file's geometry. It does not inflate a View.
+ * The chat send control draws the iOS {@code chatInputPanelSendIconImage} arrow.
+ * The circle is the button fill, not part of this drawable.
  */
 public class TellomiSendGlyphTest {
 
     @Test
-    public void sendGlyphIsAnUpArrowNotThePaperPlane() throws Exception {
-        String flavor = read("TMessagesProj/tellomi/res/drawable/send_plane_24.xml");
+    public void sendGlyphIsTheIosArrowWithoutACircle() throws Exception {
+        String arrow = read("TMessagesProj/tellomi/res/drawable/tellomi_chat_send_arrow.xml");
         String upstream = read("TMessagesProj/src/main/res/drawable/send_plane_24.xml");
-        String flavorPath = pathData(flavor);
-        String upstreamPath = pathData(upstream);
-        assertFalse(flavorPath.contains("M6.232"));
-        assertTrue(upstreamPath.contains("M6.232"));
-
-        Box box = bounds(flavorPath);
-        assertTrue(box.maxY - box.minY > box.maxX - box.minX);
-        float tipX = box.tipX;
-        float midX = (box.minX + box.maxX) / 2f;
-        assertTrue(Math.abs(tipX - midX) < 1.5f);
-        assertEquals(4f, box.minY, 0.01f);
-        assertEquals(20f, box.maxY, 0.01f);
+        assertTrue(arrow.contains("M11,14.6666667 L16.4310816,9.40016333"));
+        assertTrue(arrow.contains("M16.5,9.33333333 C17.0522847,9.33333333 17.5,9.78104858"));
+        assertFalse(arrow.contains("M6.232"));
+        assertTrue(pathData(upstream).contains("M6.232"));
+        String enter = read("TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java");
+        assertTrue(enter.contains("R.drawable.tellomi_chat_send_arrow"));
     }
 
     @Test

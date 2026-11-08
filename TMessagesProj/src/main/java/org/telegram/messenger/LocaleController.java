@@ -1391,17 +1391,31 @@ public class LocaleController {
         try {
             Locale newLocale;
             String[] args;
-            if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
+            Locale scripted = TellomiDefaults.androidLocale(localeInfo.shortName);
+            if (scripted != null) {
+                newLocale = scripted;
+                args = new String[] {scripted.getLanguage()};
+            } else if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
                 args = localeInfo.pluralLangCode.split("_");
+                if (args.length == 1) {
+                    newLocale = new Locale(args[0]);
+                } else {
+                    newLocale = new Locale(args[0], args[1]);
+                }
             } else if (!TextUtils.isEmpty(localeInfo.baseLangCode)) {
                 args = localeInfo.baseLangCode.split("_");
+                if (args.length == 1) {
+                    newLocale = new Locale(args[0]);
+                } else {
+                    newLocale = new Locale(args[0], args[1]);
+                }
             } else {
                 args = localeInfo.shortName.split("_");
-            }
-            if (args.length == 1) {
-                newLocale = new Locale(args[0]);
-            } else {
-                newLocale = new Locale(args[0], args[1]);
+                if (args.length == 1) {
+                    newLocale = new Locale(args[0]);
+                } else {
+                    newLocale = new Locale(args[0], args[1]);
+                }
             }
             if (override) {
                 languageOverride = localeInfo.shortName;
@@ -4693,7 +4707,16 @@ public class LocaleController {
         // Flavor values-zh is not in localization_*.bin. When the active language is
         // Chinese, a bundled Chinese string that differs from English replaces the bin.
         // This follows the app language, not the phone locale.
-        if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
+        if (TellomiDefaults.traditionalUi()) {
+            if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
+                value = TellomiLanguageText.traditionalDisplay(
+                        value,
+                        TellomiDefaults.chineseResource(stringRes),
+                        TellomiDefaults.scriptResource(stringRes, true));
+            } else if (value != null) {
+                value = TellomiChineseScript.toTraditional(value);
+            }
+        } else if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
             String zh = TellomiDefaults.chineseResource(stringRes);
             String en = TellomiDefaults.englishResource(stringRes);
             // The English localization bin wins over values-zh for every key it contains.

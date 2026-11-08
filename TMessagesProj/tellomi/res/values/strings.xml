@@ -293,6 +293,7 @@
     <string name="Tellomi_Discover_HideContacts">Hide Contacts</string>
     <string name="Tellomi_Discover_NavigationTitle">Navigation Bar</string>
     <string name="Tellomi_Discover_NavigationFooter">Chats always stays in the bar.</string>
+    <string name="Tellomi_Discover_HideTabLabels">Hide tab labels</string>
     <string name="Tellomi_Discover_PersonalizationSection">Discover</string>
     <string name="Tellomi_Discover_Personalization">Personalized recommendations</string>
     <string name="Tellomi_Discover_PersonalizationInfo">When this is off, For You is not ranked from your activity.</string>
@@ -329,4 +330,5 @@
     <string name="TellomiChatPasswordBiometricHint">Unlock this chat with biometrics as well as the digits. The digits stay on this device.</string>
     <string name="TellomiChatPasswordSkip">Digits only</string>
     <string name="TellomiChatLocked">Locked</string>
+    <string name="TellomiFreshResetForbidden">This login is under 24 hours old, so other devices stay signed in. Try again later.</string>
 </resources>
