@@ -80,18 +80,28 @@ public class TellomiN01ToN06Test {
         code.phone = "13800138000";
         code.typedCode = "12";
         code.remainingMs = 42000;
+        code.resendDeadlineElapsed = 5_000_000L;
         code.openedAtSec = 100;
         code.agreed = true;
         TellomiLoginSnapshot kept = code.afterLanguageRedraw();
         assertEquals(TellomiLoginSnapshot.CODE_SMS, kept.page);
         assertEquals("12", kept.typedCode);
         assertEquals(42000, kept.remainingMs);
+        assertEquals(5_000_000L, kept.resendDeadlineElapsed);
+        assertEquals(5_000_000L, kept.afterLanguageRedraw().resendDeadlineElapsed);
         assertEquals(100, kept.openedAtSec);
         assertFalse(kept.resendRequested);
         TellomiLoginSnapshot died = code.forProcessDeath();
         assertEquals(TellomiLoginSnapshot.PHONE, died.page);
         assertEquals("", died.typedCode);
         assertEquals(0, died.remainingMs);
+        assertEquals(0L, died.resendDeadlineElapsed);
+        long deadline = 90_000L;
+        assertEquals(60000, TellomiLoginSnapshot.remainingMs(deadline, 30_000L));
+        assertEquals(51000, TellomiLoginSnapshot.remainingMs(deadline, 39_000L));
+        assertEquals(0, TellomiLoginSnapshot.remainingMs(deadline, deadline));
+        assertEquals(0, TellomiLoginSnapshot.remainingMs(deadline, deadline + 1));
+        assertEquals(0, TellomiLoginSnapshot.remainingMs(0, 1));
 
         TellomiLoginSnapshot secret = new TellomiLoginSnapshot();
         secret.page = TellomiLoginSnapshot.PASSWORD;
@@ -186,6 +196,8 @@ public class TellomiN01ToN06Test {
         assertTrue(login.contains("TellomiLoginResume.hold"));
         assertTrue(login.contains("tellomiApplyHeldSnapshot"));
         assertTrue(login.contains("sms.destroyTimer()"));
+        assertTrue(login.contains("tellomiResendDeadlineElapsed"));
+        assertTrue(login.contains("tellomi_resend_deadline"));
         assertTrue(login.contains("sms.createTimer()"));
         assertTrue(login.contains("TellomiLoginResume.stripSecrets"));
         assertTrue(login.contains("phoneview_agreed"));

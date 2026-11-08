@@ -371,6 +371,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
      * Not written to logininfo2, so a killed process still does not restore a code page.
      */
     private Bundle tellomiLanguageRestore;
+    /** Bumps on each language apply so an older clear cannot drop the new step. */
+    private int tellomiHoldGeneration;
     private boolean[] doneButtonVisible = new boolean[] {true, false};
 
     private AlertDialog cancelDeleteProgressDialog;
@@ -1871,7 +1873,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (views != null && currentViewNum >= 0 && currentViewNum < views.length && views[currentViewNum] instanceof LoginActivitySmsView) {
             LoginActivitySmsView sms = (LoginActivitySmsView) views[currentViewNum];
             shot.typedCode = sms.codeFieldContainer.getCode();
-            shot.remainingMs = sms.time;
+            shot.resendDeadlineElapsed = sms.tellomiResendDeadlineElapsed;
+            shot.remainingMs = TellomiLoginSnapshot.remainingMs(sms.tellomiResendDeadlineElapsed, android.os.SystemClock.elapsedRealtime());
             shot.openedAtSec = sms.openTime;
         }
         if (views != null && views[VIEW_PASSWORD] instanceof LoginActivityPasswordView) {
@@ -1904,7 +1907,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (shot.typedCode != null && shot.typedCode.length() > 0) {
                 sms.codeFieldContainer.setText(shot.typedCode);
             }
-            if (shot.remainingMs > 0) {
+            if (shot.resendDeadlineElapsed > 0) {
+                sms.tellomiResendDeadlineElapsed = shot.resendDeadlineElapsed;
+                sms.time = TellomiLoginSnapshot.remainingMs(shot.resendDeadlineElapsed, android.os.SystemClock.elapsedRealtime());
+                sms.lastCurrentTime = System.currentTimeMillis();
+                sms.destroyTimer();
+                sms.createTimer();
+            } else if (shot.remainingMs > 0) {
                 sms.time = shot.remainingMs;
                 sms.lastCurrentTime = System.currentTimeMillis();
                 sms.destroyTimer();
@@ -1941,6 +1950,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (info == null || TellomiLanguageSheet.sameLanguage(info, LocaleController.getInstance().getCurrentLocaleInfo())) {
             return;
         }
+        tellomiHoldGeneration++;
         TellomiLoginResume.holdSnapshot(tellomiFillSnapshot());
         TellomiLoginResume.hold(tellomiCaptureLoginState());
         LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(() -> {
@@ -1956,11 +1966,26 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
             getParentLayout().rebuildAllFragmentViews(true, true);
-            // A Traditional/English switch can recreate the activity after this
-            // callback. Keep the held step until that createView has run.
-            AndroidUtilities.runOnUIThread(TellomiLoginResume::clear, 400);
+            // The language screen pops after this callback and can build the
+            // login view again. Keep the held step until that has happened.
+            final int generation = tellomiHoldGeneration;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (generation != tellomiHoldGeneration) {
+                    return;
+                }
+                tellomiReleaseLanguageHold();
+            }, 3000);
         }));
         TellomiLanguageAlert.rememberUserChoice(info);
+    }
+
+    /** Drop the in-memory login step after the redraw, unless the activity is still recreating. */
+    private void tellomiReleaseLanguageHold() {
+        Activity activity = getParentActivity();
+        if (activity != null && activity.isChangingConfigurations()) {
+            return;
+        }
+        TellomiLoginResume.clear();
     }
 
     /**
@@ -5143,6 +5168,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private int openTime;
         private final Object timerSync = new Object();
         private int time = 60000;
+        /** Login resend line. SystemClock.elapsedRealtime() instant, not a shrinking remainder. */
+        private long tellomiResendDeadlineElapsed;
         private int codeTime = 15000;
         private double lastCurrentTime;
         private double lastCodeTime;
@@ -6078,6 +6105,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
             time = params.getInt("timeout");
+            if (activityMode == MODE_LOGIN && (currentType == AUTH_TYPE_SMS || currentType == AUTH_TYPE_MESSAGE)) {
+                if (!restore) {
+                    tellomiResendDeadlineElapsed = android.os.SystemClock.elapsedRealtime() + Math.max(0, time);
+                }
+                if (tellomiResendDeadlineElapsed > 0) {
+                    time = TellomiLoginSnapshot.remainingMs(tellomiResendDeadlineElapsed, android.os.SystemClock.elapsedRealtime());
+                }
+            }
             openTime = (int) (System.currentTimeMillis() / 1000);
             nextType = params.getInt("nextType");
             pattern = params.getString("pattern");
@@ -6411,7 +6446,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         double currentTime = System.currentTimeMillis();
                         double diff = currentTime - lastCurrentTime;
                         lastCurrentTime = currentTime;
-                        time -= diff;
+                        if (tellomiResendDeadlineElapsed > 0) {
+                            time = TellomiLoginSnapshot.remainingMs(tellomiResendDeadlineElapsed, android.os.SystemClock.elapsedRealtime());
+                        } else {
+                            time -= diff;
+                        }
                         if (time >= 1000) {
                             int minutes = time / 1000 / 60;
                             int seconds = time / 1000 - minutes * 60;
@@ -6974,6 +7013,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (time != 0) {
                 bundle.putInt("time", time);
             }
+            if (tellomiResendDeadlineElapsed > 0) {
+                bundle.putLong("tellomi_resend_deadline", tellomiResendDeadlineElapsed);
+            }
             if (openTime != 0) {
                 bundle.putInt("open", openTime);
             }
@@ -6981,6 +7023,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public void restoreStateParams(Bundle bundle) {
+            long deadline = bundle.getLong("tellomi_resend_deadline");
+            if (deadline > 0) {
+                tellomiResendDeadlineElapsed = deadline;
+            }
             currentParams = bundle.getBundle("smsview_params_" + currentType);
             if (currentParams != null) {
                 setParams(currentParams, true);
@@ -6995,9 +7041,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             int t = bundle.getInt("time");
             int t2 = bundle.getInt("open");
-            // setParams starts the countdown from the original server timeout.
-            // Put the remaining time back and start that timer again.
-            if (t != 0) {
+            // setParams starts a fresh page from the server timeout. A redraw
+            // keeps the original elapsedRealtime deadline instead.
+            if (tellomiResendDeadlineElapsed > 0) {
+                time = TellomiLoginSnapshot.remainingMs(tellomiResendDeadlineElapsed, android.os.SystemClock.elapsedRealtime());
+                lastCurrentTime = System.currentTimeMillis();
+                destroyTimer();
+                createTimer();
+            } else if (t != 0) {
                 time = t;
                 lastCurrentTime = System.currentTimeMillis();
                 destroyTimer();

@@ -20,6 +20,8 @@ public final class TellomiLoginSnapshot {
     public String typedCode = "";
     public boolean agreed;
     public int remainingMs;
+    /** {@link android.os.SystemClock#elapsedRealtime()} instant when resend becomes allowed. */
+    public long resendDeadlineElapsed;
     public int openedAtSec;
     public String password = "";
     public boolean resendRequested;
@@ -33,6 +35,7 @@ public final class TellomiLoginSnapshot {
         next.typedCode = typedCode;
         next.agreed = agreed;
         next.remainingMs = remainingMs;
+        next.resendDeadlineElapsed = resendDeadlineElapsed;
         next.openedAtSec = openedAtSec;
         next.password = password;
         next.resendRequested = resendRequested;
@@ -55,9 +58,23 @@ public final class TellomiLoginSnapshot {
             next.page = PHONE;
             next.typedCode = "";
             next.remainingMs = 0;
+            next.resendDeadlineElapsed = 0;
             next.openedAtSec = 0;
         }
         return next;
+    }
+
+    /**
+     * Milliseconds left until {@code deadlineElapsed}. Both clocks are
+     * {@code SystemClock.elapsedRealtime()}. A language redraw keeps the same
+     * deadline, so the wait does not restart at 60 seconds and does not grow.
+     */
+    public static int remainingMs(long deadlineElapsed, long nowElapsed) {
+        if (deadlineElapsed <= 0 || nowElapsed >= deadlineElapsed) {
+            return 0;
+        }
+        long left = deadlineElapsed - nowElapsed;
+        return left > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) left;
     }
 
     public static boolean isCodePage(int page) {
