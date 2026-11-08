@@ -686,7 +686,7 @@ The welcome carousel built its six pages once, while that overlay still followed
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java` | `indexToPosition`, `getFragmentsCount`, `getStartPosition`, `createBaseFragmentAt`, `prepareDialogsActivity`, folder scroll, profile fade, and the calls-tab notification call `TellomiTabs`. `tabsView` and `dialogsActivity` are package-visible so that class can reach them. `install` runs once from `createView` and skips the calls/settings swap. Tab clicks resolve the position when they fire. |
-| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `TabAnimation.FEED` and `setLabelHorizontalPadding`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java` | `TabAnimation.FEED` and `setLabelHorizontalPadding`. Hiding the label sets the word `GONE` and shifts the existing icon down 8dp inside the upstream 56dp bar. The selection pill stays that tab's bounds. Hidden labels measure as the same 24dp slot, so the existing width pass gives equal tabs. The counter uses the icon's vertical shift. |
 
 ## Navigation bar, long-press hide, post links (M2 / D-6, D-38, D-57)
 

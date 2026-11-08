@@ -186,7 +186,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
             final float gap = dpf2(1.33f);
             final float cx = viewWidth / 2f + dpf2(11);
-            final float cy = dpf2(10);
+            final float cy = dpf2(10) + imageView.getTranslationY();
             final float height = dpf2(16);
             final float width = Math.max(height, counter.getCurrentWidth() + dp(8));
             final float rOuter = dpf2(9.333f);
@@ -562,6 +562,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth() {
+        if (!labelShown) {
+            return dp(24);
+        }
         return defaultTextPaint.measureText(textView.getText().toString());
     }
 
@@ -569,6 +572,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth(float textSizeDp) {
+        if (!labelShown) {
+            return dp(24);
+        }
         if (scaledTextPaint == null) {
             scaledTextPaint = new TextPaint(defaultTextPaint);
         }
@@ -696,8 +702,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         textView.setText(text);
     }
 
+    private boolean labelShown = true;
+
     /** Hides the word under the icon. The tab and its content description stay. */
     public void setLabelShown(boolean shown) {
+        labelShown = shown;
         textView.setVisibility(shown ? VISIBLE : GONE);
         float shift = shown ? 0f : AndroidUtilities.dp(8);
         imageView.setTranslationY(shift);
@@ -706,6 +715,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             backupImageView.setTranslationY(shift);
         }
         setContentDescription(shown ? null : textView.getText());
+        requestLayout();
     }
 
     public void setLabelHorizontalPadding(int px) {

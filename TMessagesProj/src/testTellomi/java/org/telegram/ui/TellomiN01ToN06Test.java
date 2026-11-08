@@ -129,6 +129,34 @@ public class TellomiN01ToN06Test {
         assertTrue(login.contains("!tellomiKeepCodePage && activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD"));
     }
 
+    @Test
+    public void hiddenTabLabelsShareOneSlotAndTheBadgeFollowsTheIcon() throws Exception {
+        String tab = read("TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java");
+        int hidden = tab.indexOf("if (!labelShown)");
+        int measure = tab.indexOf("measureText(textView.getText()");
+        assertTrue(hidden > 0 && hidden < measure);
+        assertEquals(2, count(tab, "if (!labelShown)"));
+        assertTrue(tab.contains("return dp(24);"));
+        assertTrue(tab.contains("dpf2(10) + imageView.getTranslationY()"));
+        assertTrue(tab.contains("textView.setVisibility(shown ? VISIBLE : GONE)"));
+        String height = read("TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java");
+        assertTrue(height.contains("MAIN_TABS_HEIGHT = 56"));
+    }
+
+    private static int count(String text, String needle) {
+        int n = 0;
+        int at = 0;
+        while (at >= 0) {
+            at = text.indexOf(needle, at);
+            if (at < 0) {
+                break;
+            }
+            n++;
+            at += needle.length();
+        }
+        return n;
+    }
+
     private static String read(String relative) throws Exception {
         File direct = new File(relative);
         File nested = new File("TMessagesProj/.." , relative);
