@@ -112,53 +112,43 @@ public class TellomiN01ToN06Test {
 
     @Test
     public void feedRebuildKeepsTheComposeButton() throws Exception {
-        org.telegram.ui.tellomi.feed.TellomiDiscoverComposeMount.Page page = new org.telegram.ui.tellomi.feed.TellomiDiscoverComposeMount.Page(true);
-        page.rebuildContent("legacy");
-        page.rebuildContent("empty");
-        page.rebuildContent("city");
-        page.rebuildContent("feed");
-        assertTrue(page.composeAttached());
-        assertEquals(java.util.Arrays.asList("content", "compose"), page.pageChildren());
-        assertEquals(java.util.Arrays.asList("feed"), page.content());
-        page.clearPage();
-        assertFalse(page.composeAttached());
-
+        assertGone("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverComposeMount.java");
         String screen = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java");
-        assertTrue(screen.contains("TellomiDiscoverComposeMount.clear(root)"));
-        assertFalse(screen.contains("root.removeAllViews()"));
+        assertFalse(screen.contains("TellomiDiscoverComposeMount"));
+        assertEquals(3, count(screen, "root.removeAllViews()"));
         String feed = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java");
+        assertTrue(feed.contains("new FragmentFloatingButton(context, resourceProvider)"));
+        assertTrue(feed.contains("FragmentFloatingButton.createDefaultLayoutParams()"));
         assertTrue(feed.contains("new TellomiDiscoverScreen(this, content, context)"));
         assertTrue(feed.indexOf("root.addView(content") < feed.indexOf("root.addView(composeButton"));
         assertTrue(feed.contains("R.drawable.filled_fab_compose_32"));
+        int content = feed.indexOf("FrameLayout content = new FrameLayout(context);");
+        int screenCall = feed.indexOf("new TellomiDiscoverScreen(this, content, context)");
+        assertTrue(content > 0 && content < screenCall);
     }
 
     @Test
     public void feedScrollKeepsTabsWhenItAlsoPages() throws Exception {
-        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects mid = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(true, 400, 800, 3000, 48);
-        assertTrue(mid.tabs);
-        assertFalse(mid.page);
-        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects end = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(true, 2200, 800, 3000, 48);
-        assertTrue(end.tabs);
-        assertTrue(end.page);
-        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects city = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(false, 2200, 800, 3000, 48);
-        assertTrue(city.tabs);
-        assertFalse(city.page);
-        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.ListenerSlot slot = new org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.ListenerSlot();
-        slot.set("tabs");
-        slot.set("page");
-        assertEquals("page", slot.active());
-
+        assertGone("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverFeedScroll.java");
         String screen = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java");
+        assertFalse(screen.contains("TellomiDiscoverFeedScroll"));
         int build = screen.indexOf("private void buildFeed");
         int after = screen.indexOf("private void addTabs");
         String feed = screen.substring(build, after);
         assertFalse(feed.contains("setOnScrollChangeListener"));
         assertTrue(feed.contains("scroll(column, true)"));
+        int city = screen.indexOf("private void buildCity");
+        String cityBody = screen.substring(city, build);
+        assertTrue(cityBody.contains("scroll(column, false)"));
         int scroll = screen.indexOf("private ScrollView scroll");
         String body = screen.substring(scroll, screen.indexOf("private TextView label", scroll));
-        assertTrue(body.contains("tellomiSetTabsVisible"));
-        assertTrue(body.contains("loadFeed(false)"));
+        assertEquals(1, count(body, "setOnScrollChangeListener"));
         assertEquals(1, count(screen, "setOnScrollChangeListener"));
+        int tabs = body.indexOf("tellomiSetTabsVisible");
+        int pageGate = body.indexOf("if (!page)");
+        int next = body.indexOf("loadFeed(false)");
+        assertTrue(tabs > 0 && pageGate > tabs && next > pageGate);
+        assertTrue(body.contains("contentHeight - dp(48)"));
     }
 
     private static int count(String text, String needle) {
@@ -252,7 +242,9 @@ public class TellomiN01ToN06Test {
         assertTrue(sessions.contains("tellomiResetRefused"));
         assertTrue(sessions.contains("tellomiFinishResetAll"));
         String photo = read("TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java");
+        assertTrue(photo.contains("new ChatActivityEnterView.SendButton"));
         assertTrue(photo.contains("R.drawable.tellomi_chat_send_arrow"));
+        assertTrue(photo.contains("SELECT_TYPE_AVATAR || type == SELECT_TYPE_WALLPAPER || type == SELECT_TYPE_QR || type == SELECT_TYPE_STICKER"));
         assertTrue(photo.contains("R.drawable.floating_check"));
         String attach = read("TMessagesProj/src/main/java/org/telegram/ui/Components/ChatAttachAlert.java");
         assertTrue(attach.contains("R.drawable.tellomi_chat_send_arrow"));
@@ -273,6 +265,23 @@ public class TellomiN01ToN06Test {
         String intro = read("TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java");
         assertFalse(intro.contains("TellomiDayNight"));
         assertTrue(login.contains("!tellomiKeepCodePage && activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD"));
+    }
+
+    private static void assertGone(String relative) {
+        File[] candidates = new File[] {
+            new File(relative),
+            new File("TMessagesProj/..", relative),
+            new File("..", relative)
+        };
+        boolean sawDir = false;
+        for (File file : candidates) {
+            assertFalse(file.getPath(), file.isFile());
+            File parent = file.getParentFile();
+            if (parent != null && parent.isDirectory()) {
+                sawDir = true;
+            }
+        }
+        assertTrue(sawDir);
     }
 
     private static String read(String relative) throws Exception {

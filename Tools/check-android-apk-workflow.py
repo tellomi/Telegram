@@ -129,6 +129,25 @@ def main():
     require(expected in folded, "publish triggers changed")
     require("pull_request" not in publish.split("steps:", 1)[0], "publish must not run on pull_request")
     require("refs/heads/master" not in publish.split("steps:", 1)[0], "publish must not run on master")
+    require("\n    needs: apk\n" in publish, "publish must still need only the package job")
+    require("emulator" not in publish.split("steps:", 1)[0], "publish must not wait on the emulator job")
+
+    emulator = job_block(text, "emulator")
+    emulator_head = emulator.split("steps:", 1)[0]
+    require("needs: native" in emulator_head, "emulator job must use the native library from this run")
+    require("pull_request" not in emulator_head, "emulator job must not run on pull_request")
+    require("github.event.inputs.emulator == 'true'" in emulator_head, "emulator job must stay behind the workflow input")
+    require("refs/heads/cursor/android-device-followups-2a44" in emulator_head, "follow-up branch must be the only push that runs the emulator")
+    require("TELLOMI_SERVER_PROFILE=local" in emulator, "emulator job must assemble the local profile")
+    require("TELLOMI_LOCK_DC_ADDRESSES=true" in emulator, "emulator job must lock the local DC")
+    require("TELLOMI_ABI_FILTERS=x86_64" in emulator, "emulator job must build x86_64 only")
+    require("assembleAfatDebug" in emulator, "emulator job must assemble debug")
+    require("assembleAfatRelease" not in emulator, "emulator job must not assemble release")
+    require("TELLOMI_SERVER_PROFILE=dev" not in emulator, "emulator job must not use the dev profile")
+    require("/usr/local/lib/android/sdk/emulator" not in emulator, "emulator job must not delete the emulator package")
+    require("secrets." not in emulator, "emulator job must not read repo secrets")
+    require("tellomi-publish-installer" not in emulator, "emulator job must not publish")
+    require(text.count("/usr/local/lib/android/sdk/emulator") == 2, "only the native and package jobs delete the emulator")
 
     cases = [
         ("pull_request", "refs/heads/master", "none", False, False),

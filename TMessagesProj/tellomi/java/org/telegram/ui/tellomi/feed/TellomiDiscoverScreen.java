@@ -705,7 +705,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildLegacy(boolean postUnavailable) {
-        TellomiDiscoverComposeMount.clear(root);
+        root.removeAllViews();
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = new LinearLayout(context);
@@ -734,7 +734,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildCity(TellomiDiscover.Copy copy) {
-        TellomiDiscoverComposeMount.clear(root);
+        root.removeAllViews();
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = column();
@@ -818,7 +818,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildFeed(TellomiDiscover.Copy copy, TellomiDiscover.Chrome chrome) {
-        TellomiDiscoverComposeMount.clear(root);
+        root.removeAllViews();
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = column();
@@ -1028,7 +1028,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             }
             View child = scroll.getChildAt(0);
             int contentHeight = child == null ? 0 : child.getHeight();
-            if (TellomiDiscoverFeedScroll.nearEnd(scrollY, scroll.getHeight(), contentHeight, dp(48))) {
+            if (contentHeight > 0 && scrollY + scroll.getHeight() >= contentHeight - dp(48)) {
                 loadFeed(false);
             }
         });
