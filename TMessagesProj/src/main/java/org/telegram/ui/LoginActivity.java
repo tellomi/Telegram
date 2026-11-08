@@ -380,6 +380,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     private ImageView backButtonView;
     private ImageView tellomiLanguageButton;
+    private org.telegram.ui.Components.RLottieImageView tellomiThemeButton;
     private String tellomiSharedEmail = "";
     private static final int TELLOMI_SEND_CODE_TIMEOUT_MS = 20000;
     private Runnable tellomiSendCodeWatch;
@@ -608,8 +609,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 marginLayoutParams.topMargin = AndroidUtilities.dp(16) + statusBarHeight;
                 if (tellomiLanguageButton != null) {
                     marginLayoutParams = (MarginLayoutParams) tellomiLanguageButton.getLayoutParams();
-                    marginLayoutParams.topMargin = AndroidUtilities.dp(16) + statusBarHeight;
-                    placeTellomiLanguage((FrameLayout.LayoutParams) marginLayoutParams);
+                    placeTellomiAuthChrome(statusBarHeight);
                 }
 
                 marginLayoutParams = (MarginLayoutParams) proxyButtonView.getLayoutParams();
@@ -827,9 +827,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
-        if (activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD || currentViewNum == VIEW_TELLOMI_EMAIL_PASSWORD)) {
+        if (!tellomiKeepCodePage && activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD || currentViewNum == VIEW_TELLOMI_EMAIL_PASSWORD)) {
             currentViewNum = VIEW_PHONE_INPUT;
-        } else if (activityMode == MODE_LOGIN && currentViewNum == VIEW_TELLOMI_EMAIL_CODE && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+        } else if (!tellomiKeepCodePage && activityMode == MODE_LOGIN && currentViewNum == VIEW_TELLOMI_EMAIL_CODE && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
             ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiOpenScreen(PhoneView.TELLOMI_EMAIL_CODE, false);
             currentViewNum = VIEW_PHONE_INPUT;
         }
@@ -873,7 +873,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 presentFragment(new TellomiLanguageSelectActivity(this::tellomiApplyInterfaceLanguage));
             });
-            sizeNotifierFrameLayout.addView(tellomiLanguageButton, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 0, 16, 12, 0));
+            sizeNotifierFrameLayout.addView(tellomiLanguageButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 16, 56, 0));
+            tellomiThemeButton = TellomiDayNight.create(context);
+            tellomiThemeButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
+            sizeNotifierFrameLayout.addView(tellomiThemeButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 16, 4, 0));
         }
 
         if (emailChangeSkipCallback != null && !emailChangeNonSkippable && emailChangeIsSuggestion) {
@@ -1729,26 +1732,45 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     /**
-     * The proxy shield stays where Telegram puts it (top-right). The language
-     * button uses that corner and moves left while the shield is visible.
+     * Language and day/night share one hit size and one top edge. The proxy
+     * shield, when it is showing, sits in the corner and both controls move
+     * clear of it together.
      */
-    private void placeTellomiLanguage(FrameLayout.LayoutParams lp) {
-        if (tellomiLanguageButton == null) {
+    private void placeTellomiAuthChrome(int statusBarPx) {
+        if (tellomiLanguageButton == null || sizeNotifierFrameLayout == null) {
             return;
         }
-        if (lp == null) {
-            ViewGroup.LayoutParams raw = tellomiLanguageButton.getLayoutParams();
-            if (!(raw instanceof FrameLayout.LayoutParams)) {
-                return;
-            }
-            lp = (FrameLayout.LayoutParams) raw;
+        int width = sizeNotifierFrameLayout.getMeasuredWidth();
+        if (width <= 0) {
+            width = AndroidUtilities.displaySize.x;
+        }
+        float fontScale = 1f;
+        if (getContext() != null) {
+            fontScale = getContext().getResources().getConfiguration().fontScale;
         }
         boolean proxyShown = proxyButtonView != null && proxyButtonView.getVisibility() == View.VISIBLE;
-        int margin = AndroidUtilities.dp(proxyShown ? 56 : 12);
+        TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(width, AndroidUtilities.density, fontScale, statusBarPx, proxyShown);
+        applyChromeSlot(tellomiLanguageButton, slots.top, slots.size, slots.languageRightMargin(width));
+        applyChromeSlot(tellomiThemeButton, slots.top, slots.size, slots.themeRightMargin(width));
+    }
+
+    private static void applyChromeSlot(View view, int top, int size, int right) {
+        if (view == null) {
+            return;
+        }
+        ViewGroup.LayoutParams raw = view.getLayoutParams();
+        if (!(raw instanceof FrameLayout.LayoutParams)) {
+            return;
+        }
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) raw;
         lp.gravity = Gravity.RIGHT | Gravity.TOP;
-        if (lp.rightMargin != margin) {
-            lp.rightMargin = margin;
-            tellomiLanguageButton.requestLayout();
+        boolean changed = lp.topMargin != top || lp.width != size || lp.height != size || lp.rightMargin != right;
+        lp.topMargin = top;
+        lp.width = size;
+        lp.height = size;
+        lp.rightMargin = right;
+        if (changed) {
+            view.requestLayout();
         }
     }
 
@@ -10600,6 +10622,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (tellomiLanguageButton != null) {
             tellomiLanguageButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
         }
+        if (tellomiThemeButton != null) {
+            tellomiThemeButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
+            tellomiThemeButton.setContentDescription(TellomiDayNight.description(Theme.isCurrentThemeDark()));
+        }
 
         proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
         proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
@@ -10955,7 +10981,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             showProxyButtonDelayed = null;
         }
         proxyButtonVisible = show;
-        placeTellomiLanguage(null);
+        int status = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
+        placeTellomiAuthChrome(status);
         proxyButtonView.clearAnimation();
         if (animated) {
             proxyButtonView.setVisibility(View.VISIBLE);

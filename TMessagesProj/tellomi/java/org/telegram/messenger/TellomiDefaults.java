@@ -298,4 +298,60 @@ public final class TellomiDefaults {
         String code = info.shortName.replace('_', '-').toLowerCase(Locale.US);
         return LANG_ZH_HANS.equals(code) || LANG_ZH_HANT.equals(code);
     }
+
+    /**
+     * Locale installed for a built-in row. Simplified and Traditional must not
+     * both become {@code new Locale("zh")} via the shared plural code.
+     */
+    public static Locale androidLocale(String shortName) {
+        if (shortName == null || shortName.length() == 0) {
+            return null;
+        }
+        String code = shortName.replace('_', '-').toLowerCase(Locale.US);
+        if ("en".equals(code)) {
+            return Locale.ENGLISH;
+        }
+        if ("zh".equals(code) || "zh-cn".equals(code) || LANG_ZH_HANS.equals(code)) {
+            return Locale.SIMPLIFIED_CHINESE;
+        }
+        if ("zh-tw".equals(code) || "zh-hk".equals(code) || "zh-mo".equals(code) || LANG_ZH_HANT.equals(code)) {
+            return Locale.TRADITIONAL_CHINESE;
+        }
+        return null;
+    }
+
+    public static boolean traditionalShortName(String shortName) {
+        Locale locale = androidLocale(shortName);
+        return locale != null && "TW".equals(locale.getCountry());
+    }
+
+    public static boolean traditionalUi() {
+        try {
+            LocaleController.LocaleInfo info = LocaleController.peekCurrentLocaleInfo();
+            return info != null && traditionalShortName(info.shortName);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Flavor string for the active Chinese script. Traditional falls back to Simplified. */
+    public static String scriptResource(int resId, boolean traditional) {
+        if (!traditional) {
+            return chineseResource(resId);
+        }
+        String english = resourceFor(Locale.ENGLISH, resId);
+        String tw = resourceFor(Locale.TRADITIONAL_CHINESE, resId);
+        if (differs(tw, english)) {
+            return tw;
+        }
+        String hant = resourceFor(Locale.forLanguageTag("zh-Hant"), resId);
+        if (differs(hant, english)) {
+            return hant;
+        }
+        return chineseResource(resId);
+    }
+
+    private static boolean differs(String value, String english) {
+        return value != null && value.length() > 0 && (english == null || !value.equals(english));
+    }
 }

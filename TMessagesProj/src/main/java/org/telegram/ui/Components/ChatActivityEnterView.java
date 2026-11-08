@@ -1271,7 +1271,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             radiiRight[0] = radiiRight[1] = radiiRight[6] = radiiRight[7] = 0;
             radiiRight[2] = radiiRight[3] = radiiRight[4] = radiiRight[5] = dp(3);
 
-            micDrawable = getResources().getDrawable(R.drawable.input_mic).mutate();
+            micDrawable = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
             vidDrawable = getResources().getDrawable(R.drawable.input_video).mutate();
 
             setWillNotDraw(false);
@@ -2064,7 +2064,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             sendDrawable = getResources().getDrawable(R.drawable.attach_send).mutate();
             sendDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
 
-            micOutline = getResources().getDrawable(R.drawable.input_mic).mutate();
+            micOutline = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
             micOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
 
             cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
@@ -2759,7 +2759,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
-        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 2, 0));
         setEmojiButtonImage(false, false);
 
         deleteRichDraftButton = new ImageView(context);
@@ -2842,9 +2842,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             };
             attachButton.setScaleType(ImageView.ScaleType.CENTER);
             attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
-            attachButton.setImageResource(R.drawable.msg_input_attach2);
+            attachButton.setImageResource(R.drawable.tellomi_input_attach);
             attachButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
+            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
                     return;
@@ -3431,7 +3431,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 //            return true;
 //        });
 
-        micOutline = getResources().getDrawable(R.drawable.input_mic).mutate();
+        micOutline = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
         micOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
 
         cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
@@ -3485,7 +3485,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.send_plane_24, resourcesProvider, true) {
+        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.tellomi_chat_send_arrow, resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();
@@ -8893,7 +8893,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (scheduledButton != null && scheduledButton.getTag() != null) {
                 layoutParams.rightMargin = dp(50);
             } else {
-                layoutParams.rightMargin = dp(2);
+                // Emoji stays in the right-hand slot. The voice control, not this slot, becomes send.
+                layoutParams.rightMargin = dp(50);
             }
         }
         layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT)));
@@ -14637,7 +14638,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         int wasHeight = textFieldContainer.getMeasuredHeight();
         if (botCommandsMenuButton != null && botCommandsMenuButton.getTag() != null) {
             botCommandsMenuButton.measure(widthMeasureSpec, heightMeasureSpec);
-            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(10) + (botCommandsMenuButton == null ? 0 : botCommandsMenuButton.getMeasuredWidth());
+            if (attachButton != null) {
+                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(10) + botCommandsMenuButton.getMeasuredWidth();
+            }
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(10) + (botCommandsMenuButton == null ? 0 : botCommandsMenuButton.getMeasuredWidth());
             }
@@ -14650,7 +14653,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else if (senderSelectView != null && senderSelectView.getVisibility() == View.VISIBLE) {
             int width = senderSelectView.getLayoutParams().width, height = senderSelectView.getLayoutParams().height;
             senderSelectView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
-            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(7) + width;
+            if (attachButton != null) {
+                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(7) + width;
+            }
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(7) + width;
             }
@@ -14661,7 +14666,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 ((MarginLayoutParams) richDraftPreview.getLayoutParams()).leftMargin = dp(54) + width;
             }
         } else {
-            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(3);
+            if (attachButton != null) {
+                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(3);
+            }
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(3);
             }

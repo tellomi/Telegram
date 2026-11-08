@@ -154,6 +154,25 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         };
     }
 
+    private static void placeIntroChrome(View view, int top, int size, int right) {
+        if (view == null) {
+            return;
+        }
+        ViewGroup.LayoutParams raw = view.getLayoutParams();
+        if (!(raw instanceof MarginLayoutParams)) {
+            return;
+        }
+        MarginLayoutParams lp = (MarginLayoutParams) raw;
+        if (lp.topMargin == top && lp.width == size && lp.height == size && lp.rightMargin == right) {
+            return;
+        }
+        lp.topMargin = top;
+        lp.width = size;
+        lp.height = size;
+        lp.rightMargin = right;
+        view.requestLayout();
+    }
+
     /**
      * The carousel is built once. A later language pick has to rewrite the pages
      * that are already on screen, including the start button.
@@ -225,11 +244,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
 
-        RLottieImageView themeIconView = new RLottieImageView(context);
-        FrameLayout themeFrameLayout = new FrameLayout(context);
-        themeFrameLayout.addView(themeIconView, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
+        RLottieImageView themeIconView = TellomiDayNight.create(context);
+        darkThemeDrawable = themeIconView.getAnimatedDrawable();
 
-        int themeMargin = 4;
         frameContainerView = new FrameLayout(context) {
 
             @Override
@@ -253,63 +270,16 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 x = (getMeasuredWidth() - switchLanguageTextView.getMeasuredWidth()) / 2;
                 switchLanguageTextView.layout(x, y - switchLanguageTextView.getMeasuredHeight(), x + switchLanguageTextView.getMeasuredWidth(), y);
 
-                MarginLayoutParams marginLayoutParams = (MarginLayoutParams) themeFrameLayout.getLayoutParams();
-                int newTopMargin = dp(themeMargin) + (AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight);
-                if (marginLayoutParams.topMargin != newTopMargin) {
-                    marginLayoutParams.topMargin = newTopMargin;
-                    themeFrameLayout.requestLayout();
-                }
+                int status = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
+                float fontScale = getResources().getConfiguration().fontScale;
+                TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(getMeasuredWidth(), AndroidUtilities.density, fontScale, status, false);
+                placeIntroChrome(themeIconView, slots.top, slots.size, slots.themeRightMargin(getMeasuredWidth()));
                 if (tellomiIntroLanguage != null) {
-                    MarginLayoutParams langLp = (MarginLayoutParams) tellomiIntroLanguage.getLayoutParams();
-                    if (langLp.topMargin != newTopMargin) {
-                        langLp.topMargin = newTopMargin;
-                        tellomiIntroLanguage.requestLayout();
-                    }
+                    placeIntroChrome(tellomiIntroLanguage, slots.top, slots.size, slots.languageRightMargin(getMeasuredWidth()));
                 }
             }
         };
         scrollView.addView(frameContainerView, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
-
-        darkThemeDrawable = new RLottieDrawable(R.raw.sun, dp(28), dp(28), true, null);
-        darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
-        darkThemeDrawable.beginApplyLayerColors();
-        darkThemeDrawable.commitApplyLayerColors();
-
-        darkThemeDrawable.setCustomEndFrame(Theme.getCurrentTheme().isDark() ? darkThemeDrawable.getFramesCount() - 1 : 0);
-        darkThemeDrawable.setCurrentFrame(Theme.getCurrentTheme().isDark() ? darkThemeDrawable.getFramesCount() - 1 : 0, false);
-        themeIconView.setContentDescription(LocaleController.getString(Theme.getCurrentTheme().isDark() ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
-
-        themeIconView.setAnimation(darkThemeDrawable);
-        themeFrameLayout.setOnClickListener(v -> {
-            if (DialogsActivity.switchingTheme) return;
-            DialogsActivity.switchingTheme = true;
-
-            // TODO: Generify this part, currently it's a clone of another theme switch toggle
-            String dayThemeName = "Blue";
-            String nightThemeName = "Night";
-
-            Theme.ThemeInfo themeInfo;
-            boolean toDark;
-            if (toDark = !Theme.isCurrentThemeDark()) {
-                themeInfo = Theme.getTheme(nightThemeName);
-            } else {
-                themeInfo = Theme.getTheme(dayThemeName);
-            }
-
-            Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
-            Theme.saveAutoNightThemeConfig();
-            Theme.cancelAutoNightThemeCallbacks();
-
-            darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
-            themeIconView.playAnimation();
-
-            int[] pos = new int[2];
-            themeIconView.getLocationInWindow(pos);
-            pos[0] += themeIconView.getMeasuredWidth() / 2;
-            pos[1] += themeIconView.getMeasuredHeight() / 2;
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, themeIconView);
-            themeIconView.setContentDescription(LocaleController.getString(toDark ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
-        });
 
         frameLayout2 = new FrameLayout(context);
         frameContainerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
@@ -465,9 +435,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
             presentFragment(new TellomiLanguageSelectActivity(info -> LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(this::tellomiReloadIntroCopy))));
         });
-        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, 64, 0));
-
-        frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
+        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 56, 0));
+        frameContainerView.addView(themeIconView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 4, 0));
 
         fragmentView = scrollView;
 
@@ -1010,12 +979,12 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         if (tellomiIntroLanguage != null) {
             tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
         }
+        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
         startMessagingButton.setTextColor(page);
         if (introArt != null) {
             introArt.setTint(ink);
         }
         startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, pressed));
-        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
         if (fromTheme) {
             if (eglThread != null) {

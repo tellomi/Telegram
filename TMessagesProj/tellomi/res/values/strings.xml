@@ -329,4 +329,5 @@
     <string name="TellomiChatPasswordBiometricHint">Unlock this chat with biometrics as well as the digits. The digits stay on this device.</string>
     <string name="TellomiChatPasswordSkip">Digits only</string>
     <string name="TellomiChatLocked">Locked</string>
+    <string name="TellomiFreshResetForbidden">This login is under 24 hours old, so other devices stay signed in. Try again later.</string>
 </resources>

@@ -4,6 +4,19 @@ DrKLO files this tree changes on purpose. New Tellomi assets live under `TMessag
 
 Paths below are relative to the repo root. "Upstream" means the file exists in DrKLO/Telegram (this tree's snapshot is `3de37c8cf`, "update to 13.1.1").
 
+## Login chrome, language, composer, session revoke (N01–N04, N06)
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome language and day/night controls use `TellomiAuthChromeLayout` (same hit size and top edge). Theme toggle goes through `TellomiDayNight`. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Same pair of controls on the login flow, including register and code pages. A language change no longer forces the phone or email password step back to the phone form. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `zh_hans` installs `zh-CN` and `zh_hant` installs `zh-TW` instead of both becoming `Locale("zh")`. Traditional UI then runs `TellomiChineseScript` on the resolved string. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Idle order is attachment (left), emoji (inside, right), voice (outside, right). Text still replaces the voice slot with send. Send uses `tellomi_chat_send_arrow` (iOS `chatInputPanelSendIconImage` paths, no circle). Attachment and voice use the iOS PDF paths. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Smile, sticker, and voice states use those same vectors. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SessionsActivity.java` | `406 FRESH_RESET_AUTHORISATION_FORBIDDEN` on one device and on every other device shows `TellomiFreshResetForbidden` and leaves the row. The push re-register runs only after `auth.resetAuthorizations` succeeds. |
+
+The circle behind send stays the existing round-rect fill (`key_chat_messagePanelSend`), which is the Android counterpart of iOS `sendButtonBackgroundView` tinted with `panelControlAccentColor`. The arrow drawable itself has no disc. iOS master `a22220ab` and candidate `d3b51fb` have the same two SVG paths and the same attachment, sticker, and microphone PDF blobs.
+
 ## Launcher icon
 
 | File | Change |
