@@ -1906,6 +1906,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (shot.remainingMs > 0) {
                 sms.time = shot.remainingMs;
+                sms.lastCurrentTime = System.currentTimeMillis();
+                sms.destroyTimer();
+                sms.createTimer();
             }
             if (shot.openedAtSec > 0) {
                 sms.openTime = shot.openedAtSec;
@@ -1953,7 +1956,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
             getParentLayout().rebuildAllFragmentViews(true, true);
-            TellomiLoginResume.clear();
+            // A Traditional/English switch can recreate the activity after this
+            // callback. Keep the held step until that createView has run.
+            AndroidUtilities.runOnUIThread(TellomiLoginResume::clear, 400);
         }));
         TellomiLanguageAlert.rememberUserChoice(info);
     }
@@ -6989,10 +6994,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 codeFieldContainer.setText(code);
             }
             int t = bundle.getInt("time");
+            int t2 = bundle.getInt("open");
+            // setParams starts the countdown from the original server timeout.
+            // Put the remaining time back and start that timer again.
             if (t != 0) {
                 time = t;
+                lastCurrentTime = System.currentTimeMillis();
+                destroyTimer();
+                createTimer();
             }
-            int t2 = bundle.getInt("open");
             if (t2 != 0) {
                 openTime = t2;
             }

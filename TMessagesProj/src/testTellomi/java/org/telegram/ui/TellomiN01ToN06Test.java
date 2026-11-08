@@ -185,6 +185,8 @@ public class TellomiN01ToN06Test {
         assertTrue(login.contains("TellomiLoginResume.holdSnapshot"));
         assertTrue(login.contains("TellomiLoginResume.hold"));
         assertTrue(login.contains("tellomiApplyHeldSnapshot"));
+        assertTrue(login.contains("sms.destroyTimer()"));
+        assertTrue(login.contains("sms.createTimer()"));
         assertTrue(login.contains("TellomiLoginResume.stripSecrets"));
         assertTrue(login.contains("phoneview_agreed"));
         assertTrue(login.contains("tellomiOpenScreen(TELLOMI_EMAIL_CODE, false)"));
