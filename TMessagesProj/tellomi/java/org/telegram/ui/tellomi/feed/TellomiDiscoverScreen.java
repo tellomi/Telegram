@@ -533,6 +533,8 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private void presentComposer(String quoteOf) {
         TellomiDiscover.Configuration configuration = configuration();
         if (!TellomiDiscover.chrome(loggedIn(), configuration.enabled, kind, null, false, cityCode).showsCompose || Boolean.FALSE.equals(engineVisible)) {
+            banner = copy().failed;
+            sync(false);
             return;
         }
         activity.presentFragment(TellomiDiscoverComposeFragment.create(textLimit, this, quoteOf));
@@ -1021,9 +1023,15 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
         return column;
     }
 
+    private final TellomiDiscoverTabScroll tabScroll = new TellomiDiscoverTabScroll(dp(12), dp(8));
+
     private ScrollView scroll(LinearLayout column) {
         ScrollView scroll = new ScrollView(context);
         scroll.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        scroll.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            boolean canScroll = column.getMeasuredHeight() > v.getHeight();
+            activity.tellomiSetTabsVisible(tabScroll.onScroll(scrollY, scrollY - oldScrollY, canScroll));
+        });
         root.addView(scroll, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         return scroll;
     }

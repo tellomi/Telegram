@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -14,7 +15,9 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.MainTabsActivity;
+import org.telegram.ui.MainTabsActivityController;
 
 import java.util.ArrayList;
 
@@ -36,6 +39,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private String openedPostId;
     private boolean hasMainTabs;
     private TellomiDiscoverScreen screen;
+    private FragmentFloatingButton composeButton;
+    private MainTabsActivityController tabsController;
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -85,7 +90,22 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         }
     }
 
+    public void setTabsController(MainTabsActivityController controller) {
+        tabsController = controller;
+    }
+
+    void tellomiSetTabsVisible(boolean visible) {
+        if (tabsController != null) {
+            tabsController.setTabsVisible(visible);
+        }
+    }
+
     void showComposeButton(boolean show, String title, String notifications) {
+        if (hasMainTabs && composeButton != null) {
+            composeButton.setContentDescription(title);
+            composeButton.setButtonVisible(show, false);
+            return;
+        }
         if (actionBar == null) {
             return;
         }
@@ -169,6 +189,18 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         fragmentView = root;
         if (screen != null) {
             screen.destroy();
+        }
+        if (hasMainTabs) {
+            composeButton = new FragmentFloatingButton(context, resourceProvider);
+            composeButton.setImageResource(R.drawable.filled_fab_compose_32);
+            composeButton.setButtonVisible(false, false);
+            composeButton.setOnClickListener(v -> {
+                if (screen != null) {
+                    screen.compose();
+                }
+            });
+            root.addView(composeButton, FragmentFloatingButton.createDefaultLayoutParams());
+            composeButton.setTranslationY(-AndroidUtilities.navigationBarHeight);
         }
         screen = new TellomiDiscoverScreen(this, root, context);
         screen.sync(true);

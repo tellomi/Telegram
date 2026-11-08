@@ -7346,7 +7346,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoAvatarTooltip.setTextColor(0xff8c8c8c);
         containerView.addView(videoAvatarTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 8, 0, 0));
 
-        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.send_plane_24, resourcesProvider) {
+        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.tellomi_chat_send_arrow, resourcesProvider) {
             @Override
             public boolean isOpen() {
                 return true;
@@ -17130,7 +17130,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (pickerViewSendButton != null) {
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) pickerViewSendButton.getLayoutParams();
             if (type == 4 || type == 5) {
-                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
+                pickerViewSendButton.setResourceId(R.drawable.tellomi_chat_send_arrow);
 //                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
                 layoutParams2.bottomMargin = dp(1);
             } else if (type == SELECT_TYPE_POLL_MEDIA || type == SELECT_TYPE_POLL_MEDIA_EDIT || type == SELECT_TYPE_AVATAR || type == SELECT_TYPE_WALLPAPER || type == SELECT_TYPE_QR || type == SELECT_TYPE_STICKER) {
@@ -17140,7 +17140,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 layoutParams2.bottomMargin = dp(1f);
             } else {
 //                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
-                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
+                pickerViewSendButton.setResourceId(R.drawable.tellomi_chat_send_arrow);
                 layoutParams2.bottomMargin = dp(1);
             }
             pickerViewSendButton.setLayoutParams(layoutParams2);

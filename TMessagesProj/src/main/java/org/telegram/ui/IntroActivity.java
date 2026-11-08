@@ -101,14 +101,11 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private BottomPagesView bottomPages;
     private TextView switchLanguageTextView;
     private ImageView tellomiIntroLanguage;
-    private org.telegram.ui.Components.RLottieImageView tellomiIntroTheme;
     private GradientDrawable startMessagingButtonBackground;
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
     private FrameLayout frameContainerView;
     private TellomiIntroArt introArt;
-
-    private RLottieDrawable darkThemeDrawable;
 
     private int lastPage = 0;
     /** True after the user leaves the first welcome page. A redraw keeps that page. */
@@ -247,10 +244,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
 
-        tellomiIntroTheme = TellomiDayNight.create(context);
-        RLottieImageView themeIconView = tellomiIntroTheme;
-        darkThemeDrawable = themeIconView.getAnimatedDrawable();
-
         frameContainerView = new FrameLayout(context) {
 
             @Override
@@ -276,8 +269,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
                 int status = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
                 float fontScale = getResources().getConfiguration().fontScale;
-                TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(getMeasuredWidth(), AndroidUtilities.density, fontScale, status, false);
-                placeIntroChrome(themeIconView, slots.top, slots.size, slots.themeRightMargin(getMeasuredWidth()));
+                TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(getMeasuredWidth(), AndroidUtilities.density, fontScale, status, false, 1);
                 if (tellomiIntroLanguage != null) {
                     placeIntroChrome(tellomiIntroLanguage, slots.top, slots.size, slots.languageRightMargin(getMeasuredWidth()));
                 }
@@ -440,8 +432,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
             presentFragment(new TellomiLanguageSelectActivity(info -> LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(this::tellomiReloadIntroCopy))));
         });
-        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 56, 0));
-        frameContainerView.addView(themeIconView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 4, 0));
+        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 4, 0));
 
         fragmentView = scrollView;
 
@@ -979,19 +970,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         switchLanguageTextView.setTextColor(ink);
         if (tellomiIntroLanguage != null) {
             tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
-        }
-        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
-        if (tellomiIntroTheme != null) {
-            boolean dark = Theme.isCurrentThemeDark();
-            tellomiIntroTheme.setContentDescription(TellomiDayNight.description(dark));
-            RLottieDrawable drawable = tellomiIntroTheme.getAnimatedDrawable();
-            if (drawable != null) {
-                int frame = dark ? drawable.getFramesCount() - 1 : 0;
-                drawable.setCustomEndFrame(frame);
-                if (!drawable.isRunning()) {
-                    drawable.setCurrentFrame(frame, false);
-                }
-            }
         }
         startMessagingButton.setTextColor(page);
         if (introArt != null) {

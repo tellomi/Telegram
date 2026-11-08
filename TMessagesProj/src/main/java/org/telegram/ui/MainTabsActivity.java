@@ -872,6 +872,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         viewPager.scrollToPosition(position);
     }
 
+    MainTabsActivityController tellomiTabsController() {
+        return new MainTabsActivityControllerImpl();
+    }
+
     BaseFragment tellomiCreateChats() {
         Bundle args = new Bundle();
         args.putBoolean("hasMainTabs", true);

@@ -57,6 +57,18 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
+    public void agreementStaysAboveTheKeyboardAndDiscoverTabsFollowScroll() {
+        assertEquals(400, TellomiLoginFit.visibleAboveKeyboard(1000, 600));
+        assertEquals(1, TellomiLoginFit.visibleAboveKeyboard(100, 500));
+        org.telegram.ui.tellomi.feed.TellomiDiscoverTabScroll scroll = new org.telegram.ui.tellomi.feed.TellomiDiscoverTabScroll(12, 8);
+        assertTrue(scroll.onScroll(0, 40, false));
+        assertTrue(scroll.onScroll(0, 40, true));
+        assertFalse(scroll.onScroll(80, 12, true));
+        assertTrue(scroll.onScroll(40, -8, true));
+        assertTrue(scroll.onScroll(0, -4, true));
+    }
+
+    @Test
     public void welcomePageStaysWhereTheUserLeftIt() {
         assertEquals(0, TellomiAuthChromeLayout.welcomePage(false, 0, false, 6));
         assertEquals(5, TellomiAuthChromeLayout.welcomePage(false, 0, true, 6));
@@ -120,12 +132,21 @@ public class TellomiN01ToN06Test {
         String sessions = read("TMessagesProj/src/main/java/org/telegram/ui/SessionsActivity.java");
         assertTrue(sessions.contains("tellomiResetRefused"));
         assertTrue(sessions.contains("tellomiFinishResetAll"));
+        String photo = read("TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java");
+        assertTrue(photo.contains("R.drawable.tellomi_chat_send_arrow"));
+        assertTrue(photo.contains("R.drawable.floating_check"));
+        String attach = read("TMessagesProj/src/main/java/org/telegram/ui/Components/ChatAttachAlert.java");
+        assertTrue(attach.contains("R.drawable.tellomi_chat_send_arrow"));
         String login = read("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java");
+        assertTrue(login.contains("TellomiLoginResume.hold"));
+        assertTrue(login.contains("TellomiLoginResume.stripSecrets"));
+        assertTrue(login.contains("phoneview_agreed"));
+        assertTrue(login.contains("tellomiOpenScreen(TELLOMI_EMAIL_CODE, false)"));
         assertTrue(login.contains("TellomiAuthChromeLayout.place"));
         assertTrue(login.contains("proxyShown, 1"));
         assertFalse(login.contains("TellomiDayNight"));
         String intro = read("TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java");
-        assertTrue(intro.contains("TellomiDayNight.create"));
+        assertFalse(intro.contains("TellomiDayNight"));
         assertTrue(login.contains("!tellomiKeepCodePage && activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD"));
     }
 

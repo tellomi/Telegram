@@ -636,6 +636,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (keyboardHeight > AndroidUtilities.dp(20) && isCustomKeyboardVisible()) {
                 AndroidUtilities.hideKeyboard(fragmentView);
             }
+            if (activityMode == MODE_LOGIN && views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiApplyKeyboardInset(keyboardHeight);
+            }
             if (keyboardHeight <= AndroidUtilities.dp(20) && keyboardHideCallback != null) {
                 keyboardHideCallback.run();
                 keyboardHideCallback = null;
@@ -786,6 +789,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (tellomiLanguageRestore != null) {
             savedInstanceState = tellomiLanguageRestore;
             tellomiLanguageRestore = null;
+            tellomiKeepCodePage = true;
+        } else if (TellomiLoginResume.peek() != null) {
+            savedInstanceState = TellomiLoginResume.peek();
             tellomiKeepCodePage = true;
         } else {
             savedInstanceState = activityMode == MODE_LOGIN ? loadCurrentState(newAccount, currentAccount) : null;
@@ -1001,6 +1007,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     @Override
                     public void onAnimationStart(Animator animation) {
                         keyboardView.setVisibility(View.VISIBLE);
+                        if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                            ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiApplyKeyboardInset(0);
+                        }
                     }
 
                     @Override
@@ -1013,6 +1022,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 keyboardAnimator.start();
             } else {
                 keyboardView.setVisibility(View.VISIBLE);
+                if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                    ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiApplyKeyboardInset(0);
+                }
             }
         } else {
             AndroidUtilities.removeAltFocusable(getParentActivity(), classGuid);
@@ -1028,6 +1040,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         keyboardView.setVisibility(View.GONE);
+                        if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                            ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiApplyKeyboardInset(0);
+                        }
                         if (loginScroll != null) {
                             loginScroll.scrollTo(0, 0);
                         }
@@ -1040,6 +1055,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 keyboardAnimator.start();
             } else {
                 keyboardView.setVisibility(View.GONE);
+                if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                    ((PhoneView) views[VIEW_PHONE_INPUT]).tellomiApplyKeyboardInset(0);
+                }
             }
         }
     }
@@ -1852,11 +1870,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (info == null || TellomiLanguageSheet.sameLanguage(info, LocaleController.getInstance().getCurrentLocaleInfo())) {
             return;
         }
+        TellomiLoginResume.hold(tellomiCaptureLoginState());
         LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(() -> {
             if (getParentLayout() == null) {
+                TellomiLoginResume.clear();
                 return;
             }
-            tellomiLanguageRestore = tellomiCaptureLoginState();
             if (views != null) {
                 for (int a = 0; a < views.length; a++) {
                     if (views[a] != null) {
@@ -1865,6 +1884,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
             getParentLayout().rebuildAllFragmentViews(true, true);
+            TellomiLoginResume.clear();
         }));
         TellomiLanguageAlert.rememberUserChoice(info);
     }
@@ -1988,6 +2008,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     v.saveStateParams(bundle);
                 }
             }
+            TellomiLoginResume.stripSecrets(bundle);
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo2" + (newAccount ? "_" + currentAccount : ""), Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
             editor.clear();
@@ -2617,9 +2638,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
                         int content = getMeasuredHeight();
                         int mode = MeasureSpec.getMode(heightMeasureSpec);
-                        int size = MeasureSpec.getSize(heightMeasureSpec);
+                        int keyboard = sizeNotifierFrameLayout != null ? sizeNotifierFrameLayout.measureKeyboardHeight() : 0;
+                        int size = TellomiLoginFit.visibleAboveKeyboard(MeasureSpec.getSize(heightMeasureSpec), keyboard);
                         if (TellomiLoginFit.expandToViewport(content, mode, size)) {
-                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY));
                         }
                     }
                 };
@@ -3683,6 +3705,25 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             view.setVisibility(GONE);
             view.setOnClickListener(v -> clear.run());
             return view;
+        }
+
+        void tellomiApplyKeyboardInset(int keyboardHeight) {
+            if (tellomiFormScroll == null) {
+                return;
+            }
+            boolean custom = keyboardView != null && keyboardView.getVisibility() == View.VISIBLE;
+            int customHeight = custom ? Math.max(keyboardView.getHeight(), AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP)) : 0;
+            int inset = Math.max(Math.max(0, keyboardHeight), customHeight);
+            boolean open = inset > AndroidUtilities.dp(20);
+            if (tellomiPhoneAgreementView != null && tellomiIsHome()) {
+                tellomiPlaceAgreement(!open);
+            }
+            if (tellomiFormScroll.getPaddingBottom() != inset) {
+                tellomiFormScroll.setPadding(tellomiFormScroll.getPaddingLeft(), tellomiFormScroll.getPaddingTop(), tellomiFormScroll.getPaddingRight(), inset);
+            }
+            if (open && tellomiPhoneAgreementView != null) {
+                tellomiFormScroll.post(() -> tellomiFormScroll.smoothScrollTo(0, Math.max(0, tellomiPhoneAgreementView.getTop() - AndroidUtilities.dp(8))));
+            }
         }
 
         private void tellomiPlaceAgreement(boolean home) {
@@ -4901,8 +4942,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (tellomiEmailMode) {
                     bundle.putBoolean("phoneview_email_mode", true);
                 }
-                bundle.putInt("phoneview_tellomi_screen", tellomiScreen);
             }
+            bundle.putInt("phoneview_tellomi_screen", tellomiScreen);
+            bundle.putBoolean("phoneview_agreed", tellomiPhoneAgreement.isAgreed());
         }
 
         @Override
@@ -4917,13 +4959,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (emailField != null) {
                 String email = bundle.getString("phoneview_email");
+                int screen = bundle.getInt("phoneview_tellomi_screen", bundle.getBoolean("phoneview_email_mode") ? TELLOMI_EMAIL_CODE : TELLOMI_PHONE_CODE);
+                if (screen == TELLOMI_EMAIL_CODE) {
+                    tellomiOpenScreen(TELLOMI_EMAIL_CODE, false);
+                    tellomiSharedEmail = email == null ? "" : email;
+                }
                 if (email != null) {
                     emailField.setText(email);
                 }
-                int screen = bundle.getInt("phoneview_tellomi_screen", bundle.getBoolean("phoneview_email_mode") ? TELLOMI_EMAIL_CODE : TELLOMI_PHONE_CODE);
-                if (screen == TELLOMI_EMAIL_CODE) {
-                    tellomiSharedEmail = email == null ? "" : email;
-                }
+            }
+            if (bundle.containsKey("phoneview_agreed")) {
+                tellomiPhoneAgreement.setAgreed(bundle.getBoolean("phoneview_agreed"));
             }
         }
 

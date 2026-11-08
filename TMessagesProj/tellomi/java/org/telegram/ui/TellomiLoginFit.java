@@ -81,6 +81,12 @@ public final class TellomiLoginFit {
         return viewportMode == MEASURE_EXACTLY && viewportSizePx > contentHeightPx;
     }
 
+    /** Viewport the form may fill once the IME covers the bottom of the window. */
+    public static int visibleAboveKeyboard(int viewportPx, int keyboardPx) {
+        int visible = viewportPx - Math.max(0, keyboardPx);
+        return Math.max(1, visible);
+    }
+
     /** The submit control is off the visible page and the page cannot scroll to it. */
     public static boolean submitClipped(int submitBottomPx, int visiblePx, boolean canScroll) {
         return submitBottomPx > visiblePx && !canScroll;

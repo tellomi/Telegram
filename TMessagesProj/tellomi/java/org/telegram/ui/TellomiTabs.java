@@ -258,7 +258,9 @@ public final class TellomiTabs {
         }
         switch (tabs.get(position)) {
             case FEED:
-                return newFeed();
+                FeedActivity feed = (FeedActivity) newFeed();
+                feed.setTabsController(activity.tellomiTabsController());
+                return feed;
             case CONTACTS:
                 return newContacts();
             case CALLS:
