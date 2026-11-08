@@ -10,4 +10,5 @@
     <string name="Tellomi_Discover_PhotoUploadFailed">圖片上傳失敗。</string>
     <string name="Tellomi_Discover_PhotoNetwork">網路不好，圖片沒有傳上去。</string>
     <string name="Tellomi_Discover_PhotoUploading">正在上傳圖片…</string>
+    <string name="Tellomi_Discover_PostProfileRequired">這個帳號還沒有發現主頁，這則貼文沒有送出。主頁建好後再發一次即可。</string>
 </resources>

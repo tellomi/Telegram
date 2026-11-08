@@ -96,6 +96,7 @@ public final class TellomiPack {
         entry("Tellomi.Discover.CommentPending", "Pending review. Not public yet.", "审核中，尚未公开"),
         entry("Tellomi.Discover.LoadMore", "More comments", "更多评论"),
         entry("Tellomi.Discover.ProfileRequired", "Complete your profile before commenting.", "评论前需要先完善个人资料。"),
+        entry("Tellomi.Discover.PostProfileRequired", "This account has no Discover profile yet, so the post was not sent. Send it again after the profile exists.", "这个账号还没有发现主页，这条帖子没有发出去。主页建好后再发一次即可。", "這個帳號還沒有發現主頁，這則貼文沒有送出。主頁建好後再發一次即可。"),
         entry("Tellomi.Discover.InvalidText", "A comment needs 1 to 500 characters.", "评论需要 1 到 500 字。"),
         entry("Tellomi.Discover.InvalidNonce", "This comment was not sent. Try again.", "这条评论没能提交，请再试一次。"),
         entry("Tellomi.Discover.InvalidParent", "That comment can't be replied to.", "这条回复的对象不可用。"),

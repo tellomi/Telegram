@@ -169,6 +169,7 @@
     <string name="Tellomi_Discover_CommentPending">审核中，尚未公开</string>
     <string name="Tellomi_Discover_LoadMore">更多评论</string>
     <string name="Tellomi_Discover_ProfileRequired">评论前需要先完善个人资料。</string>
+    <string name="Tellomi_Discover_PostProfileRequired">这个账号还没有发现主页，这条帖子没有发出去。主页建好后再发一次即可。</string>
     <string name="Tellomi_Discover_InvalidText">评论需要 1 到 500 字。</string>
     <string name="Tellomi_Discover_InvalidNonce">这条评论没能提交，请再试一次。</string>
     <string name="Tellomi_Discover_InvalidParent">这条回复的对象不可用。</string>

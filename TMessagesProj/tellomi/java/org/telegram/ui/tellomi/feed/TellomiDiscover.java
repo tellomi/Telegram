@@ -1812,6 +1812,9 @@ public final class TellomiDiscover {
         if (result.status == 400 && "invalid_city".equals(TellomiDiscoverParse.errorCode(result.body))) {
             return Outcome.failure(ClientError.INVALID_CITY);
         }
+        if (result.status == 409 && "profile_required".equals(TellomiDiscoverParse.errorCode(result.body))) {
+            return Outcome.failure(ClientError.PROFILE_REQUIRED);
+        }
         if (operation.kind == Operation.Kind.NEARBY && TellomiDiscoverNearby.missingEndpoint(result.status)) {
             return Outcome.failure(ClientError.NEARBY_UNAVAILABLE);
         }
@@ -2046,6 +2049,9 @@ public final class TellomiDiscover {
             }
             if (error == ClientError.MEDIA_NETWORK) {
                 return TellomiPack.text("Tellomi.Discover.PhotoNetwork", languageCode, source);
+            }
+            if (error == ClientError.PROFILE_REQUIRED) {
+                return TellomiPack.text("Tellomi.Discover.PostProfileRequired", languageCode, source);
             }
             return failed;
         }

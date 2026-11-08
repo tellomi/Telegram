@@ -168,6 +168,7 @@
     <string name="Tellomi_Discover_CommentPending">Pending review. Not public yet.</string>
     <string name="Tellomi_Discover_LoadMore">More comments</string>
     <string name="Tellomi_Discover_ProfileRequired">Complete your profile before commenting.</string>
+    <string name="Tellomi_Discover_PostProfileRequired">This account has no Discover profile yet, so the post was not sent. Send it again after the profile exists.</string>
     <string name="Tellomi_Discover_InvalidText">A comment needs 1 to 500 characters.</string>
     <string name="Tellomi_Discover_InvalidNonce">This comment was not sent. Try again.</string>
     <string name="Tellomi_Discover_InvalidParent">That comment can\'t be replied to.</string>

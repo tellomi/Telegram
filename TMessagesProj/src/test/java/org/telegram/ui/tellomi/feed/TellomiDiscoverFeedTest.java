@@ -12,6 +12,7 @@ import java.util.List;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -321,6 +322,25 @@ public class TellomiDiscoverFeedTest {
         );
         assertEquals(TellomiDiscover.ClientError.INVALID_CITY, rejected.error);
         assertEquals("这个城市不能用，请重新选择。", TellomiDiscover.Copy.resolve("zh").failureText(TellomiDiscover.ClientError.INVALID_CITY));
+        byte[] profileRequired = "{\"error\":\"profile_required\"}".getBytes(StandardCharsets.UTF_8);
+        TellomiDiscover.Outcome firstPost = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.publish("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null),
+            new TellomiDiscover.HttpResult(409, profileRequired)
+        );
+        assertEquals(TellomiDiscover.ClientError.PROFILE_REQUIRED, firstPost.error);
+        assertNotEquals(TellomiDiscover.ClientError.UNAVAILABLE, firstPost.error);
+        TellomiDiscover.Outcome otherConflict = TellomiDiscover.decodeHttp(
+            TellomiDiscover.Operation.publish("hi", TellomiDiscover.Visibility.EVERYONE, null, NONCE, 500, null),
+            new TellomiDiscover.HttpResult(409, "{\"error\":\"something_else\"}".getBytes(StandardCharsets.UTF_8))
+        );
+        assertEquals(TellomiDiscover.ClientError.UNAVAILABLE, otherConflict.error);
+        String english = TellomiDiscover.Copy.resolve("en").failureText(TellomiDiscover.ClientError.PROFILE_REQUIRED);
+        String chinese = TellomiDiscover.Copy.resolve("zh").failureText(TellomiDiscover.ClientError.PROFILE_REQUIRED);
+        assertFalse(english.equals(TellomiDiscover.Copy.resolve("en").failed));
+        assertFalse(chinese.equals(TellomiDiscover.Copy.resolve("zh").failed));
+        assertTrue(english.contains("Discover profile"));
+        assertTrue(chinese.contains("发现主页"));
+        assertTrue(chinese.contains("再发一次"));
         TellomiDiscover.Outcome decoded = TellomiDiscover.decodeHttp(
             TellomiDiscover.Operation.nearby("cn:chengdu", null),
             new TellomiDiscover.HttpResult(200, "{\"items\":[{\"id\":\"post-9\",\"reason\":\"nearby\"}],\"cursor\":\"next\"}".getBytes(StandardCharsets.UTF_8))
