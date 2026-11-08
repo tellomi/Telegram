@@ -9,8 +9,18 @@ This layer is the only intentional difference from that tree:
 - Cloud langpack stays off. SafetyNet and the Google OAuth client are empty so this package does not present Telegram's keys.
 - Launcher, splash (`tg_splash_320`), notification, about `book_logo`, and the chat-list wordmark (`telegram_logo` / `telegram_logo_2`) are the bytes from `8cb628f29` `TMessagesProj/tellomi/res`, written onto the resource names the official manifest and screens already load. `AppName` is Tellomi. Functional icons are the official ones. GPL headers and protocol class names are unchanged.
 
+## Upgrade, static only
+
+`MessagesStorage.LAST_DB_VERSION` is 179 on both `origin/master` and this branch, and that file is unchanged. The normal files directory is `Context.getFilesDir()`, which follows `app.tellomi.chat`. The last-resort path must use that same package name. Chat rows are not stored in the contacts account type. The contacts authenticator in this tree still says `org.telegram.messenger`; the shipped tree says `app.tellomi.chat`. That difference is contacts sync, not `cache4.db`.
+
+A release build logs a response that cannot be decoded and returns without calling the request callback. That is the DrKLO behavior. It is not a new error type.
+
+## Isolated acceptance, not run
+
+The signed `14.0.8` package embeds `8.137.39.82:10443` and the release certificate. It will not speak to `127.0.0.1` or `10.0.2.2`. A debug local build can, and its signature cannot replace `1804669`. Loopback login therefore needs an emulator on a host that can open `/dev/kvm`, plus the unchanged `teamgram-server` compose bound to loopback only. This machine has the image and the AVD, and the current user cannot open `/dev/kvm`. Do not point the release candidate at the local address.
+
 Not claimed:
 
-- Login, chat, and an upgrade from `1804669` have not been run on a device. Compiling is not a safe overwrite.
+- Login, chat, and an upgrade from `1804669` have not been run on a device. The signed artifact at `89ca377` was checked with `aapt` and `apksigner` only.
 - Play billing, passkeys, and the Play/AppGallery links still point at Telegram's products.
 - If Teamgram rejects api_id 1 or an official RPC, the client reports the server error. It does not invent a replacement API.

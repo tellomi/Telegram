@@ -172,7 +172,10 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return new File("/data/data/org.telegram.messenger/files");
+        // Last resort only. The installed id is app.tellomi.chat, so an upgrade
+        // must not fall back to the official Telegram package directory.
+        String packageName = applicationContext != null ? applicationContext.getPackageName() : "app.tellomi.chat";
+        return new File("/data/data/" + packageName + "/files");
     }
 
     public static File getFilesDirFixed(String child) {
