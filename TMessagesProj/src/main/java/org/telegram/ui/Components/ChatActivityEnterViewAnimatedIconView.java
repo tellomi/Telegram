@@ -62,18 +62,18 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
     private static int iconFor(State state) {
         switch (state) {
             case VOICE:
-                return R.drawable.input_mic;
+                return R.drawable.tellomi_input_mic;
             case VIDEO:
                 return R.drawable.input_video;
             case STICKER:
-                return R.drawable.msg_sticker;
+                return R.drawable.tellomi_input_sticker;
             case KEYBOARD:
                 return R.drawable.input_keyboard;
             case GIF:
                 return R.drawable.msg_gif;
             case SMILE:
             default:
-                return R.drawable.input_smile;
+                return R.drawable.tellomi_input_sticker;
         }
     }
 

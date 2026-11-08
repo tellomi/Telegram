@@ -296,6 +296,7 @@
     <string name="Tellomi_Discover_HideContacts">隐藏联系人</string>
     <string name="Tellomi_Discover_NavigationTitle">导航栏</string>
     <string name="Tellomi_Discover_NavigationFooter">聊天始终显示，不能关闭。</string>
+    <string name="Tellomi_Discover_HideTabLabels">隐藏底栏文字</string>
     <string name="Tellomi_Discover_PersonalizationSection">发现</string>
     <string name="Tellomi_Discover_Personalization">个性化推荐</string>
     <string name="Tellomi_Discover_PersonalizationInfo">关闭后，推荐不再根据你的浏览记录排序。</string>
@@ -332,4 +333,5 @@
     <string name="TellomiChatPasswordBiometricHint">也可以用生物识别打开这个聊天。数字密码仍然只留在这台设备上。</string>
     <string name="TellomiChatPasswordSkip">只用数字</string>
     <string name="TellomiChatLocked">已锁定</string>
+    <string name="TellomiFreshResetForbidden">当前登录未满 24 小时，暂时不能结束其他设备上的会话。请稍后再试。</string>
 </resources>

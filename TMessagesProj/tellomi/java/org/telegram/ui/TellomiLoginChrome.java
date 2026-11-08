@@ -408,6 +408,8 @@ public final class TellomiLoginChrome {
         textSize(text, 16);
         text.setGravity(Gravity.CENTER);
         text.setMaxLines(2);
+        int padV = AndroidUtilities.dp(12);
+        text.setPadding(0, padV, 0, padV);
         row.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         row.addView(new Space(context), new LinearLayout.LayoutParams(AndroidUtilities.dp(38), 1));
         row.setOnClickListener(click);

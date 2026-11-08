@@ -4,6 +4,21 @@ DrKLO files this tree changes on purpose. New Tellomi assets live under `TMessag
 
 Paths below are relative to the repo root. "Upstream" means the file exists in DrKLO/Telegram (this tree's snapshot is `3de37c8cf`, "update to 13.1.1").
 
+## Login chrome, language, composer, session revoke (N01–N04, N06)
+
+| File | Change |
+| --- | --- |
+| `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome language control shares a row with the upstream day/night control (`TellomiDayNight`). The sun drawable stays 28dp and `CENTER`, so it is not scaled up to the hit box. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Language control only. The day/night control is not added on phone, email, code, password, or register. A language change no longer forces the phone or email password step back to the phone form. |
+| `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `zh_hans` installs `zh-CN` and `zh_hant` installs `zh-TW` instead of both becoming `Locale("zh")`. Traditional UI then runs `TellomiChineseScript` on the resolved string. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Idle order is attachment (left), emoji (inside, right), voice (outside, right). Text still replaces the voice slot with send. Send uses `tellomi_chat_send_arrow` (iOS `chatInputPanelSendIconImage` paths, no circle). Attachment and voice use the iOS PDF paths. |
+| `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Smile, sticker, and voice states use those same vectors. |
+| `TMessagesProj/src/main/java/org/telegram/ui/SessionsActivity.java` | `406 FRESH_RESET_AUTHORISATION_FORBIDDEN` on one device and on every other device shows `TellomiFreshResetForbidden` and leaves the row. The push re-register runs only after `auth.resetAuthorizations` succeeds. |
+
+The circle behind send stays the existing round-rect fill (`key_chat_messagePanelSend`), which is the Android counterpart of iOS `sendButtonBackgroundView` tinted with `panelControlAccentColor`. The arrow drawable itself has no disc. iOS master `a22220ab` and candidate `d3b51fb` have the same two SVG paths and the same attachment, sticker, and microphone PDF blobs.
+
+The welcome day/night control is the upstream `IntroActivity` sun toggle (DrKLO `7be672ea`, 13.2.1). Login and register do not have that control upstream, and this client does not add one there. The hit box stays 48dp and does not grow with the system font scale; page text still follows that scale. The two controls shrink together only when 48dp would cover the back control or leave the window. On login the language control's vertical center matches the 32dp back/close control. Traditional strings keep a real `zh-rTW` / `zh-Hant` value when it differs from simplified. Otherwise `TellomiChineseScript` converts the simplified text and leaves `%` specifiers and `<...>` tags unchanged. A language redraw keeps the welcome page the user already opened and does not drop a password, recovery, or code step back to the phone form.
+
 ## Launcher icon
 
 | File | Change |
