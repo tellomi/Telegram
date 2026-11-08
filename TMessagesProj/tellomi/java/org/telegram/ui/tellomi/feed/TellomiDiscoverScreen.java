@@ -814,7 +814,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
             });
             column.addView(row, layout(LinearLayout.LayoutParams.MATCH_PARENT));
         }
-        scroll(column);
+        scroll(column, false);
     }
 
     private void buildFeed(TellomiDiscover.Copy copy, TellomiDiscover.Chrome chrome) {
@@ -951,16 +951,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
                 }
             }
         }
-        ScrollView scroll = scroll(column);
-        scroll.setOnScrollChangeListener(new View.OnScrollChangeListener() {
-            @Override
-            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                View child = scroll.getChildAt(0);
-                if (child != null && scrollY + scroll.getHeight() >= child.getHeight() - dp(48)) {
-                    loadFeed(false);
-                }
-            }
-        });
+        scroll(column, true);
     }
 
     private void addTabs(LinearLayout column, TellomiDiscover.Copy copy) {
@@ -1026,12 +1017,20 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
 
     private final TellomiDiscoverTabScroll tabScroll = new TellomiDiscoverTabScroll(dp(12), dp(8));
 
-    private ScrollView scroll(LinearLayout column) {
+    private ScrollView scroll(LinearLayout column, boolean page) {
         ScrollView scroll = new ScrollView(context);
         scroll.addView(column, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
         scroll.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             boolean canScroll = column.getMeasuredHeight() > v.getHeight();
             activity.tellomiSetTabsVisible(tabScroll.onScroll(scrollY, scrollY - oldScrollY, canScroll));
+            if (!page) {
+                return;
+            }
+            View child = scroll.getChildAt(0);
+            int contentHeight = child == null ? 0 : child.getHeight();
+            if (TellomiDiscoverFeedScroll.nearEnd(scrollY, scroll.getHeight(), contentHeight, dp(48))) {
+                loadFeed(false);
+            }
         });
         root.addView(scroll, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         return scroll;

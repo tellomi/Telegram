@@ -133,6 +133,49 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
+    public void feedScrollKeepsTabsWhenItAlsoPages() throws Exception {
+        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects mid = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(true, 400, 800, 3000, 48);
+        assertTrue(mid.tabs);
+        assertFalse(mid.page);
+        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects end = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(true, 2200, 800, 3000, 48);
+        assertTrue(end.tabs);
+        assertTrue(end.page);
+        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.Effects city = org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.onScroll(false, 2200, 800, 3000, 48);
+        assertTrue(city.tabs);
+        assertFalse(city.page);
+        org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.ListenerSlot slot = new org.telegram.ui.tellomi.feed.TellomiDiscoverFeedScroll.ListenerSlot();
+        slot.set("tabs");
+        slot.set("page");
+        assertEquals("page", slot.active());
+
+        String screen = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java");
+        int build = screen.indexOf("private void buildFeed");
+        int after = screen.indexOf("private void addTabs");
+        String feed = screen.substring(build, after);
+        assertFalse(feed.contains("setOnScrollChangeListener"));
+        assertTrue(feed.contains("scroll(column, true)"));
+        int scroll = screen.indexOf("private ScrollView scroll");
+        String body = screen.substring(scroll, screen.indexOf("private TextView label", scroll));
+        assertTrue(body.contains("tellomiSetTabsVisible"));
+        assertTrue(body.contains("loadFeed(false)"));
+        assertEquals(1, count(screen, "setOnScrollChangeListener"));
+    }
+
+    private static int count(String text, String needle) {
+        int n = 0;
+        int at = 0;
+        while (at >= 0) {
+            at = text.indexOf(needle, at);
+            if (at < 0) {
+                break;
+            }
+            n++;
+            at += needle.length();
+        }
+        return n;
+    }
+
+    @Test
     public void agreementStaysAboveTheKeyboardAndDiscoverTabsFollowScroll() {
         assertEquals(400, TellomiLoginFit.visibleAboveKeyboard(1000, 600));
         assertEquals(1, TellomiLoginFit.visibleAboveKeyboard(100, 500));
