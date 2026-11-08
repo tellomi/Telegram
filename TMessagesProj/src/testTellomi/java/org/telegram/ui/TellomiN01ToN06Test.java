@@ -30,13 +30,16 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
-    public void largeTypeGrowsTheHitTargetUntilTheRowWouldOverlap() {
+    public void largeTypeDoesNotEnlargeTheChromeAndLoginKeepsLanguageOnly() {
         TellomiAuthChromeLayout wide = TellomiAuthChromeLayout.place(2000, 1f, 2f, 0, false);
-        assertEquals(96, wide.size);
-        TellomiAuthChromeLayout narrow = TellomiAuthChromeLayout.place(220, 1f, 2f, 0, false);
-        assertTrue(narrow.size < 96);
+        TellomiAuthChromeLayout normal = TellomiAuthChromeLayout.place(2000, 1f, 1f, 0, false);
+        assertEquals(TellomiAuthChromeLayout.HIT_DP, wide.size);
+        assertEquals(normal.size, wide.size);
+        assertEquals(normal.top, wide.top);
+        assertFalse(wide.overlaps());
+        TellomiAuthChromeLayout narrow = TellomiAuthChromeLayout.place(140, 1f, 2f, 0, false);
+        assertTrue(narrow.size < TellomiAuthChromeLayout.HIT_DP);
         assertTrue(narrow.size >= 1);
-        assertEquals(narrow.size, narrow.size);
         assertFalse(narrow.overlaps());
         assertTrue(narrow.languageLeft + narrow.size <= narrow.themeLeft);
         TellomiAuthChromeLayout proxy = TellomiAuthChromeLayout.place(360, 2f, 2f, 40, true);
@@ -44,6 +47,13 @@ public class TellomiN01ToN06Test {
         assertEquals(plain.top, proxy.top);
         assertTrue(proxy.themeLeft < plain.themeLeft);
         assertFalse(proxy.overlaps());
+        TellomiAuthChromeLayout login = TellomiAuthChromeLayout.place(1080, 2.625f, 2f, 128, false, 1);
+        assertEquals(login.languageLeft, login.themeLeft);
+        assertFalse(login.overlaps());
+        assertEquals(TellomiAuthChromeLayout.HIT_DP, Math.round(login.size / 2.625f));
+        int aligned = login.topAlignedWithBack(128, 2.625f);
+        int backCenter = 128 + Math.round((16 + 16) * 2.625f);
+        assertEquals(backCenter, aligned + login.size / 2);
     }
 
     @Test
@@ -112,6 +122,10 @@ public class TellomiN01ToN06Test {
         assertTrue(sessions.contains("tellomiFinishResetAll"));
         String login = read("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java");
         assertTrue(login.contains("TellomiAuthChromeLayout.place"));
+        assertTrue(login.contains("proxyShown, 1"));
+        assertFalse(login.contains("TellomiDayNight"));
+        String intro = read("TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java");
+        assertTrue(intro.contains("TellomiDayNight.create"));
         assertTrue(login.contains("!tellomiKeepCodePage && activityMode == MODE_LOGIN && (currentViewNum == VIEW_TELLOMI_PHONE_PASSWORD"));
     }
 

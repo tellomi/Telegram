@@ -380,7 +380,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     private ImageView backButtonView;
     private ImageView tellomiLanguageButton;
-    private org.telegram.ui.Components.RLottieImageView tellomiThemeButton;
     private String tellomiSharedEmail = "";
     private static final int TELLOMI_SEND_CODE_TIMEOUT_MS = 20000;
     private Runnable tellomiSendCodeWatch;
@@ -873,10 +872,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 presentFragment(new TellomiLanguageSelectActivity(this::tellomiApplyInterfaceLanguage));
             });
-            sizeNotifierFrameLayout.addView(tellomiLanguageButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 16, 56, 0));
-            tellomiThemeButton = TellomiDayNight.create(context);
-            tellomiThemeButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
-            sizeNotifierFrameLayout.addView(tellomiThemeButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 16, 4, 0));
+            sizeNotifierFrameLayout.addView(tellomiLanguageButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 16, 4, 0));
         }
 
         if (emailChangeSkipCallback != null && !emailChangeNonSkippable && emailChangeIsSuggestion) {
@@ -1749,9 +1745,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             fontScale = getContext().getResources().getConfiguration().fontScale;
         }
         boolean proxyShown = proxyButtonView != null && proxyButtonView.getVisibility() == View.VISIBLE;
-        TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(width, AndroidUtilities.density, fontScale, statusBarPx, proxyShown);
-        applyChromeSlot(tellomiLanguageButton, slots.top, slots.size, slots.languageRightMargin(width));
-        applyChromeSlot(tellomiThemeButton, slots.top, slots.size, slots.themeRightMargin(width));
+        TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(width, AndroidUtilities.density, fontScale, statusBarPx, proxyShown, 1);
+        int top = slots.topAlignedWithBack(statusBarPx, AndroidUtilities.density);
+        applyChromeSlot(tellomiLanguageButton, top, slots.size, slots.languageRightMargin(width));
     }
 
     private static void applyChromeSlot(View view, int top, int size, int right) {
@@ -10621,10 +10617,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         if (tellomiLanguageButton != null) {
             tellomiLanguageButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
-        }
-        if (tellomiThemeButton != null) {
-            tellomiThemeButton.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
-            tellomiThemeButton.setContentDescription(TellomiDayNight.description(Theme.isCurrentThemeDark()));
         }
 
         proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));

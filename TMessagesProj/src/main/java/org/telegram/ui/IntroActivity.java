@@ -101,6 +101,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private BottomPagesView bottomPages;
     private TextView switchLanguageTextView;
     private ImageView tellomiIntroLanguage;
+    private org.telegram.ui.Components.RLottieImageView tellomiIntroTheme;
     private GradientDrawable startMessagingButtonBackground;
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
@@ -246,7 +247,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
 
-        RLottieImageView themeIconView = TellomiDayNight.create(context);
+        tellomiIntroTheme = TellomiDayNight.create(context);
+        RLottieImageView themeIconView = tellomiIntroTheme;
         darkThemeDrawable = themeIconView.getAnimatedDrawable();
 
         frameContainerView = new FrameLayout(context) {
@@ -979,6 +981,18 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
         }
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
+        if (tellomiIntroTheme != null) {
+            boolean dark = Theme.isCurrentThemeDark();
+            tellomiIntroTheme.setContentDescription(TellomiDayNight.description(dark));
+            RLottieDrawable drawable = tellomiIntroTheme.getAnimatedDrawable();
+            if (drawable != null) {
+                int frame = dark ? drawable.getFramesCount() - 1 : 0;
+                drawable.setCustomEndFrame(frame);
+                if (!drawable.isRunning()) {
+                    drawable.setCurrentFrame(frame, false);
+                }
+            }
+        }
         startMessagingButton.setTextColor(page);
         if (introArt != null) {
             introArt.setTint(ink);

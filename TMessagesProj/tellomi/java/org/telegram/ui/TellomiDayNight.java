@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -23,6 +24,9 @@ public final class TellomiDayNight {
 
     public static RLottieImageView create(Context context) {
         RLottieImageView icon = new RLottieImageView(context);
+        // Upstream draws this 28dp. CENTER keeps that size inside the hit box.
+        // The default FIT_CENTER scaled the bitmap up to the whole view.
+        icon.setScaleType(ImageView.ScaleType.CENTER);
         RLottieDrawable drawable = new RLottieDrawable(R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
         drawable.setPlayInDirectionOfCustomEndFrame(true);
         drawable.beginApplyLayerColors();
