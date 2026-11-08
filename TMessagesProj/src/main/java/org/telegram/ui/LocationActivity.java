@@ -67,6 +67,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -123,6 +124,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -150,9 +152,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private IMapsProvider.IMap map;
     private IMapsProvider.ICameraUpdate moveToBounds;
     private IMapsProvider.IMapView mapView;
-    private BackupImageView osmPreview;
-    private TellomiFrameworkLocation.Watch frameworkWatch;
-    private boolean frameworkMap;
     private IMapsProvider.ICameraUpdate forceUpdate;
     private boolean hasScreenshot;
     private float yOffset;
@@ -485,7 +484,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         } catch (Exception e) {
             FileLog.e(e);
         }
-        stopFrameworkFix();
         try {
             if (mapView != null) {
                 mapView.onDestroy();
@@ -580,7 +578,13 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (id == -1) {
                     finishFragment();
                 } else if (id == open_in) {
-                    openExternalPoint();
+                    try {
+                        double lat = messageObject.messageOwner.media.geo.lat;
+                        double lon = messageObject.messageOwner.media.geo._long;
+                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
                 } else if (id == share_live_location) {
                     openShareLiveLocation(false, 0);
                 } else if (id == get_directions) {
@@ -727,7 +731,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             mapViewClip.addView(searchAreaButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 80, 12, 80, 0));
             if (locationType == 3) {
                 searchAreaButton.setText(getString(R.string.OpenInMaps));
-                searchAreaButton.setOnClickListener(v -> openExternalPoint());
+                searchAreaButton.setOnClickListener(v -> {
+                    try {
+                        double lat = messageObject.messageOwner.media.geo.lat;
+                        double lon = messageObject.messageOwner.media.geo._long;
+                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                });
                 searchAreaButton.setTranslationX(0);
             } else {
                 searchAreaButton.setText(getString(R.string.PlacesInThisArea));
@@ -1311,16 +1323,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             });
         }).start();
 
-        if (!TellomiMaps.canShowInAppMap(context)) {
-            frameworkMap = true;
-            osmPreview = new BackupImageView(context);
-            mapViewClip.addView(osmPreview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            if (mapView != null) {
-                mapView.getView().setVisibility(View.GONE);
-            }
-        }
-        startFrameworkFix();
-
         if (messageObject == null && chatLocation == null) {
             if (chat != null && locationType == LOCATION_TYPE_GROUP && dialogId != 0) {
                 FrameLayout frameLayout1 = new FrameLayout(context);
@@ -1582,39 +1584,38 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         return 0;
     }
 
-    private void openExternalPoint() {
-        openExternal(false, null);
-    }
-
     private void openDirections(LiveLocation location) {
-        openExternal(true, location);
-    }
-
-    private void openExternal(boolean route, LiveLocation location) {
-        double lat;
-        double lon;
-        String name = null;
-        if (location != null && location.object != null && location.object.media != null && location.object.media.geo != null) {
-            lat = location.object.media.geo.lat;
-            lon = location.object.media.geo._long;
-            name = TellomiMaps.placeName(location.object.media);
-        } else if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.geo != null) {
-            lat = messageObject.messageOwner.media.geo.lat;
-            lon = messageObject.messageOwner.media.geo._long;
-            name = TellomiMaps.placeName(messageObject.messageOwner.media);
-        } else if (chatLocation != null && chatLocation.geo_point != null) {
-            lat = chatLocation.geo_point.lat;
-            lon = chatLocation.geo_point._long;
-            name = chatLocation.address;
+        double daddrLat, daddrLong;
+        if (location != null && location.object != null) {
+            daddrLat = location.object.media.geo.lat;
+            daddrLong = location.object.media.geo._long;
+        } else if (messageObject != null) {
+            daddrLat = messageObject.messageOwner.media.geo.lat;
+            daddrLong = messageObject.messageOwner.media.geo._long;
         } else {
-            return;
+            daddrLat = chatLocation.geo_point.lat;
+            daddrLong = chatLocation.geo_point._long;
         }
-        if (route) {
-            Double fromLat = myLocation != null ? myLocation.getLatitude() : null;
-            Double fromLon = myLocation != null ? myLocation.getLongitude() : null;
-            TellomiMaps.openRoute(getParentActivity(), this, getResourceProvider(), lat, lon, name, fromLat, fromLon);
+        String domain;
+        if (BuildVars.isHuaweiStoreApp()) {
+            domain = "mapapp://navigation";
         } else {
-            TellomiMaps.openPoint(getParentActivity(), this, getResourceProvider(), lat, lon, name);
+            domain = "http://maps.google.com/maps";
+        }
+        if (myLocation != null) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong)));
+                getParentActivity().startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        } else {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=&daddr=%f,%f", daddrLat, daddrLong)));
+                getParentActivity().startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
     }
 
@@ -2478,25 +2479,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void startFrameworkFix() {
-        if (locationDenied || frameworkWatch != null) {
-            return;
-        }
-        frameworkWatch = TellomiFrameworkLocation.watch(location -> {
-            positionMarker(location);
-            if (osmPreview != null) {
-                TellomiFrameworkLocation.showOsm(osmPreview, location);
-            }
-        });
-    }
-
-    private void stopFrameworkFix() {
-        if (frameworkWatch != null) {
-            frameworkWatch.stop();
-            frameworkWatch = null;
-        }
-    }
-
     @SuppressLint("MissingPermission")
     private Location getLastLocation() {
         LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
@@ -2547,11 +2529,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     map.moveCamera(position);
                 }
             }
-        } else if (adapter != null) {
+        } else {
             adapter.setGpsLocation(myLocation);
-            if (!searchedForCustomLocations && locationType != LOCATION_TYPE_GROUP && locationType != ChatAttachAlertLocationLayout.LOCATION_TYPE_BIZ) {
-                adapter.searchPlacesWithQuery(null, myLocation, true);
-            }
         }
         if (proximitySheet != null) {
             proximitySheet.updateText(true, true);
@@ -2794,7 +2773,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             removeSelfFromStack(true);
         } else if (id == NotificationCenter.locationPermissionGranted) {
             locationDenied = false;
-            startFrameworkFix();
             if (adapter != null) {
                 adapter.setMyLocationDenied(locationDenied, false);
             }

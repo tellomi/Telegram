@@ -104,7 +104,6 @@ import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.TellomiSignUpAvatarPrompt;
 import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
@@ -764,10 +763,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean giftTextFieldIcon;
 
     public boolean isTranslationsManualEnabled() {
-        return config.tellomiTranslateEnabled.get() && TellomiTranslate.configEnabled(translationsManualEnabled);
+        return !"disabled".equals(translationsManualEnabled);
     }
     public boolean isTranslationsAutoEnabled() {
-        return config.tellomiTranslateEnabled.get() && TellomiTranslate.configEnabled(translationsAutoEnabled);
+        return !"disabled".equals(translationsAutoEnabled);
     }
 
     public final AppGlobalConfig config = new AppGlobalConfig();
@@ -1588,14 +1587,12 @@ public class MessagesController extends BaseController implements NotificationCe
         maxFaveStickersCount = mainPreferences.getInt("maxFaveStickersCount", 5);
         maxEditTime = mainPreferences.getInt("maxEditTime", 3600);
         ratingDecay = mainPreferences.getInt("ratingDecay", 2419200);
-        linkPrefix = BuildVars.normalizeLinkPrefix(mainPreferences.getString("linkPrefix", BuildVars.LINK_HOST));
+        linkPrefix = mainPreferences.getString("linkPrefix", "t.me");
         callReceiveTimeout = mainPreferences.getInt("callReceiveTimeout", 20000);
         callRingTimeout = mainPreferences.getInt("callRingTimeout", 90000);
         callConnectTimeout = mainPreferences.getInt("callConnectTimeout", 30000);
         callPacketTimeout = mainPreferences.getInt("callPacketTimeout", 10000);
-        updateCheckDelay = TellomiAppUpdate.resolveCheckDelaySeconds(
-                mainPreferences.contains("updateCheckDelay"),
-                mainPreferences.getInt("updateCheckDelay", 0));
+        updateCheckDelay = mainPreferences.getInt("updateCheckDelay", 24 * 60 * 60);
         maxFolderPinnedDialogsCountDefault = mainPreferences.getInt("maxFolderPinnedDialogsCountDefault", 100);
         maxFolderPinnedDialogsCountPremium = mainPreferences.getInt("maxFolderPinnedDialogsCountPremium", 100);
         maxMessageLength = mainPreferences.getInt("maxMessageLength", 4096);
@@ -1678,7 +1675,7 @@ public class MessagesController extends BaseController implements NotificationCe
         verifyAgeCountry = mainPreferences.getString("verifyAgeCountry", "GB");
         verifyAgeMin = mainPreferences.getInt("verifyAgeMin", 18);
         premiumBotUsername = mainPreferences.getString("premiumBotUsername", null);
-        premiumLocked = mainPreferences.getBoolean("premiumLocked", true);
+        premiumLocked = mainPreferences.getBoolean("premiumLocked", false);
         starsLocked = mainPreferences.getBoolean("starsLocked", true);
         transcribeButtonPressed = mainPreferences.getInt("transcribeButtonPressed", 0);
         forumUpgradeParticipantsMin = mainPreferences.getInt("forumUpgradeParticipantsMin", 200);
@@ -1735,7 +1732,7 @@ public class MessagesController extends BaseController implements NotificationCe
         starsPaidMessageAmountMax = mainPreferences.getLong("starsPaidMessageAmountMax", 10_000L);
         starsPaidMessageCommissionPermille = mainPreferences.getInt("starsPaidMessageCommissionPermille", 850);
         stargiftsPinnedToTopLimit = mainPreferences.getInt("stargiftsPinnedToTopLimit", 6);
-        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", false);
+        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", true);
         freezeSinceDate = mainPreferences.getLong("freezeSinceDate", 0L);
         freezeUntilDate = mainPreferences.getLong("freezeUntilDate", 0L);
         conferenceCallSizeLimit = mainPreferences.getInt("conferenceCallSizeLimit", isTest ? 5 : 100);
@@ -1743,12 +1740,12 @@ public class MessagesController extends BaseController implements NotificationCe
         todoItemsMax = mainPreferences.getInt("todoItemsMax", isTest ? 10 : 30);
         todoTitleLengthMax = mainPreferences.getInt("todoTitleLengthMax", 32);
         todoItemLengthMax = mainPreferences.getInt("todoItemLengthMax", 64);
-        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "disabled");
-        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "disabled");
+        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "enabled");
+        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "enabled");
         whitelistedBots = mainPreferences.getStringSet("whitelistedBots", new HashSet<>()).stream().map(s -> tryParseLong(s, 0)).collect(Collectors.toCollection(HashSet::new));
         starsGroupcallMessageAmountMax = mainPreferences.getInt("starsGroupcallMessageAmountMax", 10_000);
         starsGroupcallMessageLimits = parseTiersString(mainPreferences.getString("starsGroupcallMessageLimits", null));
-        freezeAppealUrl = mainPreferences.getString("freezeAppealUrl", BuildVars.LINK_HOST + "/spambot");
+        freezeAppealUrl = mainPreferences.getString("freezeAppealUrl", "t.me/spambot");
         enableGiftsInProfile = mainPreferences.getBoolean("enableGiftsInProfile", true);
         storiesPosting = mainPreferences.getString("storiesPosting", "enabled");
         storiesEntities = mainPreferences.getString("storiesEntities", "premium");
@@ -1781,7 +1778,7 @@ public class MessagesController extends BaseController implements NotificationCe
         channelRevenueWithdrawalEnabled = mainPreferences.getBoolean("channelRevenueWithdrawalEnabled", false);
         newNoncontactPeersRequirePremiumWithoutOwnpremium = mainPreferences.getBoolean("newNoncontactPeersRequirePremiumWithoutOwnpremium", false);
         reactionsUniqMax = mainPreferences.getInt("reactionsUniqMax", 11);
-        premiumManageSubscriptionUrl = mainPreferences.getString("premiumManageSubscriptionUrl", ApplicationLoader.isStandaloneBuild() ? BuildVars.LINK_BASE + "premiumbot?start=status" : "https://play.google.com/store/account/subscriptions?sku=telegram_premium&package=org.telegram.messenger");
+        premiumManageSubscriptionUrl = mainPreferences.getString("premiumManageSubscriptionUrl", ApplicationLoader.isStandaloneBuild() ? "https://t.me/premiumbot?start=status" : "https://play.google.com/store/account/subscriptions?sku=telegram_premium&package=org.telegram.messenger");
         androidDisableRoundCamera2 = mainPreferences.getBoolean("androidDisableRoundCamera2", true);
         storiesPinnedToTopCountMax = mainPreferences.getInt("storiesPinnedToTopCountMax", 3);
         showAnnualPerMonth = mainPreferences.getBoolean("showAnnualPerMonth", false);
@@ -1818,8 +1815,6 @@ public class MessagesController extends BaseController implements NotificationCe
                     .toArray())
                 .toArray(int[][]::new);
         config.load(mainPreferences);
-        // TELLOMI: saved emoji_blocklist, unioned with the built-in default.
-        EmojiBlocklist.mergeServerList(config.emojiBlocklist.get());
 
         final boolean paidReactionsActual = (System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2;
         paidReactionsPrivacy = null;
@@ -1855,9 +1850,6 @@ public class MessagesController extends BaseController implements NotificationCe
             pendingSuggestions = new HashSet<>(pendingSuggestions);
         } else {
             pendingSuggestions = new HashSet<>();
-        }
-        if (dropSetupLoginEmailSuggestions()) {
-            mainPreferences.edit().putStringSet("pendingSuggestions", pendingSuggestions).apply();
         }
         if (dismissedSuggestions != null) {
             dismissedSuggestions = new HashSet<>(dismissedSuggestions);
@@ -2651,15 +2643,6 @@ public class MessagesController extends BaseController implements NotificationCe
         boolean downloadImprovementKillswitch = false;
 
         changed = config.apply(editor, object);
-        // TELLOMI: emoji_blocklist from this help.getAppConfig response.
-        if (EmojiBlocklist.mergeServerList(config.emojiBlocklist.get())) {
-            changed = true;
-            Emoji.applyBlocklistToRecent();
-        }
-        // TELLOMI: discover feed. A missing tellomi_discover_feed_enabled key stays off.
-        if (TellomiDiscoverFlags.capture(currentAccount, editor, mainPreferences, object)) {
-            changed = true;
-        }
 
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);
@@ -5583,7 +5566,7 @@ public class MessagesController extends BaseController implements NotificationCe
         videoIgnoreAltDocuments = false;
         freezeSinceDate = 0L;
         freezeUntilDate = 0L;
-        freezeAppealUrl = BuildVars.LINK_HOST + "/spambot";
+        freezeAppealUrl = "t.me/spambot";
         verifyAgeBotUsername = null;
         verifyAgeCountry = "GB";
         ignoreRestrictionReasons = new HashSet<String>();
@@ -5695,8 +5678,16 @@ public class MessagesController extends BaseController implements NotificationCe
             revokeTimeLimit = config.revoke_time_limit;
             revokeTimePmLimit = config.revoke_pm_time_limit;
             canRevokePmInbox = config.revoke_pm_inbox;
-            linkPrefix = BuildVars.normalizeLinkPrefix(config.me_url_prefix);
+            linkPrefix = config.me_url_prefix;
             boolean forceTryIpV6 = config.force_try_ipv6;
+            if (linkPrefix.endsWith("/")) {
+                linkPrefix = linkPrefix.substring(0, linkPrefix.length() - 1);
+            }
+            if (linkPrefix.startsWith("https://")) {
+                linkPrefix = linkPrefix.substring(8);
+            } else if (linkPrefix.startsWith("http://")) {
+                linkPrefix = linkPrefix.substring(7);
+            }
             callReceiveTimeout = config.call_receive_timeout_ms;
             callRingTimeout = config.call_ring_timeout_ms;
             callConnectTimeout = config.call_connect_timeout_ms;
@@ -5821,7 +5812,7 @@ public class MessagesController extends BaseController implements NotificationCe
         TLRPC.TL_userForeign_old2 user = new TLRPC.TL_userForeign_old2();
         user.phone = "333";
         user.id = 333000;
-        user.first_name = BuildVars.APP_NAME;
+        user.first_name = "Telegram";
         user.last_name = "";
         user.status = null;
         user.photo = new TLRPC.TL_userProfilePhotoEmpty();
@@ -5831,7 +5822,7 @@ public class MessagesController extends BaseController implements NotificationCe
         user.phone = "42777";
         user.id = 777000;
         user.verified = true;
-        user.first_name = BuildVars.APP_NAME;
+        user.first_name = "Telegram";
         user.last_name = "Notifications";
         user.status = null;
         user.photo = new TLRPC.TL_userProfilePhotoEmpty();
@@ -6104,15 +6095,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
                 req.file = file;
                 req.flags |= 1;
-                final String avatarPath = uploadingAvatar;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
-                    if (error != null || !(response instanceof TLRPC.TL_photos_photo)) {
-                        TellomiSignUpAvatarPrompt.show(error == null ? null : error.text, error == null ? 0 : error.code, () -> {
-                            uploadingAvatar = avatarPath;
-                            getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
-                        });
-                        return;
-                    }
                     if (error == null) {
                         TLRPC.User user = getUser(getUserConfig().getClientUserId());
                         if (user == null) {
@@ -6374,12 +6357,7 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (id == NotificationCenter.fileUploadFailed) {
             String location = (String) args[0];
             if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
-                final String avatarPath = uploadingAvatar;
                 uploadingAvatar = null;
-                TellomiSignUpAvatarPrompt.show(null, 0, () -> {
-                    uploadingAvatar = avatarPath;
-                    getFileLoader().uploadFile(avatarPath, false, true, ConnectionsManager.FileTypePhoto);
-                });
             } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
                 uploadingWallpaper = null;
                 uploadingWallpaperInfo = null;
@@ -8112,7 +8090,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (dialogId == getUserConfig().getClientUserId()) {
             settings.business_bot_id = UserObject.REPLY_BOT;
-            settings.business_bot_manage_url = BuildVars.LINK_BASE;
+            settings.business_bot_manage_url = "https://telegram.org/";
         }
         editor.apply();
         userPeerSettings.put(dialogId, settings);
@@ -10538,7 +10516,7 @@ public class MessagesController extends BaseController implements NotificationCe
         checkReadTasks();
 
         if (getUserConfig().isClientActivated()) {
-            if (!ignoreSetOnline && !org.telegram.ui.TellomiQuietOpen.blockOnline(currentAccount) && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
+            if (!ignoreSetOnline && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
                 if (ApplicationLoader.mainInterfacePausedStageQueueTime != 0 && Math.abs(ApplicationLoader.mainInterfacePausedStageQueueTime - System.currentTimeMillis()) > 1000) {
                     if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || Math.abs(System.currentTimeMillis() - lastStatusUpdateTime) >= 55000 || offlineSent)) {
                         statusSettingState = 1;
@@ -10975,7 +10953,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         promoDialog = dialogs_dict.get(did);
                         pendingSuggestions = new HashSet<>(res.pending_suggestions);
-                        dropSetupLoginEmailSuggestions();
                         dismissedSuggestions = new HashSet<>(res.dismissed_suggestions);
                         customPendingSuggestion = res.custom_pending_suggestion;
                         getNotificationCenter().postNotificationName(NotificationCenter.newSuggestionsAvailable);
@@ -11399,9 +11376,6 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
         if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
-            return false;
-        }
-        if (org.telegram.ui.TellomiQuietOpen.blockTyping(currentAccount, dialogId)) {
             return false;
         }
         final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -14419,9 +14393,6 @@ public class MessagesController extends BaseController implements NotificationCe
         if (messageObject.scheduled) {
             return;
         }
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, messageObject.getDialogId())) {
-            return;
-        }
         ArrayList<Integer> arrayList = new ArrayList<>();
         if (messageObject.messageOwner.mentioned) {
             getMessagesStorage().markMentionMessageAsRead(-messageObject.messageOwner.peer_id.channel_id, messageObject.getId(), messageObject.getDialogId());
@@ -14505,7 +14476,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markMessageAsRead2(long dialogId, int mid, TLRPC.InputChannel inputChannel, int ttl, long taskId, boolean createDeleteTask) {
-        if (mid == 0 || ttl < 0 || org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
+        if (mid == 0 || ttl < 0) {
             return;
         }
         if (DialogObject.isChatDialog(dialogId) && inputChannel == null) {
@@ -14563,9 +14534,6 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void markMessageAsRead(long dialogId, long randomId, int ttl) {
         if (randomId == 0 || dialogId == 0 || ttl <= 0 && ttl != Integer.MIN_VALUE) {
-            return;
-        }
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
             return;
         }
         if (!DialogObject.isEncryptedDialog(dialogId)) {
@@ -14664,9 +14632,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markDialogAsReadNow(long dialogId, long replyId) {
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
-            return;
-        }
         Utilities.stageQueue.postRunnable(() -> {
             if (replyId != 0) {
                 String key = dialogId + "_" + replyId;
@@ -14693,9 +14658,6 @@ public class MessagesController extends BaseController implements NotificationCe
         if (DialogObject.isEncryptedDialog(dialogId) || dialogId == getUserConfig().getClientUserId()) {
             return;
         }
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
-            return;
-        }
         getMessagesStorage().resetMentionsCount(dialogId, topicId, 0);
         TLRPC.TL_messages_readMentions req = new TLRPC.TL_messages_readMentions();
         req.peer = getInputPeer(dialogId);
@@ -14707,9 +14669,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markDialogAsRead(long dialogId, int maxPositiveId, int maxNegativeId, int maxDate, boolean popup, long threadId, int countDiff, boolean readNow, int scheduledCount) {
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
-            return;
-        }
         boolean createReadTask;
 
         if (threadId != 0) {
@@ -16169,16 +16128,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void performLogout(int type) {
         if (type == 1) {
-            try {
-                GramWalletStorage.wipeForUser(ApplicationLoader.applicationContext, currentAccount, getUserConfig().getClientUserId());
-            } catch (Throwable t) {
-                FileLog.e(t);
-            }
-            try {
-                org.telegram.ui.TellomiAccount.clearEmail(currentAccount);
-            } catch (Throwable t) {
-                FileLog.e(t);
-            }
+            GramWalletStorage.wipeForUser(ApplicationLoader.applicationContext, currentAccount, getUserConfig().getClientUserId());
             unregistedPush();
             TLRPC.TL_auth_logOut req = new TLRPC.TL_auth_logOut();
             getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -21657,9 +21607,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void markReactionsAsRead(long dialogId, long topicId) {
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, dialogId)) {
-            return;
-        }
         if (topicId == 0) {
             TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
             if (dialog != null) {
@@ -21720,9 +21667,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
-        if (!TellomiFeatures.channelRevenueEnabled(currentAccount)) {
-            return null;
-        }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
         if (info != null && (info.loading || Math.abs(SystemClock.elapsedRealtime() - info.loadTime) <= 5 * 60 * 1000)) {
             return info;
@@ -25301,27 +25245,29 @@ public class MessagesController extends BaseController implements NotificationCe
 
     private boolean emailSuggestionWasShown;
 
-    private boolean dropSetupLoginEmailSuggestions() {
-        if (pendingSuggestions == null) {
-            return false;
-        }
-        boolean removed = false;
-        java.util.Iterator<String> it = pendingSuggestions.iterator();
-        while (it.hasNext()) {
-            if (org.telegram.ui.TellomiEmailRoles.isSetupLoginEmailSuggestion(it.next())) {
-                it.remove();
-                removed = true;
-            }
-        }
-        return removed;
-    }
-
     public boolean hasSetupEmailSuggestion() {
-        return false;
+        return pendingSuggestions.contains("SETUP_LOGIN_EMAIL")
+            || pendingSuggestions.contains("SETUP_LOGIN_EMAIL_NOSKIP");
     }
 
     public int checkEmailSuggestion() {
-        // Head b4a57578 does not offer SETUP_LOGIN_EMAIL. A saved copy must not open the form.
+        if (emailSuggestionWasShown) {
+            return EMAIL_SUGGESTION_FALSE;
+        }
+
+        if (lastCheckPromoInfoTime + 10 < getConnectionsManager().getCurrentTime()) {
+            return EMAIL_SUGGESTION_FALSE;
+        }
+
+        final boolean needSetupEmail = pendingSuggestions.contains("SETUP_LOGIN_EMAIL");
+        final boolean needSetupEmailNoSkip = pendingSuggestions.contains("SETUP_LOGIN_EMAIL_NOSKIP");
+
+        if (needSetupEmailNoSkip) {
+            return EMAIL_SUGGESTION_TRUE_FORCED;
+        } else if (needSetupEmail) {
+            return EMAIL_SUGGESTION_TRUE;
+        }
+
         return EMAIL_SUGGESTION_FALSE;
     }
 

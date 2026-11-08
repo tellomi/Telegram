@@ -52,8 +52,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
-import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -872,9 +870,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 new ClickableSpan() {
                                     @Override
                                     public void onClick(@NonNull View view) {
-                                        if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
-                                            return;
-                                        }
                                         Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                     }
 
@@ -1298,7 +1293,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             }
         }
-        if (TellomiUsername.isTooShort(name)) {
+        if (name == null || name.length() < 4) {
             checkTextView.setText(LocaleController.getString(R.string.LinkInvalidShort));
             checkTextView.setTag(Theme.key_text_RedRegular);
             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
@@ -1328,11 +1323,11 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
                         lastNameAvailable = true;
                     } else {
-                        if (error != null && "USERNAME_INVALID".equals(error.text) && TellomiUsername.isTooShort(req.username)) {
+                        if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
                             checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                             checkTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
-                            if (TellomiUsername.isTooShort(req.username)) {
+                            if (req.username.length() == 4) {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
                             } else {
                                 checkTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));

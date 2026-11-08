@@ -55,7 +55,6 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -72,12 +71,6 @@ public class ReportBottomSheet extends BottomSheet {
     private final byte[] sponsoredId;
     private final long dialogId;
     private Listener listener;
-    private LocalCallback localCallback;
-
-    /** Discover uses this sheet as the reason picker and does not send messages.report. */
-    public interface LocalCallback {
-        void onPicked(String optionId, String detail);
-    }
 
     interface Listener {
         default void onReported() {}
@@ -253,10 +246,6 @@ public class ReportBottomSheet extends BottomSheet {
     }
 
     private void submitOption(final CharSequence optionText, final byte[] option, final String comment) {
-        if (localCallback != null) {
-            deliverLocal(optionText, option, comment);
-            return;
-        }
         TLObject request;
         if (sponsored) {
             TLRPC.TL_messages_reportSponsoredMessage req = new TLRPC.TL_messages_reportSponsoredMessage();
@@ -351,60 +340,6 @@ public class ReportBottomSheet extends BottomSheet {
                 }
             });
         });
-    }
-
-    private void deliverLocal(CharSequence optionText, byte[] option, String comment) {
-        String optionId = option == null ? "" : new String(option, StandardCharsets.UTF_8);
-        if (comment == null && "other".equals(optionId)) {
-            TLRPC.TL_reportResultAddComment add = new TLRPC.TL_reportResultAddComment();
-            add.option = option;
-            add.optional = false;
-            int nextPosition = viewPager.currentPosition + 1;
-            viewPager.scrollToPosition(nextPosition);
-            Page nextPage = (Page) viewPager.getViewPages()[1];
-            if (nextPage != null) {
-                nextPage.setOption(add);
-                if (optionText != null) {
-                    nextPage.setHeaderText(optionText);
-                }
-            }
-            return;
-        }
-        LocalCallback callback = localCallback;
-        String detail = comment == null ? "" : comment;
-        dismiss();
-        if (callback != null) {
-            callback.onPicked(optionId, detail);
-        }
-    }
-
-    /**
-     * The same report sheet as chats and stories. Options are already known,
-     * so this does not call messages.report. {@code ids} are stored as the option bytes.
-     */
-    public static void openLocal(
-        Context context,
-        Theme.ResourcesProvider resourceProvider,
-        String title,
-        String[] ids,
-        String[] labels,
-        LocalCallback callback
-    ) {
-        if (context == null || ids == null || labels == null || ids.length == 0 || ids.length != labels.length) {
-            return;
-        }
-        TLRPC.TL_reportResultChooseOption choose = new TLRPC.TL_reportResultChooseOption();
-        choose.title = title == null ? "" : title;
-        for (int i = 0; i < ids.length; i++) {
-            TLRPC.TL_messageReportOption option = new TLRPC.TL_messageReportOption();
-            option.text = labels[i] == null ? "" : labels[i];
-            option.option = ids[i] == null ? new byte[0] : ids[i].getBytes(StandardCharsets.UTF_8);
-            choose.options.add(option);
-        }
-        ReportBottomSheet sheet = new ReportBottomSheet(context, resourceProvider, false, false, 0, new ArrayList<>());
-        sheet.localCallback = callback;
-        sheet.setReportChooseOption(choose);
-        sheet.show();
     }
 
     private class ContainerView extends FrameLayout {
@@ -1032,7 +967,7 @@ public class ReportBottomSheet extends BottomSheet {
                                                         LocaleController.getString(R.string.AdReported),
                                                         -1,
                                                         AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                                        () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                                        () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                                         resourceProvider
                                                     )
                                                 )
@@ -1068,7 +1003,7 @@ public class ReportBottomSheet extends BottomSheet {
                                     LocaleController.getString(R.string.AdReported),
                                     -1,
                                     AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                    () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                     resourceProvider
                                 )
                             )
@@ -1094,7 +1029,7 @@ public class ReportBottomSheet extends BottomSheet {
                                 LocaleController.getString(R.string.AdReported),
                                 -1,
                                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                 resourceProvider
                             )
                         )
@@ -1147,7 +1082,7 @@ public class ReportBottomSheet extends BottomSheet {
                                                     LocaleController.getString(R.string.AdReported),
                                                     -1,
                                                     AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                                    () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                                     resourceProvider
                                                 )
                                             )
@@ -1191,7 +1126,7 @@ public class ReportBottomSheet extends BottomSheet {
                                     LocaleController.getString(R.string.AdReported),
                                     -1,
                                     AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                    () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                     resourceProvider
                                 )
                             )
@@ -1224,7 +1159,7 @@ public class ReportBottomSheet extends BottomSheet {
                                 LocaleController.getString(R.string.AdReported),
                                 -1,
                                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                 resourceProvider
                             )
                         )
@@ -1266,7 +1201,7 @@ public class ReportBottomSheet extends BottomSheet {
                                                     LocaleController.getString(R.string.AdReported),
                                                     -1,
                                                     AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                                    () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                                     resourceProvider
                                                 )
                                             )
@@ -1300,7 +1235,7 @@ public class ReportBottomSheet extends BottomSheet {
                                     LocaleController.getString(R.string.AdReported),
                                     -1,
                                     AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                    () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                    () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                     resourceProvider
                                 )
                             )
@@ -1324,7 +1259,7 @@ public class ReportBottomSheet extends BottomSheet {
                                 LocaleController.getString(R.string.AdReported),
                                 -1,
                                 AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD,
-                                () -> Browser.openUrl(context, "https://tell.cc/guidelines"),
+                                () -> Browser.openUrl(context, "https://promote.telegram.org/guidelines"),
                                 resourceProvider
                             )
                         )

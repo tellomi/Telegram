@@ -1052,32 +1052,17 @@ public class TL_account {
     }
 
     public static class deleteAccount extends TLObject {
-        /** Legacy teamgram form: reason only. Still accepted by Tellomi's server. */
         public static final int constructor = 0x418d4e0b;
-        /**
-         * Official form. Tellomi's account.deleteAccount handler reads the optional
-         * password only from this constructor:
-         * account.deleteAccount#a2c0cf74 flags:# reason:string password:flags.0?InputCheckPasswordSRP = Bool;
-         */
-        public static final int constructorWithPassword = 0xa2c0cf74;
 
         public String reason;
-        public TLRPC.InputCheckPasswordSRP password;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
-            if (password != null) {
-                stream.writeInt32(constructorWithPassword);
-                stream.writeInt32(1);
-                stream.writeString(reason == null ? "" : reason);
-                password.serializeToStream(stream);
-            } else {
-                stream.writeInt32(constructor);
-                stream.writeString(reason == null ? "" : reason);
-            }
+            stream.writeInt32(constructor);
+            stream.writeString(reason);
         }
     }
 

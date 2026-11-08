@@ -1,7 +1,5 @@
 package org.telegram.ui.Components;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
@@ -32,7 +30,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TellomiUsername;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -271,8 +268,8 @@ public class CreateBotAlert {
                 showUsernameHint.run();
                 return;
             }
-            if (TellomiUsername.isTooShort(username) || username.length() > 32) {
-                usernameEditInfo.setText(getString(TellomiUsername.isTooShort(username) ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
+            if (username.length() < 4 || username.length() > 32) {
+                usernameEditInfo.setText(getString(username.length() < 4 ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
                 usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
                 return;
             }
@@ -394,7 +391,7 @@ public class CreateBotAlert {
                                     ),
                                     () -> {
                                         sheet.dismiss();
-                                        Browser.openUrl(context, BuildVars.LINK_BASE + "BotFather?start=deletebot");
+                                        Browser.openUrl(context, "https://t.me/BotFather?start=deletebot");
                                     },
                                     resourcesProvider
                                 )

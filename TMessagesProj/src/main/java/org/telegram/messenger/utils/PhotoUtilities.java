@@ -13,7 +13,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.TellomiSignUpAvatarPrompt;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ChatActivity;
@@ -69,10 +68,6 @@ public class PhotoUtilities {
                 req.flags |= 16;
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                if (error != null || !(response instanceof TLRPC.TL_photos_photo)) {
-                    TellomiSignUpAvatarPrompt.show(error == null ? null : error.text, error == null ? 0 : error.code, () -> setImageAsAvatar(entry, baseFragment, onDone));
-                    return;
-                }
                 if (response instanceof TLRPC.TL_photos_photo) {
                     TLRPC.TL_photos_photo photos_photo = (TLRPC.TL_photos_photo) response;
                     MessagesController.getInstance(currentAccount).putUsers(photos_photo.users, false);
@@ -181,10 +176,6 @@ public class PhotoUtilities {
                     req.flags |= 16;
                 }
                 chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (error != null || !(response instanceof TLRPC.TL_photos_photo)) {
-                        TellomiSignUpAvatarPrompt.show(error == null ? null : error.text, error == null ? 0 : error.code, () -> showAvatartConstructorForUpdateUserPhoto(chatActivity, emojiMarkup));
-                        return;
-                    }
                     if (error == null) {
                         TLRPC.User user = chatActivity.getMessagesController().getUser(chatActivity.getUserConfig().getClientUserId());
 

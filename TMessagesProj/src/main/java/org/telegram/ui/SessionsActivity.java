@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.getString;
@@ -55,7 +53,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.TellomiSessionRevoke;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -331,7 +328,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         if (!TextUtils.isEmpty(username)) {
                             if (chatbots.length() > 0) chatbots.append(", ");
                             SpannableStringBuilder link = new SpannableStringBuilder("@").append(username);
-                            link.setSpan(new URLSpanNoUnderline(BuildVars.LINK_BASE + "" + username), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            link.setSpan(new URLSpanNoUnderline("https://t.me/" + username), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             chatbots.append(link);
                         } else {
                             chatbots.append(UserObject.getUserName(botUser));
@@ -357,7 +354,26 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                                 });
                             }
                             ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_auth_resetAuthorizations(), (response, error) -> {
-                                AndroidUtilities.runOnUIThread(() -> tellomiFinishResetAll(response, error));
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    if (getParentActivity() == null) {
+                                        return;
+                                    }
+                                    if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                                        BulletinFactory.of(SessionsActivity.this).createSimpleBulletin(R.raw.contact_check, getString(R.string.AllSessionsTerminated)).show();
+                                        loadSessions(false);
+                                    }
+                                });
+
+                                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                                    UserConfig userConfig = UserConfig.getInstance(a);
+                                    if (!userConfig.isClientActivated()) {
+                                        continue;
+                                    }
+                                    userConfig.registeredForPush = false;
+                                    userConfig.saveConfig(false);
+                                    MessagesController.getInstance(a).registerForPush(SharedConfig.pushType, SharedConfig.pushString);
+                                    ConnectionsManager.getInstance(a).setUserId(userConfig.getClientUserId());
+                                }
                             });
                         },
                         resourceProvider
@@ -378,7 +394,26 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                 builder.setPositiveButton(buttonText, (dialogInterface, i) -> {
                     if (currentType == 0) {
                         ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_auth_resetAuthorizations(), (response, error) -> {
-                            AndroidUtilities.runOnUIThread(() -> tellomiFinishResetAll(response, error));
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (getParentActivity() == null) {
+                                    return;
+                                }
+                                if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                                    BulletinFactory.of(SessionsActivity.this).createSimpleBulletin(R.raw.contact_check, getString(R.string.AllSessionsTerminated)).show();
+                                    loadSessions(false);
+                                }
+                            });
+
+                            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                                UserConfig userConfig = UserConfig.getInstance(a);
+                                if (!userConfig.isClientActivated()) {
+                                    continue;
+                                }
+                                userConfig.registeredForPush = false;
+                                userConfig.saveConfig(false);
+                                MessagesController.getInstance(a).registerForPush(SharedConfig.pushType, SharedConfig.pushString);
+                                ConnectionsManager.getInstance(a).setUserId(userConfig.getClientUserId());
+                            }
                         });
                     } else {
                         TL_account.resetWebAuthorizations req = new TL_account.resetWebAuthorizations();
@@ -495,9 +530,6 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
-                            if (tellomiResetRefused(error)) {
-                                return;
-                            }
                             if (error == null) {
                                 sessions.remove(authorization);
                                 passwordSessions.remove(authorization);
@@ -549,9 +581,6 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         TL_account.resetAuthorization req = new TL_account.resetAuthorization();
                         req.hash = authorization.hash;
                         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (tellomiResetRefused(error)) {
-                                return;
-                            }
                             if (error == null) {
                                 sessions.remove(authorization);
                                 passwordSessions.remove(authorization);
@@ -574,54 +603,6 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     }
 
 
-    /**
-     * 406 FRESH_RESET_AUTHORISATION_FORBIDDEN keeps every device row and explains
-     * the wait in Chinese when the UI language is Chinese. Other failures also
-     * keep the row. Success is the only path that reloads the list.
-     */
-    private void tellomiFinishResetAll(TLObject response, TLRPC.TL_error error) {
-        boolean ok = error == null && response instanceof TLRPC.TL_boolTrue;
-        if (getParentActivity() != null) {
-            if (tellomiResetRefused(error)) {
-                return;
-            }
-            if (ok) {
-                BulletinFactory.of(SessionsActivity.this).createSimpleBulletin(R.raw.contact_check, getString(R.string.AllSessionsTerminated)).show();
-                loadSessions(false);
-            }
-        } else if (!ok) {
-            return;
-        }
-        if (!ok) {
-            return;
-        }
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            UserConfig userConfig = UserConfig.getInstance(a);
-            if (!userConfig.isClientActivated()) {
-                continue;
-            }
-            userConfig.registeredForPush = false;
-            userConfig.saveConfig(false);
-            MessagesController.getInstance(a).registerForPush(SharedConfig.pushType, SharedConfig.pushString);
-            ConnectionsManager.getInstance(a).setUserId(userConfig.getClientUserId());
-        }
-    }
-
-    /** @return true when the row must stay */
-    private boolean tellomiResetRefused(TLRPC.TL_error error) {
-        if (error == null) {
-            return false;
-        }
-        if (getParentActivity() == null) {
-            return TellomiSessionRevoke.keepDeviceRow(false);
-        }
-        int raw = TellomiSessionRevoke.isFreshResetForbidden(error.code, error.text)
-            ? R.string.TellomiFreshResetForbidden
-            : R.string.UnknownError;
-        BulletinFactory.of(SessionsActivity.this).createSimpleBulletin(R.raw.error, getString(raw)).show();
-        return TellomiSessionRevoke.keepDeviceRow(false);
-    }
-
     private void showSessionBottomSheet(TLRPC.TL_authorization authorization, boolean isCurrentSession) {
         if (authorization == null) {
             return;
@@ -632,9 +613,6 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                 TL_account.resetAuthorization req = new TL_account.resetAuthorization();
                 req.hash = authorization.hash;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (tellomiResetRefused(error)) {
-                        return;
-                    }
                     if (error == null) {
                         sessions.remove(authorization);
                         passwordSessions.remove(authorization);
@@ -1277,7 +1255,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                 this.error = null;
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
-                        String code = BuildVars.toTgUrl(link).substring("tg://login?token=".length());
+                        String code = link.substring("tg://login?token=".length());
                         code = code.replaceAll("\\/", "_");
                         code = code.replaceAll("\\+", "-");
                         byte[] token = Base64.decode(code, Base64.URL_SAFE);

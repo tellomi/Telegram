@@ -74,7 +74,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AppIconsSelectorCell;
@@ -623,7 +622,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             }
             if (themeInfo.pathToFile != null) {
                 darkThemes.add(themeInfo);
-            } else if (TelegramThemeFlow.includeBundledTheme(themeInfo.name, false)) {
+            } else {
                 defaultThemes.add(themeInfo);
             }
         }
@@ -637,7 +636,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             themePreviewRow = rowCount++;
             themeHeaderRow = rowCount++;
             themeListRow = rowCount++;
-            hasThemeAccents = TelegramThemeFlow.showAccentRow(Theme.getCurrentTheme().hasAccentColors());
+            hasThemeAccents = Theme.getCurrentTheme().hasAccentColors();
             if (themesHorizontalListCell != null) {
                 themesHorizontalListCell.setDrawDivider(hasThemeAccents);
             }
@@ -733,7 +732,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             if (Theme.selectedAutoNightType != Theme.AUTO_NIGHT_TYPE_NONE) {
                 preferedHeaderRow = rowCount++;
                 themeListRow = rowCount++;
-                hasThemeAccents = TelegramThemeFlow.showAccentRow(Theme.getCurrentNightTheme().hasAccentColors());
+                hasThemeAccents = Theme.getCurrentNightTheme().hasAccentColors();
                 if (themesHorizontalListCell != null) {
                     themesHorizontalListCell.setDrawDivider(hasThemeAccents);
                 }

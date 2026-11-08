@@ -25,7 +25,6 @@
 #include "NativeByteBuffer.h"
 #include "Config.h"
 #include "Connection.h"
-#include "TellomiNetConfig.h"
 
 thread_local static std::vector<std::string> serverPublicKeys;
 thread_local static std::vector<uint64_t> serverPublicKeysFingerprints;
@@ -364,21 +363,7 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
             }
         } else {
             if (serverPublicKeys.empty()) {
-                if (TellomiNetConfig::customBackend()) {
-                    // TELLOMI: server RSA keys from the build config, newest first.
-                    const std::vector<std::string> &pems = TellomiNetConfig::publicKeyPems();
-                    const std::vector<uint64_t> &fingerprints = TellomiNetConfig::publicKeyFingerprints();
-                    size_t count = pems.size();
-                    if (fingerprints.size() < count) {
-                        count = fingerprints.size();
-                    }
-                    for (size_t i = 0; i < count; i++) {
-                        if (!pems[i].empty() && fingerprints[i] != 0) {
-                            serverPublicKeys.push_back(pems[i]);
-                            serverPublicKeysFingerprints.push_back(fingerprints[i]);
-                        }
-                    }
-                } else if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
+                if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
                     serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
                                                   "MIIBCgKCAQEAyMEdY1aR+sCR3ZSJrtztKTKqigvO/vBfqACJLZtS7QMgCGXJ6XIR\n"
                                                   "yy7mx66W0/sOFa7/1mAZtEoIokDP3ShoqF4fVNb6XeqgQfaUHd8wJpDWHcR2OFwv\n"

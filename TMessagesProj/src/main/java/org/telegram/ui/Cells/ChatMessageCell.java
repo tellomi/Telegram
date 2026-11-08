@@ -8,8 +8,6 @@
 
 package org.telegram.ui.Cells;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.find;
@@ -128,7 +126,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiMessageTranslate;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
@@ -688,9 +685,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         default void didPressSummarize(ChatMessageCell cell, boolean byReply) {
-        }
-
-        default void didPressTellomiTranslate(ChatMessageCell cell) {
         }
 
         default void didPressSponsoredInfo(ChatMessageCell cell, float x, float y) {
@@ -1689,10 +1683,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private static final int SIDE_BUTTON_SPONSORED_MORE = 5;
     private float sideStartX, sideStartY;
     private float summarizeButtonX, summarizeButtonY;
-    private float tellomiTranslateX, tellomiTranslateY;
-    private boolean tellomiTranslateVisible;
-    private boolean tellomiTranslatePressed;
-    private Drawable tellomiTranslateIcon;
 
     private StaticLayout nameLayout;
     private int nameLayoutWidth;
@@ -5176,10 +5166,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else if (drawNameLayout && nameLayout != null && viaWidth != 0 && x >= nameX + viaNameWidth && x <= nameX + viaNameWidth + viaWidth && y >= nameY - dp(4) && y <= nameY + dp(20)) {
                         forwardBotPressed = true;
                         result = true;
-                    } else if (tellomiTranslateVisible && hitTellomiTranslate(x, y)) {
-                        tellomiTranslatePressed = true;
-                        result = true;
-                        invalidate();
                     } else if (
                         sideButtonVisible &&
                         drawSideButton != 0 &&
@@ -5322,19 +5308,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                     }
-                } else if (tellomiTranslatePressed) {
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        playSoundEffect(SoundEffectConstants.CLICK);
-                        if (delegate != null) {
-                            delegate.didPressTellomiTranslate(this);
-                        }
-                        tellomiTranslatePressed = false;
-                    } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                        tellomiTranslatePressed = false;
-                    } else if (event.getAction() == MotionEvent.ACTION_MOVE && !hitTellomiTranslate(x, y)) {
-                        tellomiTranslatePressed = false;
-                    }
-                    invalidate();
                 } else if (sideButtonPressed) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         playSoundEffect(SoundEffectConstants.CLICK);
@@ -7013,7 +6986,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
             drawSummarizeButton = TranslateController.isSummarizable(messageObject);
-            updateTellomiTranslateWanted(messageObject);
             hasReplyQuote = false;
             isReplyQuote = false;
             isReplyTaskOrPollOption = false;
@@ -7935,9 +7907,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         author = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.author : null;
-                        if (org.telegram.ui.tellomi.feed.TellomiChatLink.hideAuthor(author == null ? null : author.toString())) {
-                            author = null;
-                        }
                         description = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.description : null;
                         photo = webPage.photo;
                         webDocument = null;
@@ -10945,10 +10914,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 try {
                                     final Uri uri = Uri.parse(buttonTypeUrl.url);
                                     final String host = uri.getHost().toLowerCase();
-                                    final String routedButtonUrl = BuildVars.toTgUrl(buttonTypeUrl.url);
                                     botButton.isInviteButton = (uri.getQueryParameter("startgroup") != null && (
-                                            ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && BuildVars.isLinkHost(host) ||
-                                                    BuildVars.isAppScheme(uri.getScheme()) && (routedButtonUrl.startsWith("tg:resolve") || routedButtonUrl.startsWith("tg://resolve"))
+                                            ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && ("t.me".equals(host) || "telegram.me".equals(host) || "telegram.dog".equals(host)) ||
+                                                    "tg".equals(uri.getScheme()) && (buttonTypeUrl.url.startsWith("tg:resolve") || buttonTypeUrl.url.startsWith("tg://resolve"))
                                     ));
                                 } catch (Exception ignore) {
                                 }
@@ -21493,7 +21461,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         drawSideButton(canvas);
         drawSummarizeButton(canvas);
-        drawTellomiTranslate(canvas);
     }
 
     public void drawAnimatedEmojis(Canvas canvas, float alpha) {
@@ -21859,73 +21826,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             summarizeIcon.set(open);
             setDrawableBounds(summarizeIcon, summarizeButtonX + dp(16) - summarizeIcon.getIntrinsicWidth() / 2f, summarizeButtonY + dp(16) - summarizeIcon.getIntrinsicHeight() / 2f);
             summarizeIcon.draw(canvas);
-        }
-    }
-
-    private boolean hitTellomiTranslate(float x, float y) {
-        return tellomiTranslateVisible && tellomiTranslateX >= 0 && x >= tellomiTranslateX - dp(4) && x <= tellomiTranslateX + dp(36) && y >= tellomiTranslateY - dp(4) && y <= tellomiTranslateY + dp(36);
-    }
-
-    private void updateTellomiTranslateWanted(MessageObject message) {
-        tellomiTranslatePressed = false;
-        boolean edge = currentPosition == null || ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0);
-        String words = message == null || message.messageOwner == null ? null : message.messageOwner.message;
-        boolean hasWords = words != null && words.trim().length() > 0 || message != null && message.caption != null && message.caption.length() > 0;
-        String lang = message == null || message.messageOwner == null ? null : message.messageOwner.originalLanguage;
-        boolean restricted = false;
-        if (lang != null) {
-            try {
-                restricted = org.telegram.ui.RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(lang);
-            } catch (Throwable ignored) {
-            }
-        }
-        boolean enabled = MessagesController.getInstance(currentAccount).isTranslationsManualEnabled();
-        tellomiTranslateVisible = TellomiMessageTranslate.showSide(enabled, message != null && message.isOutOwner(), TellomiMessageTranslate.english(lang), restricted, hasWords, edge, message != null && message.sideTranslateOpen);
-        if (enabled && message != null && !message.isOutOwner() && lang == null && hasWords) {
-            MessagesController.getInstance(currentAccount).getTranslateController().noteLanguage(message);
-        }
-    }
-
-    private void drawTellomiTranslate(Canvas canvas) {
-        if (!tellomiTranslateVisible || currentMessageObject == null) {
-            return;
-        }
-        float x;
-        if (currentMessageObject.isOutOwner()) {
-            x = transitionParams.lastBackgroundLeft - dp(40);
-        } else {
-            x = transitionParams.lastBackgroundRight + dp(8);
-        }
-        if (currentMessagesGroup != null) {
-            x += currentMessageObject.isOutOwner() ? currentMessagesGroup.transitionParams.offsetLeft : currentMessagesGroup.transitionParams.offsetRight;
-        }
-        float y = (getMeasuredHeight() - dp(32)) / 2f;
-        if (drawSideButton != 0) {
-            x = sideStartX;
-            y = sideStartY - dp(40);
-        }
-        if (x < dp(4) || y < dp(2) || x + dp(32) > getMeasuredWidth()) {
-            tellomiTranslateX = -1;
-            return;
-        }
-        tellomiTranslateX = x;
-        tellomiTranslateY = y;
-        rect.set(x, y, x + dp(32), y + dp(32));
-        canvas.drawRoundRect(rect, dp(16), dp(16), getThemedPaint(tellomiTranslatePressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
-        if (tellomiTranslateIcon == null) {
-            try {
-                tellomiTranslateIcon = getContext().getResources().getDrawable(R.drawable.msg_translate).mutate();
-            } catch (Throwable ignored) {
-                tellomiTranslateIcon = getThemedDrawable(Theme.key_drawable_shareIcon);
-            }
-        }
-        if (tellomiTranslateIcon != null) {
-            tellomiTranslateIcon.setColorFilter(new android.graphics.PorterDuffColorFilter(getThemedColor(Theme.key_chat_serviceText), android.graphics.PorterDuff.Mode.SRC_IN));
-            int cx = (int) (x + dp(16));
-            int cy = (int) (y + dp(16));
-            int hw = dp(10);
-            tellomiTranslateIcon.setBounds(cx - hw, cy - hw, cx + hw, cy + hw);
-            tellomiTranslateIcon.draw(canvas);
         }
     }
 

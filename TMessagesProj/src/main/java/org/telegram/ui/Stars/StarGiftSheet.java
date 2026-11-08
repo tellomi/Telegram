@@ -102,7 +102,6 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -6856,7 +6855,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         a.setTitle(getString(R.string.Gift2CantDoTitle));
         a.setMessage(getString(R.string.Gift2CantDoText));
         final TL_stars.TL_starGiftUnique gift = getUniqueGift();
-        if (TellomiFeatures.fragmentEnabled(currentAccount) && gift != null && !TextUtils.isEmpty(gift.slug)) {
+        if (gift != null && !TextUtils.isEmpty(gift.slug)) {
             a.setPositiveButton(getString(R.string.OpenFragment), (di, w) -> {
                 Browser.openUrlInSystemBrowser(getContext(), "https://fragment.com/gift/" + gift.slug);
             });

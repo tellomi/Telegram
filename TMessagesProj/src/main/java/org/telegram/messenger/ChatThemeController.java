@@ -21,7 +21,6 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ActionBar.theme.ThemeKey;
 import org.telegram.ui.ChatBackgroundDrawable;
 
@@ -157,12 +156,7 @@ public class ChatThemeController extends BaseController {
                 } else {
                     chatThemes = null;
                     isError = true;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (!TelegramThemeFlow.keepCachedChatThemes(true)) {
-                            allChatThemes = new ArrayList<>();
-                        }
-                        callback.onError(error);
-                    });
+                    AndroidUtilities.runOnUIThread(() -> callback.onError(error));
                 }
                 if (!isError) {
                     AndroidUtilities.runOnUIThread(() -> {
@@ -937,17 +931,6 @@ public class ChatThemeController extends BaseController {
 
     public boolean isGiftThemesFullyLoaded() {
         return giftsThemeList.completed;
-    }
-
-    /** Gift themes are optional. A missing RPC must not block emoji chat themes. */
-    public void markGiftThemesFinishedEmpty() {
-        if (!TelegramThemeFlow.loadEmojiThemesAfterGiftFailure()) {
-            return;
-        }
-        if (giftsThemeList.themes == null) {
-            giftsThemeList.themes = new ArrayList<>();
-        }
-        giftsThemeList.completed = true;
     }
 
     private void requestNextChatThemes(ResultCallback<Void> callback) {

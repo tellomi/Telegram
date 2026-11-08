@@ -32,7 +32,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -47,7 +46,6 @@ import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Objects;
 
 public class TranscribeButton {
@@ -69,10 +67,6 @@ public class TranscribeButton {
     private RLottieDrawable inIconDrawable;
     private int outIconDrawableAlpha;
     private RLottieDrawable outIconDrawable;
-    private int loadedInRaw;
-    private int loadedOutRaw;
-    private int iconGeneration;
-    private int coloredGeneration = -1;
 
     private Drawable selectorDrawable;
     private ChatMessageCell parent;
@@ -93,105 +87,7 @@ public class TranscribeButton {
         this.pressBounds = new Rect(this.bounds);
         this.pressBounds.inset(dp(8), dp(8));
 
-        ensureDrawables();
-
-        this.isOpen = false;
-        this.shouldBeOpen = false;
-        premium = parent.getMessageObject() != null && UserConfig.getInstance(parent.getMessageObject().currentAccount).isPremium();
-
-        loadingFloat = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
-        animatedDrawLock = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
-    }
-
-    /** Latin, Cyrillic, and Greek keep the capital A. Glyphs stay unmirrored in RTL. */
-    private static LocaleController.LocaleInfo cachedInfo;
-    private static String cachedLocaleLang = "";
-    private static String cachedSuffix = "";
-
-    private static String scriptSuffix() {
-        LocaleController ctrl = LocaleController.getInstance();
-        LocaleController.LocaleInfo info = ctrl.getCurrentLocaleInfo();
-        Locale locale = ctrl.getCurrentLocale();
-        String lang = locale == null || locale.getLanguage() == null ? "" : locale.getLanguage();
-        if (info == cachedInfo && lang.equals(cachedLocaleLang)) {
-            return cachedSuffix;
-        }
-        cachedInfo = info;
-        cachedLocaleLang = lang;
-        StringBuilder blob = new StringBuilder();
-        if (info != null) {
-            appendLang(blob, info.pluralLangCode);
-            appendLang(blob, info.shortName);
-            appendLang(blob, info.baseLangCode);
-        }
-        appendLang(blob, lang);
-        String suffix = "";
-        for (String part : blob.toString().toLowerCase(Locale.US).replace('-', '_').split("_")) {
-            if ("iw".equals(part)) {
-                suffix = "he";
-                break;
-            }
-            switch (part) {
-                case "zh":
-                case "ja":
-                case "ko":
-                case "ar":
-                case "fa":
-                case "he":
-                case "hi":
-                case "th":
-                    suffix = part;
-                    break;
-            }
-            if (!suffix.isEmpty()) {
-                break;
-            }
-        }
-        cachedSuffix = suffix;
-        return suffix;
-    }
-
-    private static void appendLang(StringBuilder blob, String code) {
-        if (code == null || code.isEmpty()) {
-            return;
-        }
-        if (blob.length() > 0) {
-            blob.append('_');
-        }
-        blob.append(code);
-    }
-
-    private static int transcribeRaw(boolean inAnim) {
-        switch (scriptSuffix()) {
-            case "zh": return inAnim ? R.raw.transcribe_in_zh : R.raw.transcribe_out_zh;
-            case "ja": return inAnim ? R.raw.transcribe_in_ja : R.raw.transcribe_out_ja;
-            case "ko": return inAnim ? R.raw.transcribe_in_ko : R.raw.transcribe_out_ko;
-            case "ar": return inAnim ? R.raw.transcribe_in_ar : R.raw.transcribe_out_ar;
-            case "fa": return inAnim ? R.raw.transcribe_in_fa : R.raw.transcribe_out_fa;
-            case "he": return inAnim ? R.raw.transcribe_in_he : R.raw.transcribe_out_he;
-            case "hi": return inAnim ? R.raw.transcribe_in_hi : R.raw.transcribe_out_hi;
-            case "th": return inAnim ? R.raw.transcribe_in_th : R.raw.transcribe_out_th;
-            default: return inAnim ? R.raw.transcribe_in : R.raw.transcribe_out;
-        }
-    }
-
-    private boolean ensureDrawables() {
-        int inRaw = transcribeRaw(true);
-        int outRaw = transcribeRaw(false);
-        if (inIconDrawable != null && loadedInRaw == inRaw && loadedOutRaw == outRaw) {
-            return false;
-        }
-        if (inIconDrawable != null) {
-            inIconDrawable.setOnFinishCallback(null, 0);
-            outIconDrawable.setOnFinishCallback(null, 0);
-            inIconDrawable.recycle(true);
-            outIconDrawable.recycle(true);
-        }
-        loadedInRaw = inRaw;
-        loadedOutRaw = outRaw;
-        iconGeneration++;
-
-        outIconDrawable = new RLottieDrawable(outRaw, dp(26), dp(26));
+        outIconDrawable = new RLottieDrawable(R.raw.transcribe_out, dp(26), dp(26));
         outIconDrawable.setCurrentFrame(0);
         outIconDrawable.setCallback(parent);
         outIconDrawable.setOnFinishCallback(() -> {
@@ -202,7 +98,7 @@ public class TranscribeButton {
         }, 19);
         outIconDrawable.setAllowDecodeSingleFrame(true);
 
-        inIconDrawable = new RLottieDrawable(inRaw, dp(26), dp(26));
+        inIconDrawable = new RLottieDrawable(R.raw.transcribe_in, dp(26), dp(26));
         inIconDrawable.setCurrentFrame(0);
         inIconDrawable.setCallback(parent);
         inIconDrawable.setMasterParent(parent);
@@ -213,7 +109,13 @@ public class TranscribeButton {
             outIconDrawable.setCurrentFrame(0);
         }, 19);
         inIconDrawable.setAllowDecodeSingleFrame(true);
-        return true;
+
+        this.isOpen = false;
+        this.shouldBeOpen = false;
+        premium = parent.getMessageObject() != null && UserConfig.getInstance(parent.getMessageObject().currentAccount).isPremium();
+
+        loadingFloat = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
+        animatedDrawLock = new AnimatedFloat(parent, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
     }
 
     public void setLock(boolean drawLock, boolean animated) {
@@ -244,7 +146,6 @@ public class TranscribeButton {
     protected void onOpen() {}
 
     public void setOpen(boolean open, boolean animated) {
-        ensureDrawables();
         if (!shouldBeOpen && open && clickedToOpen) {
             clickedToOpen = false;
             onOpen();
@@ -348,13 +249,12 @@ public class TranscribeButton {
     }
 
     public void setColor(int color, int grayColor, boolean isOut, float bgBack) {
-        ensureDrawables();
         boolean disabled = !premium;
 //        if (disabled) {
 //            color = ColorUtils.blendARGB(color, grayColor, isOut ? .6f : .8f);
 //            color = ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * .6f));
 //        }
-        boolean newColor = coloredGeneration != iconGeneration || this.color != color;
+        boolean newColor = this.color != color;
         this.iconColor = this.color = color;
         this.backgroundColor = ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * 0.156f));
         this.backgroundBack = bgBack;
@@ -381,7 +281,6 @@ public class TranscribeButton {
             outIconDrawable.setAllowDecodeSingleFrame(true);
             outIconDrawable.updateCurrentFrame(0, false);
             outIconDrawable.setAlpha(outIconDrawableAlpha = (int) (Color.alpha(color)));
-            coloredGeneration = iconGeneration;
         }
         if (strokePaint == null) {
             strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);

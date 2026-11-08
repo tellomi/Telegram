@@ -32,7 +32,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessageChatArguments;
@@ -176,9 +175,6 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
         @Override public void onRedo() { listView.redo(); }
         @Override public void onEmoji() { toggleEmojiPopup(); }
         @Override public void onAi() {
-            if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-                return;
-            }
             new RichAIComposeSheet(getContext(), currentAccount, resourcesProvider, richMessage -> listView.addRichMessage(richMessage)).show();
         }
         @Override public void onAttach() { listView.pendingMediaRow = null; openAttach(DEFAULT_ATTACH_LAYOUTS, 0); }
@@ -192,9 +188,6 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
         @Override public void onMath() { listView.onMathClicked(); }
         @Override public void onQuote() { listView.toggleQuoteOnSelection(); updateFormattingButtons(); }
         @Override public void onAiStyle() {
-            if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-                return;
-            }
             final RichEditorListView.SelectionEdit edit = listView.beginSelectionEdit();
             if (edit == null) return;
             final TL_iv.RichMessage rich = edit.extractRichMessage();

@@ -977,7 +977,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         if (files != null) {
             for (int a = 0; a < files.length; a++) {
                 File file = files[a];
-                if (file.isDirectory() && file.getName().equals(BuildVars.STORAGE_DIR_NAME)) {
+                if (file.isDirectory() && file.getName().equals("Telegram")) {
                     checkDirectory(file);
                     continue;
                 }
@@ -1351,10 +1351,10 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
         ListItem fs;
         try {
-            File telegramPath = new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), BuildVars.STORAGE_DIR_NAME);
+            File telegramPath = new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), "Telegram");
             if (telegramPath.exists()) {
                 fs = new ListItem();
-                fs.title = BuildVars.APP_NAME;
+                fs.title = "Telegram";
                 fs.subtitle = LocaleController.getString(R.string.AppFolderInfo);
                 fs.icon = R.drawable.files_folder;
                 fs.file = telegramPath;

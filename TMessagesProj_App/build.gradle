@@ -73,7 +73,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            // TELLOMI: keep applicationId exactly APP_PACKAGE (app.tellomi.chat), not *.beta.
+            applicationIdSuffix ".beta"
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
@@ -131,17 +131,7 @@ android {
         }
         afat {
             ndk {
-                def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
-                if (tellomiAbiOverride) {
-                    tellomiAbiOverride.toString().split(",").each { abi ->
-                        def trimmed = abi.trim()
-                        if (trimmed) {
-                            abiFilters trimmed
-                        }
-                    }
-                } else {
-                    abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-                }
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'

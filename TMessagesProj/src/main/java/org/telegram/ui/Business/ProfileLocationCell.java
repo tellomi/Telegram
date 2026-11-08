@@ -4,9 +4,11 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -17,6 +19,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -30,7 +33,8 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.TellomiMaps;
+
+import java.util.Locale;
 
 public class ProfileLocationCell extends LinearLayout {
 
@@ -123,9 +127,16 @@ public class ProfileLocationCell extends LinearLayout {
     public static void openLocation(Activity activity, TLRPC.TL_businessLocation location) {
         if (activity == null || location == null) return;
         if (location.geo_point != null && !(location.geo_point instanceof TLRPC.TL_geoPointEmpty)) {
-            TellomiMaps.openPoint(activity, null, null, location.geo_point.lat, location.geo_point._long, location.address);
-        } else if (!TextUtils.isEmpty(location.address)) {
-            TellomiMaps.openPoint(activity, null, null, Double.NaN, Double.NaN, location.address);
+            try {
+                String uri = String.format(Locale.ENGLISH, "geo:%f,%f", location.geo_point.lat, location.geo_point._long);
+                if (!TextUtils.isEmpty(location.address)) {
+                    uri += "?q=" + location.address;
+                }
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+                activity.startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
     }
 
