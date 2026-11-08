@@ -15,7 +15,8 @@ WORKFLOW = ROOT / ".github" / "workflows" / "android-apk.yml"
 PACKAGE_EXPR = (
     "github.event_name == 'workflow_dispatch' || "
     "(github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') "
-    "|| github.ref == 'refs/heads/release/android'))"
+    "|| github.ref == 'refs/heads/release/android' "
+    "|| github.ref == 'refs/heads/cursor/android-official-restore-2a44'))"
 )
 
 PUBLISH_IF = """needs.apk.outputs.type == 'release' && (
@@ -26,7 +27,11 @@ PUBLISH_IF = """needs.apk.outputs.type == 'release' && (
 
 def packages(event, ref):
     return event == "workflow_dispatch" or (
-        event == "push" and (ref.startswith("refs/tags/v") or ref == "refs/heads/release/android")
+        event == "push" and (
+            ref.startswith("refs/tags/v")
+            or ref == "refs/heads/release/android"
+            or ref == "refs/heads/cursor/android-official-restore-2a44"
+        )
     )
 
 
@@ -135,6 +140,8 @@ def main():
         ("pull_request", "refs/heads/release/android", "none", False, False),
         ("push", "refs/heads/master", None, False, False),
         ("push", "refs/heads/cursor/example-38d3", None, False, False),
+        ("push", "refs/heads/cursor/android-official-restore-2a44", None, True, False),
+        ("pull_request", "refs/heads/cursor/android-official-restore-2a44", "none", False, False),
         ("push", "refs/tags/1.2.3", None, False, False),
         ("push", "refs/tags/v1.2.3", None, True, True),
         ("push", "refs/heads/release/android", None, True, True),

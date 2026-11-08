@@ -38,7 +38,9 @@ env:
   CCACHE_SLOPPINESS: time_macros,file_macro,locale,include_file_mtime,include_file_ctime
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   # String "true" or "false". Ordinary push and pull_request are false.
-  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android')) }}
+  # The official-restore branch also packages a signed APK artifact. It does
+  # not match the publish job, so that artifact is not uploaded to the site.
+  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44')) }}
 
 jobs:
   workflow:
