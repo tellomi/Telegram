@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Tellomi</string>
+    <string name="AppNameBeta">Tellomi Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -5803,6 +5803,9 @@
     <string name="BioLimitSubtitle">Add more symbols and use links in your bio.</string>
     <string name="AppIcon">App Icon</string>
     <string name="AppIconDefault">Default</string>
+    <string name="AppIconClassic">Classic</string>
+    <string name="AppIconClassicBlack">Classic Black</string>
+    <string name="AppIconFilledBlack">Filled Black</string>
     <string name="AppIconVintage">Vintage</string>
     <string name="AppIconAqua">Aqua</string>
     <string name="AppIconPremium">Premium</string>
