@@ -708,7 +708,7 @@ New Message is `DialogsActivity.openWriteContacts` (and `open_new_dialog`). It p
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiNavigationSettings.java` | New. The Navigation Bar page. Not an upstream file. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/TellomiTabs.java` | Writes the three switches, the Discover long-press, and opening a post link. A post link pops back to the tabs without animation and selects Discover. |
 | `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java` | Retries presenting the post when a fragment transition is still running. |
-| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. The live feed (below) replaces that screen only when `tellomi_discover_feed_enabled` is on. |
+| `TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java` | Empty copy, and the "can't open yet" line when a post id is set. The live feed replaces that screen only when `tellomi_discover_feed_enabled` is on. The compose button stays on the page; rebuilding the feed, the empty state, or the city list clears only the content child. |
 
 ## Check for updates on the settings screen
 

@@ -190,6 +190,9 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         if (screen != null) {
             screen.destroy();
         }
+        // Feed rebuilds clear this child. The compose button stays on root.
+        FrameLayout content = new FrameLayout(context);
+        root.addView(content, org.telegram.ui.Components.LayoutHelper.createFrame(org.telegram.ui.Components.LayoutHelper.MATCH_PARENT, org.telegram.ui.Components.LayoutHelper.MATCH_PARENT));
         if (hasMainTabs) {
             composeButton = new FragmentFloatingButton(context, resourceProvider);
             composeButton.setImageResource(R.drawable.filled_fab_compose_32);
@@ -202,7 +205,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             root.addView(composeButton, FragmentFloatingButton.createDefaultLayoutParams());
             composeButton.setTranslationY(-AndroidUtilities.navigationBarHeight);
         }
-        screen = new TellomiDiscoverScreen(this, root, context);
+        screen = new TellomiDiscoverScreen(this, content, context);
         screen.sync(true);
         return fragmentView;
     }

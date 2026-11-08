@@ -111,6 +111,28 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
+    public void feedRebuildKeepsTheComposeButton() throws Exception {
+        org.telegram.ui.tellomi.feed.TellomiDiscoverComposeMount.Page page = new org.telegram.ui.tellomi.feed.TellomiDiscoverComposeMount.Page(true);
+        page.rebuildContent("legacy");
+        page.rebuildContent("empty");
+        page.rebuildContent("city");
+        page.rebuildContent("feed");
+        assertTrue(page.composeAttached());
+        assertEquals(java.util.Arrays.asList("content", "compose"), page.pageChildren());
+        assertEquals(java.util.Arrays.asList("feed"), page.content());
+        page.clearPage();
+        assertFalse(page.composeAttached());
+
+        String screen = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/TellomiDiscoverScreen.java");
+        assertTrue(screen.contains("TellomiDiscoverComposeMount.clear(root)"));
+        assertFalse(screen.contains("root.removeAllViews()"));
+        String feed = read("TMessagesProj/tellomi/java/org/telegram/ui/tellomi/feed/FeedActivity.java");
+        assertTrue(feed.contains("new TellomiDiscoverScreen(this, content, context)"));
+        assertTrue(feed.indexOf("root.addView(content") < feed.indexOf("root.addView(composeButton"));
+        assertTrue(feed.contains("R.drawable.filled_fab_compose_32"));
+    }
+
+    @Test
     public void agreementStaysAboveTheKeyboardAndDiscoverTabsFollowScroll() {
         assertEquals(400, TellomiLoginFit.visibleAboveKeyboard(1000, 600));
         assertEquals(1, TellomiLoginFit.visibleAboveKeyboard(100, 500));

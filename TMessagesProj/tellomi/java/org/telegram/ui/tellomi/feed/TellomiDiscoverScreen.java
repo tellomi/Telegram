@@ -45,6 +45,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     private static final int POST_PRESENT_RETRY_MS = 80;
 
     private final FeedActivity activity;
+    /** Feed content only. The compose button is a sibling on the page, not a child here. */
     private final FrameLayout root;
     private final Context context;
     private final TellomiDiscover.Loader loader;
@@ -704,7 +705,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildLegacy(boolean postUnavailable) {
-        root.removeAllViews();
+        TellomiDiscoverComposeMount.clear(root);
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = new LinearLayout(context);
@@ -733,7 +734,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildCity(TellomiDiscover.Copy copy) {
-        root.removeAllViews();
+        TellomiDiscoverComposeMount.clear(root);
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = column();
@@ -817,7 +818,7 @@ final class TellomiDiscoverScreen implements TellomiDiscoverComposeFragment.Publ
     }
 
     private void buildFeed(TellomiDiscover.Copy copy, TellomiDiscover.Chrome chrome) {
-        root.removeAllViews();
+        TellomiDiscoverComposeMount.clear(root);
         activity.titleView = null;
         activity.messageView = null;
         LinearLayout column = column();
