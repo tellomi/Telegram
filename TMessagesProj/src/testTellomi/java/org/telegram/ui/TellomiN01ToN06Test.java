@@ -57,6 +57,50 @@ public class TellomiN01ToN06Test {
     }
 
     @Test
+    public void languageRedrawKeepsPhoneCodeEmailAndDropsThePasswordOnDeath() {
+        TellomiLoginSnapshot phone = new TellomiLoginSnapshot();
+        phone.phone = "13800138000";
+        phone.agreed = true;
+        TellomiLoginSnapshot phoneAgain = phone.afterLanguageRedraw();
+        assertEquals(TellomiLoginSnapshot.PHONE, phoneAgain.page);
+        assertEquals("13800138000", phoneAgain.phone);
+        assertTrue(phoneAgain.agreed);
+        assertFalse(phoneAgain.resendRequested);
+
+        TellomiLoginSnapshot email = new TellomiLoginSnapshot();
+        email.screen = TellomiLoginSnapshot.SCREEN_EMAIL;
+        email.email = "";
+        TellomiLoginSnapshot emailEmpty = email.afterLanguageRedraw();
+        assertEquals(TellomiLoginSnapshot.SCREEN_EMAIL, emailEmpty.screen);
+        email.email = "a@b.co";
+        assertEquals("a@b.co", email.afterLanguageRedraw().email);
+
+        TellomiLoginSnapshot code = new TellomiLoginSnapshot();
+        code.page = TellomiLoginSnapshot.CODE_SMS;
+        code.phone = "13800138000";
+        code.typedCode = "12";
+        code.remainingMs = 42000;
+        code.openedAtSec = 100;
+        code.agreed = true;
+        TellomiLoginSnapshot kept = code.afterLanguageRedraw();
+        assertEquals(TellomiLoginSnapshot.CODE_SMS, kept.page);
+        assertEquals("12", kept.typedCode);
+        assertEquals(42000, kept.remainingMs);
+        assertEquals(100, kept.openedAtSec);
+        assertFalse(kept.resendRequested);
+        TellomiLoginSnapshot died = code.forProcessDeath();
+        assertEquals(TellomiLoginSnapshot.PHONE, died.page);
+        assertEquals("", died.typedCode);
+        assertEquals(0, died.remainingMs);
+
+        TellomiLoginSnapshot secret = new TellomiLoginSnapshot();
+        secret.page = TellomiLoginSnapshot.PASSWORD;
+        secret.password = "secret";
+        assertEquals("", secret.forProcessDeath().password);
+        assertEquals("secret", secret.afterLanguageRedraw().password);
+    }
+
+    @Test
     public void agreementStaysAboveTheKeyboardAndDiscoverTabsFollowScroll() {
         assertEquals(400, TellomiLoginFit.visibleAboveKeyboard(1000, 600));
         assertEquals(1, TellomiLoginFit.visibleAboveKeyboard(100, 500));
@@ -138,7 +182,9 @@ public class TellomiN01ToN06Test {
         String attach = read("TMessagesProj/src/main/java/org/telegram/ui/Components/ChatAttachAlert.java");
         assertTrue(attach.contains("R.drawable.tellomi_chat_send_arrow"));
         String login = read("TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java");
+        assertTrue(login.contains("TellomiLoginResume.holdSnapshot"));
         assertTrue(login.contains("TellomiLoginResume.hold"));
+        assertTrue(login.contains("tellomiApplyHeldSnapshot"));
         assertTrue(login.contains("TellomiLoginResume.stripSecrets"));
         assertTrue(login.contains("phoneview_agreed"));
         assertTrue(login.contains("tellomiOpenScreen(TELLOMI_EMAIL_CODE, false)"));

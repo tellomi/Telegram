@@ -9,7 +9,7 @@ Paths below are relative to the repo root. "Upstream" means the file exists in D
 | File | Change |
 | --- | --- |
 | `TMessagesProj/src/main/java/org/telegram/ui/IntroActivity.java` | Welcome page keeps the language control only. The manual day/night button is not added. System theme following and the settings theme screen stay. |
-| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Language control only. The day/night control is not added on phone, email, code, password, or register. A language change no longer forces the phone or email password step back to the phone form. |
+| `TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java` | Language control only. The day/night control is not added on phone, email, code, password, or register. A language change keeps the phone form, the email form (empty or filled), the code step, the agreement, and the countdown, and does not send another code. A killed process still drops the password and the code step. |
 | `TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java` | `zh_hans` installs `zh-CN` and `zh_hant` installs `zh-TW` instead of both becoming `Locale("zh")`. Traditional UI then runs `TellomiChineseScript` on the resolved string. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` | Idle order is attachment (left), emoji (inside, right), voice (outside, right). Text still replaces the voice slot with send. Send uses `tellomi_chat_send_arrow` (iOS `chatInputPanelSendIconImage` paths, no circle). Attachment and voice use the iOS PDF paths. |
 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterViewAnimatedIconView.java` | Smile, sticker, and voice states use those same vectors. |

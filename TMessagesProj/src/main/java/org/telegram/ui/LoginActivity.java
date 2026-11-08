@@ -790,8 +790,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             savedInstanceState = tellomiLanguageRestore;
             tellomiLanguageRestore = null;
             tellomiKeepCodePage = true;
-        } else if (TellomiLoginResume.peek() != null) {
+        } else if (TellomiLoginResume.peek() != null || TellomiLoginResume.peekSnapshot() != null) {
             savedInstanceState = TellomiLoginResume.peek();
+            if (savedInstanceState == null) {
+                savedInstanceState = new Bundle();
+            }
+            TellomiLoginSnapshot shot = TellomiLoginResume.peekSnapshot();
+            if (shot != null) {
+                savedInstanceState.putInt("currentViewNum", shot.page);
+            }
             tellomiKeepCodePage = true;
         } else {
             savedInstanceState = activityMode == MODE_LOGIN ? loadCurrentState(newAccount, currentAccount) : null;
@@ -961,6 +968,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
+        tellomiApplyHeldSnapshot();
         restoringState = false;
 
         if (activityMode == MODE_LOGIN && backButtonView != null) {
@@ -1845,6 +1853,66 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         needHideProgress(true);
     }
 
+    private TellomiLoginSnapshot tellomiFillSnapshot() {
+        TellomiLoginSnapshot shot = new TellomiLoginSnapshot();
+        shot.page = currentViewNum;
+        shot.resendRequested = false;
+        if (views != null && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+            PhoneView phone = (PhoneView) views[VIEW_PHONE_INPUT];
+            if (phone.phoneField != null && phone.phoneField.getText() != null) {
+                shot.phone = phone.phoneField.getText().toString();
+            }
+            if (phone.emailField != null && phone.emailField.getText() != null) {
+                shot.email = phone.emailField.getText().toString();
+            }
+            shot.screen = phone.tellomiScreen;
+            shot.agreed = phone.tellomiPhoneAgreement.isAgreed();
+        }
+        if (views != null && currentViewNum >= 0 && currentViewNum < views.length && views[currentViewNum] instanceof LoginActivitySmsView) {
+            LoginActivitySmsView sms = (LoginActivitySmsView) views[currentViewNum];
+            shot.typedCode = sms.codeFieldContainer.getCode();
+            shot.remainingMs = sms.time;
+            shot.openedAtSec = sms.openTime;
+        }
+        if (views != null && views[VIEW_PASSWORD] instanceof LoginActivityPasswordView) {
+            LoginActivityPasswordView pass = (LoginActivityPasswordView) views[VIEW_PASSWORD];
+            if (pass.codeField != null && pass.codeField.getText() != null) {
+                shot.password = pass.codeField.getText().toString();
+            }
+        }
+        return shot;
+    }
+
+    private void tellomiApplyHeldSnapshot() {
+        TellomiLoginSnapshot shot = TellomiLoginResume.peekSnapshot();
+        if (shot == null || views == null || !(views[VIEW_PHONE_INPUT] instanceof PhoneView)) {
+            return;
+        }
+        PhoneView phone = (PhoneView) views[VIEW_PHONE_INPUT];
+        if (shot.screen == TellomiLoginSnapshot.SCREEN_EMAIL) {
+            phone.tellomiOpenScreen(PhoneView.TELLOMI_EMAIL_CODE, false);
+        }
+        if (shot.phone != null && shot.phone.length() > 0 && phone.phoneField != null) {
+            phone.phoneField.setText(shot.phone);
+        }
+        if (shot.email != null && shot.email.length() > 0 && phone.emailField != null) {
+            phone.emailField.setText(shot.email);
+        }
+        phone.tellomiPhoneAgreement.setAgreed(shot.agreed);
+        if (TellomiLoginSnapshot.isCodePage(shot.page) && shot.page < views.length && views[shot.page] instanceof LoginActivitySmsView) {
+            LoginActivitySmsView sms = (LoginActivitySmsView) views[shot.page];
+            if (shot.typedCode != null && shot.typedCode.length() > 0) {
+                sms.codeFieldContainer.setText(shot.typedCode);
+            }
+            if (shot.remainingMs > 0) {
+                sms.time = shot.remainingMs;
+            }
+            if (shot.openedAtSec > 0) {
+                sms.openTime = shot.openedAtSec;
+            }
+        }
+    }
+
     private Bundle tellomiCaptureLoginState() {
         Bundle bundle = new Bundle();
         bundle.putInt("currentViewNum", currentViewNum);
@@ -1870,6 +1938,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         if (info == null || TellomiLanguageSheet.sameLanguage(info, LocaleController.getInstance().getCurrentLocaleInfo())) {
             return;
         }
+        TellomiLoginResume.holdSnapshot(tellomiFillSnapshot());
         TellomiLoginResume.hold(tellomiCaptureLoginState());
         LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(() -> {
             if (getParentLayout() == null) {

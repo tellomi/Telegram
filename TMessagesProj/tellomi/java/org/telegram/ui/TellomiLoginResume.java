@@ -11,6 +11,7 @@ import android.os.Bundle;
 public final class TellomiLoginResume {
 
     private static Bundle pending;
+    private static TellomiLoginSnapshot snapshot;
 
     private TellomiLoginResume() {
     }
@@ -19,12 +20,21 @@ public final class TellomiLoginResume {
         pending = bundle;
     }
 
+    public static void holdSnapshot(TellomiLoginSnapshot value) {
+        snapshot = value == null ? null : value.afterLanguageRedraw();
+    }
+
+    public static TellomiLoginSnapshot peekSnapshot() {
+        return snapshot;
+    }
+
     public static Bundle peek() {
         return pending;
     }
 
     public static void clear() {
         pending = null;
+        snapshot = null;
     }
 
     /** Disk copies must not keep a typed password or 2FA code. */
