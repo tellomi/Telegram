@@ -109,15 +109,99 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
+def tellomiJavaString = { String value ->
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
+}
+def tellomiProp = { String name, String fallback ->
+    def value = project.findProperty(name)
+    return value != null ? value.toString() : fallback
+}
+def tellomiPublicKeyPem = {
+    def override = project.findProperty("TELLOMI_SERVER_PUBLIC_KEY")
+    if (override != null && override.toString().trim()) {
+        return override.toString().replace('\\n', '\n')
+    }
+    def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
+    return keyFile.isFile() ? keyFile.getText("UTF-8") : ""
+}
+def TELLOMI_PRODUCTION_HOST = '8.137.39.82'
+def TELLOMI_PRODUCTION_PORT = '10443'
+def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT}"
+def tellomiServerProfiles = [
+    dev  : TELLOMI_PRODUCTION_ADDRESSES,
+    local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
+]
+def tellomiServerSelection = { String fallbackName ->
+    def explicit = project.findProperty('TELLOMI_DC_ADDRESSES')
+    if (explicit != null && explicit.toString().trim()) {
+        return [name: 'explicit', addresses: explicit.toString().trim()]
+    }
+    def selected = project.findProperty('TELLOMI_SERVER_PROFILE')
+    def name = selected != null && selected.toString().trim() ? selected.toString().trim() : fallbackName
+    if (!tellomiServerProfiles.containsKey(name)) {
+        throw new GradleException("Unknown TELLOMI_SERVER_PROFILE '${name}'. Use dev or local, or set TELLOMI_DC_ADDRESSES.")
+    }
+    return [name: name, addresses: tellomiServerProfiles[name]]
+}
+def tellomiAddressesAreProduction = { String addresses ->
+    if (addresses == null) {
+        return false
+    }
+    def parts = addresses.split(',')
+    if (parts.length < 1) {
+        return false
+    }
+    for (raw in parts) {
+        def bits = raw.trim().split(':')
+        if (bits.length < 3 || bits[1] != TELLOMI_PRODUCTION_HOST || bits[2] != TELLOMI_PRODUCTION_PORT) {
+            return false
+        }
+    }
+    return true
+}
+def tellomiShippableSelectionOk = { selection ->
+    return selection != null && selection.name != 'local' && tellomiAddressesAreProduction(selection.addresses?.toString())
+}
+def tellomiEmbeddedShippableServer = {
+    def selection = tellomiServerSelection('dev')
+    if (tellomiShippableSelectionOk(selection)) {
+        return selection
+    }
+    return [name: 'dev', addresses: TELLOMI_PRODUCTION_ADDRESSES]
+}
+def tellomiShippableBuildConfigFields = { buildType ->
+    def server = tellomiEmbeddedShippableServer()
+    buildType.buildConfigField('String', 'TELLOMI_SERVER_PROFILE', tellomiJavaString(server.name))
+    buildType.buildConfigField('String', 'TELLOMI_DC_ADDRESSES', tellomiJavaString(server.addresses))
+}
+def tellomiTaskShipsClient = { String name ->
+    def lower = name.toLowerCase()
+    return lower.contains('release') || lower.contains('standalone') || lower.contains('ha_')
+}
+def tellomiRefuseNonProductionShip = { String where ->
+    def selection = tellomiServerSelection('dev')
+    if (tellomiShippableSelectionOk(selection)) {
+        return
+    }
+    def profile = selection == null ? '' : selection.name
+    def addresses = selection == null ? '' : selection.addresses
+    throw new GradleException(
+        "A shippable build must embed ${TELLOMI_PRODUCTION_ADDRESSES}. ${where} resolved " +
+        "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
+        "Debug local docker is assembleAfatDebug -PTELLOMI_SERVER_PROFILE=local."
+    )
+}
+
 android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
     ndkVersion "27.2.12479018"
 
-
-    externalNativeBuild {
-        cmake {
-            path 'jni/CMakeLists.txt'
+    if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+            }
         }
     }
 
@@ -142,11 +226,34 @@ android {
 
         multiDexEnabled true
 
-        externalNativeBuild {
-            cmake {
-                version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
-                targets 'tmessages.49'
+        buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
+        buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
+        tellomiShippableBuildConfigFields(delegate)
+        buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
+        buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
+        buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "false")
+        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
+        buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
+
+        def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
+        if (tellomiAbiOverride) {
+            ndk {
+                tellomiAbiOverride.toString().split(",").each { abi ->
+                    def trimmed = abi.trim()
+                    if (trimmed) {
+                        abiFilters trimmed
+                    }
+                }
+            }
+        }
+
+        if (!findProperty("TELLOMI_PREBUILT_JNI")) {
+            externalNativeBuild {
+                cmake {
+                    version '3.22.1'
+                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                    targets 'tmessages.49'
+                }
             }
         }
     }
@@ -163,6 +270,9 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "0"
+            def tellomiDebugServer = tellomiServerSelection('dev')
+            buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiDebugServer.name)
+            buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiDebugServer.addresses)
         }
 
         HA_private {
@@ -231,6 +341,10 @@ android {
         }
     }
 
+    if (findProperty("TELLOMI_PREBUILT_JNI")) {
+        sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()
+    }
+
     namespace 'org.telegram.messenger'
 }
 
@@ -268,3 +382,22 @@ task checkVisibility {
 }
 
 preBuild.dependsOn checkVisibility
+
+gradle.taskGraph.whenReady { graph ->
+    def shipping = graph.allTasks.findAll { tellomiTaskShipsClient(it.name) }
+    if (!shipping.isEmpty()) {
+        def names = shipping.collect { it.path }.take(8).join(', ')
+        tellomiRefuseNonProductionShip("Tasks [${names}]")
+    }
+}
+
+task tellomiVerifyShippableDc {
+    group = 'tellomi'
+    description = 'Fail unless a shippable build embeds 8.137.39.82:10443.'
+    doLast {
+        def shipServer = tellomiEmbeddedShippableServer()
+        println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"
+        println "release BuildConfig TELLOMI_DC_ADDRESSES=${shipServer.addresses}"
+        tellomiRefuseNonProductionShip('tellomiVerifyShippableDc')
+    }
+}

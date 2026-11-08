@@ -7,6 +7,7 @@
 #include "tgnet/ConnectionSocket.h"
 #include "tgnet/FileLog.h"
 #include "tgnet/Handshake.h"
+#include "tgnet/TellomiNetConfig.h"
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 #include <openssl/bn.h>
@@ -515,6 +516,23 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     }
 }
 
+void setTellomiBackend(JNIEnv *env, jclass c, jstring dcSpec, jint defaultDcId, jstring publicKey, jboolean customBackend, jboolean lockAddresses) {
+    const char *dcSpecStr = dcSpec != nullptr ? env->GetStringUTFChars(dcSpec, nullptr) : nullptr;
+    const char *publicKeyStr = publicKey != nullptr ? env->GetStringUTFChars(publicKey, nullptr) : nullptr;
+    TellomiNetConfig::set(
+            dcSpecStr != nullptr ? std::string(dcSpecStr) : std::string(),
+            (int32_t) defaultDcId,
+            publicKeyStr != nullptr ? std::string(publicKeyStr) : std::string(),
+            customBackend == JNI_TRUE,
+            lockAddresses == JNI_TRUE);
+    if (dcSpecStr != nullptr) {
+        env->ReleaseStringUTFChars(dcSpec, dcSpecStr);
+    }
+    if (publicKeyStr != nullptr) {
+        env->ReleaseStringUTFChars(publicKey, publicKeyStr);
+    }
+}
+
 void setJava(JNIEnv *env, jclass c, jboolean useJavaByteBuffers) {
     ConnectionsManager::useJavaVM(java, useJavaByteBuffers);
     for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
@@ -553,6 +571,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setNetworkAvailable", "(IZIZ)V", (void *) setNetworkAvailable},
         {"native_setPushConnectionEnabled", "(IZ)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava},
+        {"native_setTellomiBackend", "(Ljava/lang/String;ILjava/lang/String;ZZ)V", (void *) setTellomiBackend},
         {"native_applyDnsConfig", "(IJLjava/lang/String;I)V", (void *) applyDnsConfig},
         {"native_checkProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/telegram/tgnet/RequestTimeDelegate;)J", (void *) checkProxy},
         {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved},

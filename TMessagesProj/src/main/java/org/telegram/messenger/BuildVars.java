@@ -21,19 +21,27 @@ public class BuildVars {
     public static boolean DEBUG_VERSION = BuildConfig.DEBUG_VERSION;
     public static boolean LOGS_ENABLED = BuildConfig.DEBUG_VERSION;
     public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG_PRIVATE_VERSION;
-    public static boolean USE_CLOUD_STRINGS = true;
+    // Langpack download would call translations.telegram.org. Own-server builds leave it off.
+    public static boolean USE_CLOUD_STRINGS = BuildConfig.TELLOMI_USE_CLOUD_STRINGS;
     public static boolean CHECK_UPDATES = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static String BUILD_VERSION_STRING = BuildConfig.BUILD_VERSION_STRING;
 
-    public static int APP_ID = 4;
-    public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
+    // Not Telegram's published api_id 4 / api_hash. Requests go to the configured datacenter only.
+    public static int APP_ID = BuildConfig.TELLOMI_API_ID;
+    public static String APP_HASH = BuildConfig.TELLOMI_API_HASH;
 
-    // SafetyNet key for Google Identity SDK, set it to empty to disable
-    public static String SAFETYNET_KEY = "AIzaSyDqt8P-7F7CPCseMkOiVRgb1LY8RN1bvH8";
+    public static final boolean TELLOMI_CUSTOM_BACKEND = BuildConfig.TELLOMI_CUSTOM_BACKEND;
+    public static final boolean TELLOMI_LOCK_DC_ADDRESSES = BuildConfig.TELLOMI_LOCK_DC_ADDRESSES;
+    public static final String TELLOMI_DC_ADDRESSES = BuildConfig.TELLOMI_DC_ADDRESSES;
+    public static final int TELLOMI_DEFAULT_DC_ID = BuildConfig.TELLOMI_DEFAULT_DC_ID;
+    public static final String TELLOMI_SERVER_PUBLIC_KEY = BuildConfig.TELLOMI_SERVER_PUBLIC_KEY;
+
+    // Empty so this package does not present Telegram's SafetyNet or OAuth client.
+    public static String SAFETYNET_KEY = "";
     public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
     public static String HUAWEI_STORE_URL = "https://appgallery.huawei.com/app/C101184875";
-    public static String GOOGLE_AUTH_CLIENT_ID = "760348033671-81kmi3pi84p11ub8hp9a1funsv0rn2p9.apps.googleusercontent.com";
+    public static String GOOGLE_AUTH_CLIENT_ID = "";
 
     public static String HUAWEI_APP_ID = "101184875";
 
