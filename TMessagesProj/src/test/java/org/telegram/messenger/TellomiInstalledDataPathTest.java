@@ -22,6 +22,7 @@ public class TellomiInstalledDataPathTest {
         String utilities = read("src/main/java/org/telegram/messenger/AndroidUtilities.java");
         String picker = read("src/main/java/org/telegram/ui/Components/ChatAttachAlertDocumentLayout.java");
         String contacts = read("src/main/java/org/telegram/messenger/ContactsController.java");
+        String messages = read("src/main/java/org/telegram/messenger/MessagesController.java");
 
         assertTrue(vars.contains("APP_NAME = \"Tellomi\""));
         assertTrue(vars.contains("STORAGE_DIR_NAME = APP_NAME"));
@@ -42,6 +43,12 @@ public class TellomiInstalledDataPathTest {
         assertTrue(contacts.contains("BuildVars.APP_NAME + \" Voice Call\""));
         assertTrue(contacts.contains("BuildVars.APP_NAME + \" Video Call\""));
         assertTrue(contacts.contains("BuildVars.APP_NAME + \"ConnectionService\""));
+        int support = messages.indexOf("public void addSupportUser()");
+        assertTrue(support >= 0);
+        String seed = messages.substring(support, messages.indexOf("public TLRPC.InputUser getInputUser", support));
+        assertTrue(seed.contains("user.id = 777000"));
+        assertTrue(seed.contains("user.first_name = BuildVars.APP_NAME"));
+        assertFalse(seed.contains("user.first_name = \"Telegram\""));
 
         for (String source : new String[] {images, shared, migration, utilities, picker, contacts}) {
             assertFalse(source.contains("\"Telegram Images\""));
