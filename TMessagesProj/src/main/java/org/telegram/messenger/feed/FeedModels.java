@@ -10,13 +10,13 @@ public final class FeedModels {
     private FeedModels() {
     }
 
-    public static final String STREAM_RECOMMEND = "recommend";
-    public static final String STREAM_FOLLOWING = "following";
-    public static final String STREAM_FRIENDS = "friends";
-    public static final String STREAM_NEARBY = "nearby";
+    public static final String STREAM_RECOMMEND = FeedContract.STREAM_RECOMMEND;
+    public static final String STREAM_FOLLOWING = FeedContract.STREAM_FOLLOWING;
+    public static final String STREAM_NEARBY = FeedContract.STREAM_NEARBY;
 
+    /** Engine streams. friends is not a route. */
     public static final String[] STREAMS = new String[]{
-            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_FRIENDS, STREAM_NEARBY
+            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_NEARBY
     };
 
     public static class Author {
@@ -207,6 +207,7 @@ public final class FeedModels {
         public boolean following;
         public boolean mutual;
         public String repostedByName = "";
+        public String feedReason = "";
         public int albumPage;
         public boolean hiddenLocal;
 
@@ -247,6 +248,12 @@ public final class FeedModels {
                 return p;
             }
             p.id = o.optString("id", "");
+            p.feedReason = o.optString("reason", "");
+            if (bareRef(o)) {
+                p.unavailable = true;
+                p.state = "unavailable";
+                return p;
+            }
             p.version = o.optInt("version", 0);
             String state = o.optString("state", "published");
             p.state = state;
@@ -327,6 +334,27 @@ public final class FeedModels {
             }
             return p;
         }
+
+        /** `{id, reason}` from a feed list, before POST /v1/feed/cards. */
+        private static boolean bareRef(JSONObject o) {
+            if (o == null || o.optString("id", "").length() == 0) {
+                return false;
+            }
+            if (o.has("type")) {
+                String type = o.optString("type", "");
+                if (type.length() > 0 && !"post".equals(type)) {
+                    return false;
+                }
+            }
+            java.util.Iterator<String> keys = o.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                if (!"id".equals(key) && !"reason".equals(key) && !"type".equals(key)) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     public static class Comment {
@@ -365,6 +393,8 @@ public final class FeedModels {
             c.text = o.optString("text", "");
             if (o.has("attachment") && !o.isNull("attachment")) {
                 c.attachment = Media.parse(o.optJSONObject("attachment"));
+            } else if (o.has("media_keys") && !o.isNull("media_keys")) {
+                c.attachment = voiceFromKeys(o.opt("media_keys"));
             }
             c.createdAt = o.optLong("created_at", 0);
             c.likes = o.optInt("likes", o.optInt("like_count", 0));
@@ -384,6 +414,29 @@ public final class FeedModels {
                 }
             }
             return c;
+        }
+
+        private static Media voiceFromKeys(Object raw) {
+            if (raw instanceof JSONArray) {
+                JSONArray keys = (JSONArray) raw;
+                if (keys.length() == 0) {
+                    return null;
+                }
+                Object first = keys.opt(0);
+                if (first instanceof String) {
+                    JSONObject media = new JSONObject();
+                    try {
+                        media.put("type", "audio");
+                        media.put("key", first);
+                    } catch (Exception ignore) {
+                    }
+                    return Media.parse(media);
+                }
+                if (first instanceof JSONObject) {
+                    return Media.parse((JSONObject) first);
+                }
+            }
+            return null;
         }
     }
 

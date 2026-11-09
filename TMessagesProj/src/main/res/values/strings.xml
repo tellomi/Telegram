@@ -11706,6 +11706,9 @@
     <string name="FeedSortHot">Top</string>
     <string name="FeedSortNew">Latest</string>
     <string name="FeedSortRelevance">Relevance</string>
+    <string name="FeedNotifInteractions">Interactions</string>
+    <string name="FeedNotifFollows">Follows</string>
+    <string name="FeedNotifSystem">System</string>
     <string name="FeedFilterAll">All</string>
     <string name="FeedFilterLikes">Likes</string>
     <string name="FeedFilterComments">Comments</string>

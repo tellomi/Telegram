@@ -21,10 +21,11 @@ public final class FeedConfig {
     public static final int PAGE_SIZE = 20;
     public static final long NEW_POSTS_POLL_MS = 60_000L;
     public static final int MAX_DRAFTS = 20;
-    public static final int MAX_TEXT = 2000;
-    public static final int TEXT_COUNTER_FROM = 1800;
-    public static final int MAX_COMMENT = 1000;
-    public static final int MAX_IMAGES = 12;
+    /** content-engine limits. See FeedContract. */
+    public static final int MAX_TEXT = FeedContract.MAX_TEXT;
+    public static final int TEXT_COUNTER_FROM = FeedContract.TEXT_COUNTER_FROM;
+    public static final int MAX_COMMENT = FeedContract.MAX_COMMENT;
+    public static final int MAX_IMAGES = FeedContract.MAX_IMAGES;
     public static final int MAX_VIDEOS = 3;
     public static final int MAX_VIDEO_SEC = 60;
     public static final int MAX_VOICE_SEC = 180;
@@ -52,6 +53,31 @@ public final class FeedConfig {
     public static final String LINK_PREFIX = "https://" + LINK_HOST + "/m#";
 
     private static final String[] mediaBase = new String[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final boolean[] configKeyKnown = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final boolean[] configKeyPresent = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
+
+    /**
+     * Latest help.getAppConfig included tellomi_discover_feed_enabled.
+     * Teamgram omits the key when the feed is off. A missing key is not present.
+     */
+    public static void noteConfigKey(int account, boolean present) {
+        if (account < 0 || account >= configKeyPresent.length) {
+            return;
+        }
+        configKeyKnown[account] = true;
+        configKeyPresent[account] = present;
+    }
+
+    public static boolean configKeyPresent(int account) {
+        if (account < 0 || account >= configKeyPresent.length) {
+            return false;
+        }
+        if (!configKeyKnown[account]) {
+            configKeyPresent[account] = MessagesController.getInstance(account).getMainSettings().getBoolean("tellomi_discover_feed_enabled_present", false);
+            configKeyKnown[account] = true;
+        }
+        return configKeyPresent[account];
+    }
 
     /**
      * True only when help.getAppConfig published both keys, or a debug build

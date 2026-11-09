@@ -77,17 +77,21 @@ public class FeedController {
     private boolean uploadsResumed;
     private boolean remoteConfigReady;
     private boolean remoteConfigLoading;
+    private boolean statusVisible;
+    private final ArrayList<String> tabs = new ArrayList<>();
     private final ArrayList<Runnable> configWaiters = new ArrayList<>();
 
     private FeedController(int account) {
         this.account = account;
         this.api = new FeedApi(account);
         this.storage = new FeedStorage(account);
-        for (int i = 0; i < FeedModels.STREAMS.length; i++) {
-            String stream = FeedModels.STREAMS[i];
-            FeedModels.Page cached = storage.loadPage(stream);
-            pages.put(stream, cached.items);
-            cursors.put(stream, cached.nextCursor == null ? "" : cached.nextCursor);
+        ArrayList<String> storedTabs = FeedContract.parseTabPref(storage.getPref("tabs", ""));
+        if (storedTabs.isEmpty()) {
+            storedTabs = FeedContract.defaultTabs();
+        }
+        tabs.addAll(storedTabs);
+        for (int i = 0; i < tabs.size(); i++) {
+            rememberPage(tabs.get(i));
         }
         try {
             unread = Integer.parseInt(storage.getPref("unread", "0"));
@@ -124,6 +128,35 @@ public class FeedController {
     public String cursor(String stream) {
         String value = cursors.get(stream);
         return value == null ? "" : value;
+    }
+
+    public ArrayList<String> tabs() {
+        return new ArrayList<>(tabs);
+    }
+
+    /** 动态 is shown only when the app-config key is present and status.visible is true. */
+    public boolean momentsTabVisible() {
+        return FeedContract.showMomentsTab(FeedConfig.configKeyPresent(account), statusVisible);
+    }
+
+    public void refreshGate() {
+        if (!FeedConfig.configKeyPresent(account) || FeedConfig.engineBase(account).length() == 0) {
+            if (statusVisible) {
+                statusVisible = false;
+                notifyListeners();
+            }
+            return;
+        }
+        api.getJson(FeedContract.STATUS_PATH, (json, error) -> {
+            boolean visible = error == null && json != null && FeedContract.statusVisible(json.toString());
+            if (!FeedConfig.configKeyPresent(account)) {
+                visible = false;
+            }
+            if (visible != statusVisible) {
+                statusVisible = visible;
+                notifyListeners();
+            }
+        });
     }
 
     public int unreadCount() {
@@ -168,6 +201,11 @@ public class FeedController {
             return;
         }
         remoteConfigLoading = true;
+        api.getJson(FeedContract.CAPABILITIES_PATH, (json, error) -> {
+            if (json != null) {
+                applyCapabilities(json.toString());
+            }
+        });
         api.getJson("/v1/feed/config", (json, error) -> {
             remoteConfigLoading = false;
             if (json != null) {
@@ -183,51 +221,139 @@ public class FeedController {
         });
     }
 
-    private void loadStream(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
-        String cursor = refresh ? "" : cursor(stream);
-        String path = "/v1/feed/" + stream + "?cursor=" + FeedApi.enc(cursor);
-        if (FeedModels.STREAM_NEARBY.equals(stream)) {
-            path += "&city=" + FeedApi.enc(cityCode()) + "&sort=" + FeedApi.enc(nearbySort());
+    private void applyCapabilities(String json) {
+        ArrayList<String> next = FeedContract.tabsFromCapabilities(json);
+        if (next.equals(tabs)) {
+            return;
         }
-        api.getPage(path, (page, error) -> {
-            if (page == null) {
+        tabs.clear();
+        tabs.addAll(next);
+        storage.putPref("tabs", FeedContract.joinTabs(next));
+        for (int i = 0; i < next.size(); i++) {
+            rememberPage(next.get(i));
+        }
+        notifyListeners();
+    }
+
+    private void rememberPage(String stream) {
+        if (pages.containsKey(stream)) {
+            return;
+        }
+        FeedModels.Page cached = storage.loadPage(stream);
+        pages.put(stream, cached.items);
+        cursors.put(stream, cached.nextCursor == null ? "" : cached.nextCursor);
+    }
+
+    private void loadStream(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
+        if (!FeedContract.isEngineStream(stream)) {
+            if (done != null) {
+                done.run(false, null);
+            }
+            return;
+        }
+        String cursor = refresh ? "" : cursor(stream);
+        String path = FeedContract.streamPath(stream, cursor, cityCode(), nearbySort());
+        api.getJson(path, (json, error) -> {
+            if (json == null) {
                 if (done != null) {
                     done.run(false, error);
                 }
                 return;
             }
-            ArrayList<FeedModels.Post> list = posts(stream);
-            if (refresh || cursor.length() == 0) {
-                list.clear();
+            FeedContract.FeedList refs = FeedContract.parseFeedList(json.toString());
+            if (!refs.needsCards) {
+                applyStreamPage(stream, refresh, cursor, FeedModels.parsePage(json), done);
+                return;
             }
-            for (int i = 0; i < page.items.size(); i++) {
-                FeedModels.Post post = page.items.get(i);
-                if (!contains(list, post.id)) {
-                    list.add(post);
+            hydrate(refs, (posts, hydrateError) -> {
+                if (posts == null) {
+                    if (done != null) {
+                        done.run(false, hydrateError);
+                    }
+                    return;
                 }
-            }
-            cursors.put(stream, page.nextCursor == null ? "" : page.nextCursor);
-            if (refresh || cursor.length() == 0) {
-                storage.savePage(stream, page.nextCursor, list);
-            }
-            notifyListeners();
-            if (done != null) {
-                done.run(true, null);
-            }
+                FeedModels.Page page = new FeedModels.Page();
+                page.items = posts;
+                page.nextCursor = refs.cursor;
+                applyStreamPage(stream, refresh, cursor, page, done);
+            });
         });
     }
 
-    public void newCount(String stream, long sinceMs, Utilities.Callback<Integer> done) {
-        if (FeedModels.STREAM_RECOMMEND.equals(stream)) {
+    private void applyStreamPage(String stream, boolean refresh, String cursor, FeedModels.Page page, Utilities.Callback2<Boolean, String> done) {
+        ArrayList<FeedModels.Post> list = posts(stream);
+        if (refresh || cursor.length() == 0) {
+            list.clear();
+        }
+        for (int i = 0; i < page.items.size(); i++) {
+            FeedModels.Post post = page.items.get(i);
+            if (!contains(list, post.id)) {
+                list.add(post);
+            }
+        }
+        cursors.put(stream, page.nextCursor == null ? "" : page.nextCursor);
+        if (refresh || cursor.length() == 0) {
+            storage.savePage(stream, page.nextCursor, list);
+        }
+        notifyListeners();
+        if (done != null) {
+            done.run(true, null);
+        }
+    }
+
+    /**
+     * Feed lists return `{items:[{id,reason}],cursor}`. Full posts come from POST /v1/feed/cards.
+     */
+    public void resolvePostPage(JSONObject json, Utilities.Callback2<ArrayList<FeedModels.Post>, String> done) {
+        if (json == null) {
             if (done != null) {
-                done.run(0);
+                done.run(new ArrayList<>(), "network");
             }
             return;
         }
-        api.getJson("/v1/feed/" + stream + "/new-count?since=" + sinceMs, (json, error) -> {
-            int count = json == null ? 0 : json.optInt("count", 0);
+        FeedContract.FeedList refs = FeedContract.parseFeedList(json.toString());
+        if (!refs.needsCards) {
             if (done != null) {
-                done.run(count);
+                done.run(FeedModels.parsePage(json).items, null);
+            }
+            return;
+        }
+        hydrate(refs, done);
+    }
+
+    private void hydrate(FeedContract.FeedList refs, Utilities.Callback2<ArrayList<FeedModels.Post>, String> done) {
+        JSONObject body;
+        try {
+            body = new JSONObject(FeedContract.cardsRequest(refs.idsToHydrate()));
+        } catch (Exception e) {
+            if (done != null) {
+                done.run(null, "network");
+            }
+            return;
+        }
+        api.sendJson("POST", FeedContract.CARDS_PATH, body, (json, error) -> {
+            if (json == null) {
+                if (done != null) {
+                    done.run(null, error);
+                }
+                return;
+            }
+            ArrayList<String> ordered = FeedContract.orderedCardJson(json.toString(), refs.refs);
+            ArrayList<FeedModels.Post> posts = new ArrayList<>();
+            for (int i = 0; i < ordered.size(); i++) {
+                FeedModels.Post post;
+                try {
+                    post = FeedModels.Post.parse(new JSONObject(ordered.get(i)));
+                } catch (Exception e) {
+                    post = FeedModels.Post.unavailable(refs.refs.get(i).id);
+                }
+                if (post.feedReason == null || post.feedReason.length() == 0) {
+                    post.feedReason = refs.refs.get(i).reason;
+                }
+                posts.add(post);
+            }
+            if (done != null) {
+                done.run(posts, null);
             }
         });
     }
@@ -370,12 +496,22 @@ public class FeedController {
     public void sendComment(String postId, String text, String parentId, JSONObject attachment, Utilities.Callback<String> done) {
         JSONObject body = new JSONObject();
         try {
-            body.put("text", text == null ? "" : text);
-            if (parentId != null && parentId.length() > 0) {
-                body.put("parent_id", parentId);
-            }
-            if (attachment != null) {
-                body.put("attachment", attachment);
+            String type = attachment == null ? "" : attachment.optString("type", "");
+            String key = attachment == null ? "" : attachment.optString("key", "");
+            if (FeedContract.isVoice(type) && key.length() > 0) {
+                body = new JSONObject(FeedContract.commentBody(text, parentId, type, key));
+            } else {
+                String value = text == null ? "" : text;
+                if (value.length() > FeedContract.MAX_COMMENT) {
+                    value = value.substring(0, FeedContract.MAX_COMMENT);
+                }
+                body.put("text", value);
+                if (parentId != null && parentId.length() > 0) {
+                    body.put("parent_id", parentId);
+                }
+                if (attachment != null) {
+                    body.put("attachment", attachment);
+                }
             }
         } catch (Exception ignore) {
         }
@@ -450,8 +586,8 @@ public class FeedController {
         });
     }
 
-    public void loadNotifications(String kind, Utilities.Callback2<ArrayList<FeedModels.NotificationItem>, String> done) {
-        api.getJson("/v1/feed/me/notifications?kind=" + FeedApi.enc(kind), (json, error) -> {
+    public void loadNotifications(String tab, Utilities.Callback2<ArrayList<FeedModels.NotificationItem>, String> done) {
+        api.getJson(FeedContract.notificationsPath(tab), (json, error) -> {
             ArrayList<FeedModels.NotificationItem> list = new ArrayList<>();
             if (json != null) {
                 JSONArray items = json.optJSONArray("items");
@@ -474,7 +610,7 @@ public class FeedController {
     }
 
     public void refreshUnread() {
-        api.getJson("/v1/feed/me/notifications?kind=all&limit=1", (json, error) -> {
+        api.getJson(FeedContract.notificationsPath(FeedContract.NOTIFICATION_INTERACTIONS), (json, error) -> {
             if (json != null && json.has("unread")) {
                 setUnread(json.optInt("unread", unread));
             }
@@ -617,13 +753,13 @@ public class FeedController {
     private void publishUploaded(final UploadTask task, JSONArray keys) {
         try {
             JSONObject body = new JSONObject();
-            body.put("text", task.text);
+            body.put("text", FeedContract.clampText(task.text));
             body.put("client_nonce", task.nonce);
             JSONObject audience = new JSONObject();
             audience.put("kind", task.audienceKind);
             body.put("audience", audience);
             body.put("comment_policy", task.commentPolicy);
-            body.put("media", keys);
+            body.put("media", limitImages(keys));
             JSONObject location = new JSONObject();
             if (task.cityCode != null && task.cityCode.length() > 0) {
                 location.put("city", task.cityCode);
@@ -661,6 +797,28 @@ public class FeedController {
             persist(task);
             notifyListeners();
         }
+    }
+
+    private static JSONArray limitImages(JSONArray keys) {
+        JSONArray limited = new JSONArray();
+        int images = 0;
+        if (keys == null) {
+            return limited;
+        }
+        for (int i = 0; i < keys.length(); i++) {
+            JSONObject media = keys.optJSONObject(i);
+            if (media == null) {
+                continue;
+            }
+            if ("image".equals(media.optString("type", ""))) {
+                if (images >= FeedContract.MAX_IMAGES) {
+                    continue;
+                }
+                images++;
+            }
+            limited.put(media);
+        }
+        return limited;
     }
 
     private static String mime(String type) {
@@ -781,9 +939,6 @@ public class FeedController {
         String[] kinds = new String[]{"public", "mutual_followers", "public", "contacts"};
         for (int i = 0; i < texts.length; i++) {
             if (FeedModels.STREAM_RECOMMEND.equals(stream) && !"public".equals(kinds[i])) {
-                continue;
-            }
-            if (FeedModels.STREAM_FRIENDS.equals(stream) && !("public".equals(kinds[i]) || "mutual_followers".equals(kinds[i]))) {
                 continue;
             }
             if (FeedModels.STREAM_NEARBY.equals(stream) && !"public".equals(kinds[i])) {

@@ -73,6 +73,9 @@
     <string name="FeedSortHot">热门</string>
     <string name="FeedSortNew">最新</string>
     <string name="FeedSortRelevance">相关度</string>
+    <string name="FeedNotifInteractions">互动</string>
+    <string name="FeedNotifFollows">关注</string>
+    <string name="FeedNotifSystem">系统</string>
     <string name="FeedFilterAll">全部</string>
     <string name="FeedFilterLikes">点赞</string>
     <string name="FeedFilterComments">评论和回复</string>
