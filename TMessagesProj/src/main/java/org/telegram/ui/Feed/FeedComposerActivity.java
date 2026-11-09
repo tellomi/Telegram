@@ -2,10 +2,10 @@ package org.telegram.ui.Feed;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
@@ -20,7 +20,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
@@ -36,9 +39,15 @@ import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.PollCreateActivity;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.ArrayList;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -63,13 +72,17 @@ public class FeedComposerActivity extends BaseFragment {
     private String cityName = "";
     private String placeName = "";
     private boolean original;
-    private boolean removedLink;
     private final ArrayList<String> paths = new ArrayList<>();
     private final ArrayList<String> types = new ArrayList<>();
     private JSONObject poll;
-    private MediaRecorder recorder;
-    private File voiceFile;
+    private FeedVoiceCapture voice;
     private boolean dirty;
+    private TextView previewView;
+    private TLRPC.WebPage foundPage;
+    private boolean removedLink;
+    private int previewRequest;
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s]+", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MENTION_PATTERN = Pattern.compile("(?<![\\w@])@([A-Za-z][A-Za-z0-9_]{3,31})");
 
     public FeedComposerActivity(Bundle args) {
         super(args);
@@ -152,6 +165,7 @@ public class FeedComposerActivity extends BaseFragment {
                 counter.setVisibility(s.length() >= FeedConfig.TEXT_COUNTER_FROM ? View.VISIBLE : View.GONE);
                 counter.setText(String.valueOf(left));
                 refreshPublish();
+                schedulePreview();
             }
 
             @Override
@@ -166,6 +180,17 @@ public class FeedComposerActivity extends BaseFragment {
         counter.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         counter.setVisibility(View.GONE);
         column.addView(counter, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        previewView = new TextView(context);
+        previewView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        previewView.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_graySection)));
+        previewView.setPadding(dp(10), dp(8), dp(10), dp(8));
+        previewView.setVisibility(View.GONE);
+        previewView.setOnClickListener(v -> {
+            removedLink = true;
+            foundPage = null;
+            previewView.setVisibility(View.GONE);
+        });
+        column.addView(previewView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         attachments = new TextView(context);
         attachments.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -240,6 +265,9 @@ public class FeedComposerActivity extends BaseFragment {
                 builder.append(builder.length() == 0 ? "" : ", ").append(getString(R.string.FeedToolPoll));
             }
             attachments.setText(builder.toString());
+        }
+        if (previewView != null && (has("image") || has("video") || poll != null)) {
+            previewView.setVisibility(View.GONE);
         }
     }
 
@@ -317,8 +345,8 @@ public class FeedComposerActivity extends BaseFragment {
     }
 
     private void toggleVoice() {
-        if (recorder != null) {
-            stopVoice();
+        if (voice != null && voice.isRecording()) {
+            voice.stop();
             return;
         }
         if (has("video") || poll != null) {
@@ -328,43 +356,26 @@ public class FeedComposerActivity extends BaseFragment {
             getParentActivity().requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_AUDIO);
             return;
         }
-        try {
-            File dir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
-            voiceFile = new File(dir, "feed-voice-" + System.currentTimeMillis() + ".m4a");
-            recorder = new MediaRecorder();
-            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-            recorder.setMaxDuration(FeedConfig.MAX_VOICE_SEC * 1000);
-            recorder.setOutputFile(voiceFile.getAbsolutePath());
-            recorder.setOnInfoListener((r, what, extra) -> {
-                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
-                    AndroidUtilities.runOnUIThread(this::stopVoice);
+        FeedPlayback.stop();
+        MediaController.getInstance().cleanupPlayer(true, true);
+        voice = new FeedVoiceCapture(currentAccount, new FeedVoiceCapture.Callback() {
+            @Override
+            public void onFile(File file) {
+                if (file != null && file.exists()) {
+                    paths.add(file.getAbsolutePath());
+                    types.add("audio");
+                    dirty = true;
+                    refreshPublish();
                 }
-            });
-            recorder.prepare();
-            recorder.start();
-            attachments.setText(getString(R.string.FeedRecording));
-        } catch (Exception e) {
-            recorder = null;
-        }
-    }
-
-    private void stopVoice() {
-        try {
-            if (recorder != null) {
-                recorder.stop();
-                recorder.release();
             }
-        } catch (Exception ignore) {
-        }
-        recorder = null;
-        if (voiceFile != null && voiceFile.exists()) {
-            paths.add(voiceFile.getAbsolutePath());
-            types.add("audio");
-            dirty = true;
-        }
-        refreshPublish();
+
+            @Override
+            public void onError() {
+                attachments.setText("");
+            }
+        });
+        voice.start();
+        attachments.setText(getString(R.string.FeedRecording));
     }
 
     private void openPoll() {
@@ -410,6 +421,20 @@ public class FeedComposerActivity extends BaseFragment {
             audienceView.performClick();
             return;
         }
+        ArrayList<String> blocked = mentionsWithoutAccess();
+        if (!blocked.isEmpty()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(getString(R.string.FeedMentionTitle));
+            builder.setMessage(getString(R.string.FeedMentionWarning) + "\n" + TextUtils.join(", ", blocked));
+            builder.setPositiveButton(getString(R.string.FeedPublish), (d, w) -> publishNow());
+            builder.setNegativeButton(getString(R.string.Cancel), null);
+            showDialog(builder.create());
+            return;
+        }
+        publishNow();
+    }
+
+    private void publishNow() {
         if (editId != null) {
             JSONObject body = new JSONObject();
             try {
@@ -427,8 +452,24 @@ public class FeedComposerActivity extends BaseFragment {
         task.cityName = cityName.length() > 0 ? cityName : controller().cityName();
         task.placeName = placeName;
         task.original = original;
+        prepareImages();
         task.paths.addAll(paths);
         task.types.addAll(types);
+        try {
+            JSONObject extra = new JSONObject();
+            if (poll != null) {
+                extra.put("poll", poll);
+            }
+            if (foundPage != null && !has("image") && !has("video") && poll == null) {
+                JSONObject link = new JSONObject();
+                link.put("url", foundPage.url);
+                link.put("title", foundPage.title);
+                link.put("description", foundPage.description);
+                extra.put("link_preview", link);
+            }
+            task.extraJson = extra.toString();
+        } catch (Exception ignore) {
+        }
         task.nonce = Utilities.random.nextLong() + "-" + System.currentTimeMillis();
         if (poll != null) {
             task.text = task.text;
@@ -489,5 +530,154 @@ public class FeedComposerActivity extends BaseFragment {
         cityCode = code == null ? "" : code;
         cityName = name == null ? "" : name;
         dirty = true;
+    }
+
+    private void schedulePreview() {
+        if (previewView == null) {
+            return;
+        }
+        if (removedLink || has("image") || has("video") || poll != null) {
+            previewView.setVisibility(View.GONE);
+            return;
+        }
+        Matcher matcher = URL_PATTERN.matcher(field.getText());
+        if (!matcher.find()) {
+            foundPage = null;
+            previewView.setVisibility(View.GONE);
+            return;
+        }
+        final String url = matcher.group();
+        final int request = ++previewRequest;
+        TL_account.getWebPagePreview req = new TL_account.getWebPagePreview();
+        req.message = url;
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (request != previewRequest || removedLink) {
+                return;
+            }
+            TLRPC.WebPage page = null;
+            if (response instanceof TL_account.webPagePreview) {
+                TLRPC.MessageMedia media = ((TL_account.webPagePreview) response).media;
+                if (media != null && media.webpage instanceof TLRPC.TL_webPage) {
+                    page = media.webpage;
+                }
+            }
+            foundPage = page;
+            if (page == null) {
+                previewView.setVisibility(View.GONE);
+                return;
+            }
+            String title = page.title != null && page.title.length() > 0 ? page.title : page.site_name;
+            previewView.setText((title == null ? url : title) + "\n" + getString(R.string.FeedRemovePreview));
+            previewView.setVisibility(View.VISIBLE);
+        }));
+    }
+
+    private ArrayList<String> mentionsWithoutAccess() {
+        ArrayList<String> names = new ArrayList<>();
+        if (privacy == null) {
+            return names;
+        }
+        if (privacy.type == StoryPrivacyBottomSheet.TYPE_EVERYONE) {
+            Matcher everyone = MENTION_PATTERN.matcher(field.getText());
+            while (everyone.find() && names.size() < FeedConfig.MAX_MENTIONS) {
+                String username = everyone.group(1);
+                TLRPC.User user = findUser(username);
+                if (user != null && privacy.selectedUserIds.contains(user.id)) {
+                    names.add("@" + username);
+                }
+            }
+            return names;
+        }
+        Matcher matcher = MENTION_PATTERN.matcher(field.getText());
+        while (matcher.find() && names.size() < FeedConfig.MAX_MENTIONS) {
+            String username = matcher.group(1);
+            TLRPC.User user = findUser(username);
+            if (user != null && canSee(user)) {
+                continue;
+            }
+            names.add("@" + username);
+        }
+        return names;
+    }
+
+    private TLRPC.User findUser(String username) {
+        ArrayList<TLRPC.TL_contact> contacts = getContactsController().contacts;
+        for (int i = 0; i < contacts.size(); i++) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contacts.get(i).user_id);
+            if (user != null && username.equalsIgnoreCase(user.username)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    private boolean canSee(TLRPC.User user) {
+        if (privacy.type == StoryPrivacyBottomSheet.TYPE_CONTACTS) {
+            return getContactsController().contactsDict.get(user.id) != null && !privacy.selectedUserIds.contains(user.id);
+        }
+        if (privacy.type == StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS) {
+            return user.close_friend;
+        }
+        if (privacy.type == StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS) {
+            return privacy.selectedUserIds.contains(user.id);
+        }
+        return false;
+    }
+
+    private void prepareImages() {
+        for (int i = 0; i < paths.size(); i++) {
+            if (!"image".equals(types.get(i))) {
+                continue;
+            }
+            File source = new File(paths.get(i));
+            File prepared = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "feed-photo-" + System.currentTimeMillis() + "-" + i + ".jpg");
+            try {
+                if (!original) {
+                    android.graphics.Bitmap bitmap = ImageLoader.loadBitmap(source.getAbsolutePath(), null, 1280, 1280, false);
+                    if (bitmap != null) {
+                        FileOutputStream out = new FileOutputStream(prepared);
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out);
+                        out.close();
+                        bitmap.recycle();
+                        paths.set(i, prepared.getAbsolutePath());
+                        continue;
+                    }
+                }
+                copyFile(source, prepared);
+                stripGps(prepared);
+                paths.set(i, prepared.getAbsolutePath());
+            } catch (Exception ignore) {
+                stripGps(source);
+            }
+        }
+    }
+
+    private static void copyFile(File from, File to) throws Exception {
+        FileInputStream in = new FileInputStream(from);
+        FileOutputStream out = new FileOutputStream(to);
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = in.read(buf)) > 0) {
+            out.write(buf, 0, n);
+        }
+        in.close();
+        out.close();
+    }
+
+    private static void stripGps(File file) {
+        try {
+            androidx.exifinterface.media.ExifInterface exif = new androidx.exifinterface.media.ExifInterface(file.getAbsolutePath());
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE_REF, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE_REF, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE_REF, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_TIMESTAMP, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_DATESTAMP, null);
+            exif.setAttribute(androidx.exifinterface.media.ExifInterface.TAG_GPS_PROCESSING_METHOD, null);
+            exif.saveAttributes();
+        } catch (Exception ignore) {
+        }
     }
 }

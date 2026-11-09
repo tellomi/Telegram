@@ -118,6 +118,7 @@ public class FeedApi {
                 TL_discover.TL_discover_engineCredential cred = (TL_discover.TL_discover_engineCredential) response;
                 token = cred.token == null ? "" : cred.token;
                 tokenExpires = cred.expires;
+                FeedConfig.rememberCredentialBase(account, cred.region);
                 if (token.length() == 0) {
                     callback.run(null, "auth");
                 } else {

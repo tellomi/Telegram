@@ -13,7 +13,11 @@ public final class FeedConfig {
     private FeedConfig() {
     }
 
-    /** TBD-15 option A. Host is one line so it can move without touching call sites. */
+    /**
+     * Unverified fallback. discover.engineCredential only has token, expires, and region.
+     * A region that looks like a URL or host replaces this until the engine contract
+     * publishes a real base. An explicit feed_engine_base preference still wins.
+     */
     public static final String DEFAULT_ENGINE_BASE = "https://content.tellomi.cn";
 
     public static final int PAGE_SIZE = 20;
@@ -55,7 +59,32 @@ public final class FeedConfig {
         if (override != null && override.startsWith("http")) {
             return trimSlash(override);
         }
+        String fromCredential = prefs.getString("feed_engine_from_credential", "");
+        if (fromCredential != null && fromCredential.startsWith("http")) {
+            return trimSlash(fromCredential);
+        }
         return DEFAULT_ENGINE_BASE;
+    }
+
+    public static void rememberCredentialBase(int account, String region) {
+        String url = baseFromRegion(region);
+        MessagesController.getInstance(account).getMainSettings().edit()
+                .putString("feed_engine_from_credential", url == null ? "" : url)
+                .apply();
+    }
+
+    public static String baseFromRegion(String region) {
+        if (region == null) {
+            return null;
+        }
+        String value = region.trim();
+        if (value.startsWith("http://") || value.startsWith("https://")) {
+            return trimSlash(value);
+        }
+        if (value.indexOf(' ') < 0 && value.indexOf('.') > 0 && value.indexOf('/') < 0) {
+            return "https://" + value;
+        }
+        return null;
     }
 
     public static void setEngineBase(int account, String url) {

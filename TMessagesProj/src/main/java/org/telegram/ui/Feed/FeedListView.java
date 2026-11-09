@@ -60,6 +60,7 @@ public class FeedListView extends FrameLayout {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
+                FeedPlayback.choose();
                 if (manager != null && host.hasMore() && !host.loading()) {
                     int last = manager.findLastVisibleItemPosition();
                     if (last >= host.posts().size() - 3) {

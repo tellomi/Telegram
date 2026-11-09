@@ -16,6 +16,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.MediaController;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.ChatAttachAlert;
+import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedConfig;
@@ -29,6 +34,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -45,6 +51,12 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     private EditText reply;
     private TextView hint;
     private String replyTo;
+    private TextView attachmentLabel;
+    private String attachmentPath;
+    private String attachmentKind;
+    private JSONObject readyAttachment;
+    private FeedVoiceCapture commentVoice;
+    private EmojiView emojiView;
 
     public FeedDetailActivity(Bundle args) {
         super(args);
@@ -81,7 +93,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         listView = new RecyclerListView(context);
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(new Adapter());
-        root.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 56));
+        root.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 120));
 
         LinearLayout bar = new LinearLayout(context);
         bar.setOrientation(LinearLayout.VERTICAL);
@@ -91,6 +103,34 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         hint.setTextSize(12);
         hint.setPadding(dp(12), dp(4), dp(12), 0);
         bar.addView(hint);
+        attachmentLabel = new TextView(context);
+        attachmentLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        attachmentLabel.setPadding(dp(12), dp(4), dp(12), 0);
+        attachmentLabel.setVisibility(View.GONE);
+        attachmentLabel.setOnClickListener(v -> clearAttachment());
+        bar.addView(attachmentLabel);
+        LinearLayout tools = new LinearLayout(context);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        addReplyTool(tools, getString(R.string.FeedToolPhoto), this::pickCommentPhoto);
+        addReplyTool(tools, getString(R.string.FeedToolVoice), this::toggleCommentVoice);
+        addReplyTool(tools, getString(R.string.FeedToolSticker), this::toggleStickers);
+        bar.addView(tools);
+        emojiView = new EmojiView(this, false, true, true, context, false, null, null, true, resourceProvider, false);
+        emojiView.setVisibility(View.GONE);
+        emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
+            @Override
+            public void onStickerSelected(View view, TLRPC.Document sticker, String query, Object parent, org.telegram.messenger.MessageObject.SendAnimationData sendAnimationData, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                setDocumentAttachment(sticker, "sticker");
+            }
+
+            @Override
+            public void onGifSelected(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                if (gif instanceof TLRPC.Document) {
+                    setDocumentAttachment((TLRPC.Document) gif, "gif");
+                }
+            }
+        });
+        bar.addView(emojiView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 240));
         LinearLayout row = new LinearLayout(context);
         reply = new EditText(context);
         reply.setHint(getString(R.string.FeedReplyHint));
@@ -160,14 +200,139 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         }
     }
 
-    private void sendComment() {
-        String text = reply.getText().toString().trim();
-        if (text.length() == 0 || text.length() > FeedConfig.MAX_COMMENT) {
+    private void addReplyTool(LinearLayout tools, String title, Runnable click) {
+        TextView view = new TextView(getContext());
+        view.setText(title);
+        view.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        view.setPadding(dp(12), dp(8), dp(12), dp(8));
+        view.setOnClickListener(v -> click.run());
+        tools.addView(view);
+    }
+
+    private void clearAttachment() {
+        attachmentPath = null;
+        attachmentKind = null;
+        readyAttachment = null;
+        attachmentLabel.setVisibility(View.GONE);
+    }
+
+    private void setLocalAttachment(String path, String kind) {
+        readyAttachment = null;
+        attachmentPath = path;
+        attachmentKind = kind;
+        attachmentLabel.setText(kind + " · " + getString(R.string.FeedRemovePreview));
+        attachmentLabel.setVisibility(View.VISIBLE);
+        if (emojiView != null) {
+            emojiView.setVisibility(View.GONE);
+        }
+    }
+
+    private void setDocumentAttachment(TLRPC.Document document, String kind) {
+        if (document == null) {
             return;
         }
-        controller().sendComment(postId, text, replyTo, null, error -> {
+        attachmentPath = null;
+        attachmentKind = kind;
+        readyAttachment = new JSONObject();
+        try {
+            readyAttachment.put("type", kind);
+            readyAttachment.put("document_id", document.id);
+            readyAttachment.put("access_hash", document.access_hash);
+            if (document.file_reference != null) {
+                readyAttachment.put("file_reference", android.util.Base64.encodeToString(document.file_reference, android.util.Base64.NO_WRAP));
+            }
+        } catch (Exception ignore) {
+        }
+        attachmentLabel.setText(kind + " · " + getString(R.string.FeedRemovePreview));
+        attachmentLabel.setVisibility(View.VISIBLE);
+        emojiView.setVisibility(View.GONE);
+    }
+
+    private void pickCommentPhoto() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        ChatAttachAlert alert = new ChatAttachAlert(getParentActivity(), this, false, false, true, resourceProvider);
+        alert.setMaxSelectedPhotos(1, false);
+        alert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
+            @Override
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+                ArrayList<Object> order = ChatAttachAlertPhotoLayout.selectedPhotosOrder;
+                if (!order.isEmpty()) {
+                    Object entry = ChatAttachAlertPhotoLayout.selectedPhotos.get(order.get(0));
+                    if (entry instanceof MediaController.PhotoEntry && !((MediaController.PhotoEntry) entry).isVideo && ((MediaController.PhotoEntry) entry).path != null) {
+                        setLocalAttachment(((MediaController.PhotoEntry) entry).path, "image");
+                    }
+                }
+                ChatAttachAlertPhotoLayout.selectedPhotos.clear();
+                ChatAttachAlertPhotoLayout.selectedPhotosOrder.clear();
+                alert.dismiss();
+            }
+        });
+        alert.show();
+    }
+
+    private void toggleCommentVoice() {
+        if (commentVoice != null && commentVoice.isRecording()) {
+            commentVoice.stop();
+            return;
+        }
+        FeedPlayback.stop();
+        MediaController.getInstance().cleanupPlayer(true, true);
+        commentVoice = new FeedVoiceCapture(currentAccount, new FeedVoiceCapture.Callback() {
+            @Override
+            public void onFile(File file) {
+                if (file != null && file.exists()) {
+                    setLocalAttachment(file.getAbsolutePath(), "audio");
+                }
+            }
+
+            @Override
+            public void onError() {
+            }
+        });
+        commentVoice.start();
+        attachmentLabel.setText(getString(R.string.FeedRecording));
+        attachmentLabel.setVisibility(View.VISIBLE);
+    }
+
+    private void toggleStickers() {
+        if (emojiView == null) {
+            return;
+        }
+        emojiView.setVisibility(emojiView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+    }
+
+    private void sendComment() {
+        String text = reply.getText().toString().trim();
+        if ((text.length() == 0 && attachmentPath == null && readyAttachment == null) || text.length() > FeedConfig.MAX_COMMENT) {
+            return;
+        }
+        if (attachmentPath != null) {
+            final String path = attachmentPath;
+            final String kind = attachmentKind;
+            controller().api.uploadFile(new File(path), new File(path).getName(), "audio".equals(kind) ? "audio/ogg" : "image/jpeg", (key, error) -> {
+                if (key == null) {
+                    return;
+                }
+                JSONObject attachment = new JSONObject();
+                try {
+                    attachment.put("type", kind);
+                    attachment.put("key", key);
+                } catch (Exception ignore) {
+                }
+                postComment(text, attachment);
+            });
+            return;
+        }
+        postComment(text, readyAttachment);
+    }
+
+    private void postComment(String text, JSONObject attachment) {
+        controller().sendComment(postId, text, replyTo, attachment, error -> {
             reply.setText("");
             replyTo = null;
+            clearAttachment();
             load();
         });
     }

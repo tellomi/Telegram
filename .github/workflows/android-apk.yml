@@ -1,10 +1,11 @@
 name: Android APK
 
 # Ordinary push and pull_request compile native code, Java, and resources.
-# They do not read the release keystore, sign, or upload an installable APK.
-# An installable APK is built only for Run workflow, a v* tag push, or a push
-# to release/android. Those last two are the existing publish paths; this
-# file does not add new refs that publish or package on their own.
+# They do not read the release keystore or upload an installable APK.
+# An installable APK is built for Run workflow, a v* tag push, a push to
+# release/android, or a push of the moments-feed branch. The feed branch
+# packages a debug APK artifact only. It is not a publish path. Tag pushes
+# and release/android remain the existing publish paths.
 on:
   push:
   pull_request:
@@ -40,7 +41,7 @@ env:
   # String "true" or "false". Ordinary push and pull_request are false.
   # The official-restore branch also packages a signed APK artifact. It does
   # not match the publish job, so that artifact is not uploaded to the site.
-  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44')) }}
+  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44' || github.ref == 'refs/heads/cursor/feed-on-master-7033')) }}
 
 jobs:
   workflow:
@@ -189,6 +190,12 @@ jobs:
             echo "type=debug" >> "$GITHUB_OUTPUT"
             echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
             echo "Ordinary push/PR compiles debug native code and does not read the release keystore."
+            exit 0
+          fi
+          if [ "${GITHUB_REF}" = "refs/heads/cursor/feed-on-master-7033" ]; then
+            echo "type=debug" >> "$GITHUB_OUTPUT"
+            echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
+            echo "Moments feed branch packages a debug APK and does not read the release keystore."
             exit 0
           fi
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
@@ -350,6 +357,12 @@ jobs:
             echo "type=debug" >> "$GITHUB_OUTPUT"
             echo "gradle_task=verify" >> "$GITHUB_OUTPUT"
             echo "This run does not install the release keystore or assemble an APK."
+            exit 0
+          fi
+          if [ "${GITHUB_REF}" = "refs/heads/cursor/feed-on-master-7033" ]; then
+            echo "type=debug" >> "$GITHUB_OUTPUT"
+            echo "gradle_task=assembleAfatDebug" >> "$GITHUB_OUTPUT"
+            echo "Moments feed branch assembles a debug APK artifact and does not publish."
             exit 0
           fi
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then

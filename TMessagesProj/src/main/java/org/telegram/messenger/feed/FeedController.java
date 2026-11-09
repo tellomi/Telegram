@@ -31,6 +31,7 @@ public class FeedController {
         public ArrayList<String> paths = new ArrayList<>();
         public ArrayList<String> types = new ArrayList<>();
         public boolean original;
+        public String extraJson = "";
         public String state = "uploading";
         public int progress;
         public String error = "";
@@ -583,6 +584,14 @@ public class FeedController {
             }
             location.put("allow_nearby", task.allowNearby && "public".equals(task.audienceKind));
             body.put("location", location);
+            if (task.extraJson != null && task.extraJson.length() > 0) {
+                JSONObject extra = new JSONObject(task.extraJson);
+                java.util.Iterator<String> keysIter = extra.keys();
+                while (keysIter.hasNext()) {
+                    String key = keysIter.next();
+                    body.put(key, extra.get(key));
+                }
+            }
             api.sendJson("POST", "/v1/feed/posts", body, (json, error) -> {
                 if (error != null) {
                     task.state = "failed";
@@ -609,7 +618,7 @@ public class FeedController {
             return "video/mp4";
         }
         if ("audio".equals(type)) {
-            return "audio/mp4";
+            return "audio/ogg";
         }
         return "image/jpeg";
     }
@@ -625,6 +634,7 @@ public class FeedController {
         o.put("city_name", task.cityName);
         o.put("place", task.placeName);
         o.put("original", task.original);
+        o.put("extra", task.extraJson == null ? "" : task.extraJson);
         o.put("paths", new JSONArray(task.paths));
         o.put("types", new JSONArray(task.types));
         return o;
@@ -641,6 +651,7 @@ public class FeedController {
         task.cityName = o.optString("city_name", "");
         task.placeName = o.optString("place", "");
         task.original = o.optBoolean("original", false);
+        task.extraJson = o.optString("extra", "");
         JSONArray paths = o.optJSONArray("paths");
         JSONArray types = o.optJSONArray("types");
         if (paths != null) {

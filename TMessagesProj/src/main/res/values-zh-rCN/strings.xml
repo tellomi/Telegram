@@ -105,4 +105,8 @@
     <string name="FeedPhoto">图片</string>
     <string name="FeedVideo">视频</string>
     <string name="FeedSearchMoments">动态</string>
+    <string name="FeedMentionTitle">对方看不到</string>
+    <string name="FeedMentionWarning">以下用户看不到这条动态，也不会收到提醒。</string>
+    <string name="FeedRemovePreview">移除</string>
+    <string name="FeedToolSticker">贴纸</string>
 </resources>

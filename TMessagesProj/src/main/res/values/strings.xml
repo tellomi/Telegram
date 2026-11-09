@@ -11738,4 +11738,8 @@
     <string name="FeedPhoto">Photo</string>
     <string name="FeedVideo">Video</string>
     <string name="FeedSearchMoments">Moments</string>
+    <string name="FeedMentionTitle">They cannot see this</string>
+    <string name="FeedMentionWarning">These people cannot see this post and will not be notified.</string>
+    <string name="FeedRemovePreview">Remove</string>
+    <string name="FeedToolSticker">Sticker</string>
 </resources>

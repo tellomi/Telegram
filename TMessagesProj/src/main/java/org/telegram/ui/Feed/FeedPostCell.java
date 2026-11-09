@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.TextureView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -438,7 +439,16 @@ public class FeedPostCell extends LinearLayout {
                     } else {
                         image.setImage(null, null, new ColorDrawable(Theme.getColor(Theme.key_graySection)));
                     }
-                    image.setContentDescription(("video".equals(mediaKind) ? getString(R.string.FeedVideo) : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + mediaCount);
+                    image.setContentDescription(("video".equals(mediaKind) ? getString(R.string.FeedVideo) + ", " + (media == null ? 0 : media.durationMs / 1000) + "s" : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + mediaCount);
+                    FeedPlayback.untrack(frame);
+                    if (frame.getChildCount() > 1) {
+                        frame.removeViewAt(0);
+                    }
+                    if ("video".equals(mediaKind) && media != null && media.url != null && media.url.startsWith("http")) {
+                        TextureView texture = new TextureView(frame.getContext());
+                        frame.addView(texture, 0, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+                        FeedPlayback.track(frame, media.url, texture);
+                    }
                     final int index = position;
                     frame.setOnClickListener(v -> {
                         post.albumPage = index;
