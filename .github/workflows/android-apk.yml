@@ -55,7 +55,9 @@ jobs:
           fetch-depth: 1
 
       - name: Check package conditions
-        run: python3 Tools/check-android-apk-workflow.py
+        run: |
+          python3 Tools/check-android-apk-workflow.py
+          python3 Tools/tellomi-android-version.py --self-test
 
   native:
     name: Native ${{ matrix.abi }}
@@ -407,7 +409,9 @@ jobs:
           fi
 
       - name: Check workflow package conditions
-        run: python3 Tools/check-android-apk-workflow.py
+        run: |
+          python3 Tools/check-android-apk-workflow.py
+          python3 Tools/tellomi-android-version.py --self-test
 
       - name: Download native libraries
         if: env.TELLOMI_PACKAGE == 'true'
@@ -509,33 +513,58 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # 14.0.8. afat versionCode = APP_VERSION_CODE * 10 + 9.
-          # Published 14.0.7 afat is 1804669, so APP_VERSION_CODE 180467
-          # produces afat 1804679 and bundleAfat 1804671. Digit 0 is unused.
-          TELLOMI_VERSION_CODE_FLOOR: "1804669"
+          # 14.0.9. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # publish=release (and a push to release/android) reads
+          # android/latest.json and uses the next decade above that versionCode.
+          # 14.0.8 afat is 1804679, so configured APP_VERSION_CODE 180468
+          # produces afat 1804689 until the feed moves past it. Digit 0 is unused.
+          PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
+          TELLOMI_VERSION_CODE_FLOOR: "1804679"
         run: |
           set -euo pipefail
-          app_version_code=$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)
-          version_name=$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)
+          release_args=()
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${PUBLISH_INPUT}" = "release" ]; then
+            release_args+=(--release)
+          fi
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/release/android" ]; then
+            release_args+=(--release)
+          fi
+          app_version_code=
+          manifest=
+          bundle=
+          version_name=
+          published=
+          while IFS='=' read -r key value; do
+            case "$key" in
+              app_version_code|manifest|bundle|version_name|published) printf -v "$key" '%s' "$value" ;;
+              *) echo "unexpected version field: $key" >&2; exit 1 ;;
+            esac
+          done < <(python3 Tools/tellomi-android-version.py \
+            --gradle gradle.properties \
+            --expect-version-name 14.0.9 \
+            --floor "${TELLOMI_VERSION_CODE_FLOOR:?}" \
+            "${release_args[@]+"${release_args[@]}"}")
           case "$app_version_code" in
             ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          if [ "$version_name" != "14.0.8" ]; then
-            echo "expected APP_VERSION_NAME 14.0.8, found ${version_name:-missing}" >&2
+          if [ "$version_name" != "14.0.9" ]; then
+            echo "expected APP_VERSION_NAME 14.0.9, found ${version_name:-missing}" >&2
             exit 1
           fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
-          manifest=$((app_version_code * 10 + 9))
           if [ "$manifest" -le "$floor" ] || [ $((manifest % 10)) -ne 9 ]; then
             echo "refusing afat versionCode $manifest" >&2
             exit 1
           fi
-          bundle=$((app_version_code * 10 + 1))
           if [ "$bundle" -le "$floor" ]; then
             echo "bundle versionCode $bundle is not above $floor" >&2
             exit 1
           fi
-          echo "versionCode: $manifest (APP_VERSION_CODE=$app_version_code, versionName=$version_name)" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "${#release_args[@]}" -gt 0 ] && [ "$manifest" -le "$published" ]; then
+            echo "release afat $manifest is not above published $published" >&2
+            exit 1
+          fi
+          echo "versionCode: $manifest (APP_VERSION_CODE=$app_version_code, versionName=$version_name, published=${published})" | tee -a "$GITHUB_STEP_SUMMARY"
           mkdir -p "$HOME/.gradle"
           cat > "$HOME/.gradle/gradle.properties" <<'EOF'
           org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
@@ -640,8 +669,10 @@ jobs:
   #   upload as a manual run with publish=release. A push to master does not publish.
   # - workflow_dispatch: the publish input (release or test). none skips this job.
   # - v* tag push: test channel (android/test/), pruned after 14 days.
-  # versionName is APP_VERSION_NAME from gradle.properties. versionCode is the
-  # package job's per-run code. This job does not change in-app update flags.
+  # versionName is APP_VERSION_NAME from gradle.properties. A release channel
+  # versionCode is the package job's afat code, which is strictly above the
+  # versionCode already in android/latest.json. This job refuses to replace
+  # that manifest with an equal or lower code. It does not change in-app flags.
   # Needs repo secrets TELLOMI_R2_UPDATES_ACCESS_KEY_ID, TELLOMI_R2_UPDATES_SECRET_ACCESS_KEY,
   # TELLOMI_R2_ENDPOINT (R2 API token with Object Read & Write on tellomi-updates only).
   publish:

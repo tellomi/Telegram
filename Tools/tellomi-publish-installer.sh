@@ -66,6 +66,20 @@ for spec in "${files[@]}"; do
     "$(sha256sum "$path" | cut -d' ' -f1)" "$(stat -c %s "$path" 2>/dev/null || stat -f %z "$path")" >> "$specs"
 done
 
+# A release must land strictly above the versionCode clients and the download
+# page already have. This runs inside the publish lock, after the APK was built,
+# so a second overlapping release fails here instead of replacing latest.json
+# with the same code.
+if [ "$channel" = release ] && [ "$platform" = android ] && [ -z "${DRY_RUN:-}" ]; then
+  existing="$work/remote-latest.json"
+  if ! rclone cat "r2:$BUCKET/$platform/latest.json" > "$existing"; then
+    echo "could not read r2:$BUCKET/$platform/latest.json; refusing to publish a release that might not be newer" >&2
+    exit 1
+  fi
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  python3 "$script_dir/tellomi-android-version.py" --require-above "$existing" --version-code "$version_code"
+fi
+
 # 1. files first, so a manifest never points at a missing object
 while IFS=$'\t' read -r path name arch kind sha size; do
   echo "upload $path -> r2:$BUCKET/$prefix/$name ($size bytes, sha256 $sha)"

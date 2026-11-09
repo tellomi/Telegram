@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="TellomiSoftUpdateTitle">Update the app,\ntry the latest version</string>
+    <string name="TellomiSoftUpdateBody">We improved performance and fixed some issues. Update Tellomi to keep up with what\'s new.</string>
+    <string name="TellomiSoftUpdateSlide">Slide to update</string>
+    <string name="TellomiSoftUpdateGo">Update</string>
+    <string name="TellomiSoftUpdateDownloading">Downloading %1$d%%</string>
+    <string name="TellomiSoftUpdateClose">Close</string>
+    <string name="TellomiUpdateBadPackage">This file is not the Tellomi app. The update was not installed.</string>
+    <string name="TellomiUpdateBadSignature">The update signature does not match this install. The update was not installed.</string>
+    <string name="TellomiUpdateNotNewer">This file is not a newer version. The update was not installed.</string>
+    <string name="TellomiUpdateBadSource">The download address is not a Tellomi release host. The update was not installed.</string>
+    <string name="TellomiUpdateBadFile">The download failed or the file is damaged. Slide again to retry.</string>
+    <string name="TellomiCheckForUpdates">Check for updates</string>
+    <string name="TellomiCheckForUpdatesFailed">Could not check for updates. Try again.</string>
+</resources>

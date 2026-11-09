@@ -30,6 +30,8 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TellomiApkDownload;
+import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -139,19 +141,27 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 46, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
         acceptButton.setOnClickListener(view1 -> {
-            if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
+            int action = TellomiAppUpdate.primaryAction(appUpdate == null ? null : appUpdate.url, appUpdate != null && appUpdate.document instanceof TLRPC.TL_document);
+            if (action == TellomiAppUpdate.DOWNLOAD_IN_APP) {
+                TellomiApkDownload.begin(getContext(), appUpdate.url.trim(), appUpdate.id);
+                showProgress(true);
+                return;
+            }
+            if (action == TellomiAppUpdate.OPEN_URL) {
+                Browser.openUrl(getContext(), appUpdate.url.trim());
+                return;
+            }
+            if (action == TellomiAppUpdate.INSTALL_APK && (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION || ApplicationLoader.supportsInAppUpdates())) {
                 if (!ApplicationLoader.applicationLoaderInstance.checkApkInstallPermissions(getContext())) {
                     return;
                 }
-                if (appUpdate.document instanceof TLRPC.TL_document) {
-                    if (!ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document)) {
-                        FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
-                        showProgress(true);
-                    }
-                } else if (appUpdate.url != null) {
-                    Browser.openUrl(getContext(), appUpdate.url);
+                if (!ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document)) {
+                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
+                    showProgress(true);
                 }
-            } else if (BuildVars.isHuaweiStoreApp()){
+                return;
+            }
+            if (BuildVars.isHuaweiStoreApp()) {
                 Browser.openUrl(context, BuildVars.HUAWEI_STORE_URL);
             } else {
                 Browser.openUrl(context, BuildVars.PLAYSTORE_APP_URL);
@@ -300,7 +310,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoaded);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadFailed);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadProgressChanged);
-        if (check && ApplicationLoader.isStandaloneBuild()) {
+        if (check && (ApplicationLoader.isStandaloneBuild() || ApplicationLoader.supportsInAppUpdates())) {
             TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
             try {
                 req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
