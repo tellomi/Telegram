@@ -36,6 +36,8 @@ public class BuildVars {
     public static final String TELLOMI_DC_ADDRESSES = BuildConfig.TELLOMI_DC_ADDRESSES;
     public static final int TELLOMI_DEFAULT_DC_ID = BuildConfig.TELLOMI_DEFAULT_DC_ID;
     public static final String TELLOMI_SERVER_PUBLIC_KEY = BuildConfig.TELLOMI_SERVER_PUBLIC_KEY;
+    /** System contacts account. Matches the installed application id, not the official Telegram id. */
+    public static final String ACCOUNT_TYPE = "app.tellomi.chat";
 
     // Empty so this package does not present Telegram's SafetyNet or OAuth client.
     public static String SAFETYNET_KEY = "";
