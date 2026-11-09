@@ -67,7 +67,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -79,6 +78,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TellomiMapApps;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
@@ -124,7 +124,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -578,13 +577,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (id == -1) {
                     finishFragment();
                 } else if (id == open_in) {
-                    try {
-                        double lat = messageObject.messageOwner.media.geo.lat;
-                        double lon = messageObject.messageOwner.media.geo._long;
-                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+                    openExternalMap();
                 } else if (id == share_live_location) {
                     openShareLiveLocation(false, 0);
                 } else if (id == get_directions) {
@@ -731,15 +724,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             mapViewClip.addView(searchAreaButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 80, 12, 80, 0));
             if (locationType == 3) {
                 searchAreaButton.setText(getString(R.string.OpenInMaps));
-                searchAreaButton.setOnClickListener(v -> {
-                    try {
-                        double lat = messageObject.messageOwner.media.geo.lat;
-                        double lon = messageObject.messageOwner.media.geo._long;
-                        getParentActivity().startActivity(new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                });
+                searchAreaButton.setOnClickListener(v -> openExternalMap());
                 searchAreaButton.setTranslationX(0);
             } else {
                 searchAreaButton.setText(getString(R.string.PlacesInThisArea));
@@ -1584,39 +1569,47 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         return 0;
     }
 
+    private void openExternalMap() {
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.media == null || messageObject.messageOwner.media.geo == null) {
+            return;
+        }
+        double lat = messageObject.messageOwner.media.geo.lat;
+        double lon = messageObject.messageOwner.media.geo._long;
+        TellomiMapApps.showMapAppChooser(this, lat, lon, mapPlaceName(), false);
+    }
+
+    private String mapPlaceName() {
+        if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.media != null) {
+            if (!TextUtils.isEmpty(messageObject.messageOwner.media.title)) {
+                return messageObject.messageOwner.media.title;
+            }
+            if (!TextUtils.isEmpty(messageObject.messageOwner.media.address)) {
+                return messageObject.messageOwner.media.address;
+            }
+        }
+        return "";
+    }
+
     private void openDirections(LiveLocation location) {
         double daddrLat, daddrLong;
+        String name = "";
         if (location != null && location.object != null) {
             daddrLat = location.object.media.geo.lat;
             daddrLong = location.object.media.geo._long;
+            if (!TextUtils.isEmpty(location.object.media.title)) {
+                name = location.object.media.title;
+            } else if (!TextUtils.isEmpty(location.object.media.address)) {
+                name = location.object.media.address;
+            }
         } else if (messageObject != null) {
             daddrLat = messageObject.messageOwner.media.geo.lat;
             daddrLong = messageObject.messageOwner.media.geo._long;
+            name = mapPlaceName();
         } else {
             daddrLat = chatLocation.geo_point.lat;
             daddrLong = chatLocation.geo_point._long;
         }
-        String domain;
-        if (BuildVars.isHuaweiStoreApp()) {
-            domain = "mapapp://navigation";
-        } else {
-            domain = "http://maps.google.com/maps";
-        }
-        if (myLocation != null) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=%f,%f&daddr=%f,%f", myLocation.getLatitude(), myLocation.getLongitude(), daddrLat, daddrLong)));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        } else {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.US, domain + "?saddr=&daddr=%f,%f", daddrLat, daddrLong)));
-                getParentActivity().startActivity(intent);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }
+        TellomiMapApps.showMapAppChooser(this, daddrLat, daddrLong, name, true);
     }
 
     private void updateEmptyView() {
