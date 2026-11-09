@@ -21,6 +21,8 @@ public class TellomiAccountTypeTest {
         String kinds = read("src/main/res/xml/contacts.xml");
         String code = read("src/main/java/org/telegram/messenger/ContactsController.java");
         String vars = read("src/main/java/org/telegram/messenger/BuildVars.java");
+        String manifest = read("src/main/AndroidManifest.xml");
+        String launch = read("src/main/java/org/telegram/ui/LaunchActivity.java");
 
         assertTrue(vars.contains("ACCOUNT_TYPE = \"app.tellomi.chat\""));
         assertTrue(auth.contains("android:accountType=\"app.tellomi.chat\""));
@@ -34,6 +36,14 @@ public class TellomiAccountTypeTest {
         assertFalse(auth.contains("android:accountType=\"org.telegram.messenger\""));
         assertFalse(sync.contains("android:accountType=\"org.telegram.messenger\""));
         assertFalse(code.contains("getAccountsByType(\"org.telegram.messenger\")"));
+        assertTrue(manifest.contains("vnd.android.cursor.item/vnd.app.tellomi.chat.profile"));
+        assertTrue(manifest.contains("vnd.android.cursor.item/vnd.app.tellomi.chat.call"));
+        assertTrue(manifest.contains("vnd.android.cursor.item/vnd.app.tellomi.chat.call.video"));
+        assertFalse(manifest.contains("vnd.org.telegram.messenger.android.profile"));
+        assertFalse(manifest.contains("vnd.org.telegram.messenger.android.call"));
+        assertTrue(launch.contains("vnd.android.cursor.item/vnd.app.tellomi.chat.call"));
+        assertTrue(launch.contains("vnd.android.cursor.item/vnd.app.tellomi.chat.call.video"));
+        assertFalse(launch.contains("vnd.org.telegram.messenger.android.call"));
     }
 
     private static String read(String relative) throws Exception {
