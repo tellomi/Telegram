@@ -112,4 +112,9 @@
     <string name="FeedMentionWarning">以下用户看不到这条动态，也不会收到提醒。</string>
     <string name="FeedRemovePreview">移除</string>
     <string name="FeedToolSticker">贴纸</string>
+
+    <string name="NewConversationShortcut">新对话</string>
+    <string name="ContactShortcutMessage">发消息给 %1$s</string>
+    <string name="ContactShortcutVoiceCall">语音通话 %1$s</string>
+    <string name="ContactShortcutVideoCall">视频通话 %1$s</string>
 </resources>
