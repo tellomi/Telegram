@@ -8,7 +8,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONArray;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
 import org.telegram.messenger.feed.FeedController;
@@ -60,19 +59,20 @@ public class FeedTopicActivity extends BaseFragment {
     }
 
     private void load() {
-        FeedController.getInstance(currentAccount).api.getJson("/v1/feed/topics/" + FeedApi.enc(name) + "?sort=" + sort, (json, error) -> {
+        FeedController controller = FeedController.getInstance(currentAccount);
+        controller.api.getJson("/v1/feed/topics/" + FeedApi.enc(name) + "?sort=" + sort, (json, error) -> {
             posts.clear();
             if (json != null) {
                 visibleCount = json.optInt("visible_count", 0);
-                JSONArray items = json.optJSONArray("items");
-                if (items != null) {
-                    for (int i = 0; i < items.length(); i++) {
-                        if (items.optJSONObject(i) != null) posts.add(FeedModels.Post.parse(items.optJSONObject(i)));
-                    }
+            }
+            controller.resolvePostPage(json, (list, pageError) -> {
+                posts.clear();
+                if (list != null) {
+                    posts.addAll(list);
                 }
                 if (visibleCount == 0) visibleCount = posts.size();
-            }
-            if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+            });
         });
     }
 

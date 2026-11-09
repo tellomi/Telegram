@@ -2644,6 +2644,24 @@ public class MessagesController extends BaseController implements NotificationCe
 
         changed = config.apply(editor, object);
 
+        boolean feedKeyPresent = false;
+        for (int a = 0, N = object.value.size(); a < N; a++) {
+            if ("tellomi_discover_feed_enabled".equals(object.value.get(a).key)) {
+                feedKeyPresent = true;
+                break;
+            }
+        }
+        boolean storedFeedKey = mainPreferences.getBoolean("tellomi_discover_feed_enabled_present", false);
+        if (storedFeedKey != feedKeyPresent) {
+            editor.putBoolean("tellomi_discover_feed_enabled_present", feedKeyPresent);
+            changed = true;
+        }
+        if (!feedKeyPresent) {
+            changed |= config.tellomiDiscoverFeedEnabled.clear(editor);
+            changed |= config.tellomiDiscoverFeedBaseUrl.clear(editor);
+        }
+        org.telegram.messenger.feed.FeedConfig.noteConfigKey(currentAccount, feedKeyPresent);
+
         for (int a = 0, N = object.value.size(); a < N; a++) {
             TLRPC.TL_jsonObjectValue value = object.value.get(a);
             switch (value.key) {

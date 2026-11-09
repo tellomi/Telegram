@@ -298,6 +298,10 @@ public class AppGlobalConfig {
             return TextUtils.equals(get(), value);
         }
 
+        public boolean clear(SharedPreferences.Editor editor) {
+            return handler.clear(editor);
+        }
+
         private static class Internal implements ConfigInternal {
             private final String name;
             private final String defaultValue;
@@ -324,6 +328,15 @@ public class AppGlobalConfig {
             @Override
             public void load(SharedPreferences preferences) {
                 value = preferences.getString(name, defaultValue);
+            }
+
+            private boolean clear(SharedPreferences.Editor editor) {
+                editor.remove(name);
+                if (TextUtils.equals(value, defaultValue)) {
+                    return false;
+                }
+                value = defaultValue;
+                return true;
             }
         }
     }
@@ -388,6 +401,10 @@ public class AppGlobalConfig {
             return handler.value;
         }
 
+        public boolean clear(SharedPreferences.Editor editor) {
+            return handler.clear(editor);
+        }
+
         private static class Internal implements ConfigInternal {
             private final String name;
             private final boolean defaultValue;
@@ -414,6 +431,15 @@ public class AppGlobalConfig {
             @Override
             public void load(SharedPreferences preferences) {
                 value = preferences.getBoolean(name, defaultValue);
+            }
+
+            private boolean clear(SharedPreferences.Editor editor) {
+                editor.remove(name);
+                if (value == defaultValue) {
+                    return false;
+                }
+                value = defaultValue;
+                return true;
             }
         }
     }

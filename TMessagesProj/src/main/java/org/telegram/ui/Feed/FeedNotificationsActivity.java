@@ -25,8 +25,12 @@ import static org.telegram.messenger.LocaleController.getString;
 
 public class FeedNotificationsActivity extends BaseFragment {
 
-    private final String[] kinds = new String[]{"all", "like", "comment", "mention", "follow", "repost", "new_post"};
-    private int kind;
+    private final String[] tabs = new String[]{
+            org.telegram.messenger.feed.FeedContract.NOTIFICATION_INTERACTIONS,
+            org.telegram.messenger.feed.FeedContract.NOTIFICATION_FOLLOWS,
+            org.telegram.messenger.feed.FeedContract.NOTIFICATION_SYSTEM
+    };
+    private int tab;
     private final ArrayList<FeedModels.NotificationItem> items = new ArrayList<>();
     private RecyclerListView listView;
 
@@ -44,19 +48,19 @@ public class FeedNotificationsActivity extends BaseFragment {
         root.setOrientation(LinearLayout.VERTICAL);
         LinearLayout filters = new LinearLayout(context);
         filters.setOrientation(LinearLayout.HORIZONTAL);
-        int[] labels = new int[]{R.string.FeedFilterAll, R.string.FeedFilterLikes, R.string.FeedFilterComments, R.string.FeedFilterMentions, R.string.FeedFilterFollows, R.string.FeedFilterReposts, R.string.FeedFilterPosts};
+        int[] labels = new int[]{R.string.FeedNotifInteractions, R.string.FeedNotifFollows, R.string.FeedNotifSystem};
         for (int i = 0; i < labels.length; i++) {
             final int index = i;
-            TextView tab = new TextView(context);
-            tab.setText(getString(labels[i]));
-            tab.setTextSize(13);
-            tab.setPadding(dp(8), dp(8), dp(8), dp(8));
-            tab.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            tab.setOnClickListener(v -> {
-                kind = index;
+            TextView chip = new TextView(context);
+            chip.setText(getString(labels[i]));
+            chip.setTextSize(13);
+            chip.setPadding(dp(8), dp(8), dp(8), dp(8));
+            chip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            chip.setOnClickListener(v -> {
+                tab = index;
                 load();
             });
-            filters.addView(tab);
+            filters.addView(chip);
         }
         root.addView(filters, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         listView = new RecyclerListView(context);
@@ -70,7 +74,7 @@ public class FeedNotificationsActivity extends BaseFragment {
     }
 
     private void load() {
-        FeedController.getInstance(currentAccount).loadNotifications(kinds[kind], (list, error) -> {
+        FeedController.getInstance(currentAccount).loadNotifications(tabs[tab], (list, error) -> {
             items.clear();
             if (list != null) {
                 items.addAll(list);

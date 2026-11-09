@@ -16,6 +16,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -39,18 +40,20 @@ import static org.telegram.messenger.LocaleController.getString;
 
 public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFragmentDelegate, FeedController.Listener, FeedPostCell.Delegate, NotificationCenter.NotificationCenterDelegate {
 
+    private FrameLayout content;
     private ViewPagerFixed pager;
-    private final FeedListView[] lists = new FeedListView[4];
-    private final boolean[] loading = new boolean[4];
-    private final boolean[] failed = new boolean[4];
-    private final long[] loadedAt = new long[4];
-    private TextView[] tabs;
-    private TextView newPosts;
+    private LinearLayout tabsRow;
+    private String[] streams = new String[0];
+    private FeedListView[] lists = new FeedListView[0];
+    private boolean[] loading = new boolean[0];
+    private boolean[] failed = new boolean[0];
+    private long[] loadedAt = new long[0];
+    private TextView[] tabs = new TextView[0];
     private TextView uploadBanner;
     private int index;
     private boolean resetOnShow;
-    private Runnable poll;
     private String appliedEngineBase = "";
+    private String mountedTabs = "";
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -71,151 +74,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         heart.setContentDescription(getString(R.string.FeedNotifications));
         heart.setOnClickListener(v -> presentFragment(new FeedNotificationsActivity()));
 
-        FrameLayout content = new FrameLayout(context);
-        LinearLayout tabsRow = new LinearLayout(context);
-        tabsRow.setOrientation(LinearLayout.HORIZONTAL);
-        tabsRow.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        String[] titles = new String[]{
-                getString(R.string.FeedRecommend),
-                getString(R.string.FeedFollowing),
-                getString(R.string.FeedFriends),
-                getString(R.string.FeedNearby)
-        };
-        tabs = new TextView[4];
-        for (int i = 0; i < 4; i++) {
-            final int tab = i;
-            TextView view = new TextView(context);
-            view.setText(titles[i]);
-            view.setGravity(Gravity.CENTER);
-            view.setTextSize(14);
-            view.setTypeface(AndroidUtilities.bold());
-            view.setOnClickListener(v -> pager.scrollToPosition(tab));
-            tabs[i] = view;
-            tabsRow.addView(view, LayoutHelper.createLinear(0, 40, 1f));
-        }
-        content.addView(tabsRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP));
-
-        pager = new ViewPagerFixed(context) {
-            @Override
-            public void onTabAnimationUpdate(boolean manual) {
-                super.onTabAnimationUpdate(manual);
-                int next = Math.round(getPositionAnimated());
-                if (next != index && next >= 0 && next < 4) {
-                    index = next;
-                    paintTabs();
-                    ensure(index, false);
-                }
-            }
-        };
-        pager.setAdapter(new ViewPagerFixed.Adapter() {
-            @Override
-            public int getItemCount() {
-                return 4;
-            }
-
-            @Override
-            public int getItemViewType(int position) {
-                return position;
-            }
-
-            @Override
-            public View createView(int viewType) {
-                return lists[viewType];
-            }
-
-            @Override
-            public void bindView(View view, int position, int viewType) {
-            }
-        });
-        for (int i = 0; i < 4; i++) {
-            final int tab = i;
-            lists[i] = new FeedListView(context, new FeedListView.Host() {
-                @Override
-                public ArrayList<FeedModels.Post> posts() {
-                    return controller().posts(FeedModels.STREAMS[tab]);
-                }
-
-                @Override
-                public void onRefresh() {
-                    ensure(tab, true);
-                }
-
-                @Override
-                public void onLoadMore() {
-                    if (!loading[tab] && controller().cursor(FeedModels.STREAMS[tab]).length() > 0) {
-                        loading[tab] = true;
-                        controller().load(FeedModels.STREAMS[tab], false, (ok, error) -> {
-                            loading[tab] = false;
-                            failed[tab] = !ok && controller().posts(FeedModels.STREAMS[tab]).isEmpty();
-                            if (!ok && !controller().posts(FeedModels.STREAMS[tab]).isEmpty()) {
-                                failed[tab] = true;
-                            }
-                            lists[tab].refresh();
-                        });
-                    }
-                }
-
-                @Override
-                public boolean loading() {
-                    return loading[tab];
-                }
-
-                @Override
-                public boolean failed() {
-                    return failed[tab];
-                }
-
-                @Override
-                public boolean hasMore() {
-                    return controller().cursor(FeedModels.STREAMS[tab]).length() > 0;
-                }
-
-                @Override
-                public FeedPostCell.Delegate delegate() {
-                    return FeedActivity.this;
-                }
-
-                @Override
-                public int account() {
-                    return currentAccount;
-                }
-
-                @Override
-                public boolean showFollow() {
-                    return tab == 0;
-                }
-
-                @Override
-                public String emptyText() {
-                    return emptyMessage(tab);
-                }
-
-                @Override
-                public String emptyAction() {
-                    return emptyActionFor(tab);
-                }
-
-                @Override
-                public Runnable emptyClick() {
-                    return () -> onEmpty(tab);
-                }
-            });
-            lists[i].applyBottomInset(dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS + 72));
-        }
-        content.addView(pager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 40, 0, 0));
-
-        newPosts = new TextView(context);
-        newPosts.setText(getString(R.string.FeedNewPosts));
-        newPosts.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        newPosts.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_featuredStickers_addButton)));
-        newPosts.setPadding(dp(14), dp(8), dp(14), dp(8));
-        newPosts.setVisibility(View.GONE);
-        newPosts.setOnClickListener(v -> {
-            newPosts.setVisibility(View.GONE);
-            lists[index].scrollToTop();
-            ensure(index, true);
-        });
-        content.addView(newPosts, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
+        content = new FrameLayout(context);
+        installStreams();
 
         uploadBanner = new TextView(context);
         uploadBanner.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -235,72 +95,251 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         controller().addListener(this);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
         controller().resumeUploads();
-        if (controller().debugFixtures() && controller().posts(FeedModels.STREAM_RECOMMEND).isEmpty()) {
+        controller().refreshGate();
+        if (controller().debugFixtures() && streams.length > 0 && controller().posts(streams[0]).isEmpty()) {
             controller().setDebugFixtures(true);
         }
         appliedEngineBase = FeedConfig.engineBase(currentAccount);
-        ensure(0, controller().posts(FeedModels.STREAM_RECOMMEND).isEmpty());
+        if (streams.length > 0) {
+            ensure(0, controller().posts(streams[0]).isEmpty());
+        }
         onChanged();
         return fragmentView;
+    }
+
+    private void installStreams() {
+        ArrayList<String> next = controller().tabs();
+        if (next.isEmpty()) {
+            next = FeedContract.defaultTabs();
+        }
+        String signature = FeedContract.joinTabs(next);
+        if (signature.equals(mountedTabs) && pager != null) {
+            return;
+        }
+        mountedTabs = signature;
+        streams = next.toArray(new String[0]);
+        index = 0;
+        loading = new boolean[streams.length];
+        failed = new boolean[streams.length];
+        loadedAt = new long[streams.length];
+        lists = new FeedListView[streams.length];
+        tabs = new TextView[streams.length];
+        if (tabsRow != null) {
+            content.removeView(tabsRow);
+        }
+        if (pager != null) {
+            content.removeView(pager);
+        }
+        tabsRow = new LinearLayout(content.getContext());
+        tabsRow.setOrientation(LinearLayout.HORIZONTAL);
+        tabsRow.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        for (int i = 0; i < streams.length; i++) {
+            final int tab = i;
+            TextView view = new TextView(content.getContext());
+            view.setText(titleFor(streams[i]));
+            view.setGravity(Gravity.CENTER);
+            view.setTextSize(14);
+            view.setTypeface(AndroidUtilities.bold());
+            view.setOnClickListener(v -> {
+                if (pager != null) {
+                    pager.scrollToPosition(tab);
+                }
+            });
+            tabs[i] = view;
+            tabsRow.addView(view, LayoutHelper.createLinear(0, 40, 1f));
+        }
+        content.addView(tabsRow, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP));
+        for (int i = 0; i < streams.length; i++) {
+            final int tab = i;
+            lists[i] = new FeedListView(content.getContext(), new FeedListView.Host() {
+                @Override
+                public ArrayList<FeedModels.Post> posts() {
+                    return controller().posts(streams[tab]);
+                }
+
+                @Override
+                public void onRefresh() {
+                    ensure(tab, true);
+                }
+
+                @Override
+                public void onLoadMore() {
+                    if (tab >= loading.length) {
+                        return;
+                    }
+                    if (!loading[tab] && controller().cursor(streams[tab]).length() > 0) {
+                        loading[tab] = true;
+                        controller().load(streams[tab], false, (ok, error) -> {
+                            loading[tab] = false;
+                            failed[tab] = !ok;
+                            lists[tab].refresh();
+                        });
+                    }
+                }
+
+                @Override
+                public boolean loading() {
+                    return tab < loading.length && loading[tab];
+                }
+
+                @Override
+                public boolean failed() {
+                    return tab < failed.length && failed[tab];
+                }
+
+                @Override
+                public boolean hasMore() {
+                    return controller().cursor(streams[tab]).length() > 0;
+                }
+
+                @Override
+                public FeedPostCell.Delegate delegate() {
+                    return FeedActivity.this;
+                }
+
+                @Override
+                public int account() {
+                    return currentAccount;
+                }
+
+                @Override
+                public boolean showFollow() {
+                    return FeedModels.STREAM_RECOMMEND.equals(streams[tab]);
+                }
+
+                @Override
+                public String emptyText() {
+                    return emptyMessage(streams[tab]);
+                }
+
+                @Override
+                public String emptyAction() {
+                    return emptyActionFor(streams[tab]);
+                }
+
+                @Override
+                public Runnable emptyClick() {
+                    return () -> onEmpty(streams[tab]);
+                }
+            });
+            lists[i].applyBottomInset(dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS + 72));
+        }
+        pager = new ViewPagerFixed(content.getContext()) {
+            @Override
+            public void onTabAnimationUpdate(boolean manual) {
+                super.onTabAnimationUpdate(manual);
+                int next = Math.round(getPositionAnimated());
+                if (next != index && next >= 0 && next < streams.length) {
+                    index = next;
+                    paintTabs();
+                    ensure(index, false);
+                }
+            }
+        };
+        pager.setAdapter(new ViewPagerFixed.Adapter() {
+            @Override
+            public int getItemCount() {
+                return streams.length;
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                return position;
+            }
+
+            @Override
+            public View createView(int viewType) {
+                if (viewType < 0 || viewType >= lists.length) {
+                    return new View(content.getContext());
+                }
+                return lists[viewType];
+            }
+
+            @Override
+            public void bindView(View view, int position, int viewType) {
+            }
+        });
+        content.addView(pager, 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 40, 0, 0));
+    }
+
+    private String titleFor(String stream) {
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
+            return getString(R.string.FeedFollowing);
+        }
+        if (FeedModels.STREAM_NEARBY.equals(stream)) {
+            return getString(R.string.FeedNearby);
+        }
+        return getString(R.string.FeedRecommend);
     }
 
     private void paintTabs() {
         for (int i = 0; i < tabs.length; i++) {
             tabs[i].setTextColor(Theme.getColor(i == index ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_windowBackgroundWhiteGrayText));
+            tabs[i].setText(titleFor(streams[i]));
         }
-        if (index == 3 && controller().cityName().length() > 0) {
-            tabs[3].setText(getString(R.string.FeedNearby) + " · " + controller().cityName());
+        if (index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]) && controller().cityName().length() > 0) {
+            tabs[index].setText(getString(R.string.FeedNearby) + " · " + controller().cityName());
         }
     }
 
     private void ensure(int tab, boolean refresh) {
-        if (tab == 3 && controller().cityCode().length() == 0 && !controller().askedLocation()) {
+        if (tab < 0 || tab >= streams.length || lists.length <= tab) {
+            return;
+        }
+        if (FeedModels.STREAM_NEARBY.equals(streams[tab]) && controller().cityCode().length() == 0 && !controller().askedLocation()) {
             presentFragment(new FeedCityActivity(true));
             return;
         }
         if (loading[tab]) {
             return;
         }
-        if (!refresh && !controller().posts(FeedModels.STREAMS[tab]).isEmpty()) {
+        if (!refresh && !controller().posts(streams[tab]).isEmpty()) {
             lists[tab].refresh();
             return;
         }
         loading[tab] = true;
         failed[tab] = false;
         lists[tab].refresh();
-        controller().load(FeedModels.STREAMS[tab], true, (ok, error) -> {
+        final String stream = streams[tab];
+        controller().load(stream, true, (ok, error) -> {
+            if (tab >= loading.length) {
+                return;
+            }
             loading[tab] = false;
             failed[tab] = !ok;
             loadedAt[tab] = System.currentTimeMillis();
             if (!ok && controller().debugFixtures()) {
-                controller().posts(FeedModels.STREAMS[tab]).clear();
-                controller().posts(FeedModels.STREAMS[tab]).addAll(FeedController.fixtures(FeedModels.STREAMS[tab]));
+                controller().posts(stream).clear();
+                controller().posts(stream).addAll(FeedController.fixtures(stream));
                 failed[tab] = false;
             }
-            lists[tab].refresh();
+            if (tab < lists.length && lists[tab] != null) {
+                lists[tab].refresh();
+            }
         });
     }
 
-    private String emptyMessage(int tab) {
-        if (tab == 0) return getString(R.string.FeedEmptyRecommend);
-        if (tab == 1) return getString(R.string.FeedEmptyFollowing);
-        if (tab == 2) return getString(R.string.FeedEmptyFriends);
-        return getString(R.string.FeedEmptyNearby);
+    private String emptyMessage(String stream) {
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return getString(R.string.FeedEmptyFollowing);
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return getString(R.string.FeedEmptyNearby);
+        return getString(R.string.FeedEmptyRecommend);
     }
 
-    private String emptyActionFor(int tab) {
-        if (tab == 0) return getString(R.string.FeedPublish);
-        if (tab == 3) return getString(R.string.FeedChangeCity);
-        return getString(R.string.FeedFindPeople);
+    private String emptyActionFor(String stream) {
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return getString(R.string.FeedChangeCity);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return getString(R.string.FeedFindPeople);
+        return getString(R.string.FeedPublish);
     }
 
-    private void onEmpty(int tab) {
-        if (tab == 0) {
-            presentFragment(new FeedComposerActivity(null));
-        } else if (tab == 3) {
+    private void onEmpty(String stream) {
+        if (FeedModels.STREAM_NEARBY.equals(stream)) {
             presentFragment(new FeedCityActivity(false));
+        } else if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
+            if (pager != null) {
+                pager.scrollToPosition(0);
+            }
         } else {
-            pager.scrollToPosition(0);
+            presentFragment(new FeedComposerActivity(null));
         }
     }
 
@@ -317,63 +356,36 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             if (pager != null) {
                 pager.scrollToPosition(0);
             }
-            if (lists[0] != null) {
+            if (lists.length > 0 && lists[0] != null) {
                 lists[0].scrollToTop();
             }
             ensure(0, true);
             paintTabs();
         }
-        schedulePoll();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (poll != null) {
-            AndroidUtilities.cancelRunOnUIThread(poll);
-        }
-    }
-
-    private void schedulePoll() {
-        if (poll != null) {
-            AndroidUtilities.cancelRunOnUIThread(poll);
-        }
-        poll = () -> {
-            if (index == 0) {
-                schedulePoll();
-                return;
-            }
-            final int tab = index;
-            controller().newCount(FeedModels.STREAMS[tab], loadedAt[tab], count -> {
-                if (count != null && count > 0 && newPosts != null) {
-                    newPosts.setVisibility(View.VISIBLE);
-                }
-            });
-            schedulePoll();
-        };
-        AndroidUtilities.runOnUIThread(poll, FeedConfig.NEW_POSTS_POLL_MS);
+        controller().refreshGate();
     }
 
     @Override
     public void onFragmentDestroy() {
         controller().removeListener(this);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
-        if (poll != null) {
-            AndroidUtilities.cancelRunOnUIThread(poll);
-        }
         super.onFragmentDestroy();
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.appConfigUpdated && account == currentAccount && lists != null && lists[index] != null) {
+        if (id == NotificationCenter.appConfigUpdated && account == currentAccount) {
+            controller().refreshGate();
+            if (lists == null || index < 0 || index >= lists.length || lists[index] == null) {
+                return;
+            }
             String base = FeedConfig.engineBase(currentAccount);
             if (base.equals(appliedEngineBase)) {
                 return;
             }
             appliedEngineBase = base;
             controller().forgetRemoteConfig();
-            if (!loading[index]) {
+            if (index < loading.length && !loading[index]) {
                 ensure(index, true);
             }
         }
@@ -381,7 +393,16 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onChanged() {
-        if (lists[0] == null) {
+        if (content != null) {
+            String signature = FeedContract.joinTabs(controller().tabs());
+            if (signature.length() > 0 && !signature.equals(mountedTabs)) {
+                installStreams();
+                if (streams.length > 0) {
+                    ensure(0, controller().posts(streams[0]).isEmpty());
+                }
+            }
+        }
+        if (lists.length == 0 || lists[0] == null) {
             return;
         }
         for (int i = 0; i < lists.length; i++) {
@@ -411,7 +432,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onParentScrollToTop() {
-        if (lists[index] != null) {
+        if (index >= 0 && index < lists.length && lists[index] != null) {
             lists[index].scrollToTop();
         }
     }

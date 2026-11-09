@@ -28,6 +28,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -290,8 +291,11 @@ public class FeedComposerActivity extends BaseFragment {
             return;
         }
         ChatAttachAlert alert = new ChatAttachAlert(getParentActivity(), this, false, false, true, resourceProvider);
-        int limit = video ? FeedConfig.MAX_VIDEOS - count("video") : FeedConfig.MAX_IMAGES - count("image");
-        alert.setMaxSelectedPhotos(Math.max(1, limit), true);
+        int limit = video ? FeedConfig.MAX_VIDEOS - count("video") : FeedContract.imageSlotsLeft(count("image"));
+        if (limit <= 0) {
+            return;
+        }
+        alert.setMaxSelectedPhotos(limit, true);
         alert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
             @Override
             public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
@@ -328,6 +332,9 @@ public class FeedComposerActivity extends BaseFragment {
                 continue;
             }
             if (photo.path == null) {
+                continue;
+            }
+            if (!photo.isVideo && count("image") >= FeedContract.MAX_IMAGES) {
                 continue;
             }
             paths.add(photo.path);

@@ -93,26 +93,36 @@ public class FeedCollectionActivity extends BaseFragment {
         else if (mode == FOLLOWING) path = "/v1/feed/profiles/" + profileId + "/following";
         else if (mode == FOLLOWERS) path = "/v1/feed/profiles/" + profileId + "/followers";
         else path = "/v1/feed/profiles/" + profileId + "/posts?filter=" + filter;
-        FeedController.getInstance(currentAccount).api.getJson(path, (json, error) -> {
+        FeedController controller = FeedController.getInstance(currentAccount);
+        controller.api.getJson(path, (json, error) -> {
             posts.clear();
             people.clear();
             if (json != null && "list_private".equals(json.optString("error"))) {
                 people.add(privateRow());
-            } else if (json != null) {
-                JSONArray items = json.optJSONArray("items");
-                if (items != null) {
-                    for (int i = 0; i < items.length(); i++) {
-                        JSONObject item = items.optJSONObject(i);
-                        if (item == null) continue;
-                        if (mode == FOLLOWING || mode == FOLLOWERS || mode == MUTES) {
+                if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                return;
+            }
+            if (mode == FOLLOWING || mode == FOLLOWERS || mode == MUTES) {
+                if (json != null) {
+                    JSONArray items = json.optJSONArray("items");
+                    if (items != null) {
+                        for (int i = 0; i < items.length(); i++) {
+                            JSONObject item = items.optJSONObject(i);
+                            if (item == null) continue;
                             people.add(FeedModels.Author.parse(item.has("author") ? item.optJSONObject("author") : item));
-                        } else {
-                            posts.add(FeedModels.Post.parse(item));
                         }
                     }
                 }
+                if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                return;
             }
-            if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+            controller.resolvePostPage(json, (list, pageError) -> {
+                posts.clear();
+                if (list != null) {
+                    posts.addAll(list);
+                }
+                if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+            });
         });
     }
 

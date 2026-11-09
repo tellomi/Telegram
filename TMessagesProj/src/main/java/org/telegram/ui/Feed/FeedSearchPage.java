@@ -67,15 +67,23 @@ public class FeedSearchPage extends LinearLayout {
             if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
             return;
         }
-        FeedController.getInstance(parent.getCurrentAccount()).pushSearchHistory(query);
+        FeedController controller = FeedController.getInstance(parent.getCurrentAccount());
+        controller.pushSearchHistory(query);
         String path = "/v1/feed/search?q=" + FeedApi.enc(query) + "&scope=all&sort=" + sort;
-        FeedController.getInstance(parent.getCurrentAccount()).api.getJson(path, (json, error) -> {
+        controller.api.getJson(path, (json, error) -> {
             rows.clear();
-            if (json != null) {
-                addPosts(json.optJSONArray("posts"));
-                addTopics(json.optJSONArray("topics"));
-                addUsers(json.optJSONArray("users"));
-                if (rows.isEmpty()) {
+            if (json == null) {
+                if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                return;
+            }
+            addTopics(json.optJSONArray("topics"));
+            addUsers(json.optJSONArray("users"));
+            org.telegram.messenger.feed.FeedContract.FeedList refs = org.telegram.messenger.feed.FeedContract.parseFeedList(json.toString());
+            if (refs.needsCards) {
+                JSONObject page = json;
+                if (json.has("items")) {
+                    page = new JSONObject();
+                    JSONArray postsOnly = new JSONArray();
                     JSONArray items = json.optJSONArray("items");
                     if (items != null) {
                         for (int i = 0; i < items.length(); i++) {
@@ -84,8 +92,41 @@ public class FeedSearchPage extends LinearLayout {
                             String type = item.optString("type", "post");
                             if ("topic".equals(type)) rows.add(Row.topic(item.optString("name"), item.optInt("visible_count", 0)));
                             else if ("user".equals(type)) rows.add(Row.user(FeedModels.Author.parse(item)));
-                            else rows.add(Row.post(FeedModels.Post.parse(item.has("post") ? item.optJSONObject("post") : item)));
+                            else {
+                                try {
+                                    postsOnly.put(item.has("post") ? item.getJSONObject("post") : item);
+                                } catch (Exception ignore) {
+                                }
+                            }
                         }
+                    }
+                    try {
+                        page.put("items", postsOnly);
+                    } catch (Exception ignore) {
+                    }
+                }
+                final JSONObject postPage = page;
+                controller.resolvePostPage(postPage, (posts, pageError) -> {
+                    if (posts != null) {
+                        for (int i = 0; i < posts.size(); i++) {
+                            rows.add(Row.post(posts.get(i)));
+                        }
+                    }
+                    if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                });
+                return;
+            }
+            addPosts(json.optJSONArray("posts"));
+            if (rows.isEmpty()) {
+                JSONArray items = json.optJSONArray("items");
+                if (items != null) {
+                    for (int i = 0; i < items.length(); i++) {
+                        JSONObject item = items.optJSONObject(i);
+                        if (item == null) continue;
+                        String type = item.optString("type", "post");
+                        if ("topic".equals(type)) rows.add(Row.topic(item.optString("name"), item.optInt("visible_count", 0)));
+                        else if ("user".equals(type)) rows.add(Row.user(FeedModels.Author.parse(item)));
+                        else rows.add(Row.post(FeedModels.Post.parse(item.has("post") ? item.optJSONObject("post") : item)));
                     }
                 }
             }
