@@ -38,6 +38,15 @@ public class BuildVars {
     public static final String TELLOMI_SERVER_PUBLIC_KEY = BuildConfig.TELLOMI_SERVER_PUBLIC_KEY;
     /** System contacts account. Matches the installed application id, not the official Telegram id. */
     public static final String ACCOUNT_TYPE = "app.tellomi.chat";
+    /** Display name of the installed package. Saved-media folders and contact row labels use it. */
+    public static final String APP_NAME = "Tellomi";
+    public static final String STORAGE_DIR_NAME = APP_NAME;
+    public static final String STORAGE_IMAGES_DIR = APP_NAME + " Images";
+    public static final String STORAGE_VIDEO_DIR = APP_NAME + " Video";
+    public static final String STORAGE_AUDIO_DIR = APP_NAME + " Audio";
+    public static final String STORAGE_DOCUMENTS_DIR = APP_NAME + " Documents";
+    public static final String STORAGE_FILES_DIR = APP_NAME + " Files";
+    public static final String STORAGE_STORIES_DIR = APP_NAME + " Stories";
 
     // Empty so this package does not present Telegram's SafetyNet or OAuth client.
     public static String SAFETYNET_KEY = "";

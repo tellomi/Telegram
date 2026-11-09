@@ -11,7 +11,7 @@ This layer is the only intentional difference from that tree:
 
 ## Upgrade, static only
 
-`MessagesStorage.LAST_DB_VERSION` is 179 on both `origin/master` and this branch, and that file is unchanged. The normal files directory is `Context.getFilesDir()`, which follows `app.tellomi.chat`. The last-resort path must use that same package name. Chat rows are not stored in the contacts account type. The contacts authenticator in this tree still says `org.telegram.messenger`; the shipped tree says `app.tellomi.chat`. That difference is contacts sync, not `cache4.db`.
+`MessagesStorage.java`, `UserConfig.java`, and `tgnet/Config.cpp` match `origin/master`. `LAST_DB_VERSION` is 179. The chat file is `cache4.db`. Account 0 preferences are `userconfing`. The session file name in `libtmessages.49.so` is `tgnet.dat`. The normal files directory is `Context.getFilesDir()`, which follows `app.tellomi.chat`. Saved gallery folders and the contacts group title use `BuildVars.APP_NAME` (`Tellomi`), the same names `14.0.7` wrote. The contacts account type, sync adapter, contact MIME types, and `LaunchActivity` call match are `app.tellomi.chat`. Chat rows are not stored in that account. This is source and package-byte comparison. It is not an overlay install.
 
 A release build logs a response that cannot be decoded and returns without calling the request callback. That is the DrKLO behavior. It is not a new error type.
 
