@@ -345,10 +345,6 @@ android {
         }
     }
 
-    // Release-feed update check. These classes are not a product flavor: adding
-    // one would rename compileDebug* and break the APK workflow.
-    sourceSets.main.java.srcDirs += ['tellomi/java']
-
     if (findProperty("TELLOMI_PREBUILT_JNI")) {
         sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()
     }

@@ -122,9 +122,9 @@ public class BetaUpdaterController {
                 final int oldVersionCode = this.versionCode;
 
                 if (
-                    (version == null || newVersionCode > versionCode) &&
-                    newVersionCode > getCurrentVersionCode()
-                ) { // received newer versionCode, even when versionName did not change
+                    (version == null || SharedConfig.versionBiggerOrEqual(newVersion, version) && newVersionCode > versionCode) &&
+                    SharedConfig.versionBiggerOrEqual(newVersion, getCurrentVersion()) && newVersionCode > getCurrentVersionCode()
+                ) { // received newer version
                     if (!TextUtils.isEmpty(path)) {
                         final File file = new File(path);
                         try {
@@ -153,7 +153,7 @@ public class BetaUpdaterController {
                         }
                     }
                     path = null;
-                    if (getCurrentVersionCode() < newVersionCode) {
+                    if (SharedConfig.versionBiggerOrEqual(getCurrentVersion(), newVersion) && getCurrentVersionCode() < newVersionCode) {
                         // remote version is still newer than current installed, even though local downloaded was higher
                         version = newVersion;
                         versionCode = newVersionCode;

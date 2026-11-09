@@ -153,20 +153,6 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    /**
-     * In-app release check for the shipped App module.
-     * It reads {@code android/latest.json} and compares {@code versionCode}.
-     * Standalone and beta keep their own gates. Overriding this does not
-     * turn on the rest of {@link #isStandalone()}.
-     */
-    protected boolean isInAppUpdatesEnabled() {
-        return false;
-    }
-
-    public static boolean supportsInAppUpdates() {
-        return applicationLoaderInstance != null && applicationLoaderInstance.isInAppUpdatesEnabled();
-    }
-
     protected boolean isAndroidTestEnv() {
         return false;
     }

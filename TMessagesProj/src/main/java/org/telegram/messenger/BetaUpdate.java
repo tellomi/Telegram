@@ -17,13 +17,7 @@ public class BetaUpdate {
     }
 
     public boolean higherThan(BetaUpdate update) {
-        if (update == null) {
-            return true;
-        }
-        if (versionCode > 0 && update.versionCode > 0) {
-            return versionCode > update.versionCode;
-        }
-        return SharedConfig.versionBiggerOrEqual(version, update.version) && versionCode > update.versionCode;
+        return update == null || SharedConfig.versionBiggerOrEqual(version, update.version) && versionCode > update.versionCode;
     }
 
 }
