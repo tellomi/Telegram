@@ -141,7 +141,13 @@ public class TellomiDefaultStringsTest {
         assertTrue(contact.contains("This phone number is not on Tellomi."));
         assertTrue(contact.contains("This phone number is on Tellomi."));
         assertFalse(contact.contains("on Telegram"));
-        assertTrue(contact.contains("https://telegram.org/dl"));
+        assertTrue(contact.contains("https://tellomi.cn/download/"));
+        assertFalse(contact.contains("telegram.org/dl"));
+        assertFalse(contact.contains("telegram.org/download"));
+        String invites = read(source("src/main/java/org/telegram/messenger/ContactsController.java"));
+        assertTrue(invites.contains("https://tellomi.cn/download/"));
+        assertFalse(invites.contains("telegram.org/dl"));
+        assertFalse(invites.contains("telegram.org/download"));
         assertTrue(login.contains("But Tellomi says it's banned."));
         assertTrue(login.contains("But Tellomi says it's invalid."));
         assertFalse(login.contains("But Telegram says"));
