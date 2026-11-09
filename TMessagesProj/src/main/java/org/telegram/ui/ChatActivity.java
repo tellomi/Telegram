@@ -185,6 +185,7 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.TellomiMapApps;
 import org.telegram.messenger.Timer;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
@@ -41486,7 +41487,9 @@ public class ChatActivity extends BaseFragment implements
             if (media.webpage != null) {
                 didPressWebPage(cell, media.webpage, media.webpage.url, media.safe);
             } else if (media.geo != null) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                String placeName = media.address != null ? media.address : (answer != null && answer.text != null ? answer.text.text : "");
+                if (!TellomiMapApps.inAppMapCanRender()) {
+                    TellomiMapApps.showMapAppChooser(ChatActivity.this, media.geo.lat, media.geo._long, placeName, false);
                     return;
                 }
 
@@ -41891,7 +41894,16 @@ public class ChatActivity extends BaseFragment implements
                     alertUserOpenError(message);
                 }
             } else if (message.type == MessageObject.TYPE_GEO) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                TLRPC.GeoPoint geo = message.messageOwner != null && message.messageOwner.media != null ? message.messageOwner.media.geo : null;
+                if (geo == null) {
+                    return;
+                }
+                String placeName = message.messageOwner.media.title;
+                if (placeName == null || placeName.length() == 0) {
+                    placeName = message.messageOwner.media.address;
+                }
+                if (!TellomiMapApps.inAppMapCanRender()) {
+                    TellomiMapApps.showMapAppChooser(ChatActivity.this, geo.lat, geo._long, placeName, false);
                     return;
                 }
                 if (message.isLiveLocation()) {

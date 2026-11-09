@@ -486,6 +486,7 @@ jobs:
           # by the native job. These tasks do not assemble an APK.
           ./gradlew \
             :TMessagesProj:compileDebugJavaWithJavac \
+            :TMessagesProj:testDebugUnitTest \
             :TMessagesProj:compileDebugLibraryResources \
             :TMessagesProj:mergeDebugResources \
             :TMessagesProj_App:compileAfatDebugJavaWithJavac \
