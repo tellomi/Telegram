@@ -30,11 +30,6 @@ class TelegramBuildAppPlugin : Plugin<Project> {
                     },
                     project.fileTree("src/main/res/values") {
                         include("strings.xml")
-                    },
-                    // Flavor values-zh is stripped by localeFilters "zz". Pack the
-                    // English flavor strings into localization_en.bin. A later file wins.
-                    telegramModule.fileTree("tellomi/res/values") {
-                        include("strings.xml")
                     }
                 )
 
@@ -44,10 +39,6 @@ class TelegramBuildAppPlugin : Plugin<Project> {
                     },
                     project.fileTree("src/main/res") {
                         include("values-*/strings.xml")
-                    },
-                    // Same pack as src/main values-zh, so login copy is in localization_zh.bin.
-                    telegramModule.fileTree("tellomi/res") {
-                        include("values-zh/strings.xml")
                     }
                 )
 

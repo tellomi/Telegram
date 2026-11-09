@@ -26,7 +26,6 @@ import android.app.PictureInPictureUiState;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -124,10 +123,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiApkDownload;
-import org.telegram.messenger.TellomiAppUpdate;
-import org.telegram.messenger.TellomiReleaseUpdate;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -268,7 +263,7 @@ import java.util.zip.ZipInputStream;
 public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, IPipActivity {
     public final static String EXTRA_FORCE_NOT_INTERNAL_APPS = "force_not_internal_apps";
     public final static String EXTRA_FORCE_REQUEST = "force_request";
-    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.(?:" + Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me)$");
+    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.t\\.me");
 
     public static boolean isActive;
     private static int activeInstanceCount;
@@ -1094,55 +1089,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private BaseFragment getClientNotActivatedFragment() {
-        if (UserConfig.getActivatedAccountsCount() > 0) {
-            // The selected slot is empty but another account is signed in.
-            // The welcome intro has no back button, so never put it on screen here.
-            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                if (UserConfig.getInstance(a).isClientActivated()) {
-                    if (a != UserConfig.selectedAccount) {
-                        UserConfig.selectedAccount = a;
-                        UserConfig.getInstance(0).saveConfig(false);
-                        currentAccount = a;
-                        checkCurrentAccount();
-                    }
-                    break;
-                }
-            }
-            return new MainTabsActivity();
-        }
         if (LoginActivity.loadCurrentState(false, currentAccount).getInt("currentViewNum", 0) != 0) {
             return new LoginActivity();
         }
         return new IntroActivity();
-    }
-
-    /**
-     * After a successful sign-in the welcome intro must not stay under the main UI.
-     * With one account that leftover intro was what Add Account opened, and it could not be dismissed.
-     */
-    public void showMainTabsReplacingStack(boolean afterSignup) {
-        if (termsOfServiceView != null) {
-            termsOfServiceView.setVisibility(View.GONE);
-        }
-        if (AndroidUtilities.isTablet()) {
-            layersActionBarLayout.removeAllFragments();
-            rightActionBarLayout.removeAllFragments();
-        }
-        actionBarLayout.removeAllFragments();
-        Bundle args = new Bundle();
-        args.putBoolean("afterSignup", afterSignup);
-        MainTabsActivity mainTabsActivity = new MainTabsActivity();
-        mainTabsActivity.prepareDialogsActivity(args);
-        actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
-        actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-        if (AndroidUtilities.isTablet()) {
-            layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-            rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-        }
-        if (UserConfig.getInstance(currentAccount).unacceptedTermsOfService != null) {
-            showTosActivity(currentAccount, UserConfig.getInstance(currentAccount).unacceptedTermsOfService);
-        }
-        updateCurrentConnectionState(currentAccount);
     }
 
     public FireworksOverlay getFireworksOverlay() {
@@ -1632,13 +1582,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         String conferenceSlug = null;
         boolean forceNotInternalForApps = intent.getBooleanExtra(EXTRA_FORCE_NOT_INTERNAL_APPS, false);
         boolean forceRequest = intent.getBooleanExtra(EXTRA_FORCE_REQUEST, false);
-        if (!restore) {
-            String discoverPost = intent.getStringExtra(org.telegram.ui.tellomi.feed.TellomiDiscoverPush.EXTRA_POST);
-            android.net.Uri discoverUri = org.telegram.ui.tellomi.feed.TellomiDiscoverPush.openUri(discoverPost);
-            if (discoverUri != null && TellomiTabs.consumeFeedPostLink(this, discoverUri, intentAccount[0])) {
-                return true;
-            }
-        }
 
         photoPathsArray = null;
         videoPath = null;
@@ -2028,19 +1971,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     return false;
                                 case "http":
                                 case "https": {
-                                    if (TellomiTabs.consumeFeedPostLink(this, data, intentAccount[0])) {
-                                        intent.setAction(null);
-                                        if (progress != null) {
-                                            progress.end();
-                                        }
-                                        return true;
-                                    }
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
-                                    if (BuildVars.isLinkHost(host) || isPrefix) {
+                                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
                                         if (isPrefix) {
-                                            data = Uri.parse(BuildVars.LINK_BASE + "" + prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery()));
+                                            data = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery()));
                                         }
                                         String path = data.getPath();
                                         if (path != null && path.length() > 1) {
@@ -2347,8 +2283,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     }
                                     break;
                                 }
-                                case "tellomi":
-                                    data = Uri.parse(BuildVars.toTgUrl(data.toString()));
                                 case "tg": {
                                     String url = data.toString();
                                     if (url.startsWith("tg:premium_offer") || url.startsWith("tg://premium_offer")) {
@@ -2879,7 +2813,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                         }
                         if (intent.hasExtra(EXTRA_ACTION_TOKEN)) {
-                            final boolean success = UserConfig.getInstance(currentAccount).isClientActivated() && BuildVars.isAppScheme(scheme) && unsupportedUrl == null;
+                            final boolean success = UserConfig.getInstance(currentAccount).isClientActivated() && "tg".equals(scheme) && unsupportedUrl == null;
                             final Action assistAction = new AssistActionBuilder()
                                     .setActionToken(intent.getStringExtra(EXTRA_ACTION_TOKEN))
                                     .setActionStatus(success ? Action.Builder.STATUS_TYPE_COMPLETED : Action.Builder.STATUS_TYPE_FAILED)
@@ -5312,9 +5246,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         }
                         if (response1 != null) {
                             TL_account.Password accountPassword = (TL_account.Password) response1;
-                            if (!TellomiFeatures.passportEnabled(intentAccount)) {
-                                return;
-                            }
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
                             presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, callbackUrl, authorizationForm, accountPassword));
                         }
@@ -5369,7 +5300,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         showAlertDialog(AlertsCreator.createSimpleAlert(LaunchActivity.this, LocaleController.getString(R.string.ErrorOccurred) + "\n" + error.text));
                     }
                 }
-            }), ConnectionsManager.RequestFlagWithoutLogin);
+            }));
         } else if (wallPaper != null) {
             boolean ok = false;
             if (TextUtils.isEmpty(wallPaper.slug)) {
@@ -6141,11 +6072,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private boolean firstAppUpdateCheck = true;
     public void checkAppUpdate(boolean force, Browser.Progress progress) {
-        if (!TellomiAppUpdate.shouldRequestUpdate(
-                ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild(),
-                ApplicationLoader.supportsInAppUpdates(),
-                BuildVars.CHECK_UPDATES,
-                force)) {
+        if (!ApplicationLoader.isStandaloneBuild() && !ApplicationLoader.isBetaBuild()) {
+            return;
+        }
+        if (!force && !BuildVars.CHECK_UPDATES) {
             return;
         }
         if (ApplicationLoader.applicationLoaderInstance.isCustomUpdate()) {
@@ -6169,21 +6099,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             });
             return;
         }
-        final int installedVersion = SharedConfig.buildVersion();
-        if (!force && TellomiAppUpdate.shouldSkipAutomaticCheck(
-                System.currentTimeMillis(),
-                SharedConfig.lastUpdateCheckTime,
-                MessagesController.getInstance(0).updateCheckDelay,
-                installedVersion,
-                SharedConfig.hasLastUpdateCheckVersion,
-                SharedConfig.lastUpdateCheckVersion)) {
+        if (!force && Math.abs(System.currentTimeMillis() - SharedConfig.lastUpdateCheckTime) < MessagesController.getInstance(0).updateCheckDelay * 1000) {
             return;
         }
-        if (ApplicationLoader.supportsInAppUpdates()) {
-            checkTellomiReleaseFeed(installedVersion, progress);
-            return;
-        }
-        SharedConfig.rememberUpdateCheckVersion(installedVersion);
         final TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
         try {
             req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
@@ -6200,18 +6118,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (response instanceof TLRPC.TL_help_appUpdate) {
                 final TLRPC.TL_help_appUpdate res = (TLRPC.TL_help_appUpdate) response;
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.version != null && SharedConfig.pendingAppUpdate.version.equals(res.version)) {
-                        // The shipped App module has no side-menu download banner, so a
-                        // saved soft update must not swallow the next check.
-                        if (res.can_not_skip || !ApplicationLoader.supportsInAppUpdates()) {
-                            return;
-                        }
+                    if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.version.equals(res.version)) {
+                        return;
                     }
                     final boolean newVersionAvailable = SharedConfig.setNewAppVersionAvailable(res);
                     if (newVersionAvailable) {
                         if (res.can_not_skip) {
                             showUpdateActivity(accountNum, res, false);
-                        } else if (TellomiAppUpdate.shouldShowSoftPopup(ApplicationLoader.isStandaloneBuild(), BuildVars.DEBUG_VERSION, ApplicationLoader.supportsInAppUpdates(), res.can_not_skip)) {
+                        } else if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
                             ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, res, accountNum);
                         }
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
@@ -6251,100 +6165,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (progress != null) {
             progress.init();
             progress.onCancel(() -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
-        }
-    }
-
-    private int tellomiReleaseCheckGeneration;
-
-    /**
-     * Shipped App module. Reads the release feeds and compares {@code versionCode}.
-     * Standalone and beta builds stay on the {@code help.getAppUpdate} path above.
-     */
-    private void checkTellomiReleaseFeed(int installedVersion, Browser.Progress progress) {
-        final int token = ++tellomiReleaseCheckGeneration;
-        final int account = currentAccount;
-        int localCode = installedVersion;
-        String localName = BuildVars.BUILD_VERSION_STRING;
-        try {
-            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
-            if (info.versionCode != 0) {
-                localCode = info.versionCode;
-            }
-            if (info.versionName != null && info.versionName.length() > 0) {
-                localName = info.versionName;
-            }
-        } catch (Exception ignore) {
-        }
-        final int code = localCode;
-        final String name = localName;
-        if (progress != null) {
-            progress.init();
-            progress.onCancel(() -> {
-                if (tellomiReleaseCheckGeneration == token) {
-                    tellomiReleaseCheckGeneration++;
-                }
-            });
-        }
-        Utilities.globalQueue.postRunnable(() -> {
-            TellomiReleaseUpdate.Manifest manifest = null;
-            try {
-                manifest = TellomiReleaseUpdate.fetch();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            final TellomiReleaseUpdate.Manifest resolved = manifest;
-            AndroidUtilities.runOnUIThread(() -> finishTellomiReleaseCheck(token, code, name, resolved, progress, account));
-        });
-    }
-
-    private void finishTellomiReleaseCheck(int token, int localCode, String localName, TellomiReleaseUpdate.Manifest manifest, Browser.Progress progress, int account) {
-        if (token != tellomiReleaseCheckGeneration || isFinishing()) {
-            if (progress != null) {
-                progress.end();
-            }
-            return;
-        }
-        if (manifest == null) {
-            if (progress != null) {
-                progress.end();
-                showUpdateBulletin(LocaleController.getString(R.string.TellomiCheckForUpdatesFailed));
-            }
-            return;
-        }
-        SharedConfig.lastUpdateCheckTime = System.currentTimeMillis();
-        SharedConfig.rememberUpdateCheckVersion(localCode);
-        SharedConfig.saveConfig();
-        String download = TellomiReleaseUpdate.downloadUrl(manifest);
-        boolean newer = TellomiReleaseUpdate.isNewer(localCode, localName, manifest) && download != null;
-        FileLog.d("tellomi release feed versionCode=" + manifest.versionCode + " name=" + manifest.versionName + " localCode=" + localCode + " newer=" + newer);
-        if (progress != null) {
-            progress.end();
-        }
-        if (!newer) {
-            if (progress != null) {
-                showUpdateBulletin(LocaleController.getString(R.string.YourVersionIsLatest));
-            }
-            return;
-        }
-        TLRPC.TL_help_appUpdate update = new TLRPC.TL_help_appUpdate();
-        update.version = manifest.versionName;
-        update.url = download;
-        update.flags |= TLRPC.TL_help_appUpdate.FLAG_2;
-        update.text = manifest.notes == null ? "" : manifest.notes;
-        update.can_not_skip = false;
-        update.id = manifest.versionCode;
-        TellomiApkDownload.rememberHash(this, manifest.sha256);
-        SharedConfig.setNewAppVersionAvailable(update, manifest.versionCode);
-        if (ApplicationLoader.applicationLoaderInstance != null) {
-            ApplicationLoader.applicationLoaderInstance.showUpdateAppPopup(LaunchActivity.this, update, account);
-        }
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.appUpdateAvailable);
-    }
-
-    private void showUpdateBulletin(String text) {
-        BaseFragment fragment = getLastFragment();
-        if (fragment != null && text != null) {
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.chats_infotip, text).show();
         }
     }
 
@@ -7330,7 +7150,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (SharedConfig.pendingAppUpdate != null && SharedConfig.pendingAppUpdate.can_not_skip) {
             showUpdateActivity(UserConfig.selectedAccount, SharedConfig.pendingAppUpdate, true);
         }
-        TellomiApkDownload.onHostResume(this);
         checkAppUpdate(false, null);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -8340,10 +8159,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             String showedLang = preferences.getString("language_showed2", "");
             final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
-            // TELLOMI: the welcome picker records the choice. An applied language is not asked again.
-            if (TellomiLanguageAlert.suppress(systemLang)) {
-                return;
-            }
             if (!force && showedLang.equals(systemLang)) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("alert already showed for " + showedLang);

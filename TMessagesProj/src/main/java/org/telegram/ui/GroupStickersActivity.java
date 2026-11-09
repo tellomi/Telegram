@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.BuildVars;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -1011,7 +1009,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             TextView textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-            textView.setText(BuildVars.LINK_HOST + "/addemoji/");
+            textView.setText("t.me/addemoji/");
             editText = new EditTextCaption(context, null);
             editText.setLines(1);
             editText.setSingleLine(true);

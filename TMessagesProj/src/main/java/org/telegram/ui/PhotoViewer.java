@@ -1397,13 +1397,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                     String username = ChatObject.getPublicUsername(currentChat);
                     if (username != null) {
-                        url1 = BuildVars.LINK_BASE + "" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
+                        url1 = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
                     }
                 } else {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                     String username = UserObject.getPublicUsername(user);
                     if (user != null && username != null) {
-                        url1 = BuildVars.LINK_BASE + "" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
+                        url1 = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
                     }
                 }
             }
@@ -14135,7 +14135,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (siteName != null) {
                     siteName = siteName.toLowerCase();
                     if (siteName.equals("instagram") || siteName.equals("twitter") || "telegram_album".equals(webPage.type)) {
-                        if (!TextUtils.isEmpty(webPage.author) && !org.telegram.ui.tellomi.feed.TellomiChatLink.hideAuthor(webPage.author)) {
+                        if (!TextUtils.isEmpty(webPage.author)) {
                             nameOverride = webPage.author;
                         }
                         if (webPage.cached_page instanceof TL_iv.TL_page) {

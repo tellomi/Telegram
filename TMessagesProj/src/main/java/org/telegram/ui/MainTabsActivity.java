@@ -102,8 +102,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private static final int INDEX_CALLS = 3;
     private static final int INDEX_PROFILE = 4;
 
-    private int indexToPosition(int index) {
-        return TellomiTabs.positionForVisualIndex(currentAccount, index);
+    private static int indexToPosition(int index) {
+        return index > 2 ? index - 1 : index;
     }
 
     private static final int ANIMATOR_ID_TABS_VISIBLE = 0;
@@ -116,7 +116,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private UpdateLayoutWrapper updateLayoutWrapper;
     private FrameLayout tabsViewWrapper;
-    MainTabsLayout tabsView;
+    private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
     private View fadeView;
 
@@ -309,7 +309,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setClipChildren(false);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
-        tabsView.setMaxWidth(dp(TellomiTabs.enabled() ? TellomiTabs.barMaxWidthDp(TellomiTabs.fragmentCount(currentAccount, TABS_COUNT)) : 328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+        tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
 
         tabs = new GlassTabView[5];
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
@@ -328,15 +328,30 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.addTabToIgnoreClick(tabs[INDEX_CALLS]);
 
         for (int index = 0; index < tabs.length; index++) {
-            final int visualIndex = index;
-            tabs[index].setOnClickListener(v -> tellomiTabClicked(visualIndex));
+            final GlassTabView view = tabs[index];
+
+            final int position = indexToPosition(index);
+            tabs[index].setOnClickListener(v -> {
+                if (viewPager.isManualScrolling() || viewPager.isTouch()) {
+                    return;
+                }
+
+                if (viewPager.getCurrentPosition() == position) {
+                    final BaseFragment fragment = getCurrentVisibleFragment();
+                    if (fragment instanceof MainTabsActivity.TabFragmentDelegate) {
+                        ((MainTabsActivity.TabFragmentDelegate) fragment).onParentScrollToTop();
+                    }
+                    return;
+                }
+
+                selectTab(position, true);
+                viewPager.scrollToPosition(position);
+            });
 
             tabsView.addView(tabs[index]);
-            tabsView.setViewVisible(tabs[index], true, false);
+            tabsView.setViewVisible(view, true, false);
         }
-        if (!TellomiTabs.install(this)) {
-            checkUi_callTabVisible(getUserConfig().showCallsTab, false);
-        }
+        checkUi_callTabVisible(getUserConfig().showCallsTab, false);
 
         selectTab(viewPager.getCurrentPosition(), false);
 
@@ -407,7 +422,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("needFinishFragment", false);
             presentFragment(new CallLogActivity(args));
         });
-        TellomiTabs.appendHideContacts(this, o);
         o.setBlur(true);
         o.translate(0, -dp(4));
         o.setGravity(Gravity.LEFT);
@@ -575,16 +589,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void openFolder(int folderId) {
-        final int chats = TellomiTabs.startPosition(currentAccount, POSITION_CHATS);
-        if (viewPager.getCurrentPosition() == chats && dialogsActivity != null) {
+        if (viewPager.getCurrentPosition() == POSITION_CHATS && dialogsActivity != null) {
             dialogsActivity.scrollToFolder(folderId);
         } else {
             if (dialogsActivity == null) {
                 prepareDialogsActivity(null);
             }
             pendingFolderId = folderId;
-            selectTab(chats, true);
-            viewPager.scrollToPosition(chats);
+            selectTab(POSITION_CHATS, true);
+            viewPager.scrollToPosition(POSITION_CHATS);
         }
     }
 
@@ -611,7 +624,22 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         ItemOptions o = ItemOptions.makeOptions(this, button);
         if (UserConfig.getActivatedAccountsCount() < UserConfig.MAX_ACCOUNT_COUNT) {
             o.add(R.drawable.msg_addbot, getString(R.string.AddAccount), () -> {
-                if (!TellomiAccount.openAddAccount(this) && !UserConfig.hasPremiumOnAccounts()) {
+                int freeAccounts = 0;
+                Integer availableAccount = null;
+                for (int a = UserConfig.MAX_ACCOUNT_COUNT - 1; a >= 0; a--) {
+                    if (!UserConfig.getInstance(a).isClientActivated()) {
+                        freeAccounts++;
+                        if (availableAccount == null) {
+                            availableAccount = a;
+                        }
+                    }
+                }
+                if (!UserConfig.hasPremiumOnAccounts()) {
+                    freeAccounts -= (UserConfig.MAX_ACCOUNT_COUNT - UserConfig.MAX_ACCOUNT_DEFAULT_COUNT);
+                }
+                if (freeAccounts > 0 && availableAccount != null) {
+                    presentFragment(new LoginActivity(availableAccount));
+                } else if (!UserConfig.hasPremiumOnAccounts()) {
                     showDialog(new LimitReachedBottomSheet(this, getContext(), TYPE_ACCOUNTS, currentAccount, null));
                 }
             });
@@ -687,7 +715,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final TextView textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        textView.setText(TellomiAccount.switcherLabel(account, user));
+        textView.setText(UserObject.getUserName(user));
         textView.setMaxLines(2);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         btn.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 13, 0, 14, 0));
@@ -705,16 +733,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         if (viewPager != null) {
             final int currentPosition = viewPager.getCurrentPosition();
-            if (!TellomiTabs.enabled() && currentPosition != POSITION_CALLS_OR_SETTINGS && dropCallsFragmentAfterPageScroll) {
+            if (currentPosition != POSITION_CALLS_OR_SETTINGS && dropCallsFragmentAfterPageScroll) {
                 dropFragmentAtPosition(POSITION_CALLS_OR_SETTINGS);
                 dropCallsFragmentAfterPageScroll = false;
             }
-            final int profile = TellomiTabs.profilePosition(currentAccount, POSITION_PROFILE);
-            if (currentPosition != profile) {
-                dropFragmentAtPosition(profile);
+            if (currentPosition != POSITION_PROFILE) {
+                dropFragmentAtPosition(POSITION_PROFILE);
             }
-            final int chats = TellomiTabs.startPosition(currentAccount, POSITION_CHATS);
-            if (pendingFolderId != null && currentPosition == chats && dialogsActivity != null) {
+            if (pendingFolderId != null && currentPosition == POSITION_CHATS && dialogsActivity != null) {
                 dialogsActivity.scrollToFolder(pendingFolderId);
                 pendingFolderId = null;
             }
@@ -742,15 +768,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     @Override
     protected int getFragmentsCount() {
-        return TellomiTabs.fragmentCount(currentAccount, TABS_COUNT);
+        return TABS_COUNT;
     }
 
     @Override
     protected int getStartPosition() {
-        return TellomiTabs.startPosition(currentAccount, POSITION_CHATS);
+        return POSITION_CHATS;
     }
 
-    DialogsActivity dialogsActivity;
+    private DialogsActivity dialogsActivity;
 
     @Override
     public boolean onBackPressed(boolean invoked) {
@@ -775,15 +801,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         bundle.putBoolean("hasMainTabs", true);
         dialogsActivity = new DialogsActivity(bundle);
         dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
-        putFragmentAtPosition(TellomiTabs.startPosition(currentAccount, POSITION_CHATS), dialogsActivity);
+        putFragmentAtPosition(POSITION_CHATS, dialogsActivity);
         return dialogsActivity;
     }
 
     @Override
     protected BaseFragment createBaseFragmentAt(int position) {
-        if (TellomiTabs.enabled()) {
-            return TellomiTabs.createFragment(this, position);
-        }
         if (position == POSITION_CONTACTS) {
             Bundle args = new Bundle();
             args.putBoolean("needPhonebook", true);
@@ -826,58 +849,19 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     public GlassTabView[] tabs;
 
     public void selectTab(int position, boolean animated) {
-        if (tabs == null) {
-            return;
-        }
         for (int a = 0; a < tabs.length; a++) {
             GlassTabView tab = tabs[a];
-            if (tab == null) {
-                continue;
-            }
             tab.setSelected(indexToPosition(a) == position, animated);
         }
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {
-        if (tabs == null || tabsView == null) {
-            return;
-        }
         for (int index = 0; index < tabs.length; index++) {
-            if (tabs[index] == null) {
-                continue;
-            }
             final int position = indexToPosition(index);
-            final float visibility = position < 0 ? 0f : Math.max(0, 1f - Math.abs(position - animatedPosition));
+            final float visibility = Math.max(0, 1f - Math.abs(position - animatedPosition));
             tabs[index].setGestureSelectedOverride(visibility, allow);
         }
         tabsView.invalidate();
-    }
-
-    void tellomiTabClicked(int visualIndex) {
-        if (viewPager == null || viewPager.isManualScrolling() || viewPager.isTouch()) {
-            return;
-        }
-        final int position = indexToPosition(visualIndex);
-        if (position < 0) {
-            return;
-        }
-        if (viewPager.getCurrentPosition() == position) {
-            final BaseFragment fragment = getCurrentVisibleFragment();
-            if (fragment instanceof TabFragmentDelegate) {
-                ((TabFragmentDelegate) fragment).onParentScrollToTop();
-            }
-            return;
-        }
-        selectTab(position, true);
-        viewPager.scrollToPosition(position);
-    }
-
-    BaseFragment tellomiCreateChats() {
-        Bundle args = new Bundle();
-        args.putBoolean("hasMainTabs", true);
-        dialogsActivity = new DialogsActivity(args);
-        dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
-        return dialogsActivity;
     }
 
 
@@ -1008,9 +992,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else if (id == NotificationCenter.needSetDayNightTheme) {
             clearAllHiddenFragments();
         } else if (id == NotificationCenter.callTabsVisibleToggled) {
-            if (TellomiTabs.onVisibilityChanged(this)) {
-                return;
-            }
             final boolean callTabsVisible = getUserConfig().showCallsTab;
             checkUi_callTabVisible(callTabsVisible, true);
             if (viewPager != null && viewPager.getCurrentPosition() == POSITION_CALLS_OR_SETTINGS) {
@@ -1077,8 +1058,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
 
         final float animatedPosition = viewPager.getPositionAnimated();
-        final int profilePosition = TellomiTabs.profilePosition(currentAccount, POSITION_PROFILE);
-        final float isProfile = 1f - MathUtils.clamp(Math.abs(profilePosition - animatedPosition), 0, 1);
+        final float isProfile = 1f - MathUtils.clamp(Math.abs(POSITION_PROFILE - animatedPosition), 0, 1);
         final float hide = 1f - AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 1f, navigationBarHeight);
         float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue();
         if (tabletLayout) {

@@ -38,7 +38,9 @@ env:
   CCACHE_SLOPPINESS: time_macros,file_macro,locale,include_file_mtime,include_file_ctime
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   # String "true" or "false". Ordinary push and pull_request are false.
-  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android')) }}
+  # The official-restore branch also packages a signed APK artifact. It does
+  # not match the publish job, so that artifact is not uploaded to the site.
+  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44')) }}
 
 jobs:
   workflow:
@@ -185,16 +187,16 @@ jobs:
           set -euo pipefail
           if [ "${TELLOMI_PACKAGE}" != "true" ]; then
             echo "type=debug" >> "$GITHUB_OUTPUT"
-            echo "native_task=externalNativeBuildTellomiDebug" >> "$GITHUB_OUTPUT"
+            echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
             echo "Ordinary push/PR compiles debug native code and does not read the release keystore."
             exit 0
           fi
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
             echo "type=release" >> "$GITHUB_OUTPUT"
-            echo "native_task=externalNativeBuildTellomiRelease" >> "$GITHUB_OUTPUT"
+            echo "native_task=externalNativeBuildRelease" >> "$GITHUB_OUTPUT"
           else
             echo "type=debug" >> "$GITHUB_OUTPUT"
-            echo "native_task=externalNativeBuildTellomiDebug" >> "$GITHUB_OUTPUT"
+            echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Restore ccache
@@ -470,9 +472,9 @@ jobs:
           # Prebuilt flag skips CMake in this job. Native .so files are built
           # by the native job. These tasks do not assemble an APK.
           ./gradlew \
-            :TMessagesProj:compileTellomiDebugJavaWithJavac \
-            :TMessagesProj:compileTellomiDebugLibraryResources \
-            :TMessagesProj:mergeTellomiDebugResources \
+            :TMessagesProj:compileDebugJavaWithJavac \
+            :TMessagesProj:compileDebugLibraryResources \
+            :TMessagesProj:mergeDebugResources \
             :TMessagesProj_App:compileAfatDebugJavaWithJavac \
             :TMessagesProj_App:processAfatDebugResources \
             :TMessagesProj:tellomiVerifyShippableDc \
@@ -493,46 +495,33 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # Next afat versionCode above checked-in 1800049. The ones digit is
-          # the ABI marker (afat universal = 9). Each run adds 10.
-          # 1800059 = (180004 + 1) * 10 + 9, so this job stays above
-          # gradle.properties and above website-prod latest.json 178001.
-          TELLOMI_VERSION_CODE_BASE: "1800059"
-          TELLOMI_VERSION_CODE_FLOOR: "178001"
+          # 14.0.8. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # Published 14.0.7 afat is 1804669, so APP_VERSION_CODE 180467
+          # produces afat 1804679 and bundleAfat 1804671. Digit 0 is unused.
+          TELLOMI_VERSION_CODE_FLOOR: "1804669"
         run: |
           set -euo pipefail
-          # Manifest versionCode = APP_VERSION_CODE * 10 + abiVersionCode.
-          # abi 9 = afat universal, 1 and 2 = store/bundle. -P overrides
-          # gradle.properties for this job only.
-          run="${GITHUB_RUN_NUMBER:?}"
-          case "$run" in
-            ''|*[!0-9]*) echo "GITHUB_RUN_NUMBER is not an integer: $run" >&2; exit 1 ;;
+          app_version_code=$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)
+          version_name=$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)
+          case "$app_version_code" in
+            ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          base="${TELLOMI_VERSION_CODE_BASE:?}"
+          if [ "$version_name" != "14.0.8" ]; then
+            echo "expected APP_VERSION_NAME 14.0.8, found ${version_name:-missing}" >&2
+            exit 1
+          fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
-          manifest=$((base + run * 10))
+          manifest=$((app_version_code * 10 + 9))
           if [ "$manifest" -le "$floor" ] || [ $((manifest % 10)) -ne 9 ]; then
-            echo "refusing versionCode $manifest" >&2
+            echo "refusing afat versionCode $manifest" >&2
             exit 1
           fi
-          app_version_code=$(( (manifest - 9) / 10 ))
-          if [ $((app_version_code * 10 + 9)) -ne "$manifest" ]; then
-            echo "APP_VERSION_CODE $app_version_code does not encode versionCode $manifest" >&2
+          bundle=$((app_version_code * 10 + 1))
+          if [ "$bundle" -le "$floor" ]; then
+            echo "bundle versionCode $bundle is not above $floor" >&2
             exit 1
           fi
-          # Digit 0 is the lowest ABI marker this formula can emit. Every
-          # variant of this APP_VERSION_CODE must clear the website floor.
-          low=$((app_version_code * 10))
-          if [ "$low" -le "$floor" ]; then
-            echo "lowest ABI versionCode $low is not above $floor" >&2
-            exit 1
-          fi
-          file_code=$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)
-          if [ -z "$file_code" ] || [ "$app_version_code" -le "$file_code" ]; then
-            echo "CI APP_VERSION_CODE $app_version_code is not above gradle.properties (${file_code:-missing})" >&2
-            exit 1
-          fi
-          echo "versionCode: $manifest (APP_VERSION_CODE=$app_version_code, run=$run)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "versionCode: $manifest (APP_VERSION_CODE=$app_version_code, versionName=$version_name)" | tee -a "$GITHUB_STEP_SUMMARY"
           mkdir -p "$HOME/.gradle"
           cat > "$HOME/.gradle/gradle.properties" <<'EOF'
           org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g

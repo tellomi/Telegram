@@ -1377,7 +1377,7 @@ public class AndroidUtilities {
             Linkify.addLinks(text, Linkify.PHONE_NUMBERS);
         }
         if ((mask & Linkify.WEB_URLS) != 0) {
-            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://", BuildVars.LINK_SCHEME + "://", "tonsite://"}, sUrlMatchFilter, internalOnly);
+            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "tg://", "tonsite://"}, sUrlMatchFilter, internalOnly);
         }
         pruneOverlaps(links);
         if (links.size() == 0) {
@@ -1798,15 +1798,29 @@ public class AndroidUtilities {
         }
     }
 
-    /**
-     * Upstream blocked every location screen until {@code com.google.android.apps.maps}
-     * was installed. Tellomi opens a point or a route through {@code TellomiMaps}
-     * (installed map apps, then the Amap web marker), so this no longer shows
-     * "Install Google Maps?". Callers that pick a location still open the in-app
-     * map; that view is still {@code GoogleMapsProvider}.
-     */
     public static boolean isMapsInstalled(BaseFragment fragment) {
-        return true;
+        String pkg = ApplicationLoader.getMapsProvider().getMapsAppPackageName();
+        try {
+            ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo(pkg, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            if (fragment.getParentActivity() == null) {
+                return false;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+            builder.setMessage(getString(ApplicationLoader.getMapsProvider().getInstallMapsString()));
+            builder.setPositiveButton(getString(R.string.OK), (dialogInterface, i) -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg));
+                    fragment.getParentActivity().startActivityForResult(intent, 500);
+                } catch (Exception e1) {
+                    FileLog.e(e1);
+                }
+            });
+            builder.setNegativeButton(getString(R.string.Cancel), null);
+            fragment.showDialog(builder.create());
+            return false;
+        }
     }
 
     public static int[] toIntArray(List<Integer> integers) {

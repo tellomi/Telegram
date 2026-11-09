@@ -91,11 +91,18 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isFeatureAvailable() {
-        return isChatTranslateEnabled();
+        return isChatTranslateEnabled() && UserConfig.getInstance(currentAccount).isPremium();
     }
 
     public boolean isFeatureAvailable(long dialogId) {
-        return isChatTranslateEnabled();
+        if (!isChatTranslateEnabled()) {
+            return false;
+        }
+        final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
+        return (
+            UserConfig.getInstance(currentAccount).isPremium() ||
+            chat != null && chat.autotranslation
+        );
     }
 
     private Boolean chatTranslateEnabled;
@@ -130,10 +137,8 @@ public class TranslateController extends BaseController {
     }
 
     public static boolean isSummarizable(MessageObject messageObject) {
-        if (messageObject == null || !TellomiFeatures.aiSummaryEnabled(messageObject.currentAccount)) {
-            return false;
-        }
         return (
+            messageObject != null &&
             messageObject.messageOwner != null &&
             messageObject.messageOwner.summary_from_language != null &&
             !messageObject.isOutOwner() &&
@@ -156,10 +161,8 @@ public class TranslateController extends BaseController {
     }
 
     public static boolean isTranslatable(MessageObject messageObject) {
-        if (messageObject == null || !TellomiFeatures.translateEnabled(messageObject.currentAccount)) {
-            return false;
-        }
         return (
+            messageObject != null &&
             messageObject.messageOwner != null &&
             !messageObject.isOutOwner() &&
             !messageObject.isRestrictedMessage &&
@@ -188,9 +191,6 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isDialogTranslatable(long dialogId) {
-        if (!messagesController.isTranslationsManualEnabled() && !messagesController.isTranslationsAutoEnabled()) {
-            return false;
-        }
         return (
             translatableDialogs.contains(dialogId) &&
             isFeatureAvailable(dialogId) &&
@@ -273,12 +273,11 @@ public class TranslateController extends BaseController {
         if ("nb".equals(lang)) {
             lang = "no";
         }
-        return TellomiTranslate.rpcToLang(lang);
+        return lang;
     }
 
     public void setDialogTranslateTo(long dialogId, String language) {
-        final String target = TellomiTranslate.rpcToLang(language);
-        if (TextUtils.equals(getDialogTranslateTo(dialogId), target)) {
+        if (TextUtils.equals(getDialogTranslateTo(dialogId), language)) {
             return;
         }
 
@@ -287,7 +286,7 @@ public class TranslateController extends BaseController {
         if (wasTranslating) {
             AndroidUtilities.runOnUIThread(() -> {
                 synchronized (TranslateController.this) {
-                    translateDialogLanguage.put(dialogId, target);
+                    translateDialogLanguage.put(dialogId, language);
                     translatingDialogs.put(dialogId, true);
                     saveTranslatingDialogsCache();
                 }
@@ -295,7 +294,7 @@ public class TranslateController extends BaseController {
             }, 150);
         } else {
             synchronized (TranslateController.this) {
-                translateDialogLanguage.put(dialogId, target);
+                translateDialogLanguage.put(dialogId, language);
             }
         }
 
@@ -305,7 +304,7 @@ public class TranslateController extends BaseController {
         }
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogTranslate, dialogId, false);
 
-        TranslateAlert2.setToLanguage(target);
+        TranslateAlert2.setToLanguage(language);
     }
 
     public void updateDialogFull(long dialogId) {
@@ -985,7 +984,7 @@ public class TranslateController extends BaseController {
         req.id = message.getId();
         if (language != null) {
             req.flags |= TLObject.FLAG_0;
-            req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(language));
+            req.to_lang = normalizeLanguage(language);
         }
         ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
             if (res != null) {
@@ -1020,75 +1019,6 @@ public class TranslateController extends BaseController {
         int symbolsCount;
 
         int reqId = -1;
-    }
-
-    /** One incoming message, from the control on the right of the bubble. */
-    public void translateSingle(MessageObject message) {
-        if (message == null || message.messageOwner == null || !getMessagesController().isTranslationsManualEnabled()) {
-            return;
-        }
-        if (message.sideTranslateOpen) {
-            message.sideTranslateOpen = false;
-            message.updateTranslation(true);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
-            return;
-        }
-        if (message.messageOwner.translatedText != null && !TextUtils.isEmpty(message.messageOwner.translatedText.text)) {
-            message.sideTranslateOpen = true;
-            message.updateTranslation(false);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
-            return;
-        }
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, message);
-        pushToTranslate(message, TellomiTranslate.TO_LANG, (isTranscription, id, text, lang) -> {
-            if (message.getId() != id) {
-                return;
-            }
-            if (text == null || TextUtils.isEmpty(text.text)) {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, message);
-                return;
-            }
-            message.messageOwner.translatedToLanguage = lang;
-            if (isTranscription) {
-                message.messageOwner.translatedVoiceTranscription = text;
-            } else {
-                message.messageOwner.translatedText = text;
-            }
-            message.sideTranslateOpen = true;
-            message.updateTranslation(false);
-            getMessagesStorage().updateMessageCustomParams(message.getDialogId(), message.messageOwner);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslated, message);
-        });
-    }
-
-    /** Detect the language so the side control can appear on English messages. */
-    public void noteLanguage(MessageObject messageObject) {
-        if (!getMessagesController().isTranslationsManualEnabled() || !LanguageDetector.hasSupport()) {
-            return;
-        }
-        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.originalLanguage != null) {
-            return;
-        }
-        final String detectText = getDetectLanguageText(messageObject);
-        if (TextUtils.isEmpty(detectText)) {
-            return;
-        }
-        final int hash = hash(messageObject);
-        if (pendingLanguageChecks.contains(hash)) {
-            return;
-        }
-        pendingLanguageChecks.add(hash);
-        final long dialogId = messageObject.getDialogId();
-        Utilities.stageQueue.postRunnable(() -> LanguageDetector.detectLanguage(detectText, lng -> AndroidUtilities.runOnUIThread(() -> {
-            messageObject.messageOwner.originalLanguage = lng == null ? UNKNOWN_LANGUAGE : lng;
-            getMessagesStorage().updateMessageCustomParams(dialogId, messageObject.messageOwner);
-            pendingLanguageChecks.remove((Integer) hash);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageTranslating, messageObject);
-        }), err -> AndroidUtilities.runOnUIThread(() -> {
-            messageObject.messageOwner.originalLanguage = UNKNOWN_LANGUAGE;
-            pendingLanguageChecks.remove((Integer) hash);
-        })));
     }
 
     private void pushToTranslate(
@@ -1172,6 +1102,45 @@ public class TranslateController extends BaseController {
                     }
                 }
 
+                final String method = getMessagesController().translationsAutoEnabled;
+                if ("alternative".equals(method) || "system".equals(method)) {
+                    final String toLanguage = pendingTranslation1.language;
+                    for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
+                        final int id = pendingTranslation1.messageIds.get(i);
+                        final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
+                        final String _text = pendingTranslation1.messageTexts.get(i).text;
+                        TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                            if (result != null) {
+                                final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                resultWithEntities.text = result;
+                                _callback.run(isTranscription, id, resultWithEntities, toLanguage);
+                            } else {
+                                toggleTranslatingDialog(dialogId, false);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                            }
+                        });
+                    }
+                    return;
+                }/* else if ("system".equals(method)) {
+                    final String toLanguage = pendingTranslation1.language;
+                    for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
+                        final int id = pendingTranslation1.messageIds.get(i);
+                        final Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
+                        final String _text = pendingTranslation1.messageTexts.get(i).text;
+                        systemTranslate(_text, null, toLanguage, result -> {
+                            if (result != null) {
+                                final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                resultWithEntities.text = result;
+                                _callback.run(id, resultWithEntities, toLanguage);
+                            } else {
+                                toggleTranslatingDialog(dialogId, false);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                            }
+                        });
+                    }
+                    return;
+                }*/
+
                 final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
                 if (isTranscription) {
                     req.flags |= 2;
@@ -1181,7 +1150,7 @@ public class TranslateController extends BaseController {
                     req.peer = getMessagesController().getInputPeer(dialogId);
                     req.id = pendingTranslation1.messageIds;
                 }
-                req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(pendingTranslation1.language));
+                req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
@@ -1199,6 +1168,22 @@ public class TranslateController extends BaseController {
                         final int count = Math.min(callbacks.size(), translated.size());
                         for (int i = 0; i < count; ++i) {
                             callbacks.get(i).run(isTranscription, ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), toLanguage);
+                        }
+                    } else if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                        for (int i = 0; i < ids.size(); ++i) {
+                            final int id = ids.get(i);
+                            final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = callbacks.get(i);
+                            final String _text = texts.get(i).text;
+                            TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                                if (result != null) {
+                                    final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
+                                    resultWithEntities.text = result;
+                                    _callback.run(isTranscription, id, resultWithEntities, toLanguage);
+                                } else {
+                                    toggleTranslatingDialog(dialogId, false);
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                                }
+                            });
                         }
                     } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
                         toggleTranslatingDialog(dialogId, false);
@@ -1421,7 +1406,7 @@ public class TranslateController extends BaseController {
                         req.text.add(src.solution);
                     }
                 }
-                req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(pendingTranslation1.language));
+                req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
@@ -1570,7 +1555,7 @@ public class TranslateController extends BaseController {
                 req.flags |= TLObject.FLAG_0;
                 req.peer = getMessagesController().getInputPeer(dialogId);
                 req.id = pendingTranslation1.messageIds;
-                req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(pendingTranslation1.language));
+                req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
@@ -1956,7 +1941,7 @@ public class TranslateController extends BaseController {
         text.text = storyItem.caption;
         text.entities = storyItem.entities;
         req.text.add(text);
-        req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(toLang));
+        req.to_lang = normalizeLanguage(toLang);
         getConnectionsManager().sendRequest(req, (res, err) -> {
             if (res instanceof TLRPC.TL_messages_translateResult) {
                 ArrayList<TLRPC.TL_textWithEntities> result = ((TLRPC.TL_messages_translateResult) res).result;
@@ -2093,7 +2078,7 @@ public class TranslateController extends BaseController {
             text.entities = new ArrayList<>();
         }
         req.text.add(text);
-        req.to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(toLang));
+        req.to_lang = normalizeLanguage(toLang);
         final long start = System.currentTimeMillis();
         getConnectionsManager().sendRequest(req, (res, err) -> {
             if (res instanceof TLRPC.TL_messages_translateResult) {

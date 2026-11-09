@@ -24,8 +24,6 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.TellomiApkDownload;
-import org.telegram.messenger.TellomiAppUpdate;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -141,40 +139,29 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         acceptButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         addView(acceptButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 46, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 45));
         acceptButton.setOnClickListener(view1 -> {
-            int action = TellomiAppUpdate.primaryAction(appUpdate == null ? null : appUpdate.url, appUpdate != null && appUpdate.document instanceof TLRPC.TL_document);
-            if (action == TellomiAppUpdate.DOWNLOAD_IN_APP) {
-                TellomiApkDownload.begin(getContext(), appUpdate.url.trim(), appUpdate.id);
-                showProgress(true);
-                return;
-            }
-            if (action == TellomiAppUpdate.OPEN_URL) {
-                Browser.openUrl(getContext(), appUpdate.url.trim());
-                return;
-            }
-            if (action == TellomiAppUpdate.INSTALL_APK && (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION || ApplicationLoader.supportsInAppUpdates())) {
+            if (ApplicationLoader.isStandaloneBuild() || BuildVars.DEBUG_VERSION) {
                 if (!ApplicationLoader.applicationLoaderInstance.checkApkInstallPermissions(getContext())) {
                     return;
                 }
-                if (!ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document)) {
-                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
-                    showProgress(true);
+                if (appUpdate.document instanceof TLRPC.TL_document) {
+                    if (!ApplicationLoader.applicationLoaderInstance.openApkInstall((Activity) getContext(), appUpdate.document)) {
+                        FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", FileLoader.PRIORITY_HIGH, 1);
+                        showProgress(true);
+                    }
+                } else if (appUpdate.url != null) {
+                    Browser.openUrl(getContext(), appUpdate.url);
                 }
-                return;
-            }
-            if (BuildVars.isHuaweiStoreApp()) {
+            } else if (BuildVars.isHuaweiStoreApp()){
                 Browser.openUrl(context, BuildVars.HUAWEI_STORE_URL);
             } else {
                 Browser.openUrl(context, BuildVars.PLAYSTORE_APP_URL);
             }
         });
 
-        int buttonInk = Theme.getColor(Theme.key_featuredStickers_addButton);
-        int buttonLuminance = (Color.red(buttonInk) * 3 + Color.green(buttonInk) * 6 + Color.blue(buttonInk)) / 10;
-        int onButton = buttonLuminance > 160 ? 0xFF111111 : 0xFFFFFFFF;
         acceptTextView = new TextView(context);
         acceptTextView.setGravity(Gravity.CENTER);
         acceptTextView.setTypeface(AndroidUtilities.bold());
-        acceptTextView.setTextColor(onButton);
+        acceptTextView.setTextColor(0xffffffff);
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptButton.addView(acceptTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
@@ -202,7 +189,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         radialProgressView.setVisibility(View.INVISIBLE);
         radialProgress = new RadialProgress(radialProgressView);
         radialProgress.setBackground(null, true, false);
-        radialProgress.setProgressColor(onButton);
+        radialProgress.setProgressColor(0xffffffff);
         acceptButton.addView(radialProgressView, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
     }
 
@@ -313,7 +300,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoaded);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadFailed);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileLoadProgressChanged);
-        if (check && (ApplicationLoader.isStandaloneBuild() || ApplicationLoader.supportsInAppUpdates())) {
+        if (check && ApplicationLoader.isStandaloneBuild()) {
             TLRPC.TL_help_getAppUpdate req = new TLRPC.TL_help_getAppUpdate();
             try {
                 req.source = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());

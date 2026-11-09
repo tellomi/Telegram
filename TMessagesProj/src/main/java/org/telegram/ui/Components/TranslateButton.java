@@ -36,7 +36,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiTranslate;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
@@ -113,7 +112,14 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         menuView = new ImageView(context);
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
-        menuView.setOnClickListener(e -> onMenuClick());
+        menuView.setOnClickListener(e -> {
+            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            if (UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation) {
+                onMenuClick();
+            } else {
+                onCloseClick();
+            }
+        });
         addView(menuView, LayoutHelper.createFrame(30, 30, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 7, 0));
 
         updateColors();
@@ -225,7 +231,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
             }
             for (TranslateController.Language lng : suggestedLanguages) {
                 final String code = lng.code;
-                if (TextUtils.equals(code, detectedLanguage) || TellomiTranslate.acceptedToLang(code) == null) {
+                if (TextUtils.equals(code, detectedLanguage)) {
                     continue;
                 }
 
@@ -251,7 +257,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
 
             for (TranslateController.Language lng : allLanguages) {
                 final String code = lng.code;
-                if (TextUtils.equals(code, detectedLanguage) || TellomiTranslate.acceptedToLang(code) == null) {
+                if (TextUtils.equals(code, detectedLanguage)) {
                     continue;
                 }
                 final boolean checked = currentTranslateTo != null && currentTranslateTo.equals(code);
@@ -291,7 +297,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
             popupLayout.getSwipeBack().openForeground(swipeBackIndex);
         });
 
-        if (detectedLanguageNameAccusative != null) {
+        if (UserConfig.getInstance(currentAccount).isPremium() && detectedLanguageNameAccusative != null) {
             final ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
             String text;
             if (accusative[0]) {
@@ -344,6 +350,32 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         });
         popupLayout.addView(hideButton);
 
+        popupLayout.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+
+        final LinkSpanDrawable.LinksTextView cocoonButton = new LinkSpanDrawable.LinksTextView(getContext());
+        cocoonButton.setPadding(dp(13), dp(8.33f), dp(13), dp(8.33f));
+        cocoonButton.setDisablePaddingsOffsetY(true);
+        cocoonButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        cocoonButton.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        cocoonButton.setEmojiColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        CharSequence cocoonText = TextUtils.concat(AndroidUtilities.replaceTags(getString(R.string.CocoonPoweredBy)), " ", AndroidUtilities.premiumText(getString(R.string.CocoonPoweredByLink), () -> {
+            popupWindow.dismiss();
+            showCocoonAlert(getContext(), resourcesProvider);
+        }));
+        SpannableStringBuilder egg = new SpannableStringBuilder("🥚");
+        egg.setSpan(new AnimatedEmojiSpan(5197252827247841976L, cocoonButton.getPaint().getFontMetricsInt()), 0, egg.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        SpannableStringBuilder eggSpaced = new SpannableStringBuilder(egg);
+        eggSpaced.append(" ");
+        cocoonText = AndroidUtilities.replaceCharSequence("🥚 ", cocoonText, eggSpaced);
+        cocoonText = AndroidUtilities.replaceCharSequence("🥚", cocoonText, egg);
+        cocoonButton.setText(HintView2.cutInFancyHalfText(cocoonText, cocoonButton.getPaint()));
+        cocoonButton.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 12));
+        cocoonButton.setOnClickListener(v -> {
+            popupWindow.dismiss();
+            showCocoonAlert(getContext(), resourcesProvider);
+        });
+        popupLayout.addView(cocoonButton);
+
         popupWindow.setPauseNotifications(true);
         popupWindow.setDismissAnimationDuration(220);
         popupWindow.setOutsideTouchable(true);
@@ -357,6 +389,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
 
     public void updateText() {
         final TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
+        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         if (translateController.isTranslatingDialog(dialogId)) {
             String detectedLanguage = translateController.getDialogDetectedLanguage(dialogId);
             detectedLanguage = TranslateAlert2.languageName(detectedLanguage);
@@ -379,9 +412,99 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
             }
             textView.setText(TextUtils.concat(translateIcon, " ", text));
         }
-        menuView.setImageResource(R.drawable.msg_mini_customize);
+        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation ? R.drawable.msg_mini_customize : R.drawable.msg_close);
     }
 
     public static void showCocoonAlert(Context context, Theme.ResourcesProvider resourcesProvider) {
+        final BottomSheet.Builder builder = new BottomSheet.Builder(context, false, resourcesProvider);
+        builder.setApplyBottomPadding(false);
+        builder.setApplyTopPadding(false);
+        final BottomSheet[] sheet = new BottomSheet[1];
+
+        final LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final FrameLayout topView = new FrameLayout(context);
+        final GradientDrawable bg = new GradientDrawable();
+        bg.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        bg.setColors(new int[] { 0xFF0C2065, 0xFF06112A });
+        bg.setGradientRadius(dp(150));
+        final float r = dp(12);
+        bg.setCornerRadii(new float[] { r, r, r, r, 0, 0, 0, 0 });
+        topView.setBackground(bg);
+        final LinearLayout topViewLayout = new LinearLayout(context);
+        topViewLayout.setOrientation(LinearLayout.VERTICAL);
+        topView.addView(topViewLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        final ImageView logoView = new ImageView(context);
+        logoView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        logoView.setImageResource(R.drawable.cocoon_logo);
+        topViewLayout.addView(logoView, LayoutHelper.createLinear(132, 132, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 33, 0, 0));
+
+        final ImageView titleView = new ImageView(context);
+        titleView.setImageResource(R.drawable.cocoon_text);
+        topViewLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 12, 32, 0));
+
+        final TextView subtitleView = new TextView(context);
+        subtitleView.setTextColor(0xFFB8C9EF);
+        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        subtitleView.setGravity(Gravity.CENTER);
+        final SpannableStringBuilder subtitle = AndroidUtilities.replaceTags(getString(R.string.CocoonSubtitle));
+        final TypefaceSpan[] spans = subtitle.getSpans(0, subtitle.length(), TypefaceSpan.class);
+        for (int i = 0; i < spans.length; ++i) {
+            subtitle.setSpan(new ForegroundColorSpan(0xFFFFFFFF), subtitle.getSpanStart(spans[i]), subtitle.getSpanEnd(spans[i]), subtitle.getSpanFlags(spans[i]));
+        }
+        subtitleView.setText(subtitle);
+        topViewLayout.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 14, 32, 20));
+
+        layout.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        layout.addView(
+            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.menu_privacy, getString(R.string.CocoonFeature1Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature1Text), () -> {
+                sheet[0].dismiss();
+                Browser.openUrl(context, getString(R.string.CocoonFeature1TextLink));
+            }), resourcesProvider),
+            LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 16, 32, 16)
+        );
+
+        layout.addView(
+            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.msg_stats, getString(R.string.CocoonFeature2Title), getString(R.string.CocoonFeature2Text), resourcesProvider),
+            LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 0, 32, 16)
+        );
+
+        layout.addView(
+            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.menu_gift, getString(R.string.CocoonFeature3Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature3Text), () -> {
+                sheet[0].dismiss();
+                Browser.openUrlInSystemBrowser(context, getString(R.string.CocoonFeature3TextLink));
+            }), resourcesProvider),
+            LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 0, 32, 16)
+        );
+
+        final View separatorView = new View(context);
+        separatorView.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        layout.addView(separatorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
+
+        final LinkSpanDrawable.LinksTextView footerView = new LinkSpanDrawable.LinksTextView(context);
+        footerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        footerView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        footerView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        footerView.setGravity(Gravity.CENTER);
+        footerView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFooter), () -> {
+            sheet[0].dismiss();
+            Browser.openUrl(context, getString(R.string.CocoonFooterLink));
+        }));
+        footerView.setPadding(0, dp(18), 0, dp(18));
+        footerView.setDisablePaddingsOffsetY(true);
+        layout.addView(footerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 32, 0, 32, 0));
+
+        final ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider).setRound();
+        button.setText(replaceUnderstood(getString(R.string.Understood)));
+        button.setOnClickListener(v -> sheet[0].dismiss());
+        layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 16, 0, 16, 16));
+
+        builder.setCustomView(layout);
+        sheet[0] = builder.create();
+        sheet[0].fixNavigationBar();
+        sheet[0].show();
     }
 }

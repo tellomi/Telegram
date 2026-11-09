@@ -31,7 +31,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -340,9 +339,6 @@ public class ExternalActionActivity extends Activity implements INavigationLayou
                         }
                         if (response1 != null) {
                             TL_account.Password accountPassword = (TL_account.Password) response1;
-                            if (!TellomiFeatures.passportEnabled(intentAccount)) {
-                                return;
-                            }
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
                             PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, null, authorizationForm, accountPassword);
                             fragment.setNeedActivityResult(true);

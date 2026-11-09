@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.ContactsController.findRule;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -2006,7 +2004,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                                 privacyCell.setText(LocaleController.getString(R.string.PrivacyPhoneInfo3));
                             } else {
                                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                                String phoneLinkStr = String.format(Locale.ENGLISH, BuildVars.LINK_BASE + "+%s", getUserConfig().getClientPhone());
+                                String phoneLinkStr = String.format(Locale.ENGLISH, "https://t.me/+%s", getUserConfig().getClientPhone());
                                 SpannableString phoneLink = new SpannableString(phoneLinkStr);
                                 phoneLink.setSpan(new ClickableSpan() {
                                     @Override

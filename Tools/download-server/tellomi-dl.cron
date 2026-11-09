@@ -1,3 +1,0 @@
-# Tellomi installer downloads (primary = this server, backup = R2 tellomi-updates)
-*/10 * * * * root /usr/local/bin/tellomi-dl-sync.sh >> /var/log/tellomi-dl.log 2>&1
-30 4 * * 1 root /usr/local/bin/tellomi-dl-prune.sh >> /var/log/tellomi-dl.log 2>&1

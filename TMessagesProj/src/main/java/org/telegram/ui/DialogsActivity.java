@@ -120,7 +120,6 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -8792,25 +8791,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             previewMenu[0].addView(muteItem);
         }
 
-        if (!isCommunityCell && dialogId != 0) {
-            ActionBarMenuSubItem stealthItem = new ActionBarMenuSubItem(getParentActivity(), false, false);
-            stealthItem.setTextAndIcon(LocaleController.getString(R.string.TellomiStealthView), R.drawable.msg_secret);
-            stealthItem.setMinimumWidth(160);
-            stealthItem.setOnClickListener(e -> {
-                finishPreviewFragment();
-                org.telegram.ui.TellomiChatMenu.openStealth(DialogsActivity.this, dialogId);
-            });
-            previewMenu[0].addView(stealthItem);
-            ActionBarMenuSubItem lockItem = new ActionBarMenuSubItem(getParentActivity(), false, false);
-            lockItem.setTextAndIcon(LocaleController.getString(R.string.TellomiChatPassword), R.drawable.msg_permissions);
-            lockItem.setMinimumWidth(160);
-            lockItem.setOnClickListener(e -> {
-                finishPreviewFragment();
-                org.telegram.ui.TellomiChatLockUi.configure(DialogsActivity.this, currentAccount, dialogId);
-            });
-            previewMenu[0].addView(lockItem);
-        }
-
         if (!isCommunityCell) {
             ActionBarMenuSubItem deleteItem = new ActionBarMenuSubItem(getParentActivity(), false, true);
             deleteItem.setIconColor(getThemedColor(Theme.key_text_RedRegular));
@@ -13649,7 +13629,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             final LoginActivity loginActivity = new LoginActivity().changeEmail(() -> {
                 Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourceProvider);
                 layout.setAnimation(R.raw.email_check_inbox);
-                layout.textView.setText(getString(R.string.TellomiLoginEmailChanged));
+                layout.textView.setText(getString(R.string.YourLoginEmailChangedSuccess));
                 int duration = Bulletin.DURATION_LONG;
 
                 Bulletin.make(DialogsActivity.this, layout, duration).show();
@@ -13798,7 +13778,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (ApplicationLoader.applicationLoaderInstance != null) {
             ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
         }
-        if (TellomiFeatures.walletEnabled(currentAccount)) {
+        if (getMessagesController().config.walletAvailable.get()) {
             io.add(R.drawable.ic_gram, LocaleController.getString(R.string.WalletAttachMoney), () -> {
                 presentFragment(new WalletActivity());
             });
@@ -14428,7 +14408,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final TextView textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        textView.setText(TellomiAccount.switcherLabel(account, user));
+        textView.setText(UserObject.getUserName(user));
         textView.setMaxLines(2);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         btn.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 13, 0, 14, 0));

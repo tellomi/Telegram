@@ -83,7 +83,6 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TelegramQRCodeWriter;
@@ -1533,7 +1532,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
     }
 
     private static boolean isTelegramHost(@Nullable String host) {
-        return host != null && BuildVars.isLinkHost(host);
+        return host != null && ("t.me".equalsIgnoreCase(host) || "telegram.me".equalsIgnoreCase(host) || "telegram.dog".equalsIgnoreCase(host));
     }
 
     /** A scanned text as a link; a t.me link without a scheme gets https. */
@@ -2372,11 +2371,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
             sheet.dismiss();
             fragment.presentFragment(new WalletSendSelectSender().setCollectible(collectible));
         });
-        if (TellomiFeatures.fragmentEnabled()) {
-            actions.getChildAt(1).setOnClickListener(v -> Browser.openUrlInSystemBrowser(context, "https://fragment.com/"));
-        } else {
-            actions.getChildAt(1).setVisibility(View.GONE);
-        }
+        actions.getChildAt(1).setOnClickListener(v -> Browser.openUrlInSystemBrowser(context, "https://fragment.com/"));
         okButton.setOnClickListener(v -> sheet.dismiss());
         sheet.show();
         sheet.fixNavigationBar(backgroundColor);
@@ -3718,9 +3713,6 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
-        if (!TellomiFeatures.walletEnabled(currentAccount)) {
-            return false;
-        }
         WalletCard2DMaterial.prewarm(org.telegram.messenger.ApplicationLoader.applicationContext);
         getNotificationCenter().addObserver(this, NotificationCenter.walletUpdate);
         getNotificationCenter().addObserver(this, NotificationCenter.starBalanceUpdated);

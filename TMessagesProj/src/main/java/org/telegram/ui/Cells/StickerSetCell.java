@@ -8,8 +8,6 @@
 
 package org.telegram.ui.Cells;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
@@ -69,8 +67,8 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class StickerSetCell extends FrameLayout {
-    private final static String LINK_PREFIX = BuildVars.LINK_HOST + "/addstickers/";
-    private final static String LINK_PREFIX_EMOJI = BuildVars.LINK_HOST + "/addemoji/";
+    private final static String LINK_PREFIX = "t.me/addstickers/";
+    private final static String LINK_PREFIX_EMOJI = "t.me/addemoji/";
 
     private final int option;
 

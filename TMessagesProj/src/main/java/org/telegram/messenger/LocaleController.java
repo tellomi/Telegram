@@ -76,20 +76,6 @@ public class LocaleController {
     public static int nameDisplayOrder = 1;
     public static boolean is24HourFormat = false;
 
-    /**
-     * Clock patterns for Chinese use 上午/下午. {@link Locale#US} would print those
-     * patterns as {@code AM11:34}. Arabic and Korean already take this path.
-     */
-    private static Locale tellomiTimeLocale(String lang, Locale locale) {
-        if (lang != null) {
-            String code = lang.toLowerCase(Locale.US);
-            if (code.equals("ar") || code.equals("ko") || code.equals("zh")) {
-                return locale != null ? locale : Locale.getDefault();
-            }
-        }
-        return Locale.US;
-    }
-
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
         if (formatterDay == null) {
@@ -101,7 +87,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterDay = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
+                    formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
                 }
             }
         }
@@ -119,7 +105,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterDayWithSeconds = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? getStringInternal("formatterDayWithSeconds24H", R.string.formatterDayWithSeconds24H) : getStringInternal("formatterDayWithSeconds12H", R.string.formatterDayWithSeconds12H), is24HourFormat ? "HH:mm:ss" : "h:mm:ss a");
+                    formatterDayWithSeconds = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDayWithSeconds24H", R.string.formatterDayWithSeconds24H) : getStringInternal("formatterDayWithSeconds12H", R.string.formatterDayWithSeconds12H), is24HourFormat ? "HH:mm:ss" : "h:mm:ss a");
                 }
             }
         }
@@ -137,7 +123,7 @@ public class LocaleController {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterConstDay = createFormatter(tellomiTimeLocale(lang, locale), is24HourFormat ? "HH:mm" : "h:mm a", is24HourFormat ? "HH:mm" : "h:mm a");
+                    formatterConstDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? "HH:mm" : "h:mm a", is24HourFormat ? "HH:mm" : "h:mm a");
                 }
             }
         }
@@ -697,13 +683,6 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
-        // TELLOMI: 简体中文 and 繁體中文 stay on the settings list without a langpack round-trip.
-        for (int i = 0; i < 2; i++) {
-            LocaleInfo chinese = TellomiDefaults.builtinChinese(i == 1);
-            languages.add(chinese);
-            languagesDict.put(chinese.shortName, chinese);
-        }
-
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> loadRemoteLanguages(UserConfig.selectedAccount));
@@ -718,14 +697,6 @@ public class LocaleController {
         for (int a = 0; a < remoteLanguages.size(); a++) {
             LocaleInfo locale = remoteLanguages.get(a);
             LocaleInfo existingLocale = getLanguageFromDict(locale.getKey());
-            if (existingLocale != null && TellomiDefaults.bundledChinese(existingLocale)) {
-                // values-zh is packed into localization_zh.bin. Turning this row into a
-                // remote pack with no file left the UI on the English bin (dates stayed Chinese).
-                remoteLanguages.remove(a);
-                remoteLanguagesDict.remove(locale.getKey());
-                a--;
-                continue;
-            }
             if (existingLocale != null) {
                 existingLocale.pathToFile = locale.pathToFile;
                 existingLocale.version = locale.version;
@@ -752,7 +723,7 @@ public class LocaleController {
             }
         }
 
-        systemDefaultLocale = TellomiDefaults.deviceLocale();
+        systemDefaultLocale = Locale.getDefault();
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
         LocaleInfo currentInfo = null;
         boolean override = false;
@@ -774,14 +745,6 @@ public class LocaleController {
                 currentInfo = getLanguageFromDict(getLocaleString(systemDefaultLocale));
                 if (currentInfo == null) {
                     currentInfo = getLanguageFromDict("en");
-                }
-            }
-
-            // TELLOMI: follow the system into zh-hans / zh-hant until the user picks a language.
-            if (!override) {
-                LocaleInfo tellomiChinese = tellomiLocaleForSystem(systemDefaultLocale);
-                if (tellomiChinese != null) {
-                    currentInfo = tellomiChinese;
                 }
             }
 
@@ -1334,26 +1297,6 @@ public class LocaleController {
         if (localeInfo == null) {
             return 0;
         }
-        // English and Chinese ship a full local bin. A remote placeholder must
-        // not block the redraw on langpack.getLangPack.
-        if (TellomiDefaults.clearRemotePlaceholder(localeInfo.shortName, localeInfo.pathToFile)) {
-            localeInfo.pathToFile = null;
-            localeInfo.builtIn = true;
-        }
-        // TELLOMI: built-in it/es/de/nl/ar/pt_br/ko/uk/ru are a short bin. Marking
-        // the row remote runs langpack.getLangPack below. English stays the default
-        // bin. Chinese stays on localization_zh.bin. A row already in the dict is
-        // recorded here; an unknown remote is added by the block further down.
-        if (TellomiDefaults.attachServerLangpack(localeInfo)) {
-            LocaleInfo tracked = getLanguageFromDict(localeInfo.getKey());
-            if (tracked != null && tracked != localeInfo) {
-                tracked.pathToFile = localeInfo.pathToFile;
-            }
-            if (tracked != null && !remoteLanguagesDict.containsKey(tracked.getKey())) {
-                remoteLanguages.add(tracked);
-                remoteLanguagesDict.put(tracked.getKey(), tracked);
-            }
-        }
         int requestId = 0;
         boolean hasBase = localeInfo.hasBaseLang();
         File pathToFile = localeInfo.getPathToFile();
@@ -1391,31 +1334,17 @@ public class LocaleController {
         try {
             Locale newLocale;
             String[] args;
-            Locale scripted = TellomiDefaults.androidLocale(localeInfo.shortName);
-            if (scripted != null) {
-                newLocale = scripted;
-                args = new String[] {scripted.getLanguage()};
-            } else if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
+            if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
                 args = localeInfo.pluralLangCode.split("_");
-                if (args.length == 1) {
-                    newLocale = new Locale(args[0]);
-                } else {
-                    newLocale = new Locale(args[0], args[1]);
-                }
             } else if (!TextUtils.isEmpty(localeInfo.baseLangCode)) {
                 args = localeInfo.baseLangCode.split("_");
-                if (args.length == 1) {
-                    newLocale = new Locale(args[0]);
-                } else {
-                    newLocale = new Locale(args[0], args[1]);
-                }
             } else {
                 args = localeInfo.shortName.split("_");
-                if (args.length == 1) {
-                    newLocale = new Locale(args[0]);
-                } else {
-                    newLocale = new Locale(args[0], args[1]);
-                }
+            }
+            if (args.length == 1) {
+                newLocale = new Locale(args[0]);
+            } else {
+                newLocale = new Locale(args[0], args[1]);
             }
             if (override) {
                 languageOverride = localeInfo.shortName;
@@ -1459,11 +1388,7 @@ public class LocaleController {
             changingConfiguration = true;
             Locale.setDefault(currentLocale);
             android.content.res.Configuration config = new android.content.res.Configuration();
-            if (Build.VERSION.SDK_INT >= 24) {
-                config.setLocales(new android.os.LocaleList(newLocale));
-            }
-            config.setLocale(newLocale);
-            config.locale = newLocale;
+            config.locale = currentLocale;
             ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
             changingConfiguration = false;
             FileLog.d("applyLanguage: reloadLastFile=" + reloadLastFile + " force=" + force + " isLoadingRemote=" + isLoadingRemote);
@@ -1505,19 +1430,8 @@ public class LocaleController {
         return currentLocaleInfo;
     }
 
-    /** True after the user has saved a language. Unset while Tellomi is only following the phone. */
-    public boolean hasLanguageOverride() {
-        return languageOverride != null;
-    }
-
     public Locale getCurrentLocale() {
         return currentLocale;
-    }
-
-    /** Active language, or null while this controller is still constructing. */
-    public static LocaleInfo peekCurrentLocaleInfo() {
-        LocaleController controller = Instance;
-        return controller == null ? null : controller.currentLocaleInfo;
     }
 
     public static String getCurrentLanguageName() {
@@ -1530,15 +1444,8 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, String fallback, int res) {
-        String value = getStringV2(key, res, fallback);
-        if (value == null && TextUtils.isEmpty(key) && res != R.string.ErrorOccurred) {
-            value = getStringV2("ErrorOccurred", R.string.ErrorOccurred, "ErrorOccurred");
-        }
+        final String value = getStringV2(key, res, fallback);
         if (value == null) {
-            // A null key used to render as the literal "LOC_ERR:null" (getString(int) passes key=null).
-            if (TextUtils.isEmpty(key)) {
-                return "An error occurred.";
-            }
             return "LOC_ERR:" + key;
         }
         return value;
@@ -1549,7 +1456,7 @@ public class LocaleController {
         if (value == null) {
             value = getInstance().getLocalizedString(key);
         }
-        return TellomiBrand.rewrite(value);
+        return value;
     }
 
     public static String getString(@StringRes int res) {
@@ -1566,7 +1473,7 @@ public class LocaleController {
     @Deprecated
     public static String getString(String key) {
         if (TextUtils.isEmpty(key)) {
-            return getInstance().getStringInternal(null, R.string.ErrorOccurred);
+            return "LOC_ERR:" + key;
         }
         return getString(key, 0);
     }
@@ -1657,9 +1564,9 @@ public class LocaleController {
                 stringBuilder.insert(a, symbol);
             }
 
-            String value = cloudStringsEnabled() ? getInstance().localizationExternal.getByResName(param) : null;
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(param) : null;
             if (value == null) {
-                value = cloudStringsEnabled() ? getInstance().localizationExternal.getByResName(key + "_other") : null;
+                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(key + "_other") : null;
             }
             if (value == null) {
                 try {
@@ -1721,9 +1628,6 @@ public class LocaleController {
         try {
             final String value = getInstance().getStringV2(key, res, fallback);
             if (value == null) {
-                if (TextUtils.isEmpty(key)) {
-                    return getInstance().getStringInternal(null, R.string.ErrorOccurred);
-                }
                 return "LOC_ERR: " + key;
             }
 
@@ -1734,9 +1638,6 @@ public class LocaleController {
             }
         } catch (Exception e) {
             FileLog.e(e);
-            if (TextUtils.isEmpty(key)) {
-                return getInstance().getStringInternal(null, R.string.ErrorOccurred);
-            }
             return "LOC_ERR: " + key;
         }
     }
@@ -1753,9 +1654,6 @@ public class LocaleController {
         try {
             final String value = getInstance().getStringV2(key, res, fallback);
             if (value == null) {
-                if (TextUtils.isEmpty(key)) {
-                    return getInstance().getStringInternal(null, R.string.ErrorOccurred);
-                }
                 return "LOC_ERR: " + key;
             }
 
@@ -1789,9 +1687,6 @@ public class LocaleController {
             return builder;
         } catch (Exception e) {
             FileLog.e(e);
-            if (TextUtils.isEmpty(key)) {
-                return getInstance().getStringInternal(null, R.string.ErrorOccurred);
-            }
             return "LOC_ERR: " + key;
         }
     }
@@ -2146,18 +2041,11 @@ public class LocaleController {
             return;
         }
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
-        // The activity configuration can stay English after we install zh, and on
-        // API 24+ newConfig.locale is often null or that activity locale. Passing it
-        // here dropped zh-hans (useCloudStrings) back to the English bin, so the
-        // welcome screen and the rest of the UI stayed English on a Chinese phone.
-        // The device locale is what decides whether to keep the Chinese pack.
-        systemDefaultLocale = TellomiDefaults.deviceLocale();
+        systemDefaultLocale = newConfig.locale;
         if (languageOverride != null) {
             LocaleInfo toSet = currentLocaleInfo;
             currentLocaleInfo = null;
             applyLanguage(toSet, false, false, UserConfig.selectedAccount);
-        } else if (applyTellomiSystemLocale(systemDefaultLocale)) {
-            // zh-hans / zh-hant applied, or that pack was left because the system language changed.
         } else {
             Locale newLocale = newConfig.locale;
             if (newLocale != null) {
@@ -3212,11 +3100,7 @@ public class LocaleController {
                         changingConfiguration = true;
                         Locale.setDefault(currentLocale);
                         Configuration config = new Configuration();
-                        if (Build.VERSION.SDK_INT >= 24) {
-                            config.setLocales(new android.os.LocaleList(newLocale));
-                        }
-                        config.setLocale(newLocale);
-                        config.locale = newLocale;
+                        config.locale = currentLocale;
                         ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
                         changingConfiguration = false;
 
@@ -3239,10 +3123,6 @@ public class LocaleController {
         }
     }
 
-    /**
-     * langpack.getLanguages. {@link ConnectionsManager#RequestFlagWithoutLogin} is required:
-     * a signed-out client has no user id, and tgnet otherwise parks the request until login.
-     */
     public void loadRemoteLanguages(final int currentAccount) {
         loadRemoteLanguages(currentAccount, true);
     }
@@ -3281,9 +3161,6 @@ public class LocaleController {
                         localeInfo.serverIndex = a;
 
                         LocaleInfo existing = getLanguageFromDict(localeInfo.getKey());
-                        if (TellomiDefaults.bundledChinese(existing) || (existing != null && TellomiDefaults.completeLocalBin(existing.shortName) && !"remote".equals(existing.pathToFile) && !"unofficial".equals(existing.pathToFile))) {
-                            continue;
-                        }
                         if (existing == null) {
                             languages.add(localeInfo);
                             languagesDict.put(localeInfo.getKey(), localeInfo);
@@ -3303,10 +3180,6 @@ public class LocaleController {
                     }
                     for (int a = 0; a < remoteLanguages.size(); a++) {
                         LocaleInfo info = remoteLanguages.get(a);
-                        if (info.builtIn) {
-                            info.serverIndex = 0;
-                            continue;
-                        }
                         if (info.serverIndex != Integer.MAX_VALUE || info == currentLocaleInfo) {
                             continue;
                         }
@@ -3325,11 +3198,8 @@ public class LocaleController {
                         applyLanguage(currentLocaleInfo, true, false, currentAccount);
                     }
                 });
-            } else {
-                // A signed-out failure must not stick, or the login picker never retries the catalog.
-                AndroidUtilities.runOnUIThread(() -> loadingRemoteLanguages = false);
             }
-        }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+        }, ConnectionsManager.RequestFlagWithoutLogin);
     }
 
     private int applyRemoteLanguage(LocaleInfo localeInfo, String langCode, boolean force, final int currentAccount, Runnable onDone) {
@@ -3360,10 +3230,8 @@ public class LocaleController {
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                         if (response != null) {
                             AndroidUtilities.runOnUIThread(() -> saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone));
-                        } else {
-                            AndroidUtilities.runOnUIThread(onPartlyDone);
                         }
-                    }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                    }, ConnectionsManager.RequestFlagWithoutLogin);
                 }
             } else {
                 FileLog.d("applyRemoteLanguage getLangPack of base");
@@ -3375,10 +3243,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
-                    } else {
-                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                }, ConnectionsManager.RequestFlagWithoutLogin);
             }
         }
         if (langCode == null || langCode.equals(localeInfo.shortName)) {
@@ -3394,10 +3260,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
-                    } else {
-                        AndroidUtilities.runOnUIThread(onPartlyDone);
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                }, ConnectionsManager.RequestFlagWithoutLogin);
             } else {
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                     ConnectionsManager.setLangCode(localeInfo.getLangCode());
@@ -3411,18 +3275,8 @@ public class LocaleController {
                         AndroidUtilities.runOnUIThread(() -> {
                             saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
                         });
-                    } else {
-                        // TELLOMI: a failed getLangPack must still finish the apply.
-                        // Otherwise the settings spinner never closes and login never
-                        // redraws, so the switch looks like it did nothing.
-                        AndroidUtilities.runOnUIThread(() -> {
-                            onPartlyDone.run();
-                            if (received[0] >= requested[0] && currentLocaleInfo == localeInfo) {
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
-                            }
-                        });
                     }
-                }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                }, ConnectionsManager.RequestFlagWithoutLogin);
             }
         }
         return 0;
@@ -4586,146 +4440,30 @@ public class LocaleController {
         return localizationInternal.getByResName(key);
     }
 
-    private static final HashMap<Integer, String> tellomiResourceNames = new HashMap<>();
-
-    /** Resource entry name for a string id. Empty when the id is not a string resource. */
-    private static String tellomiResourceName(Context context, int stringRes) {
-        synchronized (tellomiResourceNames) {
-            String cached = tellomiResourceNames.get(stringRes);
-            if (cached != null) {
-                return cached.length() == 0 ? null : cached;
-            }
-        }
-        String name = "";
-        try {
-            name = context.getResources().getResourceEntryName(stringRes);
-        } catch (Throwable ignored) {
-        }
-        if (name == null) {
-            name = "";
-        }
-        synchronized (tellomiResourceNames) {
-            tellomiResourceNames.put(stringRes, name);
-        }
-        return name.length() == 0 ? null : name;
-    }
-
-    // TELLOMI: a downloaded langpack (remote or unofficial) is read for every language.
-    // Bundled zh-hans / zh-hant still prefer localization_zh.bin, with the Chinese overlay below.
-    private static boolean cloudStringsEnabled() {
-        if (BuildVars.USE_CLOUD_STRINGS) {
-            return true;
-        }
-        LocaleController controller = Instance;
-        LocaleInfo info = controller == null ? null : controller.currentLocaleInfo;
-        if (info != null && TellomiDefaults.readDownloadedPack(info.isRemote(), info.isUnofficial())) {
-            return true;
-        }
-        return TellomiDefaults.useCloudStrings(info);
-    }
-
-    /** @return a zh-hans / zh-hant locale for this system locale, or null. */
-    private LocaleInfo tellomiLocaleForSystem(Locale systemLocale) {
-        String langCode = TellomiDefaults.systemChineseLangCode(systemLocale);
-        if (langCode == null) {
-            return null;
-        }
-        String key = langCode.replace('-', '_');
-        LocaleInfo existing = getLanguageFromDict(key);
-        if (existing == null) {
-            existing = getLanguageFromDict(langCode);
-        }
-        return existing != null ? existing : TellomiDefaults.remoteChineseLocale(langCode);
-    }
-
-    /**
-     * @return true when Tellomi applied a language, so the caller should not also copy the system locale.
-     */
-    private boolean applyTellomiSystemLocale(Locale systemLocale) {
-        LocaleInfo chinese = tellomiLocaleForSystem(systemLocale);
-        if (chinese != null) {
-            if (currentLocaleInfo != null && TextUtils.equals(chinese.shortName, currentLocaleInfo.shortName)) {
-                // Already on zh-hans / zh-hant. Returning false let the caller copy the
-                // activity locale (often English) over currentLocale and the login screens
-                // dropped back to the English bin.
-                return true;
-            }
-            applyLanguage(chinese, false, false, UserConfig.selectedAccount);
-            return true;
-        }
-        if (currentLocaleInfo != null && TellomiDefaults.useCloudStrings(currentLocaleInfo)) {
-            LocaleInfo fallback = null;
-            if (systemLocale != null && systemLocale.getLanguage() != null) {
-                fallback = getLanguageFromDict(systemLocale.getLanguage());
-            }
-            if (fallback == null) {
-                fallback = getLanguageFromDict(getLocaleString(systemLocale));
-            }
-            if (fallback == null) {
-                fallback = getLanguageFromDict("en");
-            }
-            applyLanguage(fallback, false, false, UserConfig.selectedAccount);
-            return true;
-        }
-        return false;
-    }
-
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
-        // getString(int) passes a null key. Flavor login strings live in
-        // localization_zh.bin under their resource name. The APK locale filter
-        // drops values-zh, so a resource lookup cannot see that Chinese.
-        if ((key == null || key.length() == 0) && stringRes != 0 && context != null) {
-            key = tellomiResourceName(context, stringRes);
-        }
-        String value = null;
+        String value;
 
-        if (cloudStringsEnabled()) {
+        if (BuildVars.USE_CLOUD_STRINGS) {
             value = localizationExternal.getByResNameOrResId(context, key, stringRes);
-            if (value == null) {
-                value = localizationExternal.getByResName(fallback);
+            if (value != null) {
+                return value;
+            }
+
+            value = localizationExternal.getByResName(fallback);
+            if (value != null) {
+                return value;
             }
         }
 
-        if (value == null) {
-            checkLocalizationInternal();
-            value = localizationInternal.getByResNameOrResId(context, key, stringRes);
-            if (value == null) {
-                value = localizationInternal.getByResName(fallback);
-            }
+        checkLocalizationInternal();
+        value = localizationInternal.getByResNameOrResId(context, key, stringRes);
+        if (value != null) {
+            return value;
         }
-        // Flavor strings (tellomi/res) are real Android resources. They are not packed into
-        // localization_*.bin, and getString(int) passes a null key, so a bin miss used to
-        // become the literal "LOC_ERR:null".
-        if (value == null && stringRes != 0 && context != null) {
-            try {
-                value = context.getResources().getString(stringRes);
-            } catch (Throwable ignored) {
-            }
-        }
-        // Flavor values-zh is not in localization_*.bin. When the active language is
-        // Chinese, a bundled Chinese string that differs from English replaces the bin.
-        // This follows the app language, not the phone locale.
-        if (TellomiDefaults.traditionalUi()) {
-            if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
-                value = TellomiLanguageText.traditionalDisplay(
-                        value,
-                        TellomiDefaults.chineseResource(stringRes),
-                        TellomiDefaults.scriptResource(stringRes, true));
-            } else if (value != null) {
-                value = TellomiChineseScript.toTraditional(value);
-            }
-        } else if (stringRes != 0 && TellomiDefaults.uiIsChinese()) {
-            String zh = TellomiDefaults.chineseResource(stringRes);
-            String en = TellomiDefaults.englishResource(stringRes);
-            // The English localization bin wins over values-zh for every key it contains.
-            // A bundled Chinese string that differs from English replaces that hit.
-            if (zh != null && zh.length() > 0 && (en == null || !zh.equals(en))) {
-                value = zh;
-            }
-        }
-        return TellomiBrand.rewrite(value);
+
+        return localizationInternal.getByResName(fallback);
     }
 
 

@@ -43,7 +43,6 @@ import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.theme.ITheme;
-import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.ui.ChatBackgroundDrawable;
 
 import java.util.List;
@@ -466,9 +465,7 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         if (iTheme != null && iTheme.getThemeId() != 0) {
             int index = chatThemeItem.chatTheme.getSettingsIndex(chatThemeItem.themeIndex);
             TLRPC.ThemeSettings themeSettings = iTheme.getThemeSettings(index);
-            if (themeSettings != null) {
-                fillOutBubblePaint(themeDrawable.outBubblePaintSecond, themeSettings.message_colors);
-            }
+            fillOutBubblePaint(themeDrawable.outBubblePaintSecond, themeSettings.message_colors);
 
             themeDrawable.outBubblePaintSecond.setAlpha(255);
             getPreviewDrawable(iTheme, index);
@@ -493,21 +490,11 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         Drawable drawable;
         if (settingsIndex >= 0) {
             TLRPC.ThemeSettings themeSettings = theme.getThemeSettings(settingsIndex);
-            TLRPC.WallPaper wallpaper = themeSettings == null ? null : themeSettings.wallpaper;
-            TLRPC.WallPaperSettings wallPaperSettings = wallpaper == null ? null : wallpaper.settings;
-            TelegramThemeFlow.PreviewFill fill = TelegramThemeFlow.chatThemePreview(
-                    wallPaperSettings != null,
-                    wallPaperSettings == null ? 0 : wallPaperSettings.background_color,
-                    wallPaperSettings == null ? 0 : wallPaperSettings.second_background_color,
-                    wallPaperSettings == null ? 0 : wallPaperSettings.third_background_color,
-                    wallPaperSettings == null ? 0 : wallPaperSettings.fourth_background_color,
-                    wallPaperSettings == null ? 0 : wallPaperSettings.flags,
-                    themeSettings == null ? 0 : themeSettings.accent_color
-            );
-            color1 = fill.color1;
-            color2 = fill.color2;
-            color3 = fill.color3;
-            color4 = fill.color4;
+            TLRPC.WallPaperSettings wallPaperSettings = themeSettings.wallpaper.settings;
+            color1 = wallPaperSettings.background_color;
+            color2 = wallPaperSettings.second_background_color;
+            color3 = wallPaperSettings.third_background_color;
+            color4 = wallPaperSettings.fourth_background_color;
         }
         if (color2 != 0) {
             MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(color1, color2, color3, color4, true);

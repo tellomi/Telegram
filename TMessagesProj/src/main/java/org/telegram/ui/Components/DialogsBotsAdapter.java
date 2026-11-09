@@ -1,7 +1,5 @@
 package org.telegram.ui.Components;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -85,7 +83,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                         if (alert[0] != null) {
                             alert[0].dismiss();
                         }
-                        Browser.openUrl(context, BuildVars.LINK_BASE + "" + username);
+                        Browser.openUrl(context, "https://t.me/" + username);
                     }
                     @Override
                     public void updateDrawState(@NonNull TextPaint ds) {

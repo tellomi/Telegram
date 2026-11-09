@@ -1,22 +1,19 @@
 package org.telegram.ui.Components;
 
 public enum IconBackgroundColors {
-    // TELLOMI: neutral plates so a white glyph stays readable. Names stay put
-    // so upstream call sites do not move. Hardcoded hues still pass through
-    // TellomiIconColors.plate in SettingCell.Background.
-    BLUE(0xFF3A3A3E, 0xFF2A2A2E),
-    BLUE_ALT(0xFF454549, 0xFF323236),
-    BLUE_DEEP(0xFF2E2E32, 0xFF1C1C1F),
-    BLUE_LIGHT(0xFF525256, 0xFF3C3C40),
+    BLUE(0xFF1CA5ED, 0xFF1488E1),
+    BLUE_ALT(0xFF1CA5ED, 0xFF1387E1),
+    BLUE_DEEP(0xFF4F85F6, 0xFF3568E8),
+    BLUE_LIGHT(0xFF1BA4ED, 0xFF1488E1),
 
-    ORANGE(0xFF404044, 0xFF2C2C30),
-    ORANGE_DEEP(0xFF353538, 0xFF222226),
+    ORANGE(0xFFF09F1B, 0xFFE18A11),
+    ORANGE_DEEP(0xFFF28B31, 0xFFE26314),
 
-    GREEN(0xFF48484C, 0xFF343438),
-    RED(0xFF2A2A2E, 0xFF18181B),
-    CYAN(0xFF4E4E52, 0xFF38383C),
-    PURPLE(0xFF3E3E42, 0xFF2C2C30),
-    GRAY(0xFF6B6B70, 0xFF55555A);
+    GREEN(0xFF55CA47, 0xFF27B434),
+    RED(0xFFF45255, 0xFFDF3955),
+    CYAN(0xFF32C0CE, 0xFF1D9CC6),
+    PURPLE(0xFFC46EF4, 0xFF9F55DF),
+    GRAY(0xFF8699AA, 0xFF6E8397);
 
     public final int top;
     public final int bottom;

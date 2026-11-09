@@ -60,8 +60,6 @@ dependencies {
     implementation 'androidx.car.app:app-projected:1.4.0'
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
 
-    testImplementation 'junit:junit:4.13.2'
-
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
@@ -109,125 +107,62 @@ dependencies {
     implementation 'com.google.android.recaptcha:recaptcha:18.7.1'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 def tellomiJavaString = { String value ->
-    if (value == null) {
-        value = ""
-    }
-    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('\r', '').replace('\n', '\\n') + '"'
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
 }
-
 def tellomiProp = { String name, String fallback ->
     def value = project.findProperty(name)
-    if (value == null) {
-        return fallback
-    }
-    def text = value.toString().trim()
-    return text.isEmpty() ? fallback : text
+    return value != null ? value.toString() : fallback
 }
-
 def tellomiPublicKeyPem = {
     def override = project.findProperty("TELLOMI_SERVER_PUBLIC_KEY")
     if (override != null && override.toString().trim()) {
-        return override.toString().replace("\\n", "\n").replace('\r', '').trim()
+        return override.toString().replace('\\n', '\n')
     }
     def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
-    if (keyFile.exists()) {
-        return keyFile.getText("UTF-8").replace('\r', '').trim()
-    }
-    return ""
+    return keyFile.isFile() ? keyFile.getText("UTF-8") : ""
 }
-
-// Named server profiles. Debug defaults to "dev" and may opt into "local"
-// (10.0.2.2, the emulator alias for the host). Release and every other
-// non-debug build type embed production "dev" (8.137.39.82:10443). They fail
-// if the resolved selection is anything else, including -PTELLOMI_SERVER_PROFILE=local
-// or a TELLOMI_DC_ADDRESSES list that is not that production endpoint.
 def TELLOMI_PRODUCTION_HOST = '8.137.39.82'
 def TELLOMI_PRODUCTION_PORT = '10443'
 def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT}"
-
 def tellomiServerProfiles = [
     dev  : TELLOMI_PRODUCTION_ADDRESSES,
     local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
 ]
-
 def tellomiServerSelection = { String fallbackName ->
     def explicit = project.findProperty('TELLOMI_DC_ADDRESSES')
     if (explicit != null && explicit.toString().trim()) {
-        return [name: 'custom', addresses: explicit.toString().trim()]
+        return [name: 'explicit', addresses: explicit.toString().trim()]
     }
     def selected = project.findProperty('TELLOMI_SERVER_PROFILE')
-    def name = (selected != null && selected.toString().trim()) ? selected.toString().trim() : fallbackName
+    def name = selected != null && selected.toString().trim() ? selected.toString().trim() : fallbackName
     if (!tellomiServerProfiles.containsKey(name)) {
         throw new GradleException("Unknown TELLOMI_SERVER_PROFILE '${name}'. Use dev or local, or set TELLOMI_DC_ADDRESSES.")
     }
-    def addresses = tellomiServerProfiles[name]
-    def profileOverride = project.findProperty('TELLOMI_PROFILE_' + name.toUpperCase())
-    if (profileOverride != null && profileOverride.toString().trim()) {
-        addresses = profileOverride.toString().trim()
-    }
-    return [name: name, addresses: addresses]
+    return [name: name, addresses: tellomiServerProfiles[name]]
 }
-
-def tellomiSplitDcEntry = { String entry ->
-    def trimmed = entry == null ? '' : entry.trim()
-    def colon = trimmed.indexOf(':')
-    if (colon <= 0) {
-        return null
-    }
-    def dc = trimmed.substring(0, colon)
-    if (!(dc ==~ /\d+/)) {
-        return null
-    }
-    def rest = trimmed.substring(colon + 1)
-    String host
-    String port
-    if (rest.startsWith('[')) {
-        def end = rest.indexOf(']')
-        if (end < 0 || end + 2 > rest.length() || rest.substring(end + 1, end + 2) != ':') {
-            return null
-        }
-        host = rest.substring(0, end + 1)
-        port = rest.substring(end + 2)
-    } else {
-        def last = rest.lastIndexOf(':')
-        if (last <= 0) {
-            return null
-        }
-        host = rest.substring(0, last)
-        port = rest.substring(last + 1)
-    }
-    if (!(port ==~ /\d+/) || !host) {
-        return null
-    }
-    return [dc: dc, host: host, port: port]
-}
-
 def tellomiAddressesAreProduction = { String addresses ->
-    if (addresses == null || !addresses.trim()) {
+    if (addresses == null) {
         return false
     }
-    def pieces = addresses.split(',')
-    if (pieces.length == 0 || pieces.any { !it.trim() }) {
+    def parts = addresses.split(',')
+    if (parts.length < 1) {
         return false
     }
-    return pieces.every { raw ->
-        def parsed = tellomiSplitDcEntry(raw)
-        parsed != null && parsed.host == TELLOMI_PRODUCTION_HOST && parsed.port == TELLOMI_PRODUCTION_PORT
+    for (raw in parts) {
+        def bits = raw.trim().split(':')
+        if (bits.length < 3 || bits[1] != TELLOMI_PRODUCTION_HOST || bits[2] != TELLOMI_PRODUCTION_PORT) {
+            return false
+        }
     }
+    return true
 }
-
-// Profile name "local" is refused even if its address list was rewritten.
-// Every DC entry must be the production host and port.
 def tellomiShippableSelectionOk = { selection ->
     return selection != null && selection.name != 'local' && tellomiAddressesAreProduction(selection.addresses?.toString())
 }
-
-// Value written into non-debug BuildConfig. Never 10.0.2.2. An illegal
-// selection still resolves to the production literal so a missed task-graph
-// hook cannot package the emulator DC; that hook fails the build outright.
 def tellomiEmbeddedShippableServer = {
     def selection = tellomiServerSelection('dev')
     if (tellomiShippableSelectionOk(selection)) {
@@ -235,38 +170,26 @@ def tellomiEmbeddedShippableServer = {
     }
     return [name: 'dev', addresses: TELLOMI_PRODUCTION_ADDRESSES]
 }
-
 def tellomiShippableBuildConfigFields = { buildType ->
     def server = tellomiEmbeddedShippableServer()
     buildType.buildConfigField('String', 'TELLOMI_SERVER_PROFILE', tellomiJavaString(server.name))
     buildType.buildConfigField('String', 'TELLOMI_DC_ADDRESSES', tellomiJavaString(server.addresses))
 }
-
 def tellomiTaskShipsClient = { String name ->
     def lower = name.toLowerCase()
-    if (lower.contains('debug')) {
-        return false
-    }
-    def nonDebug = lower.contains('release') || lower.contains('standalone') || lower.contains('ha_private') || lower.contains('ha_public') || lower.contains('ha_hardcore')
-    if (!nonDebug) {
-        return name == 'assemble' || name == 'build' || name == 'bundle'
-    }
-    return lower.contains('buildconfig') || lower.contains('compile') || lower.contains('package') || lower.startsWith('assemble') || lower.startsWith('bundle') || lower.startsWith('install') || lower.contains('dex')
+    return lower.contains('release') || lower.contains('standalone') || lower.contains('ha_')
 }
-
 def tellomiRefuseNonProductionShip = { String where ->
     def selection = tellomiServerSelection('dev')
     if (tellomiShippableSelectionOk(selection)) {
         return
     }
-    def addresses = selection == null ? '' : selection.addresses
     def profile = selection == null ? '' : selection.name
+    def addresses = selection == null ? '' : selection.addresses
     throw new GradleException(
-        "Shippable Tellomi builds must embed production DC profile dev " +
-        "(${TELLOMI_PRODUCTION_ADDRESSES}). ${where} resolved " +
+        "A shippable build must embed ${TELLOMI_PRODUCTION_ADDRESSES}. ${where} resolved " +
         "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
-        "The emulator profile is only for debug, for example " +
-        "./gradlew :TMessagesProj_App:assembleAfatDebug -PTELLOMI_SERVER_PROFILE=local"
+        "Debug local docker is assembleAfatDebug -PTELLOMI_SERVER_PROFILE=local."
     )
 }
 
@@ -275,8 +198,6 @@ android {
     buildToolsVersion '36.0.0'
     ndkVersion "27.2.12479018"
 
-    // TELLOMI CI: -PTELLOMI_PREBUILT_JNI=<dir> packages <dir>/<abi>/libtmessages.49.so
-    // and skips CMake. Unset on a normal local build, so the CMake path is unchanged.
     if (!findProperty("TELLOMI_PREBUILT_JNI")) {
         externalNativeBuild {
             cmake {
@@ -306,23 +227,13 @@ android {
 
         multiDexEnabled true
 
-        // TELLOMI build config. Values come from gradle.properties. See docs/TELLOMI.md.
-        buildConfigField "String", "TELLOMI_APP_NAME", tellomiJavaString(tellomiProp("TELLOMI_APP_NAME", "Tellomi"))
-        buildConfigField "String", "TELLOMI_LINK_HOST", tellomiJavaString(tellomiProp("TELLOMI_LINK_HOST", "tell.cc"))
-        buildConfigField "String", "TELLOMI_LINK_SCHEME", tellomiJavaString(tellomiProp("TELLOMI_LINK_SCHEME", "tellomi"))
         buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
         buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
-        // Non-debug variants inherit this production DC. Debug replaces it below.
         tellomiShippableBuildConfigFields(delegate)
         buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
         buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "false")
         buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
-        buildConfigField "boolean", "TELLOMI_CHECK_UPDATES", tellomiProp("TELLOMI_CHECK_UPDATES", "true")
-        buildConfigField "boolean", "TELLOMI_BILLING_UNAVAILABLE", tellomiProp("TELLOMI_BILLING_UNAVAILABLE", "true")
-        buildConfigField "boolean", "TELLOMI_REBRAND_STRINGS", tellomiProp("TELLOMI_REBRAND_STRINGS", "true")
-        buildConfigField "String", "TELLOMI_DOWNLOAD_URL", tellomiJavaString(tellomiProp("TELLOMI_DOWNLOAD_URL", "https://tellomi.app"))
-        buildConfigField "String", "TELLOMI_ACCOUNT_TYPE", tellomiJavaString(tellomiProp("APP_PACKAGE", "app.tellomi.chat"))
         buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
 
         def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
@@ -360,10 +271,9 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "0"
-            // Debug APKs talk to the live dev Teamgram unless a profile is selected.
-            def tellomiDevServer = tellomiServerSelection('dev')
-            buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiDevServer.name)
-            buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiDevServer.addresses)
+            def tellomiDebugServer = tellomiServerSelection('dev')
+            buildConfigField "String", "TELLOMI_SERVER_PROFILE", tellomiJavaString(tellomiDebugServer.name)
+            buildConfigField "String", "TELLOMI_DC_ADDRESSES", tellomiJavaString(tellomiDebugServer.addresses)
         }
 
         HA_private {
@@ -377,7 +287,6 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "1"
-            tellomiShippableBuildConfigFields(delegate)
         }
 
         HA_public {
@@ -391,7 +300,6 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "4"
-            tellomiShippableBuildConfigFields(delegate)
         }
 
         HA_hardcore {
@@ -405,7 +313,6 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "5"
-            tellomiShippableBuildConfigFields(delegate)
         }
 
         standalone {
@@ -419,7 +326,6 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "6"
-            tellomiShippableBuildConfigFields(delegate)
         }
 
         release {
@@ -433,26 +339,9 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "7"
-            // Human-installable release APKs always embed 8.137.39.82:10443.
-            // Selecting local fails this variant instead of compiling it in.
-            tellomiShippableBuildConfigFields(delegate)
         }
     }
 
-    // TELLOMI: launcher and notification icons live in tellomi/res and override
-    // src/main for this flavor. src/main mipmaps stay the DrKLO bitmaps.
-    // TellomiDefaults.java lives in tellomi/java, compiled only into this flavor.
-    flavorDimensions "brand"
-    productFlavors {
-        tellomi {
-            dimension "brand"
-        }
-    }
-    sourceSets.tellomi {
-        res.srcDirs = ['tellomi/res']
-        java.srcDirs = ['tellomi/java']
-        assets.srcDirs = ['tellomi/assets']
-    }
     if (findProperty("TELLOMI_PREBUILT_JNI")) {
         sourceSets.main.jniLibs.srcDir findProperty("TELLOMI_PREBUILT_JNI").toString()
     }
@@ -495,9 +384,6 @@ task checkVisibility {
 
 preBuild.dependsOn checkVisibility
 
-// Fail closed: a release/standalone/HockeyApp task cannot run when the resolved
-// DC is local (10.0.2.2) or any host other than 8.137.39.82:10443. Debug tasks
-// are ignored, so assembleAfatDebug -PTELLOMI_SERVER_PROFILE=local still works.
 gradle.taskGraph.whenReady { graph ->
     def shipping = graph.allTasks.findAll { tellomiTaskShipsClient(it.name) }
     if (!shipping.isEmpty()) {
@@ -508,62 +394,11 @@ gradle.taskGraph.whenReady { graph ->
 
 task tellomiVerifyShippableDc {
     group = 'tellomi'
-    description = 'Print the DC that release BuildConfig embeds and fail if it is not production 8.137.39.82:10443.'
+    description = 'Fail unless a shippable build embeds 8.137.39.82:10443.'
     doLast {
-        def debugServer = tellomiServerSelection('dev')
         def shipServer = tellomiEmbeddedShippableServer()
-        println "debug BuildConfig TELLOMI_SERVER_PROFILE=${debugServer.name}"
-        println "debug BuildConfig TELLOMI_DC_ADDRESSES=${debugServer.addresses}"
         println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"
         println "release BuildConfig TELLOMI_DC_ADDRESSES=${shipServer.addresses}"
         tellomiRefuseNonProductionShip('tellomiVerifyShippableDc')
-    }
-}
-
-// Unit tests compile against android.jar. com.sun.net.httpserver is not in
-// that jar or in the Java 8 platform Tellomi compiles for, and
-// TellomiReleaseUpdateTest starts one. Put the JDK classes on the unit-test
-// compile classpath only. The test process uses the real jdk.httpserver module.
-def tellomiJdkHttpserverClasses = {
-    def home = System.getProperty("java.home")
-    def rt = [new File(home, "lib/rt.jar"), new File(home, "jre/lib/rt.jar")].find { it.isFile() }
-    if (rt != null) {
-        return rt
-    }
-    def jmod = new File(home, "jmods/jdk.httpserver.jmod")
-    if (!jmod.isFile()) {
-        return null
-    }
-    def dest = new File(buildDir, "tellomi-jdk-httpserver")
-    def classes = new File(dest, "classes")
-    def marker = new File(classes, "com/sun/net/httpserver/HttpServer.class")
-    if (!marker.isFile()) {
-        dest.mkdirs()
-        exec {
-            commandLine new File(home, "bin/jmod").absolutePath, "extract", "--dir", dest.absolutePath, jmod.absolutePath
-        }
-    }
-    return classes
-}
-
-def tellomiHttpserver = tellomiJdkHttpserverClasses()
-if (tellomiHttpserver != null) {
-    tasks.withType(JavaCompile).configureEach { task ->
-        if (task.name.contains("UnitTest")) {
-            task.doFirst {
-                task.classpath = task.classpath.plus(files(tellomiHttpserver))
-            }
-        }
-    }
-    tasks.withType(Test).configureEach { task ->
-        task.jvmArgs("--add-modules", "jdk.httpserver")
-    }
-}
-
-// TELLOMI: application modules do not declare the brand dimension. Select the
-// only library flavor so :TMessagesProj_App:assembleAfatDebug still resolves.
-rootProject.subprojects { sub ->
-    sub.plugins.withId('com.android.application') {
-        sub.android.defaultConfig.missingDimensionStrategy 'brand', 'tellomi'
     }
 }

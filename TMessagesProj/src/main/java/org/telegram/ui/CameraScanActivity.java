@@ -66,7 +66,6 @@ import com.google.zxing.common.GlobalHistogramBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -1385,7 +1384,7 @@ public class CameraScanActivity extends BaseFragment {
                 Uri uri = Uri.parse(text);
                 String path = uri.getPath().replace("/", "");
             } else {
-                if (currentType == TYPE_QR_LOGIN && !BuildVars.toTgUrl(text).startsWith("tg://login?token=")) {
+                if (currentType == TYPE_QR_LOGIN && !text.startsWith("tg://login?token=")) {
                     onNoQrFound();
                     return null;
                 }

@@ -224,12 +224,6 @@ public class PushListenerController {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d(tag + " " + loc_key);
                     }
-                    if (org.telegram.ui.tellomi.feed.TellomiDiscoverPush.present(currentAccount, loc_key, custom, json, time)) {
-                        ConnectionsManager.onInternalPushReceived(currentAccount);
-                        ConnectionsManager.getInstance(currentAccount).resumeNetworkMaybe();
-                        countDownLatch.countDown();
-                        return;
-                    }
                     switch (loc_key) {
                         case "MESSAGE_WALLET_TONCONNECT_REQUEST":
                         case "MESSAGE_WALLET_TONCONNECT_REQUEST_DAPP": {

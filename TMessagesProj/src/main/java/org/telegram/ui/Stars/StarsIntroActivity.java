@@ -1,7 +1,5 @@
 package org.telegram.ui.Stars;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
@@ -85,7 +83,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
@@ -198,9 +195,6 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
     @Override
     public boolean onFragmentCreate() {
-        if (!TellomiFeatures.starsEnabled(currentAccount)) {
-            return false;
-        }
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starOptionsLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starBalanceUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starTransactionsLoaded);
@@ -4987,7 +4981,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         }));
                     } else if (subscription.invoice_slug != null) {
                         maybeCloseAfterUpdate[0] = true;
-                        Browser.openUrl(context, Uri.parse(BuildVars.LINK_BASE + "$" + subscription.invoice_slug), true, false, false, new Browser.Progress() {
+                        Browser.openUrl(context, Uri.parse("https://t.me/$" + subscription.invoice_slug), true, false, false, new Browser.Progress() {
                             @Override
                             public void end() {
                                 button.setLoading(false);

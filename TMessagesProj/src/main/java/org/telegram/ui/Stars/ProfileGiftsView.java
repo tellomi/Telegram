@@ -1,7 +1,5 @@
 package org.telegram.ui.Stars;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -24,7 +22,6 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
@@ -260,7 +257,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     public int maxCount;
 
     public void update() {
-        if (!TellomiFeatures.giftsEnabled(currentAccount) || !MessagesController.getInstance(currentAccount).enableGiftsInProfile) {
+        if (!MessagesController.getInstance(currentAccount).enableGiftsInProfile) {
             return;
         }
 
@@ -510,6 +507,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     }
 
     public void onGiftClick(Gift gift) {
-        Browser.openUrl(getContext(), BuildVars.LINK_BASE + "nft/" + gift.slug);
+        Browser.openUrl(getContext(), "https://t.me/nft/" + gift.slug);
     }
 }

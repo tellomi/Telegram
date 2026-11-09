@@ -34,6 +34,9 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Looper;
 import android.os.Parcelable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -43,7 +46,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -60,7 +62,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.Intro;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.TellomiDefaults;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -71,6 +72,7 @@ import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -100,21 +102,17 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private ViewPager viewPager;
     private BottomPagesView bottomPages;
     private TextView switchLanguageTextView;
-    private ImageView tellomiIntroLanguage;
-    private org.telegram.ui.Components.RLottieImageView tellomiIntroTheme;
     private GradientDrawable startMessagingButtonBackground;
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
     private FrameLayout frameContainerView;
-    private TellomiIntroArt introArt;
 
     private RLottieDrawable darkThemeDrawable;
 
     private int lastPage = 0;
-    /** True after the user leaves the first welcome page. A redraw keeps that page. */
-    private boolean tellomiIntroPageChosen;
     private boolean justCreated = false;
     private boolean startPressed = false;
+    private Drawable logoDrawable;
     private CharSequence[] titles;
     private String[] messages;
     private int currentViewPagerPage;
@@ -133,124 +131,45 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public boolean onFragmentCreate() {
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
-        tellomiFillIntroCopy();
-        return true;
-    }
 
-    /** Page copy for the current app language. Chinese uses the bundled Tellomi lines. */
-    private void tellomiFillIntroCopy() {
         titles = new CharSequence[]{
-                introString(R.string.TellomiIntroPage1Title, R.string.Page1Title),
-                introString(R.string.TellomiIntroPage2Title, R.string.Page2Title),
-                introString(R.string.TellomiIntroPage3Title, R.string.Page3Title),
-                introString(R.string.TellomiIntroPage4Title, R.string.Page4Title),
-                introString(R.string.TellomiIntroPage5Title, R.string.Page5Title),
-                introString(R.string.TellomiIntroPage6Title, R.string.Page6Title)
+                null,
+                LocaleController.getString(R.string.Page2Title),
+                LocaleController.getString(R.string.Page3Title),
+                LocaleController.getString(R.string.Page5Title),
+                LocaleController.getString(R.string.Page4Title),
+                LocaleController.getString(R.string.Page6Title)
         };
         messages = new String[]{
-                introString(R.string.TellomiIntroPage1Message, R.string.Page1Message),
-                introString(R.string.TellomiIntroPage2Message, R.string.Page2Message),
-                introString(R.string.TellomiIntroPage3Message, R.string.Page3Message),
-                introString(R.string.TellomiIntroPage4Message, R.string.Page4Message),
-                introString(R.string.TellomiIntroPage5Message, R.string.Page5Message),
-                introString(R.string.TellomiIntroPage6Message, R.string.Page6Message)
+                LocaleController.getString(R.string.Page1Message),
+                LocaleController.getString(R.string.Page2Message),
+                LocaleController.getString(R.string.Page3Message),
+                LocaleController.getString(R.string.Page5Message),
+                LocaleController.getString(R.string.Page4Message),
+                LocaleController.getString(R.string.Page6Message)
         };
-    }
-
-    private static void placeIntroChrome(View view, int top, int size, int right) {
-        if (view == null) {
-            return;
-        }
-        ViewGroup.LayoutParams raw = view.getLayoutParams();
-        if (!(raw instanceof ViewGroup.MarginLayoutParams)) {
-            return;
-        }
-        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) raw;
-        if (lp.topMargin == top && lp.width == size && lp.height == size && lp.rightMargin == right) {
-            return;
-        }
-        lp.topMargin = top;
-        lp.width = size;
-        lp.height = size;
-        lp.rightMargin = right;
-        view.requestLayout();
-    }
-
-    /**
-     * The carousel is built once. A later language pick has to rewrite the pages
-     * that are already on screen, including the start button.
-     */
-    private void tellomiReloadIntroCopy() {
-        if (titles == null) {
-            return;
-        }
-        tellomiFillIntroCopy();
-        if (startMessagingButton != null) {
-            startMessagingButton.setText(introString(R.string.TellomiIntroStart, R.string.StartMessaging));
-        }
-        if (viewPager == null) {
-            return;
-        }
-        for (int i = 0; i < viewPager.getChildCount(); i++) {
-            View ch = viewPager.getChildAt(i);
-            Object tag = ch.getTag();
-            if (!(tag instanceof Integer)) {
-                continue;
-            }
-            int position = (Integer) tag;
-            if (position < 0 || position >= titles.length) {
-                continue;
-            }
-            TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
-            TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
-            if (headerTextView != null) {
-                headerTextView.setText(titles[position]);
-            }
-            if (messageTextView != null) {
-                messageTextView.setText(AndroidUtilities.replaceTags(messages[position]));
-            }
-        }
-    }
-
-    /**
-     * Chinese UI reads the Tellomi intro lines from localization_zh.bin.
-     * Other languages stay on the stock key in their own bin.
-     */
-    private static String introString(int chineseRes, int stockRes) {
-        if (TellomiDefaults.uiIsChinese()) {
-            // Flavor values-zh is not in the APK (localeFilters keeps only "zz").
-            // The Chinese sentence is in localization_zh.bin. The page-1 title is the
-            // brand name, which has no Han characters.
-            String zh = LocaleController.getString(chineseRes);
-            if (zh != null && zh.length() > 0 && !zh.startsWith("LOC_ERR") && (hasCjk(zh) || "Tellomi".equals(zh))) {
-                return zh;
-            }
-            return LocaleController.getString(stockRes);
-        }
-        return LocaleController.getString(stockRes);
-    }
-
-    private static boolean hasCjk(String value) {
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c >= 0x4E00 && c <= 0x9FFF) {
-                return true;
-            }
-        }
-        return false;
+        return true;
     }
 
     @Override
     public View createView(Context context) {
+        logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo).mutate();
+        logoDrawable.setBounds(0, dp(8.666f), dp(115), dp(35));
+        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString(R.string.Page1Title));
+        ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        titles[0] = ssb;
+
+
         actionBar.setAddToContainer(false);
 
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
 
-        tellomiIntroTheme = TellomiDayNight.create(context);
-        RLottieImageView themeIconView = tellomiIntroTheme;
-        darkThemeDrawable = themeIconView.getAnimatedDrawable();
+        RLottieImageView themeIconView = new RLottieImageView(context);
+        FrameLayout themeFrameLayout = new FrameLayout(context);
+        themeFrameLayout.addView(themeIconView, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
 
+        int themeMargin = 4;
         frameContainerView = new FrameLayout(context) {
 
             @Override
@@ -274,24 +193,104 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 x = (getMeasuredWidth() - switchLanguageTextView.getMeasuredWidth()) / 2;
                 switchLanguageTextView.layout(x, y - switchLanguageTextView.getMeasuredHeight(), x + switchLanguageTextView.getMeasuredWidth(), y);
 
-                int status = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
-                float fontScale = getResources().getConfiguration().fontScale;
-                TellomiAuthChromeLayout slots = TellomiAuthChromeLayout.place(getMeasuredWidth(), AndroidUtilities.density, fontScale, status, false);
-                placeIntroChrome(themeIconView, slots.top, slots.size, slots.themeRightMargin(getMeasuredWidth()));
-                if (tellomiIntroLanguage != null) {
-                    placeIntroChrome(tellomiIntroLanguage, slots.top, slots.size, slots.languageRightMargin(getMeasuredWidth()));
+                MarginLayoutParams marginLayoutParams = (MarginLayoutParams) themeFrameLayout.getLayoutParams();
+                int newTopMargin = dp(themeMargin) + (AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight);
+                if (marginLayoutParams.topMargin != newTopMargin) {
+                    marginLayoutParams.topMargin = newTopMargin;
+                    themeFrameLayout.requestLayout();
                 }
             }
         };
         scrollView.addView(frameContainerView, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
+        darkThemeDrawable = new RLottieDrawable(R.raw.sun, dp(28), dp(28), true, null);
+        darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
+        darkThemeDrawable.beginApplyLayerColors();
+        darkThemeDrawable.commitApplyLayerColors();
+
+        darkThemeDrawable.setCustomEndFrame(Theme.getCurrentTheme().isDark() ? darkThemeDrawable.getFramesCount() - 1 : 0);
+        darkThemeDrawable.setCurrentFrame(Theme.getCurrentTheme().isDark() ? darkThemeDrawable.getFramesCount() - 1 : 0, false);
+        themeIconView.setContentDescription(LocaleController.getString(Theme.getCurrentTheme().isDark() ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
+
+        themeIconView.setAnimation(darkThemeDrawable);
+        themeFrameLayout.setOnClickListener(v -> {
+            if (DialogsActivity.switchingTheme) return;
+            DialogsActivity.switchingTheme = true;
+
+            // TODO: Generify this part, currently it's a clone of another theme switch toggle
+            String dayThemeName = "Blue";
+            String nightThemeName = "Night";
+
+            Theme.ThemeInfo themeInfo;
+            boolean toDark;
+            if (toDark = !Theme.isCurrentThemeDark()) {
+                themeInfo = Theme.getTheme(nightThemeName);
+            } else {
+                themeInfo = Theme.getTheme(dayThemeName);
+            }
+
+            Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
+            Theme.saveAutoNightThemeConfig();
+            Theme.cancelAutoNightThemeCallbacks();
+
+            darkThemeDrawable.setCustomEndFrame(toDark ? darkThemeDrawable.getFramesCount() - 1 : 0);
+            themeIconView.playAnimation();
+
+            int[] pos = new int[2];
+            themeIconView.getLocationInWindow(pos);
+            pos[0] += themeIconView.getMeasuredWidth() / 2;
+            pos[1] += themeIconView.getMeasuredHeight() / 2;
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, themeIconView);
+            themeIconView.setContentDescription(LocaleController.getString(toDark ? R.string.AccDescrSwitchToDayTheme : R.string.AccDescrSwitchToNightTheme));
+        });
+
         frameLayout2 = new FrameLayout(context);
         frameContainerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
 
-        // The pager still owns the slide. The illustration follows that same offset
-        // instead of the OpenGL paper plane.
-        introArt = new TellomiIntroArt(context);
-        frameLayout2.addView(introArt, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
+        TextureView textureView = new TextureView(context);
+        frameLayout2.addView(textureView, LayoutHelper.createFrame(ICON_WIDTH_DP, ICON_HEIGHT_DP, Gravity.CENTER));
+        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
+                if (eglThread == null && surface != null) {
+                    eglThread = new EGLThread(surface);
+                    eglThread.setSurfaceTextureSize(width, height);
+                    eglThread.postRunnable(()->{
+                        float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
+                        Intro.setPage(currentViewPagerPage);
+                        Intro.setDate(time);
+                        Intro.onDrawFrame(0);
+                        if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
+                            try {
+                                eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
+                            } catch (Exception ignored) {} // If display or surface already destroyed
+                        }
+                    });
+                    eglThread.postRunnable(eglThread.drawRunnable);
+                }
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, final int width, final int height) {
+                if (eglThread != null) {
+                    eglThread.setSurfaceTextureSize(width, height);
+                }
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+                if (eglThread != null) {
+                    eglThread.shutdown();
+                    eglThread = null;
+                }
+                return true;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+
+            }
+        });
 
         viewPager = new ViewPager(context);
         viewPager.setAdapter(new IntroAdapter());
@@ -309,9 +308,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
                 float offset = (position * width + positionOffsetPixels - currentViewPagerPage * width) / width;
                 Intro.setScrollOffset(offset);
-                if (introArt != null) {
-                    introArt.setPage(position, positionOffset);
-                }
             }
 
             @Override
@@ -331,7 +327,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                     }
                     if (lastPage != viewPager.getCurrentItem()) {
                         lastPage = viewPager.getCurrentItem();
-                        tellomiIntroPageChosen = true;
                     }
                 }
             }
@@ -377,12 +372,12 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
         };
         ScaleStateListAnimator.apply(startMessagingButton, .02f, 1.2f);
-        startMessagingButton.setText(introString(R.string.TellomiIntroStart, R.string.StartMessaging));
+        startMessagingButton.setText(LocaleController.getString(R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTypeface(AndroidUtilities.bold());
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         startMessagingButton.setPadding(dp(34), 0, dp(34), 0);
-        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 32));
+        frameContainerView.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 76));
         startMessagingButton.setOnClickListener(view -> {
             if (startPressed) {
                 return;
@@ -399,8 +394,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         switchLanguageTextView = new TextView(context);
         switchLanguageTextView.setGravity(Gravity.CENTER);
         switchLanguageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        // The welcome screen keeps a single start button. "Continue in English" is not offered.
-        switchLanguageTextView.setVisibility(View.GONE);
         frameContainerView.addView(switchLanguageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
         switchLanguageTextView.setOnClickListener(v -> {
             if (startPressed || localeInfo == null) {
@@ -429,24 +422,11 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
         });
 
-        tellomiIntroLanguage = new ImageView(context);
-        tellomiIntroLanguage.setImageResource(R.drawable.msg2_language);
-        tellomiIntroLanguage.setScaleType(ImageView.ScaleType.CENTER);
-        tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(TellomiLoginChrome.text(), PorterDuff.Mode.SRC_IN));
-        tellomiIntroLanguage.setContentDescription(LocaleController.getString(R.string.Language));
-        tellomiIntroLanguage.setOnClickListener(v -> {
-            if (startPressed) {
-                return;
-            }
-            presentFragment(new TellomiLanguageSelectActivity(info -> LocaleController.getInstance().applyLanguage(info, true, false, false, true, currentAccount, () -> AndroidUtilities.runOnUIThread(this::tellomiReloadIntroCopy))));
-        });
-        frameContainerView.addView(tellomiIntroLanguage, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 56, 0));
-        frameContainerView.addView(themeIconView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 4, 4, 0));
+        frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
 
         fragmentView = scrollView;
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.configLoaded);
         ConnectionsManager.getInstance(currentAccount).updateDcSettings();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
@@ -462,13 +442,14 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
-        if (leaveIntroIfAlreadySignedIn()) {
-            return;
-        }
         if (justCreated) {
-            int page = TellomiAuthChromeLayout.welcomePage(tellomiIntroPageChosen, lastPage, LocaleController.isRTL, 6);
-            viewPager.setCurrentItem(page);
-            lastPage = page;
+            if (LocaleController.isRTL) {
+                viewPager.setCurrentItem(6);
+                lastPage = 6;
+            } else {
+                viewPager.setCurrentItem(0);
+                lastPage = 0;
+            }
             justCreated = false;
         }
         AndroidUtilities.lockOrientation(getParentActivity(), ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -490,24 +471,71 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         super.onFragmentDestroy();
         destroyed = true;
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.configLoaded);
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", 0).apply();
     }
 
     private void checkContinueText() {
-        // The welcome screen keeps one button. "Continue in English" is not shown.
-        if (switchLanguageTextView != null) {
-            switchLanguageTextView.setVisibility(View.GONE);
+        LocaleController.LocaleInfo englishInfo = null;
+        LocaleController.LocaleInfo systemInfo = null;
+        LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
+        if (systemLang == null || systemLang.equals("en") && LocaleController.getInstance().getSystemDefaultLocale().getLanguage() != null && !LocaleController.getInstance().getSystemDefaultLocale().getLanguage().equals("en")) {
+            systemLang = LocaleController.getInstance().getSystemDefaultLocale().getLanguage();
+            if (systemLang == null) {
+                systemLang = "en";
+            }
         }
+
+        String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
+        String alias = LocaleController.getLocaleAlias(arg);
+        for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
+            LocaleController.LocaleInfo info = LocaleController.getInstance().languages.get(a);
+            if (info.shortName.equals("en")) {
+                englishInfo = info;
+            }
+            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || info.shortName.equals(alias)) {
+                systemInfo = info;
+            }
+            if (englishInfo != null && systemInfo != null) {
+                break;
+            }
+        }
+        if (englishInfo == null || systemInfo == null || englishInfo == systemInfo) {
+            return;
+        }
+        TLRPC.TL_langpack_getStrings req = new TLRPC.TL_langpack_getStrings();
+        if (systemInfo != currentLocaleInfo) {
+            req.lang_code = systemInfo.getLangCode();
+            localeInfo = systemInfo;
+        } else {
+            req.lang_code = englishInfo.getLangCode();
+            localeInfo = englishInfo;
+        }
+        req.keys.add("ContinueOnThisLanguage");
+        String finalSystemLang = systemLang;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (response instanceof Vector) {
+                Vector vector = (Vector) response;
+                if (vector.objects.isEmpty()) {
+                    return;
+                }
+                final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
+                if (string instanceof TLRPC.TL_langPackString) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!destroyed) {
+                            switchLanguageTextView.setText(string.value);
+                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
+                        }
+                    });
+                }
+            }
+        }, ConnectionsManager.RequestFlagWithoutLogin);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.reloadInterface) {
-            tellomiReloadIntroCopy();
-            return;
-        }
         if (id == NotificationCenter.suggestedLangpack || id == NotificationCenter.configLoaded) {
             checkContinueText();
         }
@@ -516,35 +544,6 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     public IntroActivity setOnLogout() {
         isOnLogout = true;
         return this;
-    }
-
-    /**
-     * Add Account used to land here when the first login left this welcome screen
-     * under the main UI. There is no back button, so the user was stuck.
-     * If any account is already signed in, leave for that account.
-     */
-    private boolean leaveIntroIfAlreadySignedIn() {
-        if (UserConfig.getActivatedAccountsCount() <= 0 || !(getParentActivity() instanceof LaunchActivity)) {
-            return false;
-        }
-        LaunchActivity activity = (LaunchActivity) getParentActivity();
-        AndroidUtilities.runOnUIThread(() -> {
-            if (getParentActivity() instanceof LaunchActivity) {
-                ((LaunchActivity) getParentActivity()).showMainTabsReplacingStack(false);
-            }
-        });
-        return activity != null;
-    }
-
-    @Override
-    public boolean onBackPressed(boolean invoked) {
-        if (UserConfig.getActivatedAccountsCount() > 0) {
-            if (invoked && getParentActivity() instanceof LaunchActivity) {
-                ((LaunchActivity) getParentActivity()).showMainTabsReplacingStack(false);
-            }
-            return false;
-        }
-        return super.onBackPressed(invoked);
     }
 
     @Override
@@ -588,20 +587,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
 
-            headerTextView.setTextColor(TellomiLoginChrome.text());
+            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));
 
-            messageTextView.setTextColor(TellomiLoginChrome.text());
+            messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setLineSpacing(dpf2(2.33f), 1f);
             messageTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 16, 286, 16, 0));
 
             container.addView(frameLayout, 0);
-            frameLayout.setTag(position);
 
             headerTextView.setText(titles[position]);
             messageTextView.setText(AndroidUtilities.replaceTags(messages[position]));
@@ -792,18 +790,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_powerful_star, 18);
             loadTexture(R.drawable.intro_private_door, 19);
             loadTexture(R.drawable.intro_private_screw, 20);
-            loadTexture(v -> {
-                int size = dp(ICON_HEIGHT_DP);
-                Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-                Canvas c = new Canvas(bm);
-                Drawable mark = getParentActivity().getResources().getDrawable(R.drawable.tellomi_launcher_foreground).mutate();
-                mark.setBounds(0, 0, size, size);
-                mark.draw(c);
-                return bm;
-            }, 21);
+            loadTexture(R.drawable.intro_tg_plane, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                paint.setColor(0xFF17171A);
+                paint.setColor(ThemeColors.TELEGRAM_COLOR); // It's logo color, it should not be colored by the theme
                 int size = dp(ICON_HEIGHT_DP);
                 Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(bm);
@@ -971,33 +961,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors(boolean fromTheme) {
-        int page = TellomiLoginChrome.pageFill();
-        int ink = TellomiLoginChrome.text();
-        int pressed = ColorUtils.blendARGB(ink, page, 0.16f);
-        startMessagingButtonBackground.setColors(new int[]{ink, ink});
-        fragmentView.setBackgroundColor(page);
-        switchLanguageTextView.setTextColor(ink);
-        if (tellomiIntroLanguage != null) {
-            tellomiIntroLanguage.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
-        }
-        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(ink, PorterDuff.Mode.SRC_IN));
-        if (tellomiIntroTheme != null) {
-            boolean dark = Theme.isCurrentThemeDark();
-            tellomiIntroTheme.setContentDescription(TellomiDayNight.description(dark));
-            RLottieDrawable drawable = tellomiIntroTheme.getAnimatedDrawable();
-            if (drawable != null) {
-                int frame = dark ? drawable.getFramesCount() - 1 : 0;
-                drawable.setCustomEndFrame(frame);
-                if (!drawable.isRunning()) {
-                    drawable.setCurrentFrame(frame, false);
-                }
-            }
-        }
-        startMessagingButton.setTextColor(page);
-        if (introArt != null) {
-            introArt.setTint(ink);
-        }
-        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, pressed));
+        startMessagingButtonBackground.setColors(new int[]{getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButton2)});
+        logoDrawable.setColorFilter(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultTitle), 0.9f), PorterDuff.Mode.MULTIPLY);
+        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        startMessagingButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
         if (fromTheme) {
             if (eglThread != null) {
@@ -1014,9 +984,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < viewPager.getChildCount(); i++) {
                 View ch = viewPager.getChildAt(i);
                 TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
-                headerTextView.setTextColor(ink);
+                headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
-                messageTextView.setTextColor(ink);
+                messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             }
         } else Intro.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
     }

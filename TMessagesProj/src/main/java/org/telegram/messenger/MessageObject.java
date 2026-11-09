@@ -729,9 +729,6 @@ public class MessageObject {
     }
 
     public void markReactionsAsRead() {
-        if (org.telegram.ui.TellomiQuietOpen.blockRead(currentAccount, getDialogId())) {
-            return;
-        }
         if (messageOwner.reactions == null || messageOwner.reactions.recent_reactions == null) {
             return;
         }
@@ -3100,7 +3097,7 @@ public class MessageObject {
             }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest) {
             TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest action = (TLRPC.TL_channelAdminLogEventActionParticipantJoinByRequest) event.action;
-            if (action.invite instanceof TLRPC.TL_chatInviteExported && (BuildVars.LINK_BASE + "+PublicChat").equals(((TLRPC.TL_chatInviteExported) action.invite).link) ||
+            if (action.invite instanceof TLRPC.TL_chatInviteExported && "https://t.me/+PublicChat".equals(((TLRPC.TL_chatInviteExported) action.invite).link) ||
                     action.invite instanceof TLRPC.TL_chatInvitePublicJoinRequests) {
                 messageText = replaceWithLink(getString(R.string.JoinedViaRequestApproved), "un1", fromUser);
                 messageText = replaceWithLink(messageText, "un2", MessagesController.getInstance(currentAccount).getUser(action.approved_by));
@@ -3673,8 +3670,6 @@ public class MessageObject {
     }
 
     public boolean translated = false;
-    /** This bubble is showing Chinese from the side control, not from whole-chat translation. */
-    public boolean sideTranslateOpen = false;
     public boolean summarized = false;
     public boolean updateTranslation(boolean force) {
         boolean replyUpdated = replyMessageObject != null && replyMessageObject != this && replyMessageObject.updateTranslation(force);
@@ -3734,15 +3729,6 @@ public class MessageObject {
                 generateCaption();
             }
             return replyUpdated || true;
-        } else if (sideTranslateOpen && translatedText != null && !TextUtils.isEmpty(translatedText.text)) {
-            summarized = false;
-            if (!translated) {
-                translated = true;
-                applyNewText(translatedText.text);
-                generateCaption();
-                return replyUpdated || true;
-            }
-            return replyUpdated || false;
         } else if (messageOwner != null && (force || translated || summarized)) {
             translated = false;
             summarized = false;

@@ -67,8 +67,4 @@ public class SlideView extends LinearLayout {
     public void onResume() {
 
     }
-
-    /** Tellomi login pages draw their own black CTA. The floating arrow stays hidden. */
-    public void onTellomiProgress(boolean show) {
-    }
 }

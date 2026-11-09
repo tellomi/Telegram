@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import org.telegram.messenger.BuildVars;
-
 import android.animation.ValueAnimator;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -573,13 +571,13 @@ public class ProxySettingsActivity extends BaseFragment {
                     params.append("port=").append(URLEncoder.encode(port, "UTF-8"));
                 }
                 if (currentType == ProxySettings.Type.MTPROTO) {
-                    url = BuildVars.LINK_BASE + "proxy?";
+                    url = "https://t.me/proxy?";
                     if (params.length() != 0) {
                         params.append("&");
                     }
                     params.append("secret=").append(URLEncoder.encode(secret, "UTF-8"));
                 } else {
-                    url = BuildVars.LINK_BASE + "socks?";
+                    url = "https://t.me/socks?";
                     if (!TextUtils.isEmpty(user)) {
                         if (params.length() != 0) {
                             params.append("&");

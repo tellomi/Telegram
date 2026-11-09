@@ -283,7 +283,7 @@ public class NotificationsController extends BaseController implements Notificat
             preferences.edit().putString("OtherKey", OTHER_NOTIFICATIONS_CHANNEL).commit();
         }
         if (notificationChannel == null) {
-            notificationChannel = new NotificationChannel(OTHER_NOTIFICATIONS_CHANNEL, LocaleController.getString(R.string.NotificationsInternal), NotificationManager.IMPORTANCE_DEFAULT);
+            notificationChannel = new NotificationChannel(OTHER_NOTIFICATIONS_CHANNEL, "Internal notifications", NotificationManager.IMPORTANCE_DEFAULT);
             notificationChannel.enableLights(false);
             notificationChannel.enableVibration(false);
             notificationChannel.setSound(null, null);
@@ -2542,12 +2542,6 @@ public class NotificationsController extends BaseController implements Notificat
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {
         if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
-            return LocaleController.getString(R.string.YouHaveNewMessage);
-        }
-        if (messageObject != null && org.telegram.ui.TellomiChatLockStore.locked(currentAccount, messageObject.getDialogId())) {
-            if (preview != null) {
-                preview[0] = false;
-            }
             return LocaleController.getString(R.string.YouHaveNewMessage);
         }
         if (messageObject.isStoryPush || messageObject.isStoryMentionPush) {

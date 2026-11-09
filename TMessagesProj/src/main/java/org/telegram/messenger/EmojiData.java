@@ -554,8 +554,5 @@ public class EmojiData {
                 dataColored[a] = data[a];
             }
         }
-        // TELLOMI: picker/search/recent/reactions share EmojiBlocklist.
-        // `data` is left complete so sprite indexes and sent messages still draw.
-        EmojiBlocklist.installPickerSections(dataColored);
     }
 }
