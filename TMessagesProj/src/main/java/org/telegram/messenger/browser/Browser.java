@@ -296,6 +296,9 @@ public class Browser {
         if (context == null || uri == null) {
             return;
         }
+        if (org.telegram.ui.Feed.FeedLinks.open(uri)) {
+            return;
+        }
         final int currentAccount = UserConfig.selectedAccount;
         boolean[] forceBrowser = new boolean[]{false};
         boolean internalUri = isInternalUri(uri, forceBrowser);

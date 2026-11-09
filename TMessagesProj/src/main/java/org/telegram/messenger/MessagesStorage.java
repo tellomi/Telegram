@@ -849,6 +849,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void cleanup(boolean isLogin) {
+        org.telegram.messenger.feed.FeedController.wipe(currentAccount);
         storageQueue.postRunnable(() -> {
             cleanupInternal(true);
             openDatabase(1);
@@ -1414,6 +1415,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void clearLocalDatabase() {
+        org.telegram.messenger.feed.FeedController.wipe(currentAccount);
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             SQLitePreparedStatement state5 = null;
@@ -2248,6 +2250,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void fullReset() {
+        org.telegram.messenger.feed.FeedController.wipe(currentAccount);
         storageQueue.postRunnable(() -> {
             cleanupInternal(true);
             clearLoadingDialogsOffsets();

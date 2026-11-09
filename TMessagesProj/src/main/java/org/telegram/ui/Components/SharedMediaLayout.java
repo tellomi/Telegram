@@ -192,6 +192,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     public static final int TAB_BOT_PREVIEWS = 13;
     public static final int TAB_GIFTS = 14;
     public static final int TAB_POLL = 15;
+    public static final int TAB_MOMENTS = 16;
     private static final int TAB_STORIES_ALBUM_PREFIX = 0x00010000;
     private static final int TAB_STORIES_ALBUM_MASK = 0x0000FFFF;
 
@@ -665,6 +666,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private SavedDialogsAdapter savedDialogsAdapter;
     private SavedMessagesSearchAdapter savedMessagesSearchAdapter;
     private ChatActivityContainer savedMessagesContainer;
+    private org.telegram.ui.Feed.FeedProfilePage momentsPage;
     private BotPreviewsEditContainer botPreviewsContainer;
     public ProfileGiftsContainer giftsContainer;
     public ProfileStoriesCollectionTabs storiesContainer;
@@ -7077,6 +7079,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     tabs.add(0, tab);
                 }
             }
+            if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
+                tabs.add(0, new Pair<>(TAB_MOMENTS, getString(R.string.FeedProfileTab)));
+            }
             if (!tabs.isEmpty()) {
                 firstTab = tabs.get(0).first;
             }
@@ -7258,6 +7263,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (mediaPages[a].selectedType == TAB_STORIES || isStoryAlbumPageType(mediaPages[a].selectedType)) {
                 layoutParams.topMargin = dp(mediaPageTopMargin());
             }
+            mediaPages[a].listView.setVisibility(mediaPages[a].selectedType == TAB_MOMENTS ? View.GONE : View.VISIBLE);
             mediaPages[a].listView.setPadding(
                 mediaPages[a].listView.getPaddingLeft(),
                 (mediaPages[a].listView.hintPaddingTop = getPagePaddingTop(mediaPages[a].selectedType)),
@@ -7362,6 +7368,21 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     savedDialogsAdapter.itemTouchHelper.attachToRecyclerView(savedDialogsAdapter.attachedToRecyclerView = mediaPages[a].listView);
                 }
                 viewPool = savedDialogsAdapter.viewPool;
+            } else if (mediaPages[a].selectedType == TAB_MOMENTS) {
+                if (currentAdapter != null) {
+                    recycleAdapter(currentAdapter);
+                    mediaPages[a].listView.setAdapter(null);
+                }
+                if (momentsPage == null && profileActivity != null) {
+                    momentsPage = new org.telegram.ui.Feed.FeedProfilePage(getContext(), profileActivity, dialog_id);
+                }
+                if (momentsPage != null && momentsPage.getParent() != mediaPages[a]) {
+                    AndroidUtilities.removeFromParent(momentsPage);
+                    mediaPages[a].addView(momentsPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 48, 0, 0));
+                }
+                if (mediaPages[a].emptyView != null) {
+                    mediaPages[a].emptyView.setVisibility(View.INVISIBLE);
+                }
             } else if (mediaPages[a].selectedType == TAB_SAVED_MESSAGES) {
                 if (currentAdapter != null) {
                     recycleAdapter(currentAdapter);

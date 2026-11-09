@@ -1518,6 +1518,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (AndroidUtilities.handleProxyIntent(this, intent, true)) {
             return true;
         }
+        if (org.telegram.ui.Feed.FeedLinks.handleIntent(intent)) {
+            return true;
+        }
         if (intent == null || !Intent.ACTION_MAIN.equals(intent.getAction())) {
             if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
                 PhotoViewer.getInstance().closePhoto(false, true);
