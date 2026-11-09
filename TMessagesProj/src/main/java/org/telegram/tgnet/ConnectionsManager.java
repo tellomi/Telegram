@@ -424,11 +424,11 @@ public class ConnectionsManager extends BaseController {
                         try {
                             resp = object.deserializeResponse(buff, magic, true);
                         } catch (Exception e2) {
-                            // Dropping the callback left login's progress button spinning with no dialog.
+                            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                                throw e2;
+                            }
                             FileLog.fatal(e2);
-                            error = new TLRPC.TL_error();
-                            error.code = -500;
-                            error.text = "RESPONSE_DESERIALIZE_FAILED";
+                            return;
                         }
                     } else if (errorText != null) {
                         error = new TLRPC.TL_error();
@@ -877,7 +877,7 @@ public class ConnectionsManager extends BaseController {
     public static void onRequestNewServerIpAndPort(final int second, final int currentAccount) {
         if (BuildVars.TELLOMI_CUSTOM_BACKEND) {
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("tellomi: skipping Telegram DNS datacenter bootstrap");
+                FileLog.d("skip Telegram DNS datacenter bootstrap");
             }
             return;
         }
@@ -1044,6 +1044,7 @@ public class ConnectionsManager extends BaseController {
         tellomiBackendApplied = true;
         native_setTellomiBackend(BuildVars.TELLOMI_DC_ADDRESSES, BuildVars.TELLOMI_DEFAULT_DC_ID, BuildVars.TELLOMI_SERVER_PUBLIC_KEY, BuildVars.TELLOMI_CUSTOM_BACKEND, BuildVars.TELLOMI_LOCK_DC_ADDRESSES);
     }
+
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);

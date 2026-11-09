@@ -115,7 +115,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int storiesRow;
     @Keep
     private int reactionsRow;
-    private int discoverRow;
     private int notificationsSection2Row;
 
     private int inappSectionRow;
@@ -183,7 +182,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         channelsRow = rowCount++;
         storiesRow = rowCount++;
         reactionsRow = rowCount++;
-        discoverRow = rowCount++;
         notificationsSection2Row = rowCount++;
 
         callsSectionRow = rowCount++;
@@ -509,14 +507,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView.setOnItemClickListener((view, position, x, y) -> {
             boolean enabled = false;
             if (getParentActivity() == null) {
-                return;
-            }
-            if (position == discoverRow) {
-                org.telegram.ui.tellomi.feed.TellomiDiscoverNotify.toggle(currentAccount, () -> {
-                    if (adapter != null) {
-                        adapter.notifyItemChanged(discoverRow);
-                    }
-                });
                 return;
             }
             if (position == privateRow || position == groupRow || position == channelsRow || position == storiesRow || position == reactionsRow) {
@@ -1043,16 +1033,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         checkCell.setTextAndCheck(getString("Vibrate", R.string.Vibrate), preferences.getBoolean("EnableCallVibrate", true), true);
                     } else if (position == accountsAllRow) {
                         checkCell.setTextAndCheck(getString("AllAccounts", R.string.AllAccounts), MessagesController.getGlobalNotificationsSettings().getBoolean("AllAccounts", true), false);
-                    } else if (position == discoverRow) {
-                        String language = "en";
-                        try {
-                            LocaleController.LocaleInfo info = LocaleController.getInstance().getCurrentLocaleInfo();
-                            if (info != null && info.shortName != null) {
-                                language = info.shortName;
-                            }
-                        } catch (Throwable ignored) {
-                        }
-                        checkCell.setTextAndValueAndCheck(org.telegram.ui.tellomi.feed.TellomiDiscoverNotify.title(language), org.telegram.ui.tellomi.feed.TellomiDiscoverNotify.info(language), org.telegram.ui.tellomi.feed.TellomiDiscoverNotify.enabled(currentAccount), true, false);
                     }
                     break;
                 }
@@ -1223,7 +1203,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     position == inappPreviewRow || position == contactJoinedRow || position == pinnedMessageRow ||
                     position == notificationsServiceRow || position == badgeNumberMutedRow || position == badgeNumberMessagesRow ||
                     position == badgeNumberShowRow || position == inappPriorityRow || position == inchatSoundRow ||
-                    position == androidAutoAlertRow || position == accountsAllRow || position == discoverRow) {
+                    position == androidAutoAlertRow || position == accountsAllRow) {
                 return 1;
             } else if (position == resetNotificationsRow) {
                 return 2;

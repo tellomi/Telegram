@@ -3300,7 +3300,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         inputWebpage.url = newMsg.media.webpage.url;
                         inputWebpage.force_small_media = newMsg.media.force_small_media;
                         inputWebpage.force_large_media = newMsg.media.force_large_media;
-                        org.telegram.ui.tellomi.feed.TellomiChatLinkPage.fill(inputWebpage, newMsg.media.webpage);
                         inputMedia = inputWebpage;
                     }
                 } else if (type == 2) {
@@ -5391,7 +5390,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         inputWebPage.force_large_media = mediaWebPage.force_large_media;
                         inputWebPage.force_small_media = mediaWebPage.force_small_media;
                         inputWebPage.optional = true;
-                        org.telegram.ui.tellomi.feed.TellomiChatLinkPage.fill(inputWebPage, mediaWebPage.webpage);
                         reqSend.media = inputWebPage;
                         if (replyToStoryItem != null) {
                             reqSend.reply_to = createReplyInput(replyToStoryItem);
@@ -5436,18 +5434,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (retryMessageObject == null) {
                             StarsController.getInstance(currentAccount).beforeSendingMessage(newMsgObj);
                         }
-                        final TLRPC.TL_messages_sendMedia tellomiReq = reqSend;
-                        final MessageObject tellomiObj = newMsgObj;
-                        final Object tellomiParent = parentObject;
-                        final HashMap<String, String> tellomiParams = params;
-                        final boolean tellomiScheduled = scheduleDate != 0;
-                        final TLRPC.WebPage tellomiPage = mediaWebPage.webpage;
-                        final TLRPC.TL_inputMediaWebPage tellomiInput = inputWebPage;
-                        final TLRPC.InputPeer tellomiPeer = sendToPeer;
-                        Runnable tellomiSend = () -> performSendMessageRequest(tellomiReq, tellomiObj, null, null, tellomiParent, tellomiParams, tellomiScheduled);
-                        if (!org.telegram.ui.tellomi.feed.TellomiChatLinkPage.preparePhoto(currentAccount, tellomiPeer, tellomiPage, tellomiInput, tellomiSend)) {
-                            tellomiSend.run();
-                        }
+                        performSendMessageRequest(reqSend, newMsgObj, null, null, parentObject, params, scheduleDate != 0);
                         if (retryMessageObject == null) {
                             getMediaDataController().cleanDraft(peer, replyToTopMsg != null ? replyToTopMsg.getId() : 0, false);
                         }
@@ -5510,9 +5497,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (retryMessageObject == null) {
                             StarsController.getInstance(currentAccount).beforeSendingMessage(newMsgObj);
                         }
-                        if (!searchLinks || !tellomiHoldExternal(message, entities, newMsg, newMsgObj, reqSend, parentObject, params, scheduleDate != 0)) {
-                            performSendMessageRequest(reqSend, newMsgObj, null, null, parentObject, params, scheduleDate != 0);
-                        }
+                        performSendMessageRequest(reqSend, newMsgObj, null, null, parentObject, params, scheduleDate != 0);
                         if (retryMessageObject == null) {
                             getMediaDataController().cleanDraft(peer, replyToTopMsg != null ? replyToTopMsg.getId() : 0, false);
                         }
@@ -6637,39 +6622,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return null;
     }
 
-    // ADR-0082: sha256 the file that is about to be uploaded and reuse
-    // messages.getDocumentByHash when the server already has those bytes.
-    private boolean tellomiDocumentByHash(DelayedMessage message, int index, String location, Runnable upload) {
-        return TellomiDocumentByHashSend.lookupBeforeUpload(this, message, index, location, upload,
-                () -> tellomiAfterDocumentByHash(message, index, location, true),
-                () -> tellomiAfterDocumentByHash(message, index, location, false));
-    }
-
-    private void tellomiAfterDocumentByHash(DelayedMessage message, int index, String location, boolean send) {
-        ArrayList<DelayedMessage> waiting = delayedMessages.get(location);
-        if (waiting != null) {
-            waiting.remove(message);
-            if (waiting.isEmpty()) {
-                delayedMessages.remove(location);
-            }
-        }
-        MessageObject obj = message.obj;
-        if (message.type == 4 && message.messageObjects != null && index >= 0 && index < message.messageObjects.size()) {
-            obj = message.messageObjects.get(index);
-        }
-        if (obj != null) {
-            removeFromUploadingMessages(obj.getId(), message.scheduled);
-        }
-        if (!send) {
-            return;
-        }
-        if (message.type == 4) {
-            sendReadyToSendGroup(message, false, true);
-        } else if (message.sendRequest != null) {
-            performSendMessageRequest(message.sendRequest, message.obj, message.originalPath, message, message.parentObject, null, message.scheduled);
-        }
-    }
-
     private void performSendDelayedMessage(final DelayedMessage message, int index) {
         if (message.type == 0) {
             if (message.httpLocation != null) {
@@ -6781,11 +6733,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
                                 getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                             } else {
-                                final String uploadPath = location;
-                                Runnable upload = () -> getFileLoader().uploadFile(uploadPath, false, false, ConnectionsManager.FileTypeVideo);
-                                if (!tellomiDocumentByHash(message, -1, uploadPath, upload)) {
-                                    upload.run();
-                                }
+                                getFileLoader().uploadFile(location, false, false, ConnectionsManager.FileTypeVideo);
                             }
                         }
                         putToUploadingMessages(message.obj);
@@ -6933,11 +6881,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (media.file == null) {
                         String location = message.obj.messageOwner.attachPath;
                         putToDelayedMessages(location, message);
-                        final String uploadPath = location;
-                        Runnable upload = () -> getFileLoader().uploadFile(uploadPath, message.sendRequest == null, false, ConnectionsManager.FileTypeFile);
-                        if (!tellomiDocumentByHash(message, -1, uploadPath, upload)) {
-                            upload.run();
-                        }
+                        getFileLoader().uploadFile(location, message.sendRequest == null, false, ConnectionsManager.FileTypeFile);
                         putToUploadingMessages(message.obj);
                     } else if (media.thumb == null && message.photoSize != null && !(message.photoSize instanceof TLRPC.TL_photoStrippedSize)) {
                         String location = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE) + "/" + message.photoSize.location.volume_id + "_" + message.photoSize.location.local_id + ".jpg";
@@ -7069,11 +7013,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 if (messageObject.videoEditedInfo != null && messageObject.videoEditedInfo.needConvert()) {
                                     getFileLoader().uploadFile(documentLocation, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                                 } else {
-                                    final String uploadPath = documentLocation;
-                                    Runnable upload = () -> getFileLoader().uploadFile(uploadPath, false, false, ConnectionsManager.FileTypeVideo);
-                                    if (!tellomiDocumentByHash(message, index, uploadPath, upload)) {
-                                        upload.run();
-                                    }
+                                    getFileLoader().uploadFile(documentLocation, false, false, ConnectionsManager.FileTypeVideo);
                                 }
                                 putToUploadingMessages(messageObject);
                             } else if (message.coverPhotoSize != null && message.coverFile == null && media != null && media.video_cover == null) {
@@ -8061,90 +8001,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
             });
         }, null, ConnectionsManager.RequestFlagCanCompress | ConnectionsManager.RequestFlagInvokeAfter);
-    }
-
-    /**
-     * A text send whose first link is an external page. The phone fetches the
-     * card, then {@code messages.sendMedia} carries flags.3–6. Internal links
-     * stay on {@code messages.sendMessage}.
-     */
-    private boolean tellomiHoldExternal(String message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message newMsg, MessageObject obj, TLRPC.TL_messages_sendMessage textReq, Object parentObject, HashMap<String, String> params, boolean scheduled) {
-        String url = org.telegram.ui.tellomi.feed.TellomiChatLinkPage.firstExternal(message, entities);
-        if (url == null || textReq == null) {
-            return false;
-        }
-        org.telegram.ui.tellomi.feed.TellomiChatLinkPage.load(url, message, page -> {
-            if (!(page instanceof TLRPC.TL_webPage)) {
-                performSendMessageRequest(textReq, obj, null, null, parentObject, params, scheduled);
-                return;
-            }
-            TLRPC.TL_messageMediaWebPage media = new TLRPC.TL_messageMediaWebPage();
-            media.webpage = page;
-            newMsg.media = media;
-            newMsg.flags |= 512;
-            ArrayList<MessageObject> one = new ArrayList<>();
-            one.add(obj);
-            getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, obj.getDialogId(), one);
-            TLRPC.TL_messages_sendMedia req = tellomiMediaRequest(textReq);
-            TLRPC.TL_inputMediaWebPage input = new TLRPC.TL_inputMediaWebPage();
-            input.url = page.url;
-            input.optional = true;
-            org.telegram.ui.tellomi.feed.TellomiChatLinkPage.fill(input, page);
-            req.media = input;
-            Runnable go = () -> performSendMessageRequest(req, obj, null, null, parentObject, params, scheduled);
-            if (!org.telegram.ui.tellomi.feed.TellomiChatLinkPage.preparePhoto(currentAccount, textReq.peer, page, input, go)) {
-                go.run();
-            }
-        });
-        return true;
-    }
-
-    private TLRPC.TL_messages_sendMedia tellomiMediaRequest(TLRPC.TL_messages_sendMessage src) {
-        TLRPC.TL_messages_sendMedia dst = new TLRPC.TL_messages_sendMedia();
-        dst.ephemeralReceiverBotId = src.ephemeralReceiverBotId;
-        dst.message = src.message;
-        dst.clear_draft = src.clear_draft;
-        dst.silent = src.silent;
-        dst.background = src.background;
-        dst.peer = src.peer;
-        dst.random_id = src.random_id;
-        dst.invert_media = src.invert_media;
-        dst.update_stickersets_order = src.update_stickersets_order;
-        if (src.allow_paid_stars > 0) {
-            dst.flags |= 2097152;
-            dst.allow_paid_stars = src.allow_paid_stars;
-        }
-        if (src.reply_to != null) {
-            dst.reply_to = src.reply_to;
-            dst.flags |= 1;
-        }
-        if (src.send_as != null) {
-            dst.send_as = src.send_as;
-        }
-        if (src.entities != null && !src.entities.isEmpty()) {
-            dst.entities = src.entities;
-            dst.flags |= 8;
-        }
-        if (src.schedule_date != 0) {
-            dst.schedule_date = src.schedule_date;
-            dst.flags |= 1024;
-            if (src.schedule_repeat_period != 0) {
-                dst.flags |= TLObject.FLAG_24;
-                dst.schedule_repeat_period = src.schedule_repeat_period;
-            }
-        }
-        if (src.quick_reply_shortcut != null) {
-            dst.flags |= 131072;
-            dst.quick_reply_shortcut = src.quick_reply_shortcut;
-        }
-        if (src.effect != 0) {
-            dst.flags |= 262144;
-            dst.effect = src.effect;
-        }
-        if (src.suggested_post != null) {
-            dst.suggested_post = src.suggested_post;
-        }
-        return dst;
     }
 
     private void performSendMessageRequest(final TLObject req, final MessageObject msgObj, final String originalPath, DelayedMessage delayedMessage, Object parentObject, HashMap<String, String> params, boolean scheduled) {

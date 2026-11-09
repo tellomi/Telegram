@@ -79,7 +79,6 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -549,23 +548,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarView.setForUserOrChat(user, avatarDrawable);
         titleView.setText(UserObject.getUserName(user));
         final StringBuilder sb = new StringBuilder();
-        String label = TellomiAccount.switcherLabel(currentAccount, user);
-        if (!TextUtils.isEmpty(label) && (user == null || !label.equals(UserObject.getUserName(user)))) {
-            sb.append(label);
-        } else if (TellomiAccount.phoneOf(user) != null) {
-            sb.append(PhoneFormat.getInstance().format("+" + TellomiAccount.phoneOf(user)));
+        if (user != null) {
+            sb.append(PhoneFormat.getInstance().format("+" + user.phone));
         }
         final String username = UserObject.getPublicUsername(user);
         if (username != null) {
-            if (sb.length() > 0) {
-                sb.append(" • ");
-            }
-            sb.append("@").append(username);
+            sb.append(" • @").append(username);
         }
         subtitleView.setText(sb);
 
         versionView.setText(getVersionName());
-        TellomiSettingsLayout.applyCard(currentAccount, user, titleView, subtitleView, topView);
     }
 
 
@@ -650,7 +642,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 236 - 12));
+        items.add(UItem.asCustomShadow(topView, 200 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -718,7 +710,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         final boolean walletAbove = getConnectionsManager().getCurrentTime() - 1791538462 < 4 * 7 * 24 * 60 * 60;
-        if (walletAbove && TellomiFeatures.walletEnabled(currentAccount)) {
+        if (walletAbove && getMessagesController().config.walletAvailable.get()) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
             items.add(SettingCell.Factory.of(25, 0, 0, Theme.isCurrentThemeDark() ? R.drawable.settings_wallet_dark : R.drawable.settings_wallet, TextCell.applyNewSpanTimed(getString(R.string.WalletAttachMoney), 1790679020), null, wallet.getBalance() > 0 ? GramWallet.formatGrams(wallet.getBalance()) : null));
             items.add(UItem.asShadow(null));
@@ -733,36 +725,33 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
-        TellomiNavigationSettings.appendRow(items);
 
         items.add(UItem.asShadow(null));
-        if (!walletAbove && TellomiFeatures.walletEnabled(currentAccount)) {
+        if (!walletAbove && getMessagesController().config.walletAvailable.get()) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
             items.add(SettingCell.Factory.of(25, 0, 0, Theme.isCurrentThemeDark() ? R.drawable.settings_wallet_dark : R.drawable.settings_wallet, TextCell.applyNewSpanTimed(getString(R.string.WalletAttachMoney), 1790679020), null, wallet.getBalance() > 0 ? GramWallet.formatGrams(wallet.getBalance()) : null));
             items.add(UItem.asShadow(null));
         }
 
-        if (TellomiFeatures.premiumEntryEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
+        if (!getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(11, 0xFFB659FF, 0xFF617CFF, R.drawable.settings_premium, getString(R.string.TelegramPremium)));
         }
-        if (TellomiFeatures.starsEnabled(currentAccount)) {
+        if (getMessagesController().starsPurchaseAvailable()) {
             StarsController c = StarsController.getInstance(currentAccount);
             long balance = c.getBalance().amount;
             items.add(SettingCell.Factory.of(12, 0xFFEFA612, 0xFFE77512, R.drawable.settings_stars, getString(R.string.TelegramStars), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
         }
-        if (TellomiFeatures.tonEnabled(currentAccount)) {
-            StarsController.getInstance(currentAccount, true).getBalance();
-            if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
-                final StarsController c = StarsController.getTonInstance(currentAccount);
-                final long balance = c.getBalance().amount;
-                items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
-            }
+        StarsController.getInstance(currentAccount, true).getBalance();
+        if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isHuaweiStoreBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
+            final StarsController c = StarsController.getTonInstance(currentAccount);
+            final long balance = c.getBalance().amount;
+            items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
         }
 
-        if (TellomiFeatures.businessEnabled(currentAccount) && !getMessagesController().premiumFeaturesBlocked()) {
+        if (!getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
         }
-        if (TellomiFeatures.giftsEnabled(currentAccount) && !getMessagesController().premiumPurchaseBlocked()) {
+        if (!getMessagesController().premiumPurchaseBlocked()) {
             items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
         }
         if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
@@ -773,7 +762,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
         items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
         items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
-        items.add(SettingCell.Factory.of(27, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TellomiOpenSourceLicenses)));
 
         if (SharedSettings.experimentalSettingsAllowed.get()) {
             items.add(UItem.asShadow(null));
@@ -790,54 +778,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(SettingCell.Factory.of(22, 0xFFF45255, 0xFFDF3955, 0, getString(R.string.DebugClearLogs)));
         }
 
-        if (TellomiSettingsUpdate.rowVisible()) {
-            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
-                items.add(UItem.asShadow(null));
-            }
-            items.add(SettingCell.Factory.of(TellomiSettingsUpdate.ROW_ID, 0, 0, 0, getString(R.string.TellomiCheckForUpdates)));
-        }
         items.add(UItem.asCustomShadow(versionView));
-        TellomiSettingsLayout.arrange(items);
-    }
-
-    private void checkForAppUpdate() {
-        Activity activity = getParentActivity();
-        if (!(activity instanceof LaunchActivity)) {
-            return;
-        }
-        Browser.Progress progress = TellomiSettingsUpdate.attachProgressOnManualCheck() ? newManualUpdateProgress(activity) : null;
-        ((LaunchActivity) activity).checkAppUpdate(true, progress);
-    }
-
-    private Browser.Progress newManualUpdateProgress(Activity activity) {
-        final AlertDialog spinner = new AlertDialog(activity, AlertDialog.ALERT_TYPE_SPINNER);
-        spinner.setCanCancel(true);
-        final boolean[] closed = new boolean[]{false};
-        final Browser.Progress[] holder = new Browser.Progress[1];
-        holder[0] = new Browser.Progress(() -> {
-            if (activity.isFinishing() || closed[0]) {
-                return;
-            }
-            try {
-                spinner.show();
-            } catch (Exception ignored) {
-            }
-        }, () -> {
-            if (closed[0]) {
-                return;
-            }
-            closed[0] = true;
-            try {
-                spinner.dismiss();
-            } catch (Exception ignored) {
-            }
-        });
-        spinner.setOnCancelListener(dialog -> {
-            if (!closed[0] && holder[0] != null) {
-                holder[0].cancel();
-            }
-        });
-        return holder[0];
     }
 
     private void presentSettingFragment(BaseFragment fragment) {
@@ -855,8 +796,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             presentFragment(fragment);
         }
     }
-
-    private void openTellomiSettingsRow(int id) { onClick(UItem.asHeader(id, ""), null, 0, 0, 0); }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.object instanceof TLRPC.TL_attachMenuBot) {
@@ -897,7 +836,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             return;
         }
-        if (TellomiSettingsLayout.isGroup(item.id)) { presentSettingFragment(TellomiSettingsLayout.section(item.id, this::openTellomiSettingsRow)); return; }
         switch (item.id) {
             case 1:
                 presentSettingFragment(new UserInfoActivity());
@@ -926,54 +864,34 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             case 10:
                 presentSettingFragment(new LanguageSelectActivity());
                 break;
-            case TellomiNavigationSettings.ROW_ID:
-                if (TellomiTabs.enabled()) {
-                    presentSettingFragment(new TellomiNavigationSettings());
-                }
-                break;
 
             case 11:
-                if (TellomiFeatures.premiumEntryEnabled(currentAccount)) {
-                    presentSettingFragment(new PremiumPreviewFragment("settings"));
-                }
+                presentSettingFragment(new PremiumPreviewFragment("settings"));
                 break;
             case 12:
-                if (TellomiFeatures.starsEnabled(currentAccount)) {
-                    presentSettingFragment(new StarsIntroActivity());
-                }
+                presentSettingFragment(new StarsIntroActivity());
                 break;
             case 13:
-                if (TellomiFeatures.tonEnabled(currentAccount)) {
-                    presentSettingFragment(new TONIntroActivity());
-                }
+                presentSettingFragment(new TONIntroActivity());
                 break;
             case 25:
-                if (TellomiFeatures.walletEnabled(currentAccount)) {
-                    presentSettingFragment(new WalletActivity());
-                }
+                presentSettingFragment(new WalletActivity());
                 break;
             case 15:
-                if (TellomiFeatures.businessEnabled(currentAccount)) {
-                    presentSettingFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
-                }
+                presentSettingFragment(new PremiumPreviewFragment(PremiumPreviewFragment.FEATURES_BUSINESS, "settings"));
                 break;
             case 16:
-                if (TellomiFeatures.giftsEnabled(currentAccount)) {
-                    UserSelectorBottomSheet.open(0, BirthdayController.getInstance(UserConfig.selectedAccount).getState());
-                }
+                UserSelectorBottomSheet.open(0, BirthdayController.getInstance(UserConfig.selectedAccount).getState());
                 break;
 
             case 17:
                 showDialog(AlertsCreator.createSupportAlert(this, resourceProvider));
                 break;
             case 18:
-                Browser.openUrl(getParentActivity(), TellomiSettingsLayout.helpUrl(currentAccount));
+                Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.TelegramFaqUrl));
                 break;
             case 19:
                 Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.PrivacyPolicyUrl));
-                break;
-            case 27:
-                presentSettingFragment(new TellomiLicensesActivity());
                 break;
 
             case 20:
@@ -989,7 +907,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 if (MessagesController.getInstance(currentAccount).isFrozen()) {
                     AccountFrozenAlert.show(currentAccount);
                 } else {
-                    Browser.openUrl(getContext(), TellomiSettingsLayout.helpUrl(currentAccount));
+                    Browser.openUrl(getContext(), LocaleController.getString(R.string.TelegramFeaturesUrl));
                 }
                 break;
             }
@@ -1001,9 +919,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new AudioRecorderSettingsActivity());
                 break;
             }
-            case TellomiSettingsUpdate.ROW_ID:
-                checkForAppUpdate();
-                break;
         }
     }
 
@@ -1174,7 +1089,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             avatarDrawable.setInfo(account, user);
             avatarView.getImageReceiver().setCurrentAccount(account);
             avatarView.setForUserOrChat(user, avatarDrawable);
-            textView.setText(TellomiAccount.switcherLabel(account, user));
+            textView.setText(UserObject.getUserName(user));
 
             botDrawable.setCurrentAccount(account);
             emojiStatusDrawable.setCurrentAccount(account);
@@ -1363,9 +1278,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
 
             public void setColor(int topColor, int bottomColor) {
-                // TELLOMI: settings-style icon plates are black, white, or gray.
-                topColor = TellomiIconColors.plate(topColor);
-                bottomColor = TellomiIconColors.plate(bottomColor);
                 gradient = new LinearGradient(0, 0, 0, dp(28), new int[] { topColor, bottomColor }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
                 paint.setShader(gradient);
             }
@@ -1558,7 +1470,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                 getString(R.string.DebugMenuCallSettings),
                 null,
-                TellomiSettingsUpdate.debugMenuCheckVisible(BuildVars.DEBUG_PRIVATE_VERSION, ApplicationLoader.isStandaloneBuild(), ApplicationLoader.isBetaBuild()) ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
@@ -1668,7 +1580,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (which == 8) { // ?
                 SharedConfig.toggleRoundCamera16to9();
             } else if (which == 9) { // Check app update
-                checkForAppUpdate();
+                ((LaunchActivity) getParentActivity()).checkAppUpdate(true, null);
             } else if (which == 10) { // Read all chats
                 getMessagesStorage().readAllDialogs(-1);
             } else if (which == 11) { // Voip audio effects

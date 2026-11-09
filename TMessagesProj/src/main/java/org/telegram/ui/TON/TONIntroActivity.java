@@ -37,7 +37,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
@@ -109,9 +108,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
-        if (!TellomiFeatures.tonEnabled(currentAccount)) {
-            return false;
-        }
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starOptionsLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starBalanceUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starTransactionsLoaded);
@@ -276,9 +272,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             buyButton.setRound();
             buyButton.setText(getString(R.string.TopUpViaFragment), false);
             buyButton.setOnClickListener(v -> {
-                if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
-                    return;
-                }
                 Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
             });
             oneButtonsLayout.addView(buyButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL));
@@ -299,9 +292,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         ssb.append(getString(R.string.TonTopUp));
         topUpButton.setText(ssb, false);
         topUpButton.setOnClickListener(v -> {
-            if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
-                return;
-            }
             Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
         });
         if (allowTopUp) {
@@ -771,9 +761,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             if (canToUpFragment || allowTopUp()) {
                 topUpButton.setText(getString(R.string.TopUpViaFragment), false);
                 topUpButton.setOnClickListener(v -> {
-                    if (!TellomiFeatures.fragmentEnabled(currentAccount)) {
-                        return;
-                    }
                     Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
                 });
             } else {

@@ -94,7 +94,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -119,9 +118,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.TellomiDefaults;
-import org.telegram.messenger.TellomiDraftTranscribe;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BirthdayController;
@@ -220,7 +216,6 @@ import org.telegram.ui.iv.RichHtml;
 import org.telegram.ui.iv.RichMessageConvert;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -760,8 +755,6 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private TLRPC.TL_document audioToSend;
     private String audioToSendPath;
-    private TextView tellomiDraftTranscribe;
-    private boolean tellomiDraftBusy;
     private MessageObject audioToSendMessageObject;
     private VideoEditedInfo videoToSendMessageObject;
 
@@ -1271,7 +1264,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             radiiRight[0] = radiiRight[1] = radiiRight[6] = radiiRight[7] = 0;
             radiiRight[2] = radiiRight[3] = radiiRight[4] = radiiRight[5] = dp(3);
 
-            micDrawable = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
+            micDrawable = getResources().getDrawable(R.drawable.input_mic).mutate();
             vidDrawable = getResources().getDrawable(R.drawable.input_video).mutate();
 
             setWillNotDraw(false);
@@ -2064,7 +2057,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             sendDrawable = getResources().getDrawable(R.drawable.attach_send).mutate();
             sendDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
 
-            micOutline = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
+            micOutline = getResources().getDrawable(R.drawable.input_mic).mutate();
             micOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
 
             cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
@@ -2759,7 +2752,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
-        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 2, 0));
+        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
         setEmojiButtonImage(false, false);
 
         deleteRichDraftButton = new ImageView(context);
@@ -2842,9 +2835,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             };
             attachButton.setScaleType(ImageView.ScaleType.CENTER);
             attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
-            attachButton.setImageResource(R.drawable.tellomi_input_attach);
+            attachButton.setImageResource(R.drawable.msg_input_attach2);
             attachButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
                     return;
@@ -3431,7 +3424,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 //            return true;
 //        });
 
-        micOutline = getResources().getDrawable(R.drawable.tellomi_input_mic).mutate();
+        micOutline = getResources().getDrawable(R.drawable.input_mic).mutate();
         micOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
 
         cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
@@ -3485,7 +3478,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.tellomi_chat_send_arrow, resourcesProvider, true) {
+        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.send_plane_24, resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();
@@ -4030,9 +4023,6 @@ public class ChatActivityEnterView extends FrameLayout implements
             @Override
             public void setVisibility(int visibility) {
                 super.setVisibility(visibility);
-                if (tellomiDraftTranscribe != null) {
-                    tellomiDraftTranscribe.setVisibility(videoToSendMessageObject == null && audioToSendPath != null ? VISIBLE : GONE);
-                }
                 updateSendAsButton();
             }
         };
@@ -4097,108 +4087,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         sizeNotifierLayout.addView(videoTimeHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 52));
 
         audioTimelineView = new RecordedAudioPlayerView(getContext(), resourcesProvider);
-        recordedAudioPanel.addView(audioTimelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, DEFAULT_HEIGHT, 0, 72, 0));
-
-        tellomiDraftTranscribe = new TextView(getContext());
-        tellomiDraftTranscribe.setText(TellomiDefaults.uiIsChinese() ? "转文字" : "To text");
-        tellomiDraftTranscribe.setTextColor(getThemedColor(Theme.key_chat_messagePanelVoicePressed));
-        tellomiDraftTranscribe.setGravity(Gravity.CENTER);
-        tellomiDraftTranscribe.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        tellomiDraftTranscribe.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        tellomiDraftTranscribe.setOnClickListener(v -> tellomiTranscribeDraft());
-        recordedAudioPanel.addView(tellomiDraftTranscribe, LayoutHelper.createFrame(68, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
+        recordedAudioPanel.addView(audioTimelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, DEFAULT_HEIGHT, 0, 4, 0));
 
         updateFieldRight(lastAttachVisible);
-    }
-
-    private void tellomiTranscribeDraft() {
-        if (tellomiDraftBusy || audioToSendPath == null || getContext() == null) {
-            return;
-        }
-        File file = new File(audioToSendPath);
-        boolean loggedIn = UserConfig.getInstance(currentAccount).isClientActivated();
-        String problem = TellomiDraftTranscribe.localError(loggedIn, file.length(), audioToSendPath);
-        if (problem != null) {
-            Toast.makeText(getContext(), TellomiDraftTranscribe.message(problem, TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
-            return;
-        }
-        tellomiDraftBusy = true;
-        tellomiDraftTranscribe.setEnabled(false);
-        final String path = audioToSendPath;
-        new Thread(() -> {
-            byte[] audio = null;
-            try {
-                FileInputStream in = new FileInputStream(file);
-                try {
-                    audio = new byte[(int) file.length()];
-                    int offset = 0;
-                    while (offset < audio.length) {
-                        int read = in.read(audio, offset, audio.length - offset);
-                        if (read < 0) {
-                            break;
-                        }
-                        offset += read;
-                    }
-                    if (offset != audio.length) {
-                        audio = null;
-                    }
-                } finally {
-                    in.close();
-                }
-            } catch (Exception ignored) {
-                audio = null;
-            }
-            final byte[] body = audio;
-            AndroidUtilities.runOnUIThread(() -> tellomiSendDraft(path, body));
-        }, "tellomi-draft-transcribe").start();
-    }
-
-    private void tellomiSendDraft(String path, byte[] body) {
-        if (getContext() == null || path == null || !path.equals(audioToSendPath) || body == null || body.length == 0) {
-            tellomiDraftBusy = false;
-            if (tellomiDraftTranscribe != null) {
-                tellomiDraftTranscribe.setEnabled(true);
-            }
-            if (getContext() != null && path != null && path.equals(audioToSendPath)) {
-                Toast.makeText(getContext(), TellomiDraftTranscribe.message("MEDIA_EMPTY", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
-            }
-            return;
-        }
-        TLRPC.TL_messages_transcribeDraft req = new TLRPC.TL_messages_transcribeDraft();
-        req.audio = body;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            tellomiDraftBusy = false;
-            if (tellomiDraftTranscribe != null) {
-                tellomiDraftTranscribe.setEnabled(true);
-            }
-            if (getContext() == null || !path.equals(audioToSendPath)) {
-                return;
-            }
-            if (error != null) {
-                Toast.makeText(getContext(), TellomiDraftTranscribe.message(error.text, TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
-                return;
-            }
-            if (!(response instanceof TLRPC.TL_messages_transcribedAudio)) {
-                Toast.makeText(getContext(), TellomiDraftTranscribe.message("TRANSCRIPTION_FAILED", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
-                return;
-            }
-            TLRPC.TL_messages_transcribedAudio result = (TLRPC.TL_messages_transcribedAudio) response;
-            if (result.pending || result.text == null || result.text.trim().isEmpty()) {
-                Toast.makeText(getContext(), TellomiDraftTranscribe.message("TRANSCRIPTION_FAILED", TellomiDefaults.uiIsChinese()), Toast.LENGTH_LONG).show();
-                return;
-            }
-            if (messageEditText != null) {
-                CharSequence existing = messageEditText.getText();
-                String next = result.text.trim();
-                if (existing != null && existing.length() > 0) {
-                    messageEditText.setText(existing + "\n" + next);
-                } else {
-                    messageEditText.setText(next);
-                }
-                messageEditText.setSelection(messageEditText.length());
-            }
-            resetRecordedState();
-        }));
     }
 
     private void resetRecordedState() {
@@ -6184,7 +6075,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private boolean shownAiButton;
     private void showAiButton(boolean show_) {
-        final boolean show = TellomiFeatures.aiComposeEnabled(currentAccount) && (show_ || richDraftActive) && parentFragment != null && !parentFragment.isSecretChat();
+        final boolean show = (show_ || richDraftActive) && parentFragment != null && !parentFragment.isSecretChat();
 
         if (shownAiButton == show) return;
         if (show) {
@@ -8893,8 +8784,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (scheduledButton != null && scheduledButton.getTag() != null) {
                 layoutParams.rightMargin = dp(50);
             } else {
-                // Emoji stays in the right-hand slot. The voice control, not this slot, becomes send.
-                layoutParams.rightMargin = dp(50);
+                layoutParams.rightMargin = dp(2);
             }
         }
         layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT)));
@@ -11060,7 +10950,6 @@ public class ChatActivityEnterView extends FrameLayout implements
         final TLRPC.UserFull myUserInfo = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         final TLRPC.User user = getParentFragment() == null ? null : getParentFragment().getCurrentUser();
         final boolean visible =
-            TellomiFeatures.giftsEnabled(currentAccount) &&
             !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() &&
             getParentFragment() != null && user != null &&
             !BuildVars.IS_BILLING_UNAVAILABLE &&
@@ -14638,9 +14527,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         int wasHeight = textFieldContainer.getMeasuredHeight();
         if (botCommandsMenuButton != null && botCommandsMenuButton.getTag() != null) {
             botCommandsMenuButton.measure(widthMeasureSpec, heightMeasureSpec);
-            if (attachButton != null) {
-                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(10) + botCommandsMenuButton.getMeasuredWidth();
-            }
+            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(10) + (botCommandsMenuButton == null ? 0 : botCommandsMenuButton.getMeasuredWidth());
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(10) + (botCommandsMenuButton == null ? 0 : botCommandsMenuButton.getMeasuredWidth());
             }
@@ -14653,9 +14540,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else if (senderSelectView != null && senderSelectView.getVisibility() == View.VISIBLE) {
             int width = senderSelectView.getLayoutParams().width, height = senderSelectView.getLayoutParams().height;
             senderSelectView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
-            if (attachButton != null) {
-                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(7) + width;
-            }
+            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(7) + width;
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(7) + width;
             }
@@ -14666,9 +14551,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 ((MarginLayoutParams) richDraftPreview.getLayoutParams()).leftMargin = dp(54) + width;
             }
         } else {
-            if (attachButton != null) {
-                ((MarginLayoutParams) attachButton.getLayoutParams()).leftMargin = dp(3);
-            }
+            ((MarginLayoutParams) emojiButton.getLayoutParams()).leftMargin = dp(3);
             if (deleteRichDraftButton != null) {
                 ((MarginLayoutParams) deleteRichDraftButton.getLayoutParams()).leftMargin = dp(3);
             }
@@ -15553,32 +15436,18 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         private int drawableColor;
-        private int drawableInverseColor;
 
         public void updateColors() {
-            final int fill = Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
-            final int glyph;
-            final int legacyGlyph;
-            if (isNewDesignSendButton) {
-                glyph = SendButtonColors.contrastGlyph(fill);
-                legacyGlyph = glyph;
-            } else {
-                glyph = fill;
-                // Legacy-style button (e.g. attach panel) draws drawableInverse on getFillColor();
-                // in Tellomi both colors are #111111, so pick a contrasting glyph.
-                legacyGlyph = SendButtonColors.contrastGlyph(getFillColor());
-            }
-            if (glyph != drawableColor || legacyGlyph != drawableInverseColor) {
-                drawableColor = glyph;
-                drawableInverseColor = legacyGlyph;
-                drawable.setColorFilter(new PorterDuffColorFilter(glyph, PorterDuff.Mode.SRC_IN));
+            int color = isNewDesignSendButton ? Color.WHITE : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
+            if (color != drawableColor) {
+                drawableColor = color;
+                drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
                 int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
                 inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
-                drawableInverse.setColorFilter(new PorterDuffColorFilter(legacyGlyph, PorterDuff.Mode.SRC_IN));
-                count.setTextColor(glyph);
+                drawableInverse.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
             }
             if (isNewDesignSendButton) {
-                backgroundPaint.setColor(fill);
+                backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
             } else if (shouldDrawBackground()) {
                 backgroundPaint.setColor(getFillColor());
             } else {

@@ -1,7 +1,5 @@
 package org.telegram.ui.Components.Premium.boosts;
 
-import org.telegram.messenger.BuildVars;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
@@ -152,7 +150,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             if (scheme != null) {
                 if ((scheme.equals("http") || scheme.equals("https"))) {
                     String host = data.getHost().toLowerCase();
-                    if (BuildVars.isLinkHost(host)) {
+                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
                         String path = data.getPath();
                         if (path != null) {
                             if (path.startsWith("/premium_multigift")) {
@@ -161,8 +159,8 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                             }
                         }
                     }
-                } else if (BuildVars.isAppScheme(scheme)) {
-                    String url = BuildVars.toTgUrl(data.toString());
+                } else if (scheme.equals("tg")) {
+                    String url = data.toString();
                     if (url.startsWith("tg:premium_multigift") || url.startsWith("tg://premium_multigift")) {
                         open();
                         return true;

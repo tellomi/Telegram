@@ -88,7 +88,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -165,7 +164,6 @@ import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
-import org.telegram.ui.TellomiMaps;
 import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.TopicsFragment;
 
@@ -6870,7 +6868,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         boolean hasEditBotPreviews = user != null && user.bot && user.bot_has_main_app && user.bot_can_edit;
         boolean hasBotPreviews = user != null && user.bot && !user.bot_can_edit && (userInfo != null && userInfo.bot_info != null && userInfo.bot_info.has_preview_medias) && !hasEditBotPreviews;
         boolean hasStories = (DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories();
-        boolean hasGifts = profileActivity != null && TellomiFeatures.giftsEnabled(profileActivity.getCurrentAccount()) && giftsContainer != null && (userInfo != null && userInfo.stargifts_count > 0 || info != null && info.stargifts_count > 0);
+        boolean hasGifts = giftsContainer != null && (userInfo != null && userInfo.stargifts_count > 0 || info != null && info.stargifts_count > 0);
         final TLRPC.ProfileTab main_tab = info != null ? info.main_tab : userInfo != null ? userInfo.main_tab : null;
         int changed = 0;
         if (wasReordering != scrollSlidingTextTabStrip.isReordering()) {
@@ -8820,8 +8818,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     final TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) messageMedia;
 
                     if (media.geo != null) {
-                        String place = media.address != null ? media.address : (answer != null && answer.text != null ? answer.text.text : "");
-                        if (!(media.geo instanceof TLRPC.TL_geoPointEmpty) && TellomiMaps.openReceivedPin(profileActivity, media.geo.lat, media.geo._long, place, false)) {
+                        if (!AndroidUtilities.isMapsInstalled(profileActivity)) {
                             return;
                         }
                         LocationActivity fragment = new LocationActivity(3) {

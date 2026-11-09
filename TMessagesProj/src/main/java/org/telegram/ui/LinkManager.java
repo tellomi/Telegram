@@ -21,7 +21,6 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -104,8 +103,8 @@ public class LinkManager {
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
             return handleHttp(uri);
 
-        if (BuildVars.isAppScheme(scheme))
-            return handleTg(Uri.parse(BuildVars.toTgUrl(uri.toString())));
+        if ("tg".equalsIgnoreCase(scheme))
+            return handleTg(uri);
 
         if ("ton".equalsIgnoreCase(scheme))
             return handleTon(uri);
@@ -125,11 +124,11 @@ public class LinkManager {
         if (host == null) return false;
         final Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host.toLowerCase());
         final boolean isPrefix = prefixMatcher.find();
-        if (!BuildVars.isLinkHost(host) && !isPrefix)
+        if (!"telegram.me".equalsIgnoreCase(host) && !"t.me".equalsIgnoreCase(host) && !"telegram.dog".equalsIgnoreCase(host) && !isPrefix)
             return false;
 
         if (isPrefix) {
-            uri = Uri.parse(BuildVars.LINK_BASE + "" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
         }
 
         String path = uri.getPath();
@@ -1250,11 +1249,11 @@ public class LinkManager {
             return true;
         }
         if ("faq".equalsIgnoreCase(first)) {
-            Browser.openUrl(activity, TellomiSettingsLayout.helpUrl(currentAccount));
+            Browser.openUrl(activity, LocaleController.getString(R.string.TelegramFaqUrl));
             return true;
         }
         if ("features".equalsIgnoreCase(first)) {
-            Browser.openUrl(activity, TellomiSettingsLayout.helpUrl(currentAccount));
+            Browser.openUrl(activity, LocaleController.getString(R.string.TelegramFeaturesUrl));
             return true;
         }
         if ("privacy-policy".equalsIgnoreCase(first)) {
@@ -1429,7 +1428,7 @@ public class LinkManager {
     }
 
     private boolean handleAiStyle(String slug) {
-        if (!TellomiFeatures.aiComposeEnabled(currentAccount) || TextUtils.isEmpty(slug)) return false;
+        if (TextUtils.isEmpty(slug)) return false;
         final TL_aicompose.getTone req = new TL_aicompose.getTone();
         final TL_aicompose.inputAiComposeToneSlug input = new TL_aicompose.inputAiComposeToneSlug();
         input.slug = slug;
@@ -1834,7 +1833,7 @@ public class LinkManager {
                     String host = uri.getHost().toLowerCase();
                     Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
                     boolean isPrefix = prefixMatcher.find();
-                    if (BuildVars.isLinkHost(host) || isPrefix) {
+                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
                         ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
                         if (segments.size() > 0 && segments.get(0).equals("s")) {
                             segments.remove(0);
@@ -1873,9 +1872,7 @@ public class LinkManager {
                     }
                     break;
                 }
-                case "tg":
-                case "tellomi": {
-                    url = BuildVars.toTgUrl(url);
+                case "tg": {
                     if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
                         return !TextUtils.isEmpty(uri.getQueryParameter("appname"));
                     }

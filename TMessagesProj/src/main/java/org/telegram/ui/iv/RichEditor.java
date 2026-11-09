@@ -57,7 +57,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessageChatArguments;
@@ -624,13 +623,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         bottomPanel.addView(aiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setContentDescription(getString(R.string.AIEditor));
-        if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-            aiButton.setVisibility(View.GONE);
-        }
         aiButton.setOnClickListener(v -> {
-            if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-                return;
-            }
             if (listView.isInSelectionMode()) {
                 onAiStyleSelection();
             } else {
@@ -1384,9 +1377,6 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
     }
 
     private void onAiStyleSelection() {
-        if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-            return;
-        }
         final RichEditorListView.SelectionEdit edit = listView.beginSelectionEdit();
         if (edit == null) return;
         final TL_iv.RichMessage rich = edit.extractRichMessage();

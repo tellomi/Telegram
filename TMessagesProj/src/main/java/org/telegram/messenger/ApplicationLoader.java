@@ -149,19 +149,6 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    /**
-     * In-app {@code help.getAppUpdate} for the shipped App module.
-     * Standalone and beta keep their own gates. Overriding this does not
-     * turn on the rest of {@link #isStandalone()}.
-     */
-    protected boolean isInAppUpdatesEnabled() {
-        return false;
-    }
-
-    public static boolean supportsInAppUpdates() {
-        return applicationLoaderInstance != null && applicationLoaderInstance.isInAppUpdatesEnabled();
-    }
-
     protected boolean isBeta() {
         return false;
     }
@@ -185,7 +172,9 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        String packageName = applicationContext != null ? applicationContext.getPackageName() : BuildVars.ACCOUNT_TYPE;
+        // Last resort only. The installed id is app.tellomi.chat, so an upgrade
+        // must not fall back to the official Telegram package directory.
+        String packageName = applicationContext != null ? applicationContext.getPackageName() : "app.tellomi.chat";
         return new File("/data/data/" + packageName + "/files");
     }
 

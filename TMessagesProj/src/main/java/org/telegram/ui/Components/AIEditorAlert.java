@@ -1,7 +1,5 @@
 package org.telegram.ui.Components;
 
-import org.telegram.messenger.BuildVars;
-
 import static androidx.core.view.ViewCompat.performHapticFeedback;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -63,8 +61,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiTranslate;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
@@ -223,7 +219,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                             .show();
                     })
                     .add(R.drawable.msg_share, getString(R.string.AIEditorShareStyle), () -> {
-                        final String link = BuildVars.LINK_BASE + "addstyle/" + tone.slug;
+                        final String link = "https://t.me/addstyle/" + tone.slug;
                         new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
                             @Override
                             protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
@@ -1105,9 +1101,6 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public void show() {
-        if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-            return;
-        }
         super.show();
         if (actionBar != null) {
             actionBar.setTitle(getTitle());
@@ -1139,7 +1132,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             addChecked(o, list, true, TranslateAlert2.capitalFirst(TranslateAlert2.languageName(to_lang)), null);
         }
         for (final TranslateController.Language lng : suggestedLanguages) {
-            if (!TextUtils.equals(lng.code, to_lang) && TellomiTranslate.acceptedToLang(lng.code) != null) {
+            if (!TextUtils.equals(lng.code, to_lang)) {
                 addChecked(o, list, false, lng.displayName, () -> {
                     cancelRequest();
                     to_lang = lng.code;
@@ -1154,9 +1147,6 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         list.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
         for (final TranslateController.Language lng : allLanguages) {
-            if (TellomiTranslate.acceptedToLang(lng.code) == null) {
-                continue;
-            }
             addChecked(o, list, TextUtils.equals(lng.code, to_lang), lng.displayName, () -> {
                 cancelRequest();
                 to_lang = lng.code;
@@ -1257,7 +1247,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         final TLRPC.TL_messages_composeMessageWithAI req = new TLRPC.TL_messages_composeMessageWithAI();
         req.text = fromText;
         if (tab == TAB_TRANSLATE) {
-            req.translate_to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(to_lang));
+            req.translate_to_lang = normalizeLanguage(to_lang);
             req.tone = TL_aicompose.InputAiComposeTone.fromDefault(translateTone);
             req.emojify = emojify;
         } else if (tab == TAB_STYLE) {
@@ -1383,7 +1373,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         req.flags |= TLObject.FLAG_4;
         req.text = toInput(textRich);
         if (tab == TAB_TRANSLATE) {
-            req.translate_to_lang = TellomiTranslate.rpcToLang(normalizeLanguage(to_lang));
+            req.translate_to_lang = normalizeLanguage(to_lang);
             req.tone = TL_aicompose.InputAiComposeTone.fromDefault(translateTone);
             req.emojify = emojify;
         } else if (tab == TAB_STYLE) {
@@ -2459,9 +2449,6 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
         @Override
         public void show() {
-            if (!TellomiFeatures.aiComposeEnabled(currentAccount)) {
-                return;
-            }
             super.show();
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.loadedAiComposeTones);
         }

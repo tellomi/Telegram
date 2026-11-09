@@ -99,7 +99,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
-import org.telegram.ui.theme.TelegramThemeFlow;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -1058,7 +1057,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         }
 
         if (messagesAdapter.showSecretMessages) {
-            actionBar2.setTitle(BuildVars.APP_NAME + " Chat");
+            actionBar2.setTitle("Telegram Beta Chat");
             actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 505));
         } else {
             if (screenType == SCREEN_TYPE_CHANGE_BACKGROUND) {
@@ -2335,7 +2334,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     Theme.applyThemeFile(new File(applyingTheme.pathToFile), applyingTheme.name, applyingTheme.info, false);
                     MessagesController.getInstance(applyingTheme.account).saveTheme(applyingTheme, null, false, false);
                     SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
-                    editor.putString("lastDayTheme", org.telegram.ui.theme.TelegramThemeFlow.themeKey(applyingTheme.getKey(), false));
+                    editor.putString("lastDayTheme", applyingTheme.getKey());
                     editor.commit();
                 }
                 BaseFragment lastFragment = getParentLayout().getFragmentStack().get(Math.max(0, getParentLayout().getFragmentStack().size() - 2));
@@ -2666,8 +2665,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         Theme.OverrideWallpaperInfo wallpaperInfo = new Theme.OverrideWallpaperInfo();
         wallpaperInfo.fileName = fileName;
         wallpaperInfo.originalFileName = originalFileName;
-        TelegramThemeFlow.Selection appliedWallpaper = TelegramThemeFlow.applyWallpaper(null, slug, color, false);
-        wallpaperInfo.slug = slug == null ? appliedWallpaper.wallpaperSlug : slug;
+        wallpaperInfo.slug = slug;
         wallpaperInfo.isBlurred = isBlurred;
         wallpaperInfo.isMotion = isMotion;
         wallpaperInfo.color = color;
@@ -5017,7 +5015,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     TLRPC.TL_messageEntityTextUrl entityUrl = new TLRPC.TL_messageEntityTextUrl();
                     entityUrl.offset = index1;
                     entityUrl.length = index2 - index1 - 1;
-                    entityUrl.url = org.telegram.messenger.TellomiBrand.rewrite("https://telegram.org");
+                    entityUrl.url = "https://telegram.org";
                     message.entities.add(entityUrl);
                 }
                 message.message = builder.toString();

@@ -67,7 +67,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.TellomiFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -1171,13 +1170,13 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     final MessagesController messagesController = MessagesController.getInstance(account);
                     if (!TextUtils.isEmpty(messagesController.premiumBotUsername)) {
                         launchActivity.setNavigateToPremiumBot(true);
-                        launchActivity.onNewIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(BuildVars.LINK_BASE + "" + messagesController.premiumBotUsername + "?start=" + source)), (Browser.Progress) null);
+                        launchActivity.onNewIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/" + messagesController.premiumBotUsername + "?start=" + source)), (Browser.Progress) null);
                     } else if (!TextUtils.isEmpty(messagesController.premiumInvoiceSlug)) {
-                        launchActivity.onNewIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(BuildVars.LINK_BASE + "$" + messagesController.premiumInvoiceSlug)), (Browser.Progress) null);
+                        launchActivity.onNewIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/$" + messagesController.premiumInvoiceSlug)), (Browser.Progress) null);
                     }
                 } else {
                     final Uri uri = Uri.parse(selectedTier.subscriptionOption.bot_url);
-                    if (BuildVars.isLinkHost(uri.getHost())) {
+                    if (uri.getHost().equals("t.me")) {
                         if (!uri.getPath().startsWith("/$") && !uri.getPath().startsWith("/invoice/")) {
                             launchActivity.setNavigateToPremiumBot(true);
                         }
@@ -1467,11 +1466,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        if (type == FEATURES_BUSINESS) {
-            if (!TellomiFeatures.businessEnabled(currentAccount)) {
-                return false;
-            }
-        } else if (!TellomiFeatures.premiumEntryEnabled(currentAccount) || getMessagesController().premiumFeaturesBlocked()) {
+        if (getMessagesController().premiumFeaturesBlocked()) {
             return false;
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.billingProductDetailsUpdated);

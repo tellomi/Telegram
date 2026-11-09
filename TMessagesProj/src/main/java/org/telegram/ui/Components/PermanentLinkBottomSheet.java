@@ -1,7 +1,5 @@
 package org.telegram.ui.Components;
 
-import org.telegram.messenger.BuildVars;
-
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
@@ -126,7 +124,7 @@ public class PermanentLinkBottomSheet extends BottomSheet {
 
         TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(chatId);
         if (chat != null && ChatObject.isPublic(chat)) {
-            linkActionView.setLink(BuildVars.LINK_BASE + "" + ChatObject.getPublicUsername(chat));
+            linkActionView.setLink("https://t.me/" + ChatObject.getPublicUsername(chat));
             manage.setVisibility(View.GONE);
         } else if (info != null && info.exported_invite != null) {
             linkActionView.setLink(info.exported_invite.link);
