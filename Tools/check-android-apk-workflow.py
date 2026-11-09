@@ -161,6 +161,16 @@ def main():
         require(got_publish is want_publish, f"publish {event} {ref} {publish_input} -> {got_publish}, want {want_publish}")
         require(not publishes(event, ref, publish_input, "debug"), f"debug APK must not publish for {event} {ref}")
 
+    require("Tools/tellomi-android-version.py" in text, "release versionCode must come from tellomi-android-version.py")
+    require("dl.tellomi.cn/android/latest.json" in (ROOT / "Tools" / "tellomi-android-version.py").read_text(), "release must read the published feed")
+    require("--release" in text, "publish=release must opt into the live versionCode")
+    require('expected APP_VERSION_NAME 14.0.9' in text, "package step must require versionName 14.0.9")
+    gradle = (ROOT / "gradle.properties").read_text()
+    require("APP_VERSION_NAME=14.0.9" in gradle, "gradle.properties must be 14.0.9")
+    require("APP_VERSION_CODE=180468" in gradle, "configured base must be the decade above 14.0.8 afat 1804679")
+    publish_script = (ROOT / "Tools" / "tellomi-publish-installer.sh").read_text()
+    require("--require-above" in publish_script, "publish must refuse a versionCode that is not above latest.json")
+
     print(f"ok {WORKFLOW} ({len(cases)} event cases)")
 
 
