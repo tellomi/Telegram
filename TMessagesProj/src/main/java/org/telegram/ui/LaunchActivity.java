@@ -263,7 +263,7 @@ import java.util.zip.ZipInputStream;
 public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, IPipActivity {
     public final static String EXTRA_FORCE_NOT_INTERNAL_APPS = "force_not_internal_apps";
     public final static String EXTRA_FORCE_REQUEST = "force_request";
-    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.t\\.me");
+    public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.(?:" + Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me)$");
 
     public static boolean isActive;
     private static int activeInstanceCount;
@@ -424,7 +424,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
                     Uri uri = intent.getData();
                     if (uri != null) {
-                        String url = uri.toString().toLowerCase();
+                        String url = BuildVars.toTgUrl(uri.toString()).toLowerCase();
                         isProxy = url.startsWith("tg:proxy") || url.startsWith("tg://proxy")
                                 || url.startsWith("tg:webproxy") || url.startsWith("tg://webproxy")
                                 || url.startsWith("tg:socks") || url.startsWith("tg://socks");
@@ -1962,6 +1962,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         boolean liveStory = false;
                         int storyAlbumId = 0;
                         int giftCollectionId = 0;
+                        if (BuildVars.isAppScheme(data.getScheme()) && !"tg".equalsIgnoreCase(data.getScheme())) {
+                            data = Uri.parse(BuildVars.toTgUrl(data.toString()));
+                        }
                         final String scheme = data.getScheme();
                         if (scheme != null) {
                             switch (scheme) {
@@ -1977,9 +1980,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
-                                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
+                                    if (BuildVars.isLinkHost(host) || isPrefix) {
                                         if (isPrefix) {
-                                            data = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery()));
+                                            data = Uri.parse(BuildVars.shareLink(prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery())));
                                         }
                                         String path = data.getPath();
                                         if (path != null && path.length() > 1) {

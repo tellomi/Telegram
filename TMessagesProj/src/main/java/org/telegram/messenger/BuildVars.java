@@ -40,6 +40,17 @@ public class BuildVars {
     public static final String ACCOUNT_TYPE = "app.tellomi.chat";
     /** Display name of the installed package. Saved-media folders and contact row labels use it. */
     public static final String APP_NAME = "Tellomi";
+    /** Public link host (tell.cc). Datacenter addresses stay IP literals; this is only for links. */
+    public static final String LINK_HOST = BuildConfig.TELLOMI_LINK_HOST;
+    /** Help, privacy, and terms. Distinct from {@link #LINK_HOST}. */
+    public static final String SITE_HOST = "tellomi.cn";
+    public static final String HELP_URL = "https://" + SITE_HOST + "/help";
+    public static final String PRIVACY_URL = "https://" + SITE_HOST + "/legal/privacy/";
+    public static final String TOS_URL = "https://" + SITE_HOST + "/legal/terms/";
+    /** Custom scheme that mirrors tg:// routes, for example tellomi://resolve?domain=name. */
+    public static final String LINK_SCHEME = BuildConfig.TELLOMI_LINK_SCHEME;
+    public static final String LINK_BASE = "https://" + LINK_HOST + "/";
+    public static final boolean TELLOMI_REBRAND_STRINGS = BuildConfig.TELLOMI_REBRAND_STRINGS;
     public static final String STORAGE_DIR_NAME = APP_NAME;
     public static final String STORAGE_IMAGES_DIR = APP_NAME + " Images";
     public static final String STORAGE_VIDEO_DIR = APP_NAME + " Video";
@@ -109,6 +120,78 @@ public class BuildVars {
 
     public static boolean isHuaweiStoreApp() {
         return ApplicationLoader.isHuaweiStoreBuild();
+    }
+
+    public static boolean isLegacyLinkHost(String host) {
+        return TellomiLinks.isLegacyLinkHost(host);
+    }
+
+    /** tell.cc, plus t.me / telegram.me / telegram.dog so links already in chats still open. */
+    public static boolean isLinkHost(String host) {
+        return TellomiLinks.isLinkHost(host, LINK_HOST);
+    }
+
+    public static boolean isAppScheme(String scheme) {
+        return scheme != null && ("tg".equalsIgnoreCase(scheme) || LINK_SCHEME != null && LINK_SCHEME.equalsIgnoreCase(scheme));
+    }
+
+    /** Rewrite tellomi: and tellomi:// to tg: / tg:// so the existing route parser can run. */
+    public static String toTgUrl(String url) {
+        if (url == null || LINK_SCHEME == null || LINK_SCHEME.isEmpty()) {
+            return url;
+        }
+        return url.replaceFirst("(?i)^" + java.util.regex.Pattern.quote(LINK_SCHEME) + ":", "tg:");
+    }
+
+    /** Force generated links onto LINK_HOST. Telegram hosts from help.getConfig are rewritten. */
+    public static String normalizeLinkPrefix(String prefix) {
+        return TellomiLinks.normalizeLinkPrefix(prefix, LINK_HOST);
+    }
+
+    /** Host used for links the user copies or shares. Follows a Tellomi me_url_prefix when set. */
+    public static String shareHost() {
+        return TellomiLinks.displayHost(activeLinkPrefix(), LINK_HOST);
+    }
+
+    /** https://tell.cc/{path}, or the server's Tellomi me_url_prefix when that host is not Telegram's. */
+    public static String shareLink(String path) {
+        return TellomiLinks.https(activeLinkPrefix(), LINK_HOST, path);
+    }
+
+    public static String invitePlusTitle(String inviteLink) {
+        return TellomiLinks.invitePlusTitle(activeLinkPrefix(), LINK_HOST, inviteLink);
+    }
+
+    public static String inviteJoinchatTitle(String inviteLink) {
+        return TellomiLinks.inviteJoinchatTitle(LINK_HOST, inviteLink);
+    }
+
+    public static boolean isPublicChatInvite(String link) {
+        return TellomiLinks.isPublicChatInvite(link, LINK_HOST);
+    }
+
+    public static boolean isMentionLink(String url, String visibleText) {
+        return TellomiLinks.isMentionLink(url, visibleText, LINK_HOST);
+    }
+
+    public static boolean containsInstantView(String lowerUrl) {
+        return TellomiLinks.containsInstantView(lowerUrl, LINK_HOST);
+    }
+
+    public static boolean isBusinessMessageLink(String link, String slug) {
+        return TellomiLinks.isBusinessMessageLink(link, slug, LINK_HOST);
+    }
+
+    private static String activeLinkPrefix() {
+        try {
+            if (ApplicationLoader.applicationContext == null) {
+                return LINK_HOST;
+            }
+            String prefix = MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix;
+            return normalizeLinkPrefix(prefix);
+        } catch (Throwable ignored) {
+            return LINK_HOST;
+        }
     }
 
     public static String getSmsHash() {

@@ -227,6 +227,9 @@ android {
 
         multiDexEnabled true
 
+        buildConfigField "String", "TELLOMI_LINK_HOST", tellomiJavaString(tellomiProp("TELLOMI_LINK_HOST", "tell.cc"))
+        buildConfigField "String", "TELLOMI_LINK_SCHEME", tellomiJavaString(tellomiProp("TELLOMI_LINK_SCHEME", "tellomi"))
+        buildConfigField "boolean", "TELLOMI_REBRAND_STRINGS", tellomiProp("TELLOMI_REBRAND_STRINGS", "true")
         buildConfigField "int", "TELLOMI_API_ID", tellomiProp("TELLOMI_API_ID", "1")
         buildConfigField "String", "TELLOMI_API_HASH", tellomiJavaString(tellomiProp("TELLOMI_API_HASH", "0123456789abcdef0123456789abcdef"))
         tellomiShippableBuildConfigFields(delegate)

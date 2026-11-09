@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -230,7 +231,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
     }
 
     private void share() {
-        final String slugLink = "https://t.me/giftcode/" + slug;
+        final String slugLink = BuildVars.shareLink("giftcode/" + slug);
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);

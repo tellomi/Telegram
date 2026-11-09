@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -308,7 +309,7 @@ public class BusinessLinksController {
             TL_account.TL_businessChatLink chatLink = links.get(i);
             if (TextUtils.equals(chatLink.link, slug) ||
                     TextUtils.equals(chatLink.link, "https://" + slug) ||
-                    TextUtils.equals(chatLink.link, "https://t.me/m/" + slug) ||
+                    BuildVars.isBusinessMessageLink(chatLink.link, slug) ||
                     TextUtils.equals(chatLink.link, "tg://message?slug=" + slug)) {
                 return chatLink;
             }

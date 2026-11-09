@@ -66,6 +66,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BillingController;
@@ -4981,7 +4982,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         }));
                     } else if (subscription.invoice_slug != null) {
                         maybeCloseAfterUpdate[0] = true;
-                        Browser.openUrl(context, Uri.parse("https://t.me/$" + subscription.invoice_slug), true, false, false, new Browser.Progress() {
+                        Browser.openUrl(context, Uri.parse(BuildVars.shareLink("$" + subscription.invoice_slug)), true, false, false, new Browser.Progress() {
                             @Override
                             public void end() {
                                 button.setLoading(false);

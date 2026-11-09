@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -83,7 +84,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                         if (alert[0] != null) {
                             alert[0].dismiss();
                         }
-                        Browser.openUrl(context, "https://t.me/" + username);
+                        Browser.openUrl(context, BuildVars.shareLink(username));
                     }
                     @Override
                     public void updateDrawState(@NonNull TextPaint ds) {
