@@ -35,6 +35,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -834,7 +835,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     linkActionView.setCanEdit(adminId == getAccountInstance().getUserConfig().clientUserId);
                     if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
                         if (info != null) {
-                            linkActionView.setLink("https://t.me/" + ChatObject.getPublicUsername(currentChat));
+                            linkActionView.setLink(BuildVars.shareLink(ChatObject.getPublicUsername(currentChat)));
                             linkActionView.setUsers(0, null);
                             linkActionView.hideRevokeOption(true);
                         }
@@ -1359,10 +1360,10 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                 SpannableStringBuilder builder = new SpannableStringBuilder(invite.title);
                 Emoji.replaceEmoji(builder, titleView.getPaint().getFontMetricsInt(), false);
                 titleView.setText(builder);
-            } else if (invite.link.startsWith("https://t.me/+")) {
-                titleView.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/" + invite.link.substring("https://t.me/+".length()));
-            } else if (invite.link.startsWith("https://t.me/joinchat/")) {
-                titleView.setText(invite.link.substring("https://t.me/joinchat/".length()));
+            } else if (BuildVars.invitePlusTitle(invite.link) != null) {
+                titleView.setText(BuildVars.invitePlusTitle(invite.link));
+            } else if (BuildVars.inviteJoinchatTitle(invite.link) != null) {
+                titleView.setText(BuildVars.inviteJoinchatTitle(invite.link));
             } else if (invite.link.startsWith("https://")) {
                 titleView.setText(invite.link.substring("https://".length()));
             } else {

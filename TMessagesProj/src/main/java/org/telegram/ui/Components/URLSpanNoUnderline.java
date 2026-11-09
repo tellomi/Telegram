@@ -13,6 +13,7 @@ import android.text.TextPaint;
 import android.text.style.URLSpan;
 import android.view.View;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLObject;
 
@@ -43,7 +44,7 @@ public class URLSpanNoUnderline extends URLSpan {
     public void onClick(View widget) {
         String url = getURL();
         if (url.startsWith("@")) {
-            Uri uri = Uri.parse("https://t.me/" + url.substring(1));
+            Uri uri = Uri.parse(BuildVars.shareLink(url.substring(1)));
             Browser.openUrl(widget.getContext(), uri);
         } else {
             Browser.openUrl(widget.getContext(), url);

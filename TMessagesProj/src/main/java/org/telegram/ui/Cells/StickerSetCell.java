@@ -33,6 +33,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
@@ -67,9 +68,6 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class StickerSetCell extends FrameLayout {
-    private final static String LINK_PREFIX = "t.me/addstickers/";
-    private final static String LINK_PREFIX_EMOJI = "t.me/addemoji/";
-
     private final int option;
 
     private TextView textView;
@@ -287,9 +285,9 @@ public class StickerSetCell extends FrameLayout {
         }
         int linkIndex = set.short_name.toLowerCase(Locale.ROOT).indexOf(query);
         if (linkIndex != -1) {
-            String linkPrefix = LINK_PREFIX;
+            String linkPrefix = BuildVars.shareHost() + "/addstickers/";
             if (set.emojis) {
-                linkPrefix = LINK_PREFIX_EMOJI;
+                linkPrefix = BuildVars.shareHost() + "/addemoji/";
             }
             linkIndex += linkPrefix.length();
             SpannableString spannableString = new SpannableString(linkPrefix + set.short_name);
@@ -388,7 +386,7 @@ public class StickerSetCell extends FrameLayout {
             }
         }
         if (groupSearch) {
-            valueTextView.setText((set.set.emojis ? LINK_PREFIX_EMOJI : LINK_PREFIX) + set.set.short_name);
+            valueTextView.setText(BuildVars.shareHost() + (set.set.emojis ? "/addemoji/" : "/addstickers/") + set.set.short_name);
         }
     }
 

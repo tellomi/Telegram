@@ -48,6 +48,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
@@ -964,7 +965,7 @@ public class FilterChatlistActivity extends BaseFragment {
             spoilerTextView = new SimpleTextView(context);
             spoilerTextView.setTextSize(16);
             spoilerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            SpannableString spoileredText = new SpannableString("t.me/folder/N3k/dImA/bIo");
+            SpannableString spoileredText = new SpannableString(BuildVars.shareHost() + "/folder/N3k/dImA/bIo");
             TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
             run.flags |= FLAG_STYLE_SPOILER;
             spoileredText.setSpan(new TextStyleSpan(run), 0, spoileredText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

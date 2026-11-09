@@ -48,8 +48,8 @@ public final class FeedConfig {
     /** SG-01. Dot, not a number. */
     public static final boolean UNREAD_DOT = true;
 
-    public static final String LINK_HOST = "tell.cc";
-    public static final String LINK_PREFIX = "https://tell.cc/m#";
+    public static final String LINK_HOST = BuildVars.LINK_HOST;
+    public static final String LINK_PREFIX = "https://" + LINK_HOST + "/m#";
 
     private static final String[] mediaBase = new String[UserConfig.MAX_ACCOUNT_COUNT];
 
