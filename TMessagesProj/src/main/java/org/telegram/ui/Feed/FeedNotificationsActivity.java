@@ -1,0 +1,149 @@
+package org.telegram.ui.Feed;
+
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.telegram.messenger.R;
+import org.telegram.messenger.feed.FeedController;
+import org.telegram.messenger.feed.FeedModels;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+
+import java.util.ArrayList;
+
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
+
+public class FeedNotificationsActivity extends BaseFragment {
+
+    private final String[] kinds = new String[]{"all", "like", "comment", "mention", "follow", "repost", "new_post"};
+    private int kind;
+    private final ArrayList<FeedModels.NotificationItem> items = new ArrayList<>();
+    private RecyclerListView listView;
+
+    @Override
+    public View createView(android.content.Context context) {
+        actionBar.setTitle(getString(R.string.FeedNotifications));
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) finishFragment();
+            }
+        });
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout filters = new LinearLayout(context);
+        filters.setOrientation(LinearLayout.HORIZONTAL);
+        int[] labels = new int[]{R.string.FeedFilterAll, R.string.FeedFilterLikes, R.string.FeedFilterComments, R.string.FeedFilterMentions, R.string.FeedFilterFollows, R.string.FeedFilterReposts, R.string.FeedFilterPosts};
+        for (int i = 0; i < labels.length; i++) {
+            final int index = i;
+            TextView tab = new TextView(context);
+            tab.setText(getString(labels[i]));
+            tab.setTextSize(13);
+            tab.setPadding(dp(8), dp(8), dp(8), dp(8));
+            tab.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            tab.setOnClickListener(v -> {
+                kind = index;
+                load();
+            });
+            filters.addView(tab);
+        }
+        root.addView(filters, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        listView = new RecyclerListView(context);
+        listView.setLayoutManager(new LinearLayoutManager(context));
+        listView.setAdapter(new Adapter());
+        root.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
+        fragmentView = root;
+        FeedController.getInstance(currentAccount).markNotificationsRead();
+        load();
+        return fragmentView;
+    }
+
+    private void load() {
+        FeedController.getInstance(currentAccount).loadNotifications(kinds[kind], (list, error) -> {
+            items.clear();
+            if (list != null) {
+                items.addAll(list);
+            }
+            if (listView.getAdapter() != null) {
+                listView.getAdapter().notifyDataSetChanged();
+            }
+        });
+    }
+
+    private class Adapter extends RecyclerListView.SelectionAdapter {
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            TextView text = new TextView(parent.getContext());
+            text.setPadding(dp(16), dp(12), dp(16), dp(12));
+            text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            text.setTextSize(15);
+            text.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            return new RecyclerListView.Holder(text);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            FeedModels.NotificationItem item = items.get(position);
+            StringBuilder names = new StringBuilder();
+            int shown = Math.min(2, item.actors.size());
+            for (int i = 0; i < shown; i++) {
+                if (i > 0) names.append(", ");
+                names.append(FeedUi.displayName(item.actors.get(i), currentAccount));
+            }
+            if (item.actors.size() > 2) {
+                names.append(" ").append(getString(R.string.FeedAndOthers));
+            }
+            String line = names + " · " + kindLabel(item.kind);
+            if (item.text != null && item.text.length() > 0) {
+                line += "\n" + item.text;
+            }
+            ((TextView) holder.itemView).setText(line);
+            holder.itemView.setOnClickListener(v -> open(item));
+        }
+
+        @Override
+        public int getItemCount() {
+            return items.size();
+        }
+    }
+
+    private String kindLabel(String kind) {
+        if ("like".equals(kind)) return getString(R.string.FeedFilterLikes);
+        if ("comment".equals(kind) || "reply".equals(kind)) return getString(R.string.FeedFilterComments);
+        if ("mention".equals(kind)) return getString(R.string.FeedFilterMentions);
+        if ("follow".equals(kind) || "mutual".equals(kind)) return getString(R.string.FeedFilterFollows);
+        if ("repost".equals(kind) || "quote".equals(kind)) return getString(R.string.FeedFilterReposts);
+        if ("new_post".equals(kind)) return getString(R.string.FeedFilterPosts);
+        return kind == null ? "" : kind;
+    }
+
+    private void open(FeedModels.NotificationItem item) {
+        if (item.postId != null && item.postId.length() > 0) {
+            presentFragment(FeedDetailActivity.forPost(item.postId));
+        } else if (item.actor != null && item.actor.userId != 0) {
+            FeedUi.openProfile(this, item.actor);
+        } else if (getParentActivity() != null) {
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                    .setMessage(getString(R.string.FeedUnavailable))
+                    .setPositiveButton(getString(R.string.OK), null)
+                    .show();
+        }
+    }
+}

@@ -131,6 +131,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     public static final int TYPE_SELECTED_CONTACTS = 3;
     public static final int TYPE_EVERYONE = 4;
     public static final int TYPE_AS_MESSAGE = 5;
+    public static final int TYPE_MUTUAL_FOLLOWERS = 6;
 
     public TLRPC.InputPeer selectedPeer;
 
@@ -345,6 +346,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             viewPager.scrollToPosition(1);
                         }
                         selectedType = TYPE_EVERYONE;
+                        updateCheckboxes(true);
+                        return;
+                    } else if (item.type == TYPE_MUTUAL_FOLLOWERS) {
+                        selectedType = TYPE_MUTUAL_FOLLOWERS;
                         updateCheckboxes(true);
                         return;
                     }
@@ -1079,7 +1084,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 boolean containsPrivacy = true, isChannel = false;
                 ItemInner pad = ItemInner.asPad(24);
                 items.add(pad);
-                if (liveSettings) {
+                if (feedMode) {
+                    items.add(ItemInner.asHeader2(getString(R.string.FeedAudienceTitle), getString(R.string.FeedAudienceSubtitle)));
+                    pad.subtractHeight += dp(72);
+                } else if (liveSettings) {
                     items.add(ItemInner.asHeader3(getString(R.string.LiveStorySettingsHeader)));
                     pad.subtractHeight += dp(72);
                 } else if (canChangePeer && (isEdit || sendAs == null || sendAs.size() <= 1)) {
@@ -1154,6 +1162,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                     items.add(item = ItemInner.asType(TYPE_SELECTED_CONTACTS, selectedType == TYPE_SELECTED_CONTACTS, selectedContactsCount));
                     pad.subtractHeight += dp(56);
+                    if (feedMode) {
+                        items.add(ItemInner.asType(TYPE_MUTUAL_FOLLOWERS, selectedType == TYPE_MUTUAL_FOLLOWERS, 0));
+                        pad.subtractHeight += dp(56);
+                    }
                     if (selectedContactsCount == 1) {
                         if (selectedContacts.size() == 1) {
                             item.user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(0));
@@ -1181,7 +1193,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     pad.subtractHeight += dp(80);
                 }
 
-                if (!isEdit) {
+                if (!isEdit && !feedMode) {
                     if (isLive && !liveSettings) {
                         if (isRtmpStream) {
                             items.add(ItemInner.asButton(5, getString(R.string.LiveStoryRTMPSettings), ""));
@@ -1623,9 +1635,14 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public void updateButton(boolean animated) {
             if (pageType == PAGE_TYPE_SHARE) {
                 button.setShowZero(false);
-                button.setEnabled(true);
+                button.setEnabled(!feedMode || selectedType != 0);
+                if (feedMode) {
+                    button.setText(getString(R.string.FeedAudienceDone), animated);
+                }
                 button.setCount(0, animated);
-                if (liveSettings) {
+                if (feedMode) {
+                    button.setText(getString(R.string.FeedAudienceDone), animated);
+                } else if (liveSettings) {
                     button.setText(getString(R.string.StoryPrivacyButtonSave), animated);
                 } else if (isEdit) {
                     button.setText(getString(R.string.StoryPrivacyButtonSave), animated);
@@ -1826,6 +1843,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             }
 
             updateSectionCell(animated);
+            if (feedMode) {
+                updateButton(animated);
+            }
         }
 
         public void updateLastSeen() {
@@ -2405,7 +2425,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             onDismiss = null;
         }
         Bulletin.removeDelegate(container);
-        save();
+        if (!feedMode) {
+            save();
+        }
         super.dismiss();
     }
 
@@ -2515,6 +2537,15 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
     private boolean applyWhenDismiss = false;
     private boolean allowSmallChats = true;
     private boolean isEdit = false;
+    private boolean feedMode;
+
+    public StoryPrivacyBottomSheet setFeedMode() {
+        this.feedMode = true;
+        this.selectedType = 0;
+        this.allowCover = false;
+        this.canChangePeer = false;
+        return this;
+    }
     public StoryPrivacyBottomSheet whenDismiss(Utilities.Callback<StoryPrivacy> listener) {
         this.onDismiss = listener;
         return this;
@@ -3266,6 +3297,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_CLOSE_FRIENDS);
                 avatarDrawable.setColor(0xFF88D93A, 0xFF2DB63B);
+            } else if (type == TYPE_MUTUAL_FOLLOWERS) {
+                titleTextView.setText(getString(R.string.FeedAudienceMutual));
+                setSubtitle(getString(R.string.FeedAudienceSubtitle));
+                subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
+                avatarDrawable.setColor(0xFF7C6CFF, 0xFF4B6CFF);
             } else if (type == TYPE_SELECTED_CONTACTS) {
                 titleTextView.setText(getString(R.string.StoryPrivacyOptionSelectedContacts));
                 if (count == 1 && singleUser != null) {
@@ -4234,6 +4271,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         }
 
         public boolean isNone() {
+            if (type == TYPE_MUTUAL_FOLLOWERS) {
+                return false;
+            }
             return sendToUsers.isEmpty() && rules.isEmpty();
         }
 
@@ -4244,6 +4284,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         @NonNull
         @Override
         public String toString() {
+            if (type == TYPE_MUTUAL_FOLLOWERS) {
+                return getString(R.string.FeedAudienceMutual);
+            }
             if (!sendToUsers.isEmpty()) {
                 return LocaleController.formatPluralString("StoryPrivacyRecipients", sendToUsers.size());
             }

@@ -484,6 +484,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public boolean openGiftsUpgradable;
     private boolean openedGifts;
     public boolean openCommonChats;
+    public boolean openMoments;
     public int initialStoryAlbum;
 
     private boolean scrolling;
@@ -606,6 +607,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int enable_no_forwards = 46;
     private final static int disable_no_forwards = 47;
     private final static int send_money = 48;
+    private final static int feed_saved = 49;
+    private final static int feed_liked = 50;
+    private final static int feed_mute = 51;
+    private final static int feed_report = 52;
 
     private Rect rect = new Rect();
 
@@ -2116,6 +2121,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         openGiftsUpgradable = arguments.getBoolean("open_gifts_upgradable", false);
         openGiftsCollection = arguments.getInt("open_gifts_collection", 0);
         openCommonChats = arguments.getBoolean("open_common", false);
+        openMoments = arguments.getBoolean("open_moments", false);
         initialStoryAlbum = arguments.getInt("open_story_album_id", -1);
         hasMainTabs = arguments.getBoolean("hasMainTabs", false);
         if (!expandPhoto) {
@@ -2661,6 +2667,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 } else if (id == report) {
                     ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
+                } else if (id == feed_saved) {
+                    presentFragment(new org.telegram.ui.Feed.FeedCollectionActivity(org.telegram.ui.Feed.FeedCollectionActivity.SAVED));
+                } else if (id == feed_liked) {
+                    presentFragment(new org.telegram.ui.Feed.FeedCollectionActivity(org.telegram.ui.Feed.FeedCollectionActivity.LIKED));
+                } else if (id == feed_mute) {
+                    org.telegram.messenger.feed.FeedController.getInstance(currentAccount).mute(String.valueOf(userId), true);
+                } else if (id == feed_report) {
+                    org.telegram.ui.Feed.FeedReportSheet.open(ProfileActivity.this, "user", String.valueOf(userId));
                 } else if (id == edit_channel) {
                     if (isTopic) {
                         presentFragment(TopicCreateFragment.create(chatId, topicId));
@@ -9599,6 +9613,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         super.onResume();
         if (sharedMediaLayout != null) {
             sharedMediaLayout.onResume();
+            if (openMoments) {
+                openMoments = false;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (sharedMediaLayout != null) {
+                        sharedMediaLayout.scrollToPage(SharedMediaLayout.TAB_MOMENTS);
+                    }
+                }, 250);
+            }
         }
         invalidateIsInLandscapeMode();
         if (listAdapter != null) {
@@ -12170,6 +12192,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (myProfile) {
                     setUsernameItem = otherItem.addSubItem(set_username, R.drawable.menu_username_change, getString(R.string.ProfileUsernameEdit));
                     linkItem = otherItem.addSubItem(copy_link_profile, R.drawable.msg_link2, getString(R.string.ProfileCopyLink));
+                    otherItem.addSubItem(feed_saved, R.drawable.msg_saved, getString(R.string.FeedSavedTitle));
+                    otherItem.addSubItem(feed_liked, R.drawable.media_like, getString(R.string.FeedLikedTitle));
                     updateItemsUsername();
                 }
                 selfUser = true;
@@ -12229,6 +12253,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(block_contact, !userBlocked ? R.drawable.msg_block : R.drawable.msg_block, !userBlocked ? LocaleController.getString(R.string.BlockContact) : LocaleController.getString(R.string.Unblock));
                     otherItem.addSubItem(edit_contact, R.drawable.msg_edit, LocaleController.getString(R.string.EditContact));
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
+                }
+                if (!isBot && !UserObject.isDeleted(user)) {
+                    otherItem.addSubItem(feed_mute, R.drawable.msg_archive_hide, getString(R.string.FeedMute));
+                    otherItem.addSubItem(feed_report, R.drawable.msg_report, getString(R.string.ReportChat));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {
                     if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
