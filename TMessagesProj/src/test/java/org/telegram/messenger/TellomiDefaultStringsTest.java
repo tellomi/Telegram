@@ -130,6 +130,28 @@ public class TellomiDefaultStringsTest {
     }
 
     @Test
+    public void hardcodedVisibleCopyUsesTellomi() throws Exception {
+        String preview = read(source("src/main/java/org/telegram/ui/ThemePreviewActivity.java"));
+        String contact = read(source("src/main/java/org/telegram/ui/NewContactBottomSheet.java"));
+        String login = read(source("src/main/java/org/telegram/ui/LoginActivity.java"));
+        String bulletin = read(source("src/main/java/org/telegram/ui/Components/MessagePreviewView.java"));
+
+        assertTrue(preview.contains("\"Tellomi Beta Chat\""));
+        assertFalse(preview.contains("\"Telegram Beta Chat\""));
+        assertTrue(contact.contains("This phone number is not on Tellomi."));
+        assertTrue(contact.contains("This phone number is on Tellomi."));
+        assertFalse(contact.contains("on Telegram"));
+        assertTrue(contact.contains("https://telegram.org/dl"));
+        assertTrue(login.contains("But Tellomi says it's banned."));
+        assertTrue(login.contains("But Tellomi says it's invalid."));
+        assertFalse(login.contains("But Telegram says"));
+        assertTrue(login.contains("recover@telegram.org"));
+        assertTrue(login.contains("login@stel.com"));
+        assertTrue(bulletin.contains("Subscribe to **Tellomi Premium**"));
+        assertFalse(bulletin.contains("Subscribe to **Telegram Premium**"));
+    }
+
+    @Test
     public void manifestLabelsAndCallPreviewUseTellomi() throws Exception {
         String release = read(source("config/release/AndroidManifest.xml"));
         String debug = read(source("config/debug/AndroidManifest.xml"));
