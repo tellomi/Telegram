@@ -56,6 +56,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     private String attachmentKind;
     private JSONObject readyAttachment;
     private FeedVoiceCapture commentVoice;
+    private FeedRecordWave recordWave;
     private EmojiView emojiView;
 
     public FeedDetailActivity(Bundle args) {
@@ -109,6 +110,9 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         attachmentLabel.setVisibility(View.GONE);
         attachmentLabel.setOnClickListener(v -> clearAttachment());
         bar.addView(attachmentLabel);
+        recordWave = new FeedRecordWave(context);
+        recordWave.setVisibility(View.GONE);
+        bar.addView(recordWave, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 112));
         LinearLayout tools = new LinearLayout(context);
         tools.setOrientation(LinearLayout.HORIZONTAL);
         addReplyTool(tools, getString(R.string.FeedToolPhoto), this::pickCommentPhoto);
@@ -275,6 +279,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     private void toggleCommentVoice() {
         if (commentVoice != null && commentVoice.isRecording()) {
             commentVoice.stop();
+            recordWave.setVisibility(View.GONE);
             return;
         }
         FeedPlayback.stop();
@@ -289,9 +294,17 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
             @Override
             public void onError() {
+                recordWave.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAmplitude(double amplitude) {
+                recordWave.setAmplitude(amplitude);
             }
         });
         commentVoice.start();
+        recordWave.updateColors();
+        recordWave.setVisibility(View.VISIBLE);
         attachmentLabel.setText(getString(R.string.FeedRecording));
         attachmentLabel.setVisibility(View.VISIBLE);
     }

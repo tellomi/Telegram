@@ -17,6 +17,7 @@ public final class FeedVoiceCapture implements NotificationCenter.NotificationCe
     public interface Callback {
         void onFile(File file);
         void onError();
+        void onAmplitude(double amplitude);
     }
 
     private final int account;
@@ -91,6 +92,13 @@ public final class FeedVoiceCapture implements NotificationCenter.NotificationCe
             finish();
             if (callback != null) {
                 callback.onError();
+            }
+        } else if (id == NotificationCenter.recordProgressChanged) {
+            if (args.length < 2 || !(args[0] instanceof Integer) || ((Integer) args[0]) != guid) {
+                return;
+            }
+            if (callback != null && args[1] instanceof Double) {
+                callback.onAmplitude((Double) args[1]);
             }
         } else if (id == NotificationCenter.audioDidSent) {
             if (args.length < 1 || !(args[0] instanceof Integer) || ((Integer) args[0]) != guid) {

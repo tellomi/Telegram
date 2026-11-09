@@ -2,7 +2,12 @@ package org.telegram.messenger.feed;
 
 import android.content.SharedPreferences;
 
+import org.telegram.messenger.AppGlobalConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
+
+import java.net.URL;
 
 /**
  * Suggested defaults from the feed spec (SG-*). Change them here.
@@ -12,13 +17,6 @@ public final class FeedConfig {
 
     private FeedConfig() {
     }
-
-    /**
-     * Unverified fallback. discover.engineCredential only has token, expires, and region.
-     * A region that looks like a URL or host replaces this until the engine contract
-     * publishes a real base. An explicit feed_engine_base preference still wins.
-     */
-    public static final String DEFAULT_ENGINE_BASE = "https://content.tellomi.cn";
 
     public static final int PAGE_SIZE = 20;
     public static final long NEW_POSTS_POLL_MS = 60_000L;
@@ -53,48 +51,170 @@ public final class FeedConfig {
     public static final String LINK_HOST = "tell.cc";
     public static final String LINK_PREFIX = "https://tell.cc/m#";
 
-    public static String engineBase(int account) {
-        SharedPreferences prefs = MessagesController.getInstance(account).getMainSettings();
-        String override = prefs.getString("feed_engine_base", "");
-        if (override != null && override.startsWith("http")) {
-            return trimSlash(override);
-        }
-        String fromCredential = prefs.getString("feed_engine_from_credential", "");
-        if (fromCredential != null && fromCredential.startsWith("http")) {
-            return trimSlash(fromCredential);
-        }
-        return DEFAULT_ENGINE_BASE;
+    private static final String[] mediaBase = new String[UserConfig.MAX_ACCOUNT_COUNT];
+
+    /**
+     * True only when help.getAppConfig published both keys, or a debug build
+     * has an explicit https origin in feed_engine_base. Never guesses a host.
+     * discover.engineCredential.region is cn or global and is not consulted.
+     */
+    public static boolean enabled(int account) {
+        return engineBase(account).length() > 0;
     }
 
-    public static void rememberCredentialBase(int account, String region) {
-        String url = baseFromRegion(region);
+    public static String engineBase(int account) {
+        String debug = debugOverride(account);
+        if (debug != null) {
+            return debug;
+        }
+        AppGlobalConfig config = AppGlobalConfig.getInstance(account);
+        if (config == null || !config.tellomiDiscoverFeedEnabled.get()) {
+            return "";
+        }
+        String origin = httpsOrigin(config.tellomiDiscoverFeedBaseUrl.get());
+        return origin == null ? "" : origin;
+    }
+
+    /** Debug builds only. Release builds ignore the preference. */
+    public static void setEngineBase(int account, String url) {
+        if (!BuildVars.DEBUG_VERSION) {
+            return;
+        }
+        String origin = httpsOrigin(url);
         MessagesController.getInstance(account).getMainSettings().edit()
-                .putString("feed_engine_from_credential", url == null ? "" : url)
+                .putString("feed_engine_base", origin == null ? "" : origin)
                 .apply();
     }
 
-    public static String baseFromRegion(String region) {
-        if (region == null) {
-            return null;
+    public static void rememberMediaBase(int account, String raw) {
+        String prefix = httpsPrefix(raw);
+        if (prefix == null || account < 0 || account >= mediaBase.length) {
+            return;
         }
-        String value = region.trim();
-        if (value.startsWith("http://") || value.startsWith("https://")) {
-            return trimSlash(value);
-        }
-        if (value.indexOf(' ') < 0 && value.indexOf('.') > 0 && value.indexOf('/') < 0) {
-            return "https://" + value;
-        }
-        return null;
+        mediaBase[account] = prefix;
+        MessagesController.getInstance(account).getMainSettings().edit().putString("feed_media_base", prefix).apply();
     }
 
-    public static void setEngineBase(int account, String url) {
-        MessagesController.getInstance(account).getMainSettings().edit().putString("feed_engine_base", url == null ? "" : url).apply();
+    /** Absolute http(s) stays as-is. A relative key is prefixed with media_base_url. */
+    public static String mediaUrl(int account, String keyOrUrl) {
+        if (keyOrUrl == null || keyOrUrl.length() == 0) {
+            return "";
+        }
+        if (keyOrUrl.startsWith("https://") || keyOrUrl.startsWith("http://")) {
+            return keyOrUrl;
+        }
+        String base = mediaBase(account);
+        if (base.length() == 0) {
+            return "";
+        }
+        String key = keyOrUrl;
+        while (key.startsWith("/")) {
+            key = key.substring(1);
+        }
+        return base + "/" + key;
+    }
+
+    private static String mediaBase(int account) {
+        if (account < 0 || account >= mediaBase.length) {
+            return "";
+        }
+        if (mediaBase[account] == null) {
+            String stored = MessagesController.getInstance(account).getMainSettings().getString("feed_media_base", "");
+            mediaBase[account] = httpsPrefix(stored);
+            if (mediaBase[account] == null) {
+                mediaBase[account] = "";
+            }
+        }
+        return mediaBase[account];
+    }
+
+    private static String debugOverride(int account) {
+        if (!BuildVars.DEBUG_VERSION) {
+            return null;
+        }
+        SharedPreferences prefs = MessagesController.getInstance(account).getMainSettings();
+        return httpsOrigin(prefs.getString("feed_engine_base", ""));
+    }
+
+    /** https://host[:port] and nothing else. */
+    static String httpsOrigin(String raw) {
+        String value = trimSlash(raw);
+        if (value == null) {
+            return null;
+        }
+        try {
+            URL url = new URL(value);
+            if (!"https".equalsIgnoreCase(url.getProtocol())) {
+                return null;
+            }
+            if (url.getUserInfo() != null && url.getUserInfo().length() > 0) {
+                return null;
+            }
+            if (url.getHost() == null || url.getHost().length() == 0) {
+                return null;
+            }
+            String path = url.getPath();
+            if (path != null && path.length() > 0 && !"/".equals(path)) {
+                return null;
+            }
+            if (url.getQuery() != null || url.getRef() != null) {
+                return null;
+            }
+            int port = url.getPort();
+            if (port == 0 || port > 65535) {
+                return null;
+            }
+            return value;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** https origin plus an optional path. Used for media_base_url. */
+    private static String httpsPrefix(String raw) {
+        String value = trimSlash(raw);
+        if (value == null) {
+            return null;
+        }
+        try {
+            URL url = new URL(value);
+            if (!"https".equalsIgnoreCase(url.getProtocol())) {
+                return null;
+            }
+            if (url.getUserInfo() != null && url.getUserInfo().length() > 0) {
+                return null;
+            }
+            if (url.getHost() == null || url.getHost().length() == 0) {
+                return null;
+            }
+            if (url.getQuery() != null || url.getRef() != null) {
+                return null;
+            }
+            int port = url.getPort();
+            if (port == 0 || port > 65535) {
+                return null;
+            }
+            String path = url.getPath();
+            if (path != null && path.indexOf(' ') >= 0) {
+                return null;
+            }
+            return value;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static String trimSlash(String url) {
-        while (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
+        if (url == null) {
+            return null;
         }
-        return url;
+        String value = url.trim();
+        if (value.length() == 0) {
+            return null;
+        }
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value.length() == 0 ? null : value;
     }
 }

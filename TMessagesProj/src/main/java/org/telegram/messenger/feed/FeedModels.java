@@ -44,6 +44,7 @@ public final class FeedModels {
         public String type = "image";
         public String key = "";
         public String url = "";
+        public String coverKey = "";
         public int w;
         public int h;
         public int durationMs;
@@ -57,6 +58,7 @@ public final class FeedModels {
             m.type = o.optString("type", "image");
             m.key = o.optString("key", "");
             m.url = o.optString("url", o.optString("src", ""));
+            m.coverKey = o.optString("cover_key", o.optString("cover", ""));
             m.w = o.optInt("w", o.optInt("width", 0));
             m.h = o.optInt("h", o.optInt("height", 0));
             m.durationMs = o.optInt("duration_ms", o.optInt("duration", 0));
@@ -65,6 +67,26 @@ public final class FeedModels {
             }
             m.original = o.optBoolean("is_original", false);
             return m;
+        }
+
+        /** Playable file. Relative keys use media_base_url from GET /v1/feed/config. */
+        public String displayUrl(int account) {
+            if (url != null && (url.startsWith("https://") || url.startsWith("http://"))) {
+                return url;
+            }
+            String path = url != null && url.length() > 0 ? url : key;
+            return FeedConfig.mediaUrl(account, path);
+        }
+
+        /** Still image. Video uses cover_key when the config published a media base. */
+        public String thumbUrl(int account) {
+            if (coverKey != null && coverKey.length() > 0) {
+                String cover = FeedConfig.mediaUrl(account, coverKey);
+                if (cover.length() > 0) {
+                    return cover;
+                }
+            }
+            return displayUrl(account);
         }
     }
 

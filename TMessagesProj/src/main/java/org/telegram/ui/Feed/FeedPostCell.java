@@ -30,6 +30,9 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -38,6 +41,42 @@ import static org.telegram.messenger.LocaleController.getString;
  */
 @SuppressLint("ViewConstructor")
 public class FeedPostCell extends LinearLayout {
+
+    private static final HashMap<String, WeakReference<BackupImageView>> thumbs = new HashMap<>();
+
+    static BackupImageView thumb(String postId, int index) {
+        WeakReference<BackupImageView> ref = thumbs.get(postId + ":" + index);
+        if (ref == null) {
+            return null;
+        }
+        BackupImageView view = ref.get();
+        if (view == null) {
+            return null;
+        }
+        Object tag = view.getTag();
+        if (tag == null || !tag.equals(postId + ":" + index)) {
+            return null;
+        }
+        return view;
+    }
+
+    private static int viewerIndex(FeedModels.Post post, FeedModels.Media media) {
+        if (post == null || media == null) {
+            return -1;
+        }
+        int index = 0;
+        for (int i = 0; i < post.media.size(); i++) {
+            FeedModels.Media item = post.media.get(i);
+            if (!"image".equals(item.type) && !"video".equals(item.type)) {
+                continue;
+            }
+            if (item == media) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
 
     public interface Delegate {
         void onOpen(FeedModels.Post post);
@@ -434,26 +473,33 @@ public class FeedPostCell extends LinearLayout {
                             seen++;
                         }
                     }
-                    if (media != null && media.url != null && media.url.length() > 0) {
-                        image.setImage(media.url, "160_180", new ColorDrawable(Theme.getColor(Theme.key_graySection)));
+                    int viewerIndex = viewerIndex(post, media);
+                    String thumb = media == null ? "" : media.thumbUrl(account);
+                    String play = media == null ? "" : media.displayUrl(account);
+                    if (thumb.length() > 0) {
+                        image.setImage(thumb, "160_180", new ColorDrawable(Theme.getColor(Theme.key_graySection)));
                     } else {
                         image.setImage(null, null, new ColorDrawable(Theme.getColor(Theme.key_graySection)));
+                    }
+                    if (post.id != null && viewerIndex >= 0) {
+                        image.setTag(post.id + ":" + viewerIndex);
+                        thumbs.put(post.id + ":" + viewerIndex, new WeakReference<>(image));
                     }
                     image.setContentDescription(("video".equals(mediaKind) ? getString(R.string.FeedVideo) + ", " + (media == null ? 0 : media.durationMs / 1000) + "s" : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + mediaCount);
                     FeedPlayback.untrack(frame);
                     if (frame.getChildCount() > 1) {
                         frame.removeViewAt(0);
                     }
-                    if ("video".equals(mediaKind) && media != null && media.url != null && media.url.startsWith("http")) {
+                    if ("video".equals(mediaKind) && play.startsWith("http")) {
                         TextureView texture = new TextureView(frame.getContext());
                         frame.addView(texture, 0, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
-                        FeedPlayback.track(frame, media.url, texture);
+                        FeedPlayback.track(frame, play, texture);
                     }
-                    final int index = position;
+                    final int openIndex = viewerIndex >= 0 ? viewerIndex : position;
                     frame.setOnClickListener(v -> {
-                        post.albumPage = index;
+                        post.albumPage = position;
                         if (delegate != null) {
-                            delegate.onMedia(post, index);
+                            delegate.onMedia(post, openIndex);
                         }
                     });
                     if (FeedConfig.DOUBLE_TAP_LIKE && "image".equals(mediaKind)) {

@@ -65,6 +65,7 @@ public class FeedComposerActivity extends BaseFragment {
     private TextView audienceView;
     private TextView counter;
     private TextView attachments;
+    private FeedRecordWave recordWave;
     private TextView publish;
     private StoryPrivacyBottomSheet.StoryPrivacy privacy;
     private boolean allowNearby;
@@ -196,6 +197,9 @@ public class FeedComposerActivity extends BaseFragment {
         attachments.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         attachments.setTextSize(14);
         column.addView(attachments, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 8));
+        recordWave = new FeedRecordWave(context);
+        recordWave.setVisibility(View.GONE);
+        column.addView(recordWave, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 112));
 
         LinearLayout tools = new LinearLayout(context);
         tools.setOrientation(LinearLayout.HORIZONTAL);
@@ -347,6 +351,7 @@ public class FeedComposerActivity extends BaseFragment {
     private void toggleVoice() {
         if (voice != null && voice.isRecording()) {
             voice.stop();
+            recordWave.setVisibility(View.GONE);
             return;
         }
         if (has("video") || poll != null) {
@@ -372,9 +377,17 @@ public class FeedComposerActivity extends BaseFragment {
             @Override
             public void onError() {
                 attachments.setText("");
+                recordWave.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAmplitude(double amplitude) {
+                recordWave.setAmplitude(amplitude);
             }
         });
         voice.start();
+        recordWave.updateColors();
+        recordWave.setVisibility(View.VISIBLE);
         attachments.setText(getString(R.string.FeedRecording));
     }
 

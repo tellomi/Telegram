@@ -75,6 +75,9 @@ public class FeedController {
     private final ArrayList<UploadTask> uploads = new ArrayList<>();
     private int unread;
     private boolean uploadsResumed;
+    private boolean remoteConfigReady;
+    private boolean remoteConfigLoading;
+    private final ArrayList<Runnable> configWaiters = new ArrayList<>();
 
     private FeedController(int account) {
         this.account = account;
@@ -134,6 +137,53 @@ public class FeedController {
     }
 
     public void load(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
+        if (!FeedConfig.enabled(account)) {
+            if (refresh) {
+                posts(stream).clear();
+                notifyListeners();
+            }
+            if (done != null) {
+                done.run(true, null);
+            }
+            return;
+        }
+        if (remoteConfigReady && !refresh) {
+            loadStream(stream, refresh, done);
+            return;
+        }
+        ensureRemoteConfig(() -> loadStream(stream, refresh, done));
+    }
+
+    public void forgetRemoteConfig() {
+        remoteConfigReady = false;
+    }
+
+    private void ensureRemoteConfig(final Runnable next) {
+        if (remoteConfigReady) {
+            next.run();
+            return;
+        }
+        configWaiters.add(next);
+        if (remoteConfigLoading) {
+            return;
+        }
+        remoteConfigLoading = true;
+        api.getJson("/v1/feed/config", (json, error) -> {
+            remoteConfigLoading = false;
+            if (json != null) {
+                FeedConfig.rememberMediaBase(account, json.optString("media_base_url", ""));
+                remoteConfigReady = true;
+                notifyListeners();
+            }
+            ArrayList<Runnable> waiters = new ArrayList<>(configWaiters);
+            configWaiters.clear();
+            for (int i = 0; i < waiters.size(); i++) {
+                waiters.get(i).run();
+            }
+        });
+    }
+
+    private void loadStream(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
         String cursor = refresh ? "" : cursor(stream);
         String path = "/v1/feed/" + stream + "?cursor=" + FeedApi.enc(cursor);
         if (FeedModels.STREAM_NEARBY.equals(stream)) {

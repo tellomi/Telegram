@@ -12,6 +12,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.feed.FeedConfig;
@@ -36,7 +37,7 @@ import java.util.ArrayList;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
-public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFragmentDelegate, FeedController.Listener, FeedPostCell.Delegate {
+public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFragmentDelegate, FeedController.Listener, FeedPostCell.Delegate, NotificationCenter.NotificationCenterDelegate {
 
     private ViewPagerFixed pager;
     private final FeedListView[] lists = new FeedListView[4];
@@ -49,6 +50,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private int index;
     private boolean resetOnShow;
     private Runnable poll;
+    private String appliedEngineBase = "";
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -231,10 +233,12 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         fragmentView = content;
         paintTabs();
         controller().addListener(this);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
         controller().resumeUploads();
         if (controller().debugFixtures() && controller().posts(FeedModels.STREAM_RECOMMEND).isEmpty()) {
             controller().setDebugFixtures(true);
         }
+        appliedEngineBase = FeedConfig.engineBase(currentAccount);
         ensure(0, controller().posts(FeedModels.STREAM_RECOMMEND).isEmpty());
         onChanged();
         return fragmentView;
@@ -353,10 +357,26 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void onFragmentDestroy() {
         controller().removeListener(this);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
         if (poll != null) {
             AndroidUtilities.cancelRunOnUIThread(poll);
         }
         super.onFragmentDestroy();
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.appConfigUpdated && account == currentAccount && lists != null && lists[index] != null) {
+            String base = FeedConfig.engineBase(currentAccount);
+            if (base.equals(appliedEngineBase)) {
+                return;
+            }
+            appliedEngineBase = base;
+            controller().forgetRemoteConfig();
+            if (!loading[index]) {
+                ensure(index, true);
+            }
+        }
     }
 
     @Override

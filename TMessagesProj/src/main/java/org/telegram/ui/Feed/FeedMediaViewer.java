@@ -1,6 +1,9 @@
 package org.telegram.ui.Feed;
 
+import android.os.Build;
 import android.view.View;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLoader;
@@ -9,7 +12,9 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
@@ -26,13 +31,15 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
     private final BaseFragment fragment;
     private final ArrayList<FeedModels.Media> media;
     private final int index;
+    private final String postId;
     private final String waitingUrl;
     private int account;
 
-    private FeedMediaViewer(BaseFragment fragment, ArrayList<FeedModels.Media> media, int index, String waitingUrl) {
+    private FeedMediaViewer(BaseFragment fragment, ArrayList<FeedModels.Media> media, int index, String postId, String waitingUrl) {
         this.fragment = fragment;
         this.media = media;
         this.index = index;
+        this.postId = postId;
         this.waitingUrl = waitingUrl;
         this.account = fragment.getCurrentAccount();
     }
@@ -53,51 +60,53 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         }
         int start = Math.max(0, Math.min(index, media.size() - 1));
         FeedPlayback.stop();
-        String missing = firstMissing(media);
+        String missing = firstMissing(media, fragment.getCurrentAccount());
         if (missing == null) {
-            show(fragment, media, start);
+            show(fragment, media, start, post.id);
             return;
         }
         if (pending != null) {
             NotificationCenter.getInstance(pending.account).removeObserver(pending, NotificationCenter.httpFileDidLoad);
             NotificationCenter.getInstance(pending.account).removeObserver(pending, NotificationCenter.httpFileDidFailedLoad);
         }
-        pending = new FeedMediaViewer(fragment, media, start, missing);
+        pending = new FeedMediaViewer(fragment, media, start, post.id, missing);
         NotificationCenter.getInstance(fragment.getCurrentAccount()).addObserver(pending, NotificationCenter.httpFileDidLoad);
         NotificationCenter.getInstance(fragment.getCurrentAccount()).addObserver(pending, NotificationCenter.httpFileDidFailedLoad);
+        int account = fragment.getCurrentAccount();
         for (int i = 0; i < media.size(); i++) {
-            String url = media.get(i).url;
-            if (url != null && url.startsWith("http") && !localFile(media.get(i)).exists()) {
-                ImageLoader.getInstance().loadHttpFile(url, "video".equals(media.get(i).type) ? "mp4" : "jpg", fragment.getCurrentAccount());
+            String url = media.get(i).displayUrl(account);
+            if (url.startsWith("http") && !localFile(media.get(i), account).exists()) {
+                ImageLoader.getInstance().loadHttpFile(url, "video".equals(media.get(i).type) ? "mp4" : "jpg", account);
             }
         }
     }
 
-    private static String firstMissing(ArrayList<FeedModels.Media> media) {
+    private static String firstMissing(ArrayList<FeedModels.Media> media, int account) {
         for (int i = 0; i < media.size(); i++) {
-            String url = media.get(i).url;
-            if (url != null && url.startsWith("http") && !localFile(media.get(i)).exists()) {
+            String url = media.get(i).displayUrl(account);
+            if (url.startsWith("http") && !localFile(media.get(i), account).exists()) {
                 return url;
             }
         }
         return null;
     }
 
-    private static File localFile(FeedModels.Media item) {
-        if (item.url == null) {
+    private static File localFile(FeedModels.Media item, int account) {
+        String url = item.displayUrl(account);
+        if (url.length() == 0) {
             return new File("");
         }
-        if (!item.url.startsWith("http")) {
-            return new File(item.url);
+        if (!url.startsWith("http")) {
+            return new File(url);
         }
-        return ImageLoader.getHttpFilePath(item.url, "video".equals(item.type) ? "mp4" : "jpg");
+        return ImageLoader.getHttpFilePath(url, "video".equals(item.type) ? "mp4" : "jpg");
     }
 
-    private static void show(BaseFragment fragment, ArrayList<FeedModels.Media> media, int index) {
+    private static void show(BaseFragment fragment, ArrayList<FeedModels.Media> media, int index, final String postId) {
         ArrayList<Object> photos = new ArrayList<>();
         for (int i = 0; i < media.size(); i++) {
             FeedModels.Media item = media.get(i);
-            File file = localFile(item);
+            File file = localFile(item, fragment.getCurrentAccount());
             boolean video = "video".equals(item.type);
             int duration = item.durationMs > 0 ? Math.max(1, item.durationMs / 1000) : 0;
             photos.add(new MediaController.PhotoEntry(0, i, 0, file.getAbsolutePath(), 0, duration, video, item.w, item.h, file.length()));
@@ -106,9 +115,48 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         PhotoViewer.getInstance().openPhotoForSelect(photos, index, PhotoViewer.SELECT_TYPE_NO_SELECT, false, new PhotoViewer.EmptyPhotoViewerProvider() {
             @Override
             public PhotoViewer.PlaceProviderObject getPlaceForPhoto(org.telegram.messenger.MessageObject messageObject, org.telegram.tgnet.TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
-                return null;
+                return place(postId, index, needPreview);
             }
         }, null);
+    }
+
+    private static PhotoViewer.PlaceProviderObject place(String postId, int index, boolean needPreview) {
+        BackupImageView image = FeedPostCell.thumb(postId, index);
+        if (image == null || image.getImageReceiver() == null) {
+            return null;
+        }
+        int[] coords = new int[2];
+        image.getLocationInWindow(coords);
+        PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+        object.viewX = coords[0];
+        object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+        object.parentView = clippingParent(image);
+        object.imageReceiver = image.getImageReceiver();
+        if (needPreview) {
+            object.thumb = object.imageReceiver.getBitmapSafe();
+        }
+        int[] radius = image.getRoundRadius();
+        if (radius != null && radius.length >= 4) {
+            object.radius = new int[]{radius[0], radius[1], radius[2], radius[3]};
+        }
+        object.scale = image.getScaleX();
+        return object;
+    }
+
+    private static View clippingParent(View image) {
+        View list = null;
+        View current = image;
+        while (current.getParent() instanceof View) {
+            current = (View) current.getParent();
+            if (current instanceof RecyclerListView && !(current.getParent() instanceof RecyclerView)) {
+                list = current;
+            }
+        }
+        if (list == null) {
+            View parent = image.getParent() instanceof View ? (View) image.getParent() : image;
+            return parent;
+        }
+        return list;
     }
 
     @Override
@@ -127,12 +175,12 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
             }
             return;
         }
-        if (firstMissing(media) != null) {
+        if (firstMissing(media, account) != null) {
             return;
         }
         Utilities.stageQueue.postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
             if (fragment.getParentActivity() != null) {
-                show(fragment, media, index);
+                show(fragment, media, index, postId);
             }
         }));
     }

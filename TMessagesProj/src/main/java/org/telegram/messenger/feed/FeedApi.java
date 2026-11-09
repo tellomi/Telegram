@@ -19,8 +19,8 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 
 /**
- * HTTPS client for content-engine /v1/feed. Auth is a teamgram discover credential (TBD-15 A).
- * The engine is built in parallel; this layer follows the spec contract in section 7.4.
+ * HTTPS client for content-engine /v1/feed. Auth is discover.engineCredential (token, expires, region).
+ * region is cn or global and is not a host. The host comes from help.getAppConfig.
  */
 public class FeedApi {
 
@@ -58,6 +58,10 @@ public class FeedApi {
     }
 
     public void uploadFile(final File file, final String filename, final String mime, final Callback<String> callback) {
+        if (!FeedConfig.enabled(account)) {
+            callback.run(null, "disabled");
+            return;
+        }
         withToken(new Callback<String>() {
             @Override
             public void run(String tokenValue, String error) {
@@ -79,6 +83,10 @@ public class FeedApi {
     }
 
     private void request(final String method, final String path, final JSONObject body, final Callback<JSONObject> callback) {
+        if (!FeedConfig.enabled(account)) {
+            callback.run(null, "disabled");
+            return;
+        }
         withToken(new Callback<String>() {
             @Override
             public void run(final String tokenValue, String error) {
@@ -118,7 +126,6 @@ public class FeedApi {
                 TL_discover.TL_discover_engineCredential cred = (TL_discover.TL_discover_engineCredential) response;
                 token = cred.token == null ? "" : cred.token;
                 tokenExpires = cred.expires;
-                FeedConfig.rememberCredentialBase(account, cred.region);
                 if (token.length() == 0) {
                     callback.run(null, "auth");
                 } else {
