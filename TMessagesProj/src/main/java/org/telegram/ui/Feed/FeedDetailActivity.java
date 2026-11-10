@@ -199,7 +199,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             if (post != null && post.unavailable) {
                 commentMissing = false;
                 if (actionBar != null) {
-                    actionBar.setTitle(LocaleController.getString("Moments_PostGone", R.string.Moments_PostGone));
+                    actionBar.setTitle(LocaleController.getString(R.string.Moments_PostGone));
                 }
             }
             if (listView.getAdapter() != null) {
@@ -619,9 +619,9 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             }
             if (position == 1) {
                 TextView sortView = (TextView) holder.itemView;
-                String sortLabel = ("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)) + " · " + comments.size();
+                String sortLabel = ("hot".equals(sort) ? LocaleController.getString(R.string.Moments_Sort_Hot) : LocaleController.getString(R.string.Moments_Sort_Latest)) + " · " + comments.size();
                 if (commentMissing) {
-                    sortLabel = sortLabel + "\n" + LocaleController.getString("Moments_CommentGone", R.string.Moments_CommentGone);
+                    sortLabel = sortLabel + "\n" + LocaleController.getString(R.string.Moments_CommentGone);
                 }
                 sortView.setText(sortLabel);
                 sortView.setOnClickListener(v -> {

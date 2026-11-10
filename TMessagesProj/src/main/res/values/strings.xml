@@ -11820,4 +11820,7 @@
     <string name="Moments_ListLoadFailed">Could not load this list</string>
     <string name="Moments_PostGone">That post is no longer available</string>
     <string name="Moments_CommentGone">That comment is no longer available</string>
+
+    <string name="Moments_FollowingPrivate">Following · This list is private</string>
+    <string name="Moments_FollowersPrivate">Followers · This list is private</string>
 </resources>

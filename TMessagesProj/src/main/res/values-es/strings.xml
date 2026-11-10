@@ -1378,4 +1378,7 @@
     <string name="Moments_PostGone">Esa publicación ya no está</string>
     <string name="Moments_CommentGone">Ese comentario ya no está</string>
     <string name="Moments_Unavailable">Contenido no disponible</string>
+
+    <string name="Moments_FollowingPrivate">Siguiendo · Esta lista es privada</string>
+    <string name="Moments_FollowersPrivate">Seguidores · Esta lista es privada</string>
 </resources>

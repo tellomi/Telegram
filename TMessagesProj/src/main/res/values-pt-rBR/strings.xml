@@ -1311,4 +1311,7 @@
     <string name="Moments_PostGone">Essa publicação não existe mais</string>
     <string name="Moments_CommentGone">Esse comentário não existe mais</string>
     <string name="Moments_Unavailable">Conteúdo indisponível</string>
+
+    <string name="Moments_FollowingPrivate">Seguindo · Esta lista é privada</string>
+    <string name="Moments_FollowersPrivate">Seguidores · Esta lista é privada</string>
 </resources>

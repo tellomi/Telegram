@@ -99,12 +99,12 @@ public class FeedCollectionActivity extends BaseFragment {
     }
 
     private String title() {
-        if (mode == SAVED) return LocaleController.getString("Moments_Profile_Saved", R.string.Moments_Profile_Saved);
-        if (mode == LIKED) return LocaleController.getString("Moments_Profile_Liked", R.string.Moments_Profile_Liked);
-        if (mode == FOLLOWING) return LocaleController.getString("Moments_FollowingEntry", R.string.Moments_FollowingEntry);
-        if (mode == FOLLOWERS) return LocaleController.getString("Moments_FollowersEntry", R.string.Moments_FollowersEntry);
-        if (mode == MUTES) return LocaleController.getString("Moments_Mutes", R.string.Moments_Mutes);
-        return LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts);
+        if (mode == SAVED) return LocaleController.getString(R.string.Moments_Profile_Saved);
+        if (mode == LIKED) return LocaleController.getString(R.string.Moments_Profile_Liked);
+        if (mode == FOLLOWING) return LocaleController.getString(R.string.Moments_FollowingEntry);
+        if (mode == FOLLOWERS) return LocaleController.getString(R.string.Moments_FollowersEntry);
+        if (mode == MUTES) return LocaleController.getString(R.string.Moments_Mutes);
+        return LocaleController.getString(R.string.Moments_Profile_Posts);
     }
 
     private void load() {
@@ -190,13 +190,13 @@ public class FeedCollectionActivity extends BaseFragment {
                 people.clear();
             }
             if (json != null) {
-                org.json.JSONArray items = json.optJSONArray("items");
+                JSONArray items = json.optJSONArray("items");
                 if (items == null) {
                     items = json.optJSONArray("users");
                 }
                 if (items != null) {
                     for (int i = 0; i < items.length(); i++) {
-                        org.json.JSONObject item = items.optJSONObject(i);
+                        JSONObject item = items.optJSONObject(i);
                         if (item == null) {
                             continue;
                         }
@@ -281,12 +281,12 @@ public class FeedCollectionActivity extends BaseFragment {
                 if (mode == FOLLOWING || mode == FOLLOWERS) {
                     TextView text = (TextView) holder.itemView;
                     if (peopleState == PEOPLE_PRIVATE) {
-                        text.setText(LocaleController.getString("Moments_ListPrivate", R.string.Moments_ListPrivate));
+                        text.setText(LocaleController.getString(R.string.Moments_ListPrivate));
                         text.setOnClickListener(null);
                         return;
                     }
                     if (peopleState == PEOPLE_ERROR) {
-                        text.setText(LocaleController.getString("Moments_ListLoadFailed", R.string.Moments_ListLoadFailed));
+                        text.setText(LocaleController.getString(R.string.Moments_ListLoadFailed));
                         text.setOnClickListener(v -> loadPeople(false));
                         return;
                     }

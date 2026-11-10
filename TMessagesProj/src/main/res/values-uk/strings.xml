@@ -338,4 +338,7 @@
     <string name="Moments_PostGone">Цього допису вже немає</string>
     <string name="Moments_CommentGone">Цього коментаря вже немає</string>
     <string name="Moments_Unavailable">Вміст недоступний</string>
+
+    <string name="Moments_FollowingPrivate">Підписки · Цей список прихований</string>
+    <string name="Moments_FollowersPrivate">Підписники · Цей список прихований</string>
 </resources>

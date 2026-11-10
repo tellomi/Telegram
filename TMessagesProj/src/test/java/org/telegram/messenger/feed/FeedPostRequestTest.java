@@ -398,6 +398,8 @@ public class FeedPostRequestTest {
                 "Moments_City_Hangzhou",
                 "Moments_FollowingEntry",
                 "Moments_FollowersEntry",
+                "Moments_FollowingPrivate",
+                "Moments_FollowersPrivate",
                 "Moments_FollowingWithCount",
                 "Moments_FollowersWithCount",
                 "Moments_ListPrivate",

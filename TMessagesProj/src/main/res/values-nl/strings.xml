@@ -1146,4 +1146,7 @@
     <string name="Moments_PostGone">Die post is er niet meer</string>
     <string name="Moments_CommentGone">Die reactie is er niet meer</string>
     <string name="Moments_Unavailable">Inhoud niet beschikbaar</string>
+
+    <string name="Moments_FollowingPrivate">Volgend · Deze lijst is privé</string>
+    <string name="Moments_FollowersPrivate">Volgers · Deze lijst is privé</string>
 </resources>

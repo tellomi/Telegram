@@ -1599,4 +1599,7 @@
     <string name="Moments_PostGone">Quel post non c’è più</string>
     <string name="Moments_CommentGone">Quel commento non c’è più</string>
     <string name="Moments_Unavailable">Contenuto non disponibile</string>
+
+    <string name="Moments_FollowingPrivate">Seguiti · Questo elenco è privato</string>
+    <string name="Moments_FollowersPrivate">Follower · Questo elenco è privato</string>
 </resources>

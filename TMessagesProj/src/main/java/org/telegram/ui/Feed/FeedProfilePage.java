@@ -40,14 +40,14 @@ public class FeedProfilePage extends FrameLayout {
         followingView = addLink(column, entry(false, null), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.FOLLOWING, profileId)));
         followersView = addLink(column, entry(true, null), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.FOLLOWERS, profileId)));
         if (self) {
-            addLink(column, LocaleController.getString("Moments_Profile_Saved", R.string.Moments_Profile_Saved), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.SAVED)));
-            addLink(column, LocaleController.getString("Moments_Profile_Liked", R.string.Moments_Profile_Liked), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.LIKED)));
+            addLink(column, LocaleController.getString(R.string.Moments_Profile_Saved), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.SAVED)));
+            addLink(column, LocaleController.getString(R.string.Moments_Profile_Liked), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.LIKED)));
         } else {
-            addLink(column, LocaleController.getString("Moments_Follow", R.string.Moments_Follow), () -> FeedController.getInstance(account).follow(profileId, true));
-            addLink(column, LocaleController.getString("Moments_Mute", R.string.Moments_Mute), () -> FeedController.getInstance(account).mute(profileId, true));
-            addLink(column, LocaleController.getString("Moments_Report", R.string.Moments_Report), () -> FeedReportSheet.open(fragment, "user", profileId));
+            addLink(column, LocaleController.getString(R.string.Moments_Follow), () -> FeedController.getInstance(account).follow(profileId, true));
+            addLink(column, LocaleController.getString(R.string.Moments_Mute), () -> FeedController.getInstance(account).mute(profileId, true));
+            addLink(column, LocaleController.getString(R.string.Moments_Report), () -> FeedReportSheet.open(fragment, "user", profileId));
         }
-        addLink(column, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, profileId)));
+        addLink(column, LocaleController.getString(R.string.Moments_Profile_Posts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, profileId)));
         addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
 
@@ -87,19 +87,16 @@ public class FeedProfilePage extends FrameLayout {
     }
 
     private static String entry(boolean followers, FeedContract.RelationPage page) {
-        String title = followers
-                ? LocaleController.getString("Moments_FollowersEntry", R.string.Moments_FollowersEntry)
-                : LocaleController.getString("Moments_FollowingEntry", R.string.Moments_FollowingEntry);
         if (page != null && page.hidden) {
-            return title + " · " + LocaleController.getString("Moments_ListPrivate", R.string.Moments_ListPrivate);
+            return LocaleController.getString(followers ? R.string.Moments_FollowersPrivate : R.string.Moments_FollowingPrivate);
         }
         if (page == null || page.failed || page.total < 0) {
-            return title;
+            return LocaleController.getString(followers ? R.string.Moments_FollowersEntry : R.string.Moments_FollowingEntry);
         }
         if (followers) {
-            return LocaleController.formatString("Moments_FollowersWithCount", R.string.Moments_FollowersWithCount, page.total);
+            return LocaleController.formatString(R.string.Moments_FollowersWithCount, page.total);
         }
-        return LocaleController.formatString("Moments_FollowingWithCount", R.string.Moments_FollowingWithCount, page.total);
+        return LocaleController.formatString(R.string.Moments_FollowingWithCount, page.total);
     }
 
     private TextView addLink(LinearLayout column, String title, Runnable click) {

@@ -1198,4 +1198,7 @@
     <string name="Moments_PostGone">이 게시물은 없어졌습니다</string>
     <string name="Moments_CommentGone">이 댓글은 없어졌습니다</string>
     <string name="Moments_Unavailable">내용을 볼 수 없습니다</string>
+
+    <string name="Moments_FollowingPrivate">팔로잉 · 이 목록은 비공개입니다</string>
+    <string name="Moments_FollowersPrivate">팔로워 · 이 목록은 비공개입니다</string>
 </resources>

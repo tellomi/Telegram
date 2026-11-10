@@ -66,4 +66,7 @@
     <string name="Moments_PostGone">這則動態已經不存在</string>
     <string name="Moments_CommentGone">這則留言已經不存在</string>
     <string name="Moments_Unavailable">內容無法查看</string>
+
+    <string name="Moments_FollowingPrivate">關注 · 對方未公開</string>
+    <string name="Moments_FollowersPrivate">粉絲 · 對方未公開</string>
 </resources>

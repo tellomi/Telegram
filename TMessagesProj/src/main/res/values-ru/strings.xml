@@ -325,4 +325,7 @@
     <string name="Moments_PostGone">Этой записи уже нет</string>
     <string name="Moments_CommentGone">Этого комментария уже нет</string>
     <string name="Moments_Unavailable">Материал недоступен</string>
+
+    <string name="Moments_FollowingPrivate">Подписки · Этот список скрыт</string>
+    <string name="Moments_FollowersPrivate">Подписчики · Этот список скрыт</string>
 </resources>

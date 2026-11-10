@@ -1437,4 +1437,7 @@
     <string name="Moments_PostGone">Dieser Beitrag ist nicht mehr da</string>
     <string name="Moments_CommentGone">Dieser Kommentar ist nicht mehr da</string>
     <string name="Moments_Unavailable">Inhalt nicht verfügbar</string>
+
+    <string name="Moments_FollowingPrivate">Folge ich · Diese Liste ist privat</string>
+    <string name="Moments_FollowersPrivate">Follower · Diese Liste ist privat</string>
 </resources>

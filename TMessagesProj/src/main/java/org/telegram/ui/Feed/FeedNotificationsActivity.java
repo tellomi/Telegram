@@ -37,7 +37,7 @@ public class FeedNotificationsActivity extends BaseFragment {
     private final ArrayList<FeedModels.NotificationItem> items = new ArrayList<>();
     private final FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
     private RecyclerListView listView;
-    private FeedContract.NotificationPlace place = FeedContract.notificationPlace(org.telegram.messenger.feed.FeedContract.NOTIFICATION_INTERACTIONS, 0, 0);
+    private FeedContract.NotificationPlace place = FeedContract.notificationPlace(FeedContract.NOTIFICATION_INTERACTIONS, 0, 0);
     private boolean pendingRestore;
     private String cursor = "";
     private boolean loading;
@@ -272,8 +272,8 @@ public class FeedNotificationsActivity extends BaseFragment {
         }
         if (getParentActivity() != null) {
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setMessage(LocaleController.getString("Moments_PostGone", R.string.Moments_PostGone))
-                    .setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null)
+                    .setMessage(LocaleController.getString(R.string.Moments_PostGone))
+                    .setPositiveButton(LocaleController.getString(R.string.Moments_OK), null)
                     .show();
         }
     }

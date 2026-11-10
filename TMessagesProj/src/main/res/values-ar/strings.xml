@@ -1305,4 +1305,7 @@
     <string name="Moments_PostGone">هذا المنشور لم يعد موجودًا</string>
     <string name="Moments_CommentGone">هذا التعليق لم يعد موجودًا</string>
     <string name="Moments_Unavailable">المحتوى غير متاح</string>
+
+    <string name="Moments_FollowingPrivate">أتابع · هذه القائمة خاصة</string>
+    <string name="Moments_FollowersPrivate">المتابعون · هذه القائمة خاصة</string>
 </resources>
