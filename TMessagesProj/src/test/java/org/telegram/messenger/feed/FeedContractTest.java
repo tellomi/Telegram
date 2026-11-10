@@ -207,6 +207,18 @@ public class FeedContractTest {
     }
 
     @Test
+    public void momentsTabTitleCannotCrashLaunch() throws Exception {
+        String tabs = read("ui/MainTabsActivity.java");
+        assertTrue(tabs.contains("FeedUi.s(\"Moments.Title\""));
+        String ui = read("ui/Feed/FeedUi.java");
+        int method = ui.indexOf("String resourceString");
+        assertTrue(method > 0);
+        String body = ui.substring(method, ui.indexOf("public static boolean reduceMotion"));
+        assertTrue(body.contains("createConfigurationContext"));
+        assertTrue(body.contains("catch (Throwable"));
+    }
+
+    @Test
     public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
         String english = read("../../../res/values/strings.xml");
         String chinese = read("../../../res/values-zh-rCN/strings.xml");
