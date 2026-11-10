@@ -506,26 +506,29 @@ public class FeedController {
     }
 
     public void loadComments(String postId, String sort, String cursor, Utilities.Callback2<ArrayList<FeedModels.Comment>, String> done) {
-        api.getJson("/v1/feed/posts/" + FeedApi.enc(postId) + "/comments?sort=" + sort + "&cursor=" + FeedApi.enc(cursor == null ? "" : cursor), (json, error) -> {
-            ArrayList<FeedModels.Comment> list = new ArrayList<>();
-            String next = "";
-            if (json != null) {
-                JSONArray items = json.optJSONArray("items");
-                if (items == null) {
-                    items = json.optJSONArray("comments");
-                }
-                if (items != null) {
-                    for (int i = 0; i < items.length(); i++) {
-                        JSONObject item = items.optJSONObject(i);
-                        if (item != null) {
-                            list.add(FeedModels.Comment.parse(item));
-                        }
-                    }
-                }
-                next = json.optString("next_cursor", "");
-            }
+        String path = "hot".equals(sort)
+                ? FeedContract.commentsPath(postId, cursor)
+                : "/v1/feed/posts/" + FeedApi.enc(postId) + "/comments?sort=" + sort + (cursor == null || cursor.length() == 0 ? "" : "&cursor=" + FeedApi.enc(cursor));
+        api.getJson(path, (json, error) -> {
+            FeedModels.CommentPage page = FeedModels.CommentPage.parse(json);
             if (done != null) {
-                done.run(list, error == null ? next : null);
+                done.run(page.comments, error == null ? page.cursor : null);
+            }
+        });
+    }
+
+    public void loadCommentThread(String postId, String cursor, Utilities.Callback<FeedModels.CommentPage> done) {
+        api.getJson(FeedContract.commentsPath(postId, cursor), (json, error) -> {
+            if (done != null) {
+                done.run(error == null ? FeedModels.CommentPage.parse(json) : null);
+            }
+        });
+    }
+
+    public void loadReplies(String commentId, String cursor, Utilities.Callback<FeedModels.CommentPage> done) {
+        api.getJson(FeedContract.repliesPath(commentId, cursor), (json, error) -> {
+            if (done != null) {
+                done.run(error == null ? FeedModels.CommentPage.parse(json) : null);
             }
         });
     }
@@ -535,7 +538,7 @@ public class FeedController {
         try {
             String type = attachment == null ? "" : attachment.optString("type", "");
             String key = attachment == null ? "" : attachment.optString("key", "");
-            if (FeedContract.isVoice(type) && key.length() > 0) {
+            if (key.length() > 0 && (FeedContract.isVoice(type) || "image".equals(type) || "photo".equals(type) || "sticker".equals(type))) {
                 body = new JSONObject(FeedContract.commentBody(text, parentId, type, key));
             } else {
                 String value = text == null ? "" : text;

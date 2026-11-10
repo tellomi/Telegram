@@ -77,12 +77,12 @@ public class FeedCollectionActivity extends BaseFragment {
     }
 
     private String title() {
-        if (mode == SAVED) return getString(R.string.FeedSavedTitle);
-        if (mode == LIKED) return getString(R.string.FeedLikedTitle);
-        if (mode == FOLLOWING) return getString(R.string.FeedFollowing);
-        if (mode == FOLLOWERS) return getString(R.string.FeedFollowers);
-        if (mode == MUTES) return getString(R.string.FeedMutes);
-        return getString(R.string.FeedProfileTab);
+        if (mode == SAVED) return FeedUi.s("Moments.Profile.Saved", R.string.FeedSavedTitle);
+        if (mode == LIKED) return FeedUi.s("Moments.Profile.Liked", R.string.FeedLikedTitle);
+        if (mode == FOLLOWING) return FeedUi.s("Moments.Segment.Following", R.string.FeedFollowing);
+        if (mode == FOLLOWERS) return FeedUi.s("Moments.Followers", R.string.FeedFollowers);
+        if (mode == MUTES) return FeedUi.s("Moments.Mutes", R.string.FeedMutes);
+        return FeedUi.s("Moments.Profile.Posts", R.string.FeedProfileTab);
     }
 
     private void load() {
@@ -128,7 +128,7 @@ public class FeedCollectionActivity extends BaseFragment {
 
     private FeedModels.Author privateRow() {
         FeedModels.Author author = new FeedModels.Author();
-        author.name = getString(R.string.FeedListPrivate);
+        author.name = FeedUi.s("Moments.ListPrivate", R.string.FeedListPrivate);
         return author;
     }
 
@@ -147,9 +147,9 @@ public class FeedCollectionActivity extends BaseFragment {
                 return new RecyclerListView.Holder(text);
             }
             FeedPostCell cell = new FeedPostCell(parent.getContext(), currentAccount, false, false, new FeedPostCell.Delegate() {
-                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable) presentFragment(FeedDetailActivity.forPost(post.id)); }
+                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable) FeedCommentSheet.open(FeedCollectionActivity.this, post.id, false); }
                 @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-                @Override public void onComment(FeedModels.Post post) { presentFragment(FeedDetailActivity.forPost(post.id)); }
+                @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedCollectionActivity.this, post.id, true); }
                 @Override public void onRepost(FeedModels.Post post) {}
                 @Override public void onShare(FeedModels.Post post) {}
                 @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }
@@ -167,7 +167,7 @@ public class FeedCollectionActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == 0) {
                 if (mode == PROFILE && position == 0) {
-                    ((TextView) holder.itemView).setText(getString(R.string.FeedFilterPosts) + " / " + getString(R.string.FeedFilterReposts));
+                    ((TextView) holder.itemView).setText(FeedUi.s("Moments.Profile.Posts", R.string.FeedFilterPosts) + " / " + FeedUi.s("Moments.Filter.Reposts", R.string.FeedFilterReposts));
                     holder.itemView.setOnClickListener(v -> {
                         filter = "posts".equals(filter) ? "reposts" : "posts";
                         load();
@@ -176,7 +176,7 @@ public class FeedCollectionActivity extends BaseFragment {
                 }
                 FeedModels.Author author = people.get(mode == PROFILE ? position : position);
                 TextView text = (TextView) holder.itemView;
-                text.setText(author.name.length() == 0 ? getString(R.string.FeedListPrivate) : FeedUi.displayName(author, currentAccount));
+                text.setText(author.name.length() == 0 ? FeedUi.s("Moments.ListPrivate", R.string.FeedListPrivate) : FeedUi.displayName(author, currentAccount));
                 text.setOnClickListener(v -> {
                     if (mode == MUTES && author.profileId.length() > 0) {
                         FeedController.getInstance(currentAccount).mute(author.profileId, false);

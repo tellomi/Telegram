@@ -36,7 +36,7 @@ public class FeedNotificationsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(getString(R.string.FeedNotifications));
+        actionBar.setTitle(FeedUi.s("Moments.Notifications", R.string.FeedNotifications));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -49,10 +49,11 @@ public class FeedNotificationsActivity extends BaseFragment {
         LinearLayout filters = new LinearLayout(context);
         filters.setOrientation(LinearLayout.HORIZONTAL);
         int[] labels = new int[]{R.string.FeedNotifInteractions, R.string.FeedNotifFollows, R.string.FeedNotifSystem};
+        String[] labelKeys = new String[]{"Moments.Notif.Interactions", "Moments.Notif.Follows", "Moments.Notif.System"};
         for (int i = 0; i < labels.length; i++) {
             final int index = i;
             TextView chip = new TextView(context);
-            chip.setText(getString(labels[i]));
+            chip.setText(FeedUi.s(labelKeys[i], labels[i]));
             chip.setTextSize(13);
             chip.setPadding(dp(8), dp(8), dp(8), dp(8));
             chip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -112,7 +113,7 @@ public class FeedNotificationsActivity extends BaseFragment {
                 names.append(FeedUi.displayName(item.actors.get(i), currentAccount));
             }
             if (item.actors.size() > 2) {
-                names.append(" ").append(getString(R.string.FeedAndOthers));
+                names.append(" ").append(FeedUi.s("Moments.AndOthers", R.string.FeedAndOthers));
             }
             String line = names + " · " + kindLabel(item.kind);
             if (item.text != null && item.text.length() > 0) {
@@ -129,23 +130,23 @@ public class FeedNotificationsActivity extends BaseFragment {
     }
 
     private String kindLabel(String kind) {
-        if ("like".equals(kind)) return getString(R.string.FeedFilterLikes);
-        if ("comment".equals(kind) || "reply".equals(kind)) return getString(R.string.FeedFilterComments);
-        if ("mention".equals(kind)) return getString(R.string.FeedFilterMentions);
-        if ("follow".equals(kind) || "mutual".equals(kind)) return getString(R.string.FeedFilterFollows);
-        if ("repost".equals(kind) || "quote".equals(kind)) return getString(R.string.FeedFilterReposts);
-        if ("new_post".equals(kind)) return getString(R.string.FeedFilterPosts);
+        if ("like".equals(kind)) return FeedUi.s("Moments.Filter.Likes", R.string.FeedFilterLikes);
+        if ("comment".equals(kind) || "reply".equals(kind)) return FeedUi.s("Moments.Filter.Comments", R.string.FeedFilterComments);
+        if ("mention".equals(kind)) return FeedUi.s("Moments.Filter.Mentions", R.string.FeedFilterMentions);
+        if ("follow".equals(kind) || "mutual".equals(kind)) return FeedUi.s("Moments.Notif.Follows", R.string.FeedFilterFollows);
+        if ("repost".equals(kind) || "quote".equals(kind)) return FeedUi.s("Moments.Filter.Reposts", R.string.FeedFilterReposts);
+        if ("new_post".equals(kind)) return FeedUi.s("Moments.Profile.Posts", R.string.FeedFilterPosts);
         return kind == null ? "" : kind;
     }
 
     private void open(FeedModels.NotificationItem item) {
         if (item.postId != null && item.postId.length() > 0) {
-            presentFragment(FeedDetailActivity.forPost(item.postId));
+            FeedCommentSheet.open(this, item.postId, false);
         } else if (item.actor != null && item.actor.userId != 0) {
             FeedUi.openProfile(this, item.actor);
         } else if (getParentActivity() != null) {
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setMessage(getString(R.string.FeedUnavailable))
+                    .setMessage(FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable))
                     .setPositiveButton(getString(R.string.OK), null)
                     .show();
         }

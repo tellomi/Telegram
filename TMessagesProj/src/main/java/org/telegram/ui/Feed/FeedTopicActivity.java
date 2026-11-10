@@ -98,7 +98,7 @@ public class FeedTopicActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
                 TextView text = (TextView) holder.itemView;
-                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? getString(R.string.FeedSortHot) : getString(R.string.FeedSortNew)));
+                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? FeedUi.s("Moments.Sort.Hot", R.string.FeedSortHot) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew)));
                 text.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
                     load();
@@ -117,9 +117,9 @@ public class FeedTopicActivity extends BaseFragment {
 
     private FeedPostCell.Delegate simple() {
         return new FeedPostCell.Delegate() {
-            @Override public void onOpen(FeedModels.Post post) { presentFragment(FeedDetailActivity.forPost(post.id)); }
+            @Override public void onOpen(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, false); }
             @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-            @Override public void onComment(FeedModels.Post post) { presentFragment(FeedDetailActivity.forPost(post.id)); }
+            @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, true); }
             @Override public void onRepost(FeedModels.Post post) {}
             @Override public void onShare(FeedModels.Post post) {}
             @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }
