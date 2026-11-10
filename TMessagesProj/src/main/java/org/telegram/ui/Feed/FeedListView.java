@@ -41,8 +41,10 @@ public class FeedListView extends FrameLayout {
     private final Host host;
     public final RecyclerListView listView;
     private final TextView footer;
+    private View emptyView;
     private float downY;
     private boolean pulling;
+    private boolean refreshPosted;
 
     public FeedListView(Context context, Host host) {
         super(context);
@@ -50,18 +52,22 @@ public class FeedListView extends FrameLayout {
         listView = new RecyclerListView(context);
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(new Adapter());
-        listView.setOnItemClickListener((view, position) -> {
+        listView.setOnItemClickListener((View view, int position, float x, float y) -> {
             ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts = host.posts();
-            if (position >= 0 && position < posts.size() && host.delegate() != null) {
-                host.delegate().onOpen(posts.get(position));
+            if (!(view instanceof FeedPostCell) || position < 0 || position >= posts.size() || host.delegate() == null) {
+                return;
             }
+            if (!((FeedPostCell) view).tapOpensDetail(x, y)) {
+                return;
+            }
+            host.delegate().onOpen(posts.get(position));
         });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
                 FeedPlayback.choose();
-                if (manager != null && host.hasMore() && !host.loading()) {
+                if (manager != null && host.hasMore() && !host.loading() && !host.posts().isEmpty()) {
                     int last = manager.findLastVisibleItemPosition();
                     if (last >= host.posts().size() - 3) {
                         host.onLoadMore();
@@ -80,22 +86,52 @@ public class FeedListView extends FrameLayout {
     }
 
     public void refresh() {
+        if (listView.isComputingLayout()) {
+            if (!refreshPosted) {
+                refreshPosted = true;
+                listView.post(() -> {
+                    refreshPosted = false;
+                    refresh();
+                });
+            }
+            return;
+        }
         if (listView.getAdapter() != null) {
             listView.getAdapter().notifyDataSetChanged();
         }
         boolean empty = host.posts().isEmpty();
-        footer.setVisibility(empty ? VISIBLE : GONE);
         if (!empty) {
+            footer.setVisibility(GONE);
+            if (emptyView != null) {
+                emptyView.setVisibility(GONE);
+            }
             return;
         }
         if (host.loading()) {
-            footer.setText(getString(R.string.Loading));
+            showStatus(getString(R.string.Loading), null);
         } else if (host.failed()) {
-            footer.setText(getString(R.string.FeedRetry));
+            showStatus(getString(R.string.FeedRetry), v -> host.onRefresh());
         } else {
+            footer.setVisibility(GONE);
+            if (emptyView != null) {
+                removeView(emptyView);
+            }
             String action = host.emptyAction();
-            footer.setText(host.emptyText() + (action == null ? "" : "\n" + action));
+            if (action != null && action.equals(getString(R.string.FeedPublish))) {
+                action = null;
+            }
+            emptyView = FeedUi.empty(getContext(), host.emptyText(), action, host.emptyClick());
+            addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER));
         }
+    }
+
+    private void showStatus(String text, android.view.View.OnClickListener click) {
+        if (emptyView != null) {
+            emptyView.setVisibility(GONE);
+        }
+        footer.setVisibility(VISIBLE);
+        footer.setText(text);
+        footer.setOnClickListener(click);
     }
 
     public void scrollToTop() {
@@ -145,7 +181,11 @@ public class FeedListView extends FrameLayout {
                 holder.itemView.setOnClickListener(v -> host.onLoadMore());
                 return;
             }
-            ((FeedPostCell) holder.itemView).setPost(host.posts().get(position));
+            ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts = host.posts();
+            if (!(holder.itemView instanceof FeedPostCell) || position < 0 || position >= posts.size()) {
+                return;
+            }
+            ((FeedPostCell) holder.itemView).setPost(posts.get(position));
         }
 
         @Override

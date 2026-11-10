@@ -241,7 +241,7 @@ public class FeedController {
         }
         FeedModels.Page cached = storage.loadPage(stream);
         pages.put(stream, cached.items);
-        cursors.put(stream, cached.nextCursor == null ? "" : cached.nextCursor);
+        cursors.put(stream, FeedContract.normalizeCursor(cached.nextCursor));
     }
 
     private void loadStream(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
@@ -251,8 +251,16 @@ public class FeedController {
             }
             return;
         }
-        String cursor = refresh ? "" : cursor(stream);
-        String path = FeedContract.streamPath(stream, cursor, cityCode(), nearbySort());
+        String cursor = refresh ? "" : FeedContract.normalizeCursor(cursor(stream));
+        String path = refresh
+                ? FeedContract.streamPath(stream, "", cityCode(), nearbySort())
+                : FeedContract.nextPagePath(stream, cursor, cityCode(), nearbySort());
+        if (path == null) {
+            if (done != null) {
+                done.run(true, null);
+            }
+            return;
+        }
         api.getJson(path, (json, error) -> {
             if (json == null) {
                 if (done != null) {
@@ -282,23 +290,60 @@ public class FeedController {
 
     private void applyStreamPage(String stream, boolean refresh, String cursor, FeedModels.Page page, Utilities.Callback2<Boolean, String> done) {
         ArrayList<FeedModels.Post> list = posts(stream);
-        if (refresh || cursor.length() == 0) {
-            list.clear();
+        ArrayList<FeedModels.Post> incoming = page == null || page.items == null ? new ArrayList<FeedModels.Post>() : page.items;
+        FeedContract.PageApply apply = FeedContract.applyPage(idsOf(list), idsOf(incoming), refresh, page == null ? "" : page.nextCursor);
+        if (apply.keptExisting) {
+            notifyListeners();
+            if (done != null) {
+                done.run(true, FeedContract.KEPT_EXISTING);
+            }
+            return;
         }
-        for (int i = 0; i < page.items.size(); i++) {
-            FeedModels.Post post = page.items.get(i);
-            if (!contains(list, post.id)) {
+        HashMap<String, FeedModels.Post> byId = new HashMap<>();
+        if (!refresh) {
+            for (int i = 0; i < list.size(); i++) {
+                FeedModels.Post post = list.get(i);
+                if (post != null && post.id != null && post.id.length() > 0) {
+                    byId.put(post.id, post);
+                }
+            }
+        }
+        for (int i = 0; i < incoming.size(); i++) {
+            FeedModels.Post post = incoming.get(i);
+            if (post == null || post.id == null || post.id.length() == 0) {
+                continue;
+            }
+            if (refresh || !byId.containsKey(post.id)) {
+                byId.put(post.id, post);
+            }
+        }
+        list.clear();
+        for (int i = 0; i < apply.ids.size(); i++) {
+            FeedModels.Post post = byId.get(apply.ids.get(i));
+            if (post != null) {
                 list.add(post);
             }
         }
-        cursors.put(stream, page.nextCursor == null ? "" : page.nextCursor);
-        if (refresh || cursor.length() == 0) {
-            storage.savePage(stream, page.nextCursor, list);
+        cursors.put(stream, apply.stopPaging ? "" : apply.nextCursor);
+        if (refresh) {
+            storage.savePage(stream, cursors.get(stream), list);
         }
         notifyListeners();
         if (done != null) {
             done.run(true, null);
         }
+    }
+
+    private static ArrayList<String> idsOf(ArrayList<FeedModels.Post> posts) {
+        ArrayList<String> ids = new ArrayList<>();
+        if (posts == null) {
+            return ids;
+        }
+        for (int i = 0; i < posts.size(); i++) {
+            FeedModels.Post post = posts.get(i);
+            ids.add(post == null ? "" : post.id);
+        }
+        return ids;
     }
 
     /**
@@ -341,14 +386,15 @@ public class FeedController {
             ArrayList<String> ordered = FeedContract.orderedCardJson(json.toString(), refs.refs);
             ArrayList<FeedModels.Post> posts = new ArrayList<>();
             for (int i = 0; i < ordered.size(); i++) {
+                FeedContract.Ref ref = i < refs.refs.size() ? refs.refs.get(i) : null;
                 FeedModels.Post post;
                 try {
                     post = FeedModels.Post.parse(new JSONObject(ordered.get(i)));
                 } catch (Exception e) {
-                    post = FeedModels.Post.unavailable(refs.refs.get(i).id);
+                    post = FeedModels.Post.unavailable(ref == null ? "" : ref.id);
                 }
-                if (post.feedReason == null || post.feedReason.length() == 0) {
-                    post.feedReason = refs.refs.get(i).reason;
+                if ((post.feedReason == null || post.feedReason.length() == 0) && ref != null && ref.reason != null) {
+                    post.feedReason = ref.reason;
                 }
                 posts.add(post);
             }
@@ -356,15 +402,6 @@ public class FeedController {
                 done.run(posts, null);
             }
         });
-    }
-
-    private boolean contains(ArrayList<FeedModels.Post> list, String id) {
-        for (int i = 0; i < list.size(); i++) {
-            if (id != null && id.equals(list.get(i).id)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public FeedModels.Post find(String id) {

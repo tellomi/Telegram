@@ -42,6 +42,8 @@
     <string name="FeedUnavailable">内容不可用</string>
     <string name="FeedAudienceCustom">自定义</string>
     <string name="FeedAudienceMutual">互关好友</string>
+    <string name="FeedAudiencePrivate">仅自己</string>
+    <string name="FeedAudienceFollowers">粉丝</string>
     <string name="FeedAudiencePleaseChoose">谁可以看：请选择</string>
     <string name="FeedAudienceTitle">谁可以看</string>
     <string name="FeedAudienceSubtitle">需要你自己选择，不会记住上次</string>
@@ -112,6 +114,13 @@
     <string name="FeedMentionWarning">以下用户看不到这条动态，也不会收到提醒。</string>
     <string name="FeedRemovePreview">移除</string>
     <string name="FeedToolSticker">贴纸</string>
+    <string name="FeedPinned">置顶</string>
+    <string name="FeedFile">文件</string>
+    <string name="FeedPdf">PDF</string>
+    <string name="FeedArticle">文章</string>
+    <string name="FeedStory">故事</string>
+    <string name="FeedAudio">语音</string>
+    <string name="FeedRefreshKept">刷新没有新内容，仍显示这些动态。</string>
 
     <string name="NewConversationShortcut">新对话</string>
     <string name="ContactShortcutMessage">发消息给 %1$s</string>

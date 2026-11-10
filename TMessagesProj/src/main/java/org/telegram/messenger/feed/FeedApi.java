@@ -174,7 +174,20 @@ public class FeedApi {
                 out.close();
             }
             result.code = connection.getResponseCode();
-            InputStream in = result.code >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            if (FeedContract.noBodySuccess(result.code)) {
+                result.json = new JSONObject();
+                return result;
+            }
+            InputStream in;
+            try {
+                in = result.code >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            } catch (Exception ignored) {
+                if (result.code >= 200 && result.code < 300) {
+                    result.json = new JSONObject();
+                    return result;
+                }
+                throw ignored;
+            }
             String text = readAll(in);
             if (text != null && text.length() > 0 && (text.charAt(0) == '{' || text.charAt(0) == '[')) {
                 if (text.charAt(0) == '[') {
