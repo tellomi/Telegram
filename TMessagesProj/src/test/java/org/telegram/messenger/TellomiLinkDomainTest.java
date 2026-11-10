@@ -81,7 +81,8 @@ public class TellomiLinkDomainTest {
         assertEquals("https://tellomi.cn/help", TellomiBrand.rewrite("https://core.telegram.org/bots/webapps#launching-the-main-mini-app"));
         assertEquals("https://tellomi.cn/help", TellomiBrand.rewrite("https://translations.telegram.org/en/emoji"));
         assertEquals("Learn more at tellomi.cn", TellomiBrand.rewrite("Learn more at telegram.org"));
-        assertEquals("support@tellomi.cn", TellomiBrand.rewrite("sms@telegram.org"));
+        assertEquals("support@tellomi.app", TellomiBrand.rewrite("sms@telegram.org"));
+        assertEquals("support@tellomi.app", TellomiBrand.rewrite("recover@telegram.org"));
         assertTrue(TellomiBrand.rewrite("tg://resolve?domain=durov").startsWith("tg:"));
     }
 

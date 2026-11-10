@@ -47,8 +47,8 @@ public final class TellomiBrand {
         if (host != null && !host.isEmpty()) {
             value = replaceHost(value, "getdesktop.telegram.org", "tellomi.cn/download");
             value = replaceHost(value, "desktop.telegram.org", "tellomi.cn/download");
-            value = replaceHost(value, "sms@telegram.org", "support@" + BuildVars.SITE_HOST);
-            value = replaceHost(value, "recover@telegram.org", "support@" + BuildVars.SITE_HOST);
+            value = replaceHost(value, "sms@telegram.org", "support@tellomi.app");
+            value = replaceHost(value, "recover@telegram.org", "support@tellomi.app");
             value = replaceHost(value, "www.telegram.org", "tellomi.cn");
             value = replaceHostBoundary(value, "telegram.org", "tellomi.cn");
             value = replaceHost(value, "telegram.me", host);

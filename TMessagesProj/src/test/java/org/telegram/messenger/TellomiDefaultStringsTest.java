@@ -161,7 +161,9 @@ public class TellomiDefaultStringsTest {
         assertTrue(login.contains("But Tellomi says it's banned."));
         assertTrue(login.contains("But Tellomi says it's invalid."));
         assertFalse(login.contains("But Telegram says"));
-        assertTrue(login.contains("recover@telegram.org"));
+        assertTrue(login.contains("support@tellomi.app"));
+        assertFalse(login.contains("recover@telegram.org"));
+        assertFalse(login.contains("sms@telegram.org"));
         assertTrue(login.contains("login@stel.com"));
         assertTrue(bulletin.contains("Subscribe to **Tellomi Premium**"));
         assertFalse(bulletin.contains("Subscribe to **Telegram Premium**"));
