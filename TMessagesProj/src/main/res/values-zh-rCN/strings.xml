@@ -27,6 +27,12 @@
     <string name="FeedCopyLink">复制链接</string>
     <string name="FeedLike">点赞</string>
     <string name="FeedComment">评论</string>
+    <string name="FeedCommentCount">%d条评论</string>
+    <string name="FeedCommentHint">发条评论，说说你的感受</string>
+    <string name="FeedShowReplies">展开%d条回复</string>
+    <string name="FeedAuthor">作者</string>
+    <string name="FeedReplyTo">回复 @%s</string>
+    <string name="FeedReply">回复</string>
     <string name="FeedSave">收藏</string>
     <string name="FeedSaved">已收藏</string>
     <string name="FeedNotInterested">不感兴趣</string>

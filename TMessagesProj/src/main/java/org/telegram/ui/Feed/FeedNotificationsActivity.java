@@ -141,7 +141,7 @@ public class FeedNotificationsActivity extends BaseFragment {
 
     private void open(FeedModels.NotificationItem item) {
         if (item.postId != null && item.postId.length() > 0) {
-            presentFragment(FeedDetailActivity.forPost(item.postId));
+            FeedCommentSheet.open(this, item.postId, false);
         } else if (item.actor != null && item.actor.userId != 0) {
             FeedUi.openProfile(this, item.actor);
         } else if (getParentActivity() != null) {

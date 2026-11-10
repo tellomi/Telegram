@@ -11660,6 +11660,12 @@
     <string name="FeedCopyLink">Copy link</string>
     <string name="FeedLike">Like</string>
     <string name="FeedComment">Comment</string>
+    <string name="FeedCommentCount">%d comments</string>
+    <string name="FeedCommentHint">Say something</string>
+    <string name="FeedShowReplies">Show %d replies</string>
+    <string name="FeedAuthor">Author</string>
+    <string name="FeedReplyTo">Reply @%s</string>
+    <string name="FeedReply">Reply</string>
     <string name="FeedSave">Save</string>
     <string name="FeedSaved">Saved</string>
     <string name="FeedNotInterested">Not interested</string>

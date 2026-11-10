@@ -177,7 +177,7 @@ public class FeedSearchPage extends LinearLayout {
             TextView text = (TextView) holder.itemView;
             text.setText(row.label);
             text.setOnClickListener(v -> {
-                if (row.post != null && !row.post.unavailable) parent.presentFragment(FeedDetailActivity.forPost(row.post.id));
+                if (row.post != null && !row.post.unavailable) FeedCommentSheet.open(parent, row.post.id, false);
                 else if (row.topic != null) parent.presentFragment(new FeedTopicActivity(row.topic));
                 else if (row.author != null) FeedUi.openProfile(parent, row.author);
                 else if (row.history != null) search(row.history);

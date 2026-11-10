@@ -463,6 +463,10 @@ public final class FeedModels {
         public long createdAt;
         public int likes;
         public boolean liked;
+        public boolean disliked;
+        /** True only when the payload includes a dislike field. */
+        public boolean showDislike;
+        public String province = "";
         public int replyCount;
         public ArrayList<Comment> replies = new ArrayList<>();
         public boolean unavailable;
@@ -493,6 +497,9 @@ public final class FeedModels {
             c.createdAt = o.optLong("created_at", 0);
             c.likes = o.optInt("likes", o.optInt("like_count", 0));
             c.liked = o.optBoolean("liked", false);
+            c.showDislike = o.has("disliked") || o.has("dislikes");
+            c.disliked = o.optBoolean("disliked", false);
+            c.province = firstText(o, "province", "ip_province", "ip_location", "region");
             c.replyCount = o.optInt("reply_count", 0);
             c.unavailable = o.optBoolean("unavailable", false);
             JSONArray replies = o.optJSONArray("replies");
@@ -508,6 +515,16 @@ public final class FeedModels {
                 }
             }
             return c;
+        }
+
+        private static String firstText(JSONObject o, String... keys) {
+            for (int i = 0; i < keys.length; i++) {
+                String value = o.optString(keys[i], "");
+                if (value.length() > 0 && !"null".equals(value)) {
+                    return value;
+                }
+            }
+            return "";
         }
 
         private static Media voiceFromKeys(Object raw) {

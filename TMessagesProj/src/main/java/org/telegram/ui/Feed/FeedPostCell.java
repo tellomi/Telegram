@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.TextureView;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -105,6 +106,7 @@ public class FeedPostCell extends LinearLayout {
     private final TextView titleView;
     private final TextView body;
     private final TextView full;
+    private final HorizontalScrollView albumScroll;
     private final MediaGrid album;
     private final LinearLayout files;
     private final TextView linkCard;
@@ -116,8 +118,10 @@ public class FeedPostCell extends LinearLayout {
     private final ImageView comment;
     private final TextView commentCount;
     private final ImageView repost;
+    private final TextView repostCount;
     private final ImageView share;
     private final ImageView save;
+    private final View threadLine;
     private final Paint divider = new Paint();
     private final View dividerView;
 
@@ -132,110 +136,128 @@ public class FeedPostCell extends LinearLayout {
         int pad = dp(12);
         setPadding(pad, dp(10), pad, dp(4));
 
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(HORIZONTAL);
+
+        LinearLayout left = new LinearLayout(context);
+        left.setOrientation(VERTICAL);
+        left.setGravity(Gravity.CENTER_HORIZONTAL);
+        FrameLayout avatarBox = new FrameLayout(context);
+        avatar = new BackupImageView(context);
+        avatar.setRoundRadius(dp(20));
+        avatarBox.addView(avatar, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.LEFT));
+        follow = label(context, true);
+        follow.setText("+");
+        follow.setGravity(Gravity.CENTER);
+        follow.setTextSize(12);
+        follow.setTextColor(0xffffffff);
+        follow.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(16), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        avatarBox.addView(follow, LayoutHelper.createFrame(16, 16, Gravity.BOTTOM | Gravity.RIGHT));
+        left.addView(avatarBox, LayoutHelper.createLinear(40, 40));
+        threadLine = new View(context);
+        threadLine.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        threadLine.setVisibility(GONE);
+        left.addView(threadLine, LayoutHelper.createLinear(2, 0, 1f, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 0));
+        row.addView(left, LayoutHelper.createLinear(48, LayoutHelper.MATCH_PARENT, Gravity.TOP));
+
+        LinearLayout column = new LinearLayout(context);
+        column.setOrientation(VERTICAL);
+
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        avatar = new BackupImageView(context);
-        avatar.setRoundRadius(dp(18));
-        header.addView(avatar, LayoutHelper.createLinear(36, 36, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
-
-        LinearLayout titles = new LinearLayout(context);
-        titles.setOrientation(VERTICAL);
         name = label(context, true);
+        name.setSingleLine(true);
+        header.addView(name, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL));
         meta = label(context, false);
+        meta.setTextSize(13);
+        meta.setSingleLine(true);
         meta.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        titles.addView(name);
-        titles.addView(meta);
-        header.addView(titles, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
-
-        follow = label(context, true);
-        follow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        follow.setPadding(dp(8), dp(8), dp(8), dp(8));
-        header.addView(follow, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        header.addView(meta, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
         more = FeedUi.icon(context, R.drawable.ic_ab_other, getString(R.string.AccDescrMoreOptions));
-        header.addView(more, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL));
+        header.addView(more, LayoutHelper.createLinear(32, 32, Gravity.CENTER_VERTICAL));
         header.setClickable(true);
         header.setTag(FeedContract.ACTION_TAG);
-        addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         pin = label(context, true);
         pin.setText(FeedUi.s("Moments.Pinned", R.string.FeedPinned));
         pin.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        pin.setPadding(dp(46), dp(2), 0, 0);
         pin.setVisibility(GONE);
-        addView(pin, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(pin, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         repostLine = label(context, false);
         repostLine.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        repostLine.setPadding(dp(46), dp(2), 0, 0);
-        addView(repostLine, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(repostLine, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         titleView = label(context, true);
         titleView.setSingleLine(false);
         titleView.setMaxLines(3);
-        titleView.setPadding(dp(46), dp(4), 0, 0);
         titleView.setVisibility(GONE);
-        addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         body = new TextView(context);
-        body.setTextSize(SharedConfig.fontSize);
+        body.setTextSize(15);
         body.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        body.setPadding(dp(46), dp(4), 0, 0);
-        addView(body, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(body, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         full = label(context, true);
         full.setText(FeedUi.s("Moments.FullText", R.string.FeedFullText));
         full.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        full.setPadding(dp(46), dp(2), 0, 0);
-        addView(full, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(full, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
+        albumScroll = new HorizontalScrollView(context);
+        albumScroll.setHorizontalScrollBarEnabled(false);
+        albumScroll.setOverScrollMode(OVER_SCROLL_NEVER);
         album = new MediaGrid(context);
         album.setTag(FeedContract.ACTION_TAG);
-        album.setClickable(true);
-        addView(album, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+        albumScroll.addView(album, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        column.addView(albumScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         files = new LinearLayout(context);
         files.setOrientation(VERTICAL);
         files.setVisibility(GONE);
-        addView(files, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+        column.addView(files, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         linkCard = card(context);
-        addView(linkCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+        column.addView(linkCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
         quoteCard = card(context);
-        addView(quoteCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+        column.addView(quoteCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         pollBox = new LinearLayout(context);
         pollBox.setOrientation(VERTICAL);
         pollBox.setTag(FeedContract.ACTION_TAG);
         pollBox.setClickable(true);
-        addView(pollBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+        column.addView(pollBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
         location = label(context, false);
         location.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        location.setPadding(dp(46), dp(6), 0, 0);
-        addView(location, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(location, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
 
         LinearLayout actions = new LinearLayout(context);
         actions.setOrientation(HORIZONTAL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
-        actions.setPadding(dp(40), 0, 0, 0);
         like = FeedUi.icon(context, R.drawable.media_like, FeedUi.s("Moments.Like", R.string.FeedLike));
-        likeCount = label(context, false);
+        likeCount = countLabel(context);
         comment = FeedUi.icon(context, R.drawable.msg_discussion, FeedUi.s("Moments.Comment", R.string.FeedComment));
-        commentCount = label(context, false);
-        repost = FeedUi.icon(context, R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost));
-        share = FeedUi.icon(context, R.drawable.msg_share, FeedUi.s("Moments.Share", R.string.FeedShare));
+        commentCount = countLabel(context);
+        repost = FeedUi.icon(context, R.drawable.msg_retry, FeedUi.s("Moments.Repost", R.string.FeedRepost));
+        repostCount = countLabel(context);
+        share = FeedUi.icon(context, R.drawable.msg_send, FeedUi.s("Moments.Share", R.string.FeedShare));
         save = FeedUi.icon(context, R.drawable.msg_saved, FeedUi.s("Moments.Save", R.string.FeedSave));
-        actions.addView(like, LayoutHelper.createLinear(40, 40));
-        actions.addView(likeCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
-        actions.addView(comment, LayoutHelper.createLinear(40, 40));
-        actions.addView(commentCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
-        actions.addView(repost, LayoutHelper.createLinear(40, 40));
-        actions.addView(share, LayoutHelper.createLinear(40, 40));
-        actions.addView(save, LayoutHelper.createLinear(40, 40));
+        save.setVisibility(GONE);
+        actions.addView(like, LayoutHelper.createLinear(32, 32));
+        actions.addView(likeCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 14, 0));
+        actions.addView(comment, LayoutHelper.createLinear(32, 32));
+        actions.addView(commentCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 14, 0));
+        actions.addView(repost, LayoutHelper.createLinear(32, 32));
+        actions.addView(repostCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 14, 0));
+        actions.addView(share, LayoutHelper.createLinear(32, 32));
         actions.setClickable(true);
         actions.setTag(FeedContract.ACTION_TAG);
-        addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        column.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        row.addView(column, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         dividerView = new View(context);
         addView(dividerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, 6, 0, 0));
@@ -250,6 +272,7 @@ public class FeedPostCell extends LinearLayout {
         comment.setTag(FeedContract.ACTION_TAG);
         commentCount.setTag(FeedContract.ACTION_TAG);
         repost.setTag(FeedContract.ACTION_TAG);
+        repostCount.setTag(FeedContract.ACTION_TAG);
         share.setTag(FeedContract.ACTION_TAG);
         save.setTag(FeedContract.ACTION_TAG);
         avatar.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onAuthor(post); });
@@ -263,6 +286,7 @@ public class FeedPostCell extends LinearLayout {
         likeCount.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onLike(post); });
         comment.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onComment(post); });
         repost.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onRepost(post); });
+        repostCount.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onRepost(post); });
         share.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onShare(post); });
         save.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onSave(post); });
     }
@@ -306,6 +330,12 @@ public class FeedPostCell extends LinearLayout {
         return view;
     }
 
+    private TextView countLabel(Context context) {
+        TextView view = label(context, false);
+        view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        return view;
+    }
+
     private TextView card(Context context) {
         TextView view = new TextView(context);
         view.setTextSize(14);
@@ -327,6 +357,9 @@ public class FeedPostCell extends LinearLayout {
             meta.setText("");
             follow.setVisibility(GONE);
             album.setVisibility(GONE);
+            albumScroll.setVisibility(GONE);
+            threadLine.setVisibility(GONE);
+            repostCount.setVisibility(GONE);
             files.setVisibility(GONE);
             linkCard.setVisibility(GONE);
             quoteCard.setVisibility(GONE);
@@ -347,8 +380,9 @@ public class FeedPostCell extends LinearLayout {
         comment.setVisibility(VISIBLE);
         commentCount.setVisibility(VISIBLE);
         repost.setVisibility(VISIBLE);
+        repostCount.setVisibility(VISIBLE);
         share.setVisibility(VISIBLE);
-        save.setVisibility(VISIBLE);
+        save.setVisibility(GONE);
         FeedUi.bindAvatar(avatar, post.author, account);
         name.setText(FeedUi.displayName(post.author, account));
         String audience = FeedUi.audienceLabel(post.audienceKind);
@@ -356,15 +390,10 @@ public class FeedPostCell extends LinearLayout {
         String edited = post.editedAt > 0 ? " · " + FeedUi.s("Moments.Edited", R.string.FeedEdited) : "";
         meta.setText(audience.length() == 0 ? when + edited : when + " · " + audience + edited);
         meta.setContentDescription(meta.getText());
-        if (showFollow && !FeedUi.isSelf(account, post.author) && !post.following) {
-            follow.setVisibility(VISIBLE);
-            follow.setText(FeedUi.s("Moments.Follow", R.string.FeedFollow));
-        } else if (showFollow && post.following && !FeedUi.isSelf(account, post.author)) {
-            follow.setVisibility(VISIBLE);
-            follow.setText(post.mutual ? FeedUi.s("Moments.Audience.Mutual", R.string.FeedMutual) : FeedUi.s("Moments.FollowingState", R.string.FeedFollowingState));
-        } else {
-            follow.setVisibility(GONE);
-        }
+        follow.setText("+");
+        follow.setContentDescription(FeedUi.s("Moments.Follow", R.string.FeedFollow));
+        follow.setVisibility(showFollow && !FeedUi.isSelf(account, post.author) && !post.following && post.author.profileId.length() > 0 ? VISIBLE : GONE);
+        threadLine.setVisibility(post.quote != null ? VISIBLE : GONE);
         pin.setVisibility(post.pinned ? VISIBLE : GONE);
         if (post.repostedByName != null && post.repostedByName.length() > 0) {
             repostLine.setVisibility(VISIBLE);
@@ -397,6 +426,7 @@ public class FeedPostCell extends LinearLayout {
             });
         }
         album.bind(post, delegate);
+        albumScroll.setVisibility(album.getVisibility());
         bindFiles(post);
         if (post.linkPreview != null && post.poll == null) {
             linkCard.setVisibility(VISIBLE);
@@ -446,6 +476,8 @@ public class FeedPostCell extends LinearLayout {
         like.setContentDescription(FeedUi.s("Moments.Like", R.string.FeedLike) + " " + post.likes);
         commentCount.setText(post.comments > 0 ? String.valueOf(post.comments) : "");
         comment.setContentDescription(FeedUi.s("Moments.Comment", R.string.FeedComment) + " " + post.comments);
+        repostCount.setText(post.reposts > 0 ? String.valueOf(post.reposts) : "");
+        repost.setContentDescription(FeedUi.s("Moments.Repost", R.string.FeedRepost) + " " + post.reposts);
         save.setColorFilter(post.saved ? Theme.getColor(Theme.key_featuredStickers_addButton) : Theme.getColor(Theme.key_dialogIcon));
         save.setContentDescription(post.saved ? FeedUi.s("Moments.Saved", R.string.FeedSaved) : FeedUi.s("Moments.Save", R.string.FeedSave));
         boolean canRepost = post.isPublic() || !FeedConfig.ONLY_PUBLIC_CAN_REPOST;
@@ -469,11 +501,16 @@ public class FeedPostCell extends LinearLayout {
         location.setTextColor(gray);
         full.setTextColor(gray);
         pin.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        follow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        follow.setTextColor(0xffffffff);
+        follow.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(16), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        threadLine.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        likeCount.setTextColor(gray);
+        commentCount.setTextColor(gray);
+        repostCount.setTextColor(gray);
         linkCard.setTextColor(text);
         quoteCard.setTextColor(text);
-        linkCard.setBackground(Theme.createRoundRectDrawable(dp(8), card));
-        quoteCard.setBackground(Theme.createRoundRectDrawable(dp(8), card));
+        linkCard.setBackground(Theme.createRoundRectDrawable(dp(12), card));
+        quoteCard.setBackground(Theme.createRoundRectDrawable(dp(12), card));
         divider.setColor(Theme.getColor(Theme.key_divider));
     }
 
@@ -625,7 +662,7 @@ public class FeedPostCell extends LinearLayout {
                 FrameLayout frame = new FrameLayout(getContext());
                 frame.setTag(FeedContract.ACTION_TAG);
                 BackupImageView image = new BackupImageView(getContext());
-                image.setRoundRadius(dp(count == 1 ? 12 : 8));
+                image.setRoundRadius(dp(12));
                 frame.addView(image, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 String thumb = media.thumbUrl(account);
                 String play = media.displayUrl(account);
@@ -675,17 +712,6 @@ public class FeedPostCell extends LinearLayout {
             requestLayout();
         }
 
-        private int columns() {
-            int n = items.size();
-            if (n <= 1) {
-                return 1;
-            }
-            if (n == 2 || n == 4) {
-                return 2;
-            }
-            return 3;
-        }
-
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -694,41 +720,42 @@ public class FeedPostCell extends LinearLayout {
                 setMeasuredDimension(width, 0);
                 return;
             }
-            gap = dp(3);
-            int cols = columns();
-            int rows = (n + cols - 1) / cols;
+            int column = width;
+            if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY || column <= 0) {
+                column = Math.max(dp(200), AndroidUtilities.displaySize.x - dp(72));
+            }
+            int total = column;
             if (n == 1) {
-                cellWidth = width;
+                gap = 0;
+                cellWidth = column;
                 FeedModels.Media media = items.get(0);
                 if (media.isVideo()) {
-                    cellHeight = Math.max(dp(180), width * 9 / 16);
+                    cellHeight = Math.max(dp(180), column * 9 / 16);
                 } else if (media.w > 0 && media.h > 0) {
-                    cellHeight = Math.min(dp(360), Math.max(dp(120), width * media.h / Math.max(1, media.w)));
+                    cellHeight = Math.min(dp(360), Math.max(dp(120), column * media.h / Math.max(1, media.w)));
                 } else {
                     cellHeight = dp(220);
                 }
             } else {
-                cellWidth = (width - gap * (cols - 1)) / cols;
+                gap = dp(8);
+                cellWidth = (int) (column * 0.78f);
                 cellHeight = cellWidth;
+                total = n * cellWidth + (n - 1) * gap;
             }
             int childW = MeasureSpec.makeMeasureSpec(Math.max(1, cellWidth), MeasureSpec.EXACTLY);
             int childH = MeasureSpec.makeMeasureSpec(Math.max(1, cellHeight), MeasureSpec.EXACTLY);
             for (int i = 0; i < getChildCount(); i++) {
                 getChildAt(i).measure(childW, childH);
             }
-            int height = rows * cellHeight + Math.max(0, rows - 1) * gap;
-            setMeasuredDimension(width, height);
+            setMeasuredDimension(total, cellHeight);
         }
 
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-            int cols = columns();
+            int x = 0;
             for (int i = 0; i < getChildCount(); i++) {
-                int col = i % cols;
-                int row = i / cols;
-                int x = col * (cellWidth + gap);
-                int y = row * (cellHeight + gap);
-                getChildAt(i).layout(x, y, x + cellWidth, y + cellHeight);
+                getChildAt(i).layout(x, 0, x + cellWidth, cellHeight);
+                x += cellWidth + gap;
             }
         }
     }

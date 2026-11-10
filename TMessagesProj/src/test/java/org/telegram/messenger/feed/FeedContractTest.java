@@ -220,8 +220,10 @@ public class FeedContractTest {
         assertTrue(ui.contains("Moments.Empty.Recommend"));
         assertTrue(ui.contains("LocaleController.getString(key, res)"));
         String design = readDesign();
-        assertTrue(design.contains("36 dp"));
+        assertTrue(design.contains("40 dp"));
         assertTrue(design.contains("5 lines"));
+        assertTrue(design.contains("78%"));
+        assertTrue(design.contains("msg_send"));
         assertTrue(design.contains("#FF2E38"));
         assertTrue(design.contains("msg_list"));
         assertTrue(design.contains("msg_discussion"));

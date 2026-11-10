@@ -147,9 +147,9 @@ public class FeedCollectionActivity extends BaseFragment {
                 return new RecyclerListView.Holder(text);
             }
             FeedPostCell cell = new FeedPostCell(parent.getContext(), currentAccount, false, false, new FeedPostCell.Delegate() {
-                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable) presentFragment(FeedDetailActivity.forPost(post.id)); }
+                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable) FeedCommentSheet.open(FeedCollectionActivity.this, post.id, false); }
                 @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-                @Override public void onComment(FeedModels.Post post) { presentFragment(FeedDetailActivity.forPost(post.id)); }
+                @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedCollectionActivity.this, post.id, true); }
                 @Override public void onRepost(FeedModels.Post post) {}
                 @Override public void onShare(FeedModels.Post post) {}
                 @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }

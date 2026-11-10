@@ -1,66 +1,67 @@
 # Moments feed layout
 
-Android renders these tokens. iOS should match them. Colors come from the Telegram theme, including dark mode. Rows have no card fill.
+Android and iOS render these tokens. Colors come from the Telegram theme, including dark mode. The page background is plain. Icons are Telegram drawables, tinted with the theme.
 
-Strings use the same `Moments.*` langpack keys as iOS. English wording is the `values/strings.xml` value. Simplified Chinese is `values-zh-rCN/strings.xml`. `FeedUi.s` asks `LocaleController` for the key, then the resource for the active language. If the UI language is Chinese and the langpack value is still the English source, the Simplified Chinese resource is shown.
+Strings use the same `Moments.*` langpack keys. English is `values/strings.xml`. Simplified Chinese is `values-zh-rCN/strings.xml`.
 
-## Card
+## Feed list (Threads)
+
+One row is a left avatar column and a right text column. A 1 px `divider` separates rows.
 
 | Token | Value |
 | --- | --- |
 | Page background | `windowBackgroundWhite` |
 | Cell padding | 12 dp horizontal, 10 dp top, 4 dp bottom |
-| Avatar | 36 dp circle, 10 dp gap before the name |
-| Name | 15 sp, bold, `windowBackgroundWhiteBlackText`, one line |
-| Time and audience | 13 sp, `windowBackgroundWhiteGrayText`, the line under the name |
-| More | 40 dp, top end |
-| Body | chat font size (`SharedConfig.fontSize`), primary text |
-| Text column | 46 dp inset inside the cell, so 12 + 36 + 10 from the screen edge |
+| Avatar column | 48 dp wide |
+| Avatar | 40 dp circle |
+| Follow badge | 16 dp circle, bottom end of the avatar, `featuredStickers_addButton`, white “+”. Hidden when already following or the post is yours. No “Follow” text button |
+| Name | 15 sp bold, `windowBackgroundWhiteBlackText`, one line, same row as the time |
+| Time | 13 sp, `windowBackgroundWhiteGrayText`, 8 dp after the name |
+| More | 32 dp, `ic_ab_other`, trailing end of the name row |
+| Body | 15 sp, primary text, directly under the name |
 | Fold | 5 lines, then “Full text” |
+| Thread line | 2 dp wide, `divider`, under the avatar, only when the post quotes another post |
 | Divider | 1 px, `divider` |
 
 ## Media
 
-The grid sits in the text column, 8 dp below the text, 3 dp gaps.
+Media sits in the text column, 8 dp below the text. Corners are 12 dp.
 
 | Count | Layout |
 | --- | --- |
-| 1 photo | full column width, height from the aspect ratio, clamped to 120–360 dp, 12 dp corners |
-| 1 video | full column width, height `max(180 dp, width * 9 / 16)`, 12 dp corners |
-| 2 or 4 | two columns, square cells, 8 dp corners |
-| 3, 5, 6, 7, 8, 9, 10 | three columns, square cells, 8 dp corners |
+| 1 photo | full column width, height from the aspect ratio, clamped to 120–360 dp |
+| 1 video | full column width, height `max(180 dp, width * 9 / 16)` |
+| 2 or more | horizontal carousel. Each cell is 78% of the column and square, 8 dp gap, so the next image peeks. Swipe, do not use a grid |
 
-Link, quote, poll, and file cards use `graySection`, 8 dp corners, padding 10 dp horizontal and 8 dp vertical.
+Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 dp horizontal and 8 dp vertical.
 
 ## Actions
 
-| Token | Value |
-| --- | --- |
-| Row inset | 40 dp from the cell’s left padding |
-| Icon | 40 dp, `dialogIcon` |
-| Count | 13 sp, 8 dp after the number |
-| Order | like, count, comment, count, repost, share, save |
-| Liked heart | `#FF2E38` |
-| Saved icon | `featuredStickers_addButton` |
+The row aligns with the text column. Icon, then the count. No text labels. Grey `dialogIcon`. A count of zero is hidden. There is no share count.
 
-There are no text labels on the icons. The content description uses the `Moments.*` string.
-
-## Icons
-
-These are Telegram Android drawables, the same assets used in chats and the chat list. Tint them with the theme (`dialogIcon` on a row, `chats_actionIcon` on the compose button). Do not draw a one-off glyph.
-
-| Use | Drawable | Notes |
+| Order | Drawable | Count |
 | --- | --- | --- |
-| Moments tab | `msg_list` | Same list mark as Show as list. Static tab, same slot as `outline_header_search` |
-| Notifications | `media_like` | Action-bar heart, top end |
-| Like | `media_like` | Outline heart |
-| Liked | `media_like_active` | Filled heart, `#FF2E38` |
-| Comment | `msg_discussion` | Speech bubble, same family as forward and share |
-| Repost | `msg_forward` | Forward arrow |
-| Share | `msg_share` | Share arrow |
-| Save | `msg_saved` | Bookmark. Accent `featuredStickers_addButton` when saved |
-| More | `ic_ab_other` | Overflow, same as other action bars |
-| Compose | `filled_fab_compose_32` | White mark on the blue circle. Same drawable as the chat-list compose button |
+| Like | `media_like`, liked `media_like_active` at `#FF2E38` | `likes` |
+| Comment | `msg_discussion` | `comments` |
+| Repost | `msg_retry` | `reposts` |
+| Share | `msg_send` | none |
+
+Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_saved`), not on this row.
+
+## Other icons
+
+| Use | Drawable |
+| --- | --- |
+| Moments tab | `msg_list` |
+| Notifications | `media_like` |
+| Compose | `filled_fab_compose_32` on `FragmentFloatingButton` |
+| Comment sheet expand | `msg_zoomin`, and `msg_zoomout` when full screen |
+| Comment sheet close | `msg_close` |
+| Comment like | `media_like` / `media_like_active` |
+| Comment dislike | `msg_cancel`, only when the payload has `disliked` or `dislikes` |
+| Comment image | `msg_gallery` |
+| Mention | `msg_mention` |
+| Emoji | `input_smile` |
 
 ## Tabs and compose
 
@@ -69,15 +70,34 @@ These are Telegram Android drawables, the same assets used in chats and the chat
 | Tab row | 40 dp, 14 sp bold |
 | Selected tab | `windowBackgroundWhiteBlackText` |
 | Other tabs | `windowBackgroundWhiteGrayText` |
-| Tab background | `windowBackgroundWhite` |
-| Compose control | `FragmentFloatingButton`, the chat-list compose button |
-| Compose fill | circle, `featuredStickers_addButton`, pressed `featuredStickers_addButtonPressed` |
-| Compose circle | 48 dp |
-| Compose frame | 56 dp, bottom trailing (leading when RTL) |
+| Compose control | round `FragmentFloatingButton` |
+| Compose fill | `featuredStickers_addButton`, pressed `featuredStickers_addButtonPressed` |
+| Compose circle | 48 dp, in a 56 dp frame, bottom trailing |
 | Compose margins | 20 dp from the trailing edge, 16 dp above the main tab bar |
 
-The round blue compose button at the bottom trailing corner is the reference. iOS should copy that button, not a square or a second style.
+The round blue compose button is the reference.
 
-## Post detail
+## Comment sheet (Douyin)
 
-The post uses the same cell, with the body unfolded. Comments are rows on that screen, not a bottom sheet: 16 dp horizontal padding, name 15 sp bold, time 13 sp secondary, body at the chat font size, and a 1 px divider.
+Tapping a post or the comment icon opens this sheet over the list. It does not push a new page.
+
+| Token | Value |
+| --- | --- |
+| Top corners | 16 dp |
+| Collapsed height | 72% of the screen |
+| Expanded height | full screen below the status bar |
+| Scrim | `#66000000` |
+| Title | centred, 15 sp bold, `Moments.CommentCount` (`%d comments` / `%d条评论`) |
+| Comment avatar | 32 dp |
+| Nickname | 13 sp, `windowBackgroundWhiteGrayText` |
+| Author tag | `Moments.Author` (`Author` / `作者`), `#FF2E38`, when the comment author is the post author |
+| Comment text | 15 sp, primary |
+| Comment image | 120 dp, 8 dp corners, when `attachment` is an image or sticker |
+| Meta | 12 sp grey: relative time, ` · `, province when present, ` · `, `Moments.Reply` |
+| Reply indent | 48 dp start padding |
+| Reply prefix | `Moments.ReplyTo` (`Reply @%s` / `回复 @%s`) |
+| Collapsed replies | `—— ` plus `Moments.ShowReplies` (`Show %d replies` / `展开%d条回复`). Expanding shows `replies[]` from the payload |
+| Like | heart and count, trailing |
+| Input | one line, hint `Moments.CommentHint` (`Say something` / `发条评论，说说你的感受`), image, @, and emoji at the trailing end |
+
+Province is read from `province`, `ip_province`, `ip_location`, or `region`. It is omitted when those keys are absent. The dislike icon is omitted unless the payload has `disliked` or `dislikes`. Nested replies render only from `replies[]`; a `reply_count` with an empty `replies` array still shows the expand line, and expanding it shows nothing further.

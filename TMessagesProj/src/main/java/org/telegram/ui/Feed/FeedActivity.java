@@ -444,7 +444,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onOpen(FeedModels.Post post) {
-        presentFragment(FeedDetailActivity.forPost(post.id));
+        FeedCommentSheet.open(this, post.id, false);
     }
 
     @Override
@@ -454,9 +454,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onComment(FeedModels.Post post) {
-        FeedDetailActivity fragment = FeedDetailActivity.forPost(post.id);
-        fragment.focusReply = true;
-        presentFragment(fragment);
+        FeedCommentSheet.open(this, post.id, true);
     }
 
     @Override
@@ -466,6 +464,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             return;
         }
         ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
+        options.add(R.drawable.msg_saved, post.saved ? FeedUi.s("Moments.Saved", R.string.FeedSaved) : FeedUi.s("Moments.Save", R.string.FeedSave), () -> controller().toggleSave(post));
         options.add(R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost), () -> controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/repost", new org.json.JSONObject(), (json, error) -> {
             if (error != null) {
                 BulletinFactory.of(this).createErrorBulletin(error).show();
@@ -536,7 +535,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onVote(FeedModels.Post post, int option) {
-        presentFragment(FeedDetailActivity.forPost(post.id));
+        FeedCommentSheet.open(this, post.id, false);
     }
 
     @Override
