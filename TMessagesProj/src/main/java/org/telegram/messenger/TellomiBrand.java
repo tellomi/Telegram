@@ -47,15 +47,10 @@ public final class TellomiBrand {
         if (host != null && !host.isEmpty()) {
             value = replaceHost(value, "getdesktop.telegram.org", "tellomi.cn/download");
             value = replaceHost(value, "desktop.telegram.org", "tellomi.cn/download");
-            value = replaceHost(value, "web.telegram.org", host);
-            value = replaceHost(value, "ads.telegram.org", host);
-            value = replaceHost(value, "promote.telegram.org", host);
-            value = replaceHost(value, "translations.telegram.org", BuildVars.SITE_HOST);
-            value = replaceHost(value, "core.telegram.org", BuildVars.SITE_HOST);
             value = replaceHost(value, "sms@telegram.org", "support@" + BuildVars.SITE_HOST);
             value = replaceHost(value, "recover@telegram.org", "support@" + BuildVars.SITE_HOST);
-            value = replaceHost(value, "www.telegram.org", host);
-            value = replaceHostBoundary(value, "telegram.org", host);
+            value = replaceHost(value, "www.telegram.org", "tellomi.cn");
+            value = replaceHostBoundary(value, "telegram.org", "tellomi.cn");
             value = replaceHost(value, "telegram.me", host);
             value = replaceHost(value, "telegram.dog", host);
             value = replaceHost(value, "t.me", host);
@@ -66,12 +61,26 @@ public final class TellomiBrand {
     private static final Pattern FAQ_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/faq[^\\s\"'<>)\\]]*");
     private static final Pattern PRIVACY_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/privacy[^\\s\"'<>)\\]]*");
     private static final Pattern TOS_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/tos[^\\s\"'<>)\\]]*");
+    private static final Pattern BLOG_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/blog[^\\s\"'<>)\\]]*");
+    private static final Pattern DEACTIVATE_URL = Pattern.compile("(?i)(?:https?://)?(?:www\\.)?telegram\\.org/deactivate[^\\s\"'<>)\\]]*");
+    private static final Pattern TRANSLATIONS_URL = Pattern.compile("(?i)(?:https?://)?translations\\.telegram\\.org[^\\s\"'<>)\\]]*");
+    private static final Pattern CORE_URL = Pattern.compile("(?i)(?:https?://)?core\\.telegram\\.org[^\\s\"'<>)\\]]*");
+    private static final Pattern ADS_URL = Pattern.compile("(?i)(?:https?://)?(?:ads|promote)\\.telegram\\.org[^\\s\"'<>)\\]]*");
+    private static final Pattern WEB_URL = Pattern.compile("(?i)(?:https?://)?web\\.telegram\\.org[^\\s\"'<>)\\]]*");
+    private static final Pattern OTHER_SITE_URL = Pattern.compile("(?i)https?://(?:www\\.)?telegram\\.org(?:/[^\\s\"'<>)\\]]*)?");
 
     /** Help, privacy, and terms go to tellomi.cn. Other telegram.org links are rewritten afterwards. */
     private static String rewritePolicyLinks(String value) {
         value = replaceUrl(value, FAQ_URL, "faq", BuildVars.HELP_URL);
         value = replaceUrl(value, PRIVACY_URL, "privacy", BuildVars.PRIVACY_URL);
         value = replaceUrl(value, TOS_URL, "tos", BuildVars.TOS_URL);
+        value = replaceUrl(value, BLOG_URL, "blog", "https://tellomi.cn/changelog/");
+        value = replaceUrl(value, DEACTIVATE_URL, "deactivate", "https://tellomi.cn/account/delete/");
+        value = replaceUrl(value, TRANSLATIONS_URL, "translations.telegram.org", BuildVars.HELP_URL);
+        value = replaceUrl(value, CORE_URL, "core.telegram.org", BuildVars.HELP_URL);
+        value = replaceUrl(value, ADS_URL, "telegram.org", "https://tellomi.cn/legal/community/");
+        value = replaceUrl(value, WEB_URL, "web.telegram.org", "https://tellomi.cn/help/start/link-desktop/");
+        value = replaceUrl(value, OTHER_SITE_URL, "telegram.org", "https://tellomi.cn/");
         return value;
     }
 
