@@ -164,10 +164,10 @@ def main():
     require("Tools/tellomi-android-version.py" in text, "release versionCode must come from tellomi-android-version.py")
     require("dl.tellomi.cn/android/latest.json" in (ROOT / "Tools" / "tellomi-android-version.py").read_text(), "release must read the published feed")
     require("--release" in text, "publish=release must opt into the live versionCode")
-    require('expected APP_VERSION_NAME 14.0.10' in text, "package step must require versionName 14.0.10")
+    require('expected APP_VERSION_NAME 14.0.11' in text, "package step must require versionName 14.0.11")
     gradle = (ROOT / "gradle.properties").read_text()
-    require("APP_VERSION_NAME=14.0.10" in gradle, "gradle.properties must be 14.0.10")
-    require("APP_VERSION_CODE=180470" in gradle, "configured base must be the decade above live 14.0.9 afat 1804699")
+    require("APP_VERSION_NAME=14.0.11" in gradle, "gradle.properties must be 14.0.11")
+    require("APP_VERSION_CODE=180471" in gradle, "configured base must be the decade above live 14.0.10 afat 1804709")
     publish_script = (ROOT / "Tools" / "tellomi-publish-installer.sh").read_text()
     require("--require-above" in publish_script, "publish must refuse a versionCode that is not above latest.json")
 
