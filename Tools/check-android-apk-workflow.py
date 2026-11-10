@@ -167,7 +167,7 @@ def main():
     require('expected APP_VERSION_NAME 14.0.10' in text, "package step must require versionName 14.0.10")
     gradle = (ROOT / "gradle.properties").read_text()
     require("APP_VERSION_NAME=14.0.10" in gradle, "gradle.properties must be 14.0.10")
-    require("APP_VERSION_CODE=180469" in gradle, "configured base must be the decade above 14.0.9 afat 1804689")
+    require("APP_VERSION_CODE=180470" in gradle, "configured base must be the decade above live 14.0.9 afat 1804699")
     require("TELLOMI_USE_CLOUD_STRINGS=true" in gradle, "downloaded langpack must be enabled")
     require("-PTELLOMI_USE_CLOUD_STRINGS=" not in text, "release workflow must not override TELLOMI_USE_CLOUD_STRINGS")
     require("expected TELLOMI_USE_CLOUD_STRINGS=true" in text, "package step must reject a build that turned cloud strings off")

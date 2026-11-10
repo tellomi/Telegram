@@ -516,12 +516,12 @@ jobs:
           # 14.0.10. afat versionCode = APP_VERSION_CODE * 10 + 9.
           # publish=release (and a push to release/android) reads
           # android/latest.json and uses the next decade above that versionCode.
-          # 14.0.9 afat is 1804689, so configured APP_VERSION_CODE 180469
-          # produces afat 1804699 until the feed moves past it. Digit 0 is unused.
+          # Live 14.0.9 afat is 1804699, so configured APP_VERSION_CODE 180470
+          # produces afat 1804709 until the feed moves past it. Digit 0 is unused.
           # This step does not pass -PTELLOMI_USE_CLOUD_STRINGS. The value stays
           # the one in gradle.properties (true). BuildConfig is checked below.
           PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
-          TELLOMI_VERSION_CODE_FLOOR: "1804689"
+          TELLOMI_VERSION_CODE_FLOOR: "1804699"
         run: |
           set -euo pipefail
           release_args=()
