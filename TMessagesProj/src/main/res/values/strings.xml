@@ -11675,6 +11675,8 @@
     <string name="FeedUnavailable">Content unavailable</string>
     <string name="FeedAudienceCustom">Custom</string>
     <string name="FeedAudienceMutual">Mutual followers</string>
+    <string name="FeedAudiencePrivate">Only me</string>
+    <string name="FeedAudienceFollowers">Followers</string>
     <string name="FeedAudiencePleaseChoose">Who can view: choose</string>
     <string name="FeedAudienceTitle">Who can view</string>
     <string name="FeedAudienceSubtitle">Nothing is selected until you choose.</string>
@@ -11745,4 +11747,11 @@
     <string name="FeedMentionWarning">These people cannot see this post and will not be notified.</string>
     <string name="FeedRemovePreview">Remove</string>
     <string name="FeedToolSticker">Sticker</string>
+    <string name="FeedPinned">Pinned</string>
+    <string name="FeedFile">File</string>
+    <string name="FeedPdf">PDF</string>
+    <string name="FeedArticle">Article</string>
+    <string name="FeedStory">Story</string>
+    <string name="FeedAudio">Voice</string>
+    <string name="FeedRefreshKept">Couldn\'t refresh. Still showing these posts.</string>
 </resources>

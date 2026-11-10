@@ -91,9 +91,12 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             post = FeedModels.Post.unavailable(postId);
         }
         FrameLayout root = new FrameLayout(context);
+        int background = Theme.getColor(Theme.key_windowBackgroundWhite);
+        root.setBackgroundColor(background);
         listView = new RecyclerListView(context);
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(new Adapter());
+        listView.setBackgroundColor(background);
         root.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 120));
 
         LinearLayout bar = new LinearLayout(context);
@@ -160,13 +163,23 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     }
 
     private void load() {
-        controller().api.getJson("/v1/feed/posts/" + postId, (json, error) -> {
+        String postPath = org.telegram.messenger.feed.FeedContract.postPath(postId);
+        if (postPath == null) {
+            return;
+        }
+        controller().api.getJson(postPath, (json, error) -> {
+            FeedModels.Post previous = post;
             if (json == null || error != null) {
-                post = FeedModels.Post.unavailable(postId);
-            } else if (json.has("post")) {
-                post = FeedModels.Post.parse(json.optJSONObject("post"));
-            } else if (json.has("id")) {
-                post = FeedModels.Post.parse(json);
+                if (previous == null || previous.unavailable) {
+                    post = FeedModels.Post.unavailable(postId);
+                }
+            } else {
+                FeedModels.Post parsed = FeedModels.Post.parse(unwrapPost(json));
+                if (parsed.unavailable && previous != null && !previous.unavailable) {
+                    post = previous;
+                } else {
+                    post = parsed;
+                }
             }
             if (listView.getAdapter() != null) {
                 listView.getAdapter().notifyDataSetChanged();
@@ -182,6 +195,26 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
                 listView.getAdapter().notifyDataSetChanged();
             }
         });
+    }
+
+    private JSONObject unwrapPost(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+        if (json.has("post") && json.optJSONObject("post") != null) {
+            return json.optJSONObject("post");
+        }
+        if (json.has("card") && json.optJSONObject("card") != null) {
+            return json.optJSONObject("card");
+        }
+        JSONObject data = json.optJSONObject("data");
+        if (data != null) {
+            if (data.has("post") && data.optJSONObject("post") != null) {
+                return data.optJSONObject("post");
+            }
+            return data;
+        }
+        return json;
     }
 
     private void applyPolicy() {
@@ -436,6 +469,71 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         showDialog(builder.create());
     }
 
+    private LinearLayout commentRow(android.content.Context context) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        row.setPadding(dp(16), dp(10), dp(16), dp(4));
+        TextView name = new TextView(context);
+        name.setTextSize(15);
+        name.setTypeface(AndroidUtilities.bold());
+        name.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        row.addView(name, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        TextView meta = new TextView(context);
+        meta.setTextSize(13);
+        meta.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        row.addView(meta, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        TextView body = new TextView(context);
+        body.setTextSize(org.telegram.messenger.SharedConfig.fontSize);
+        body.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        row.addView(body, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
+        TextView attachment = new TextView(context);
+        attachment.setTextSize(13);
+        attachment.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        attachment.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_graySection)));
+        attachment.setPadding(dp(10), dp(8), dp(10), dp(8));
+        attachment.setVisibility(View.GONE);
+        row.addView(attachment, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
+        View divider = new View(context);
+        divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        row.addView(divider, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, 8, 0, 0));
+        row.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return row;
+    }
+
+    private void bindComment(LinearLayout row, FeedModels.Comment comment) {
+        int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+        int gray = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
+        row.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        TextView name = (TextView) row.getChildAt(0);
+        TextView meta = (TextView) row.getChildAt(1);
+        TextView body = (TextView) row.getChildAt(2);
+        TextView attachment = (TextView) row.getChildAt(3);
+        View divider = row.getChildAt(4);
+        name.setTextColor(text);
+        name.setText(FeedUi.displayName(comment.author, currentAccount));
+        meta.setTextColor(gray);
+        String reply = comment.parentId != null && comment.parentId.length() > 0 ? getString(R.string.Reply) + " " + comment.replyToName : "";
+        meta.setText(reply.length() == 0 ? FeedUi.timeAgo(comment.createdAt) : FeedUi.timeAgo(comment.createdAt) + " · " + reply);
+        body.setTextColor(text);
+        body.setTextSize(org.telegram.messenger.SharedConfig.fontSize);
+        body.setText(org.telegram.messenger.feed.FeedContract.plainText(comment.text));
+        if (comment.attachment != null) {
+            attachment.setVisibility(View.VISIBLE);
+            attachment.setTextColor(text);
+            attachment.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_graySection)));
+            String kind = comment.attachment.isFile() ? ( "audio".equals(comment.attachment.type) || "voice".equals(comment.attachment.type) ? getString(R.string.FeedAudio) : getString(R.string.FeedFile)) : comment.attachment.isVideo() ? getString(R.string.FeedVideo) : getString(R.string.FeedPhoto);
+            attachment.setText(kind);
+        } else {
+            attachment.setVisibility(View.GONE);
+        }
+        divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        row.setOnLongClickListener(v -> {
+            commentMenu(comment, row);
+            return true;
+        });
+    }
+
     private class Adapter extends RecyclerListView.SelectionAdapter {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
@@ -457,12 +555,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
                 sortView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(sortView);
             }
-            TextView row = new TextView(parent.getContext());
-            row.setPadding(dp(16), dp(10), dp(16), dp(10));
-            row.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            row.setTextSize(org.telegram.messenger.SharedConfig.fontSize);
-            row.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            return new RecyclerListView.Holder(row);
+            return new RecyclerListView.Holder(commentRow(parent.getContext()));
         }
 
         @Override
@@ -480,14 +573,12 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
                 });
                 return;
             }
-            FeedModels.Comment comment = flat().get(position - 2);
-            TextView row = (TextView) holder.itemView;
-            String prefix = comment.parentId != null && comment.parentId.length() > 0 ? getString(R.string.Reply) + " " + comment.replyToName + "\n" : "";
-            row.setText(FeedUi.displayName(comment.author, currentAccount) + "  " + FeedUi.timeAgo(comment.createdAt) + "\n" + prefix + comment.text);
-            row.setOnLongClickListener(v -> {
-                commentMenu(comment, row);
-                return true;
-            });
+            ArrayList<FeedModels.Comment> rows = flat();
+            int index = position - 2;
+            if (index < 0 || index >= rows.size() || !(holder.itemView instanceof LinearLayout)) {
+                return;
+            }
+            bindComment((LinearLayout) holder.itemView, rows.get(index));
         }
 
         private ArrayList<FeedModels.Comment> flat() {

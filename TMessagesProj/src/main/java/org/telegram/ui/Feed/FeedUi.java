@@ -63,7 +63,7 @@ public final class FeedUi {
     }
 
     public static String audienceLabel(String kind) {
-        if (kind == null || "public".equals(kind)) {
+        if (kind == null || kind.length() == 0 || "public".equals(kind) || "everyone".equals(kind)) {
             return "";
         }
         if ("mutual_followers".equals(kind) || "friends".equals(kind)) {
@@ -77,6 +77,12 @@ public final class FeedUi {
         }
         if ("selected".equals(kind) || "include".equals(kind)) {
             return getString(R.string.StoryPrivacyOptionSelectedContacts);
+        }
+        if ("private".equals(kind) || "only_me".equals(kind) || "self".equals(kind)) {
+            return getString(R.string.FeedAudiencePrivate);
+        }
+        if ("followers".equals(kind) || "followers_only".equals(kind)) {
+            return getString(R.string.FeedAudienceFollowers);
         }
         return getString(R.string.FeedAudienceCustom);
     }

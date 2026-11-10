@@ -16,21 +16,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -67,7 +64,7 @@ public class FeedPostCell extends LinearLayout {
         int index = 0;
         for (int i = 0; i < post.media.size(); i++) {
             FeedModels.Media item = post.media.get(i);
-            if (!"image".equals(item.type) && !"video".equals(item.type)) {
+            if (!item.isImage() && !item.isVideo()) {
                 continue;
             }
             if (item == media) {
@@ -103,10 +100,13 @@ public class FeedPostCell extends LinearLayout {
     private final TextView meta;
     private final TextView follow;
     private final ImageView more;
+    private final TextView pin;
     private final TextView repostLine;
+    private final TextView titleView;
     private final TextView body;
     private final TextView full;
-    private final AlbumView album;
+    private final MediaGrid album;
+    private final LinearLayout files;
     private final TextView linkCard;
     private final TextView quoteCard;
     private final LinearLayout pollBox;
@@ -154,12 +154,28 @@ public class FeedPostCell extends LinearLayout {
         header.addView(follow, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
         more = FeedUi.icon(context, R.drawable.ic_ab_other, getString(R.string.AccDescrMoreOptions));
         header.addView(more, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL));
+        header.setClickable(true);
+        header.setTag(FeedContract.ACTION_TAG);
         addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        pin = label(context, true);
+        pin.setText(getString(R.string.FeedPinned));
+        pin.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        pin.setPadding(dp(46), dp(2), 0, 0);
+        pin.setVisibility(GONE);
+        addView(pin, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         repostLine = label(context, false);
         repostLine.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         repostLine.setPadding(dp(46), dp(2), 0, 0);
         addView(repostLine, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        titleView = label(context, true);
+        titleView.setSingleLine(false);
+        titleView.setMaxLines(3);
+        titleView.setPadding(dp(46), dp(4), 0, 0);
+        titleView.setVisibility(GONE);
+        addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         body = new TextView(context);
         body.setTextSize(SharedConfig.fontSize);
@@ -173,9 +189,15 @@ public class FeedPostCell extends LinearLayout {
         full.setPadding(dp(46), dp(2), 0, 0);
         addView(full, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        album = new AlbumView(context);
-        LinearLayout.LayoutParams albumLp = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 180, 46, 8, 0, 0);
-        addView(album, albumLp);
+        album = new MediaGrid(context);
+        album.setTag(FeedContract.ACTION_TAG);
+        album.setClickable(true);
+        addView(album, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
+
+        files = new LinearLayout(context);
+        files.setOrientation(VERTICAL);
+        files.setVisibility(GONE);
+        addView(files, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
 
         linkCard = card(context);
         addView(linkCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
@@ -184,6 +206,8 @@ public class FeedPostCell extends LinearLayout {
 
         pollBox = new LinearLayout(context);
         pollBox.setOrientation(VERTICAL);
+        pollBox.setTag(FeedContract.ACTION_TAG);
+        pollBox.setClickable(true);
         addView(pollBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 46, 8, 0, 0));
 
         location = label(context, false);
@@ -209,23 +233,65 @@ public class FeedPostCell extends LinearLayout {
         actions.addView(repost, LayoutHelper.createLinear(40, 40));
         actions.addView(share, LayoutHelper.createLinear(40, 40));
         actions.addView(save, LayoutHelper.createLinear(40, 40));
+        actions.setClickable(true);
+        actions.setTag(FeedContract.ACTION_TAG);
         addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         dividerView = new View(context);
         addView(dividerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, 6, 0, 0));
         divider.setColor(Theme.getColor(Theme.key_divider));
 
+        avatar.setTag(FeedContract.ACTION_TAG);
+        name.setTag(FeedContract.ACTION_TAG);
+        follow.setTag(FeedContract.ACTION_TAG);
+        more.setTag(FeedContract.ACTION_TAG);
+        like.setTag(FeedContract.ACTION_TAG);
+        likeCount.setTag(FeedContract.ACTION_TAG);
+        comment.setTag(FeedContract.ACTION_TAG);
+        commentCount.setTag(FeedContract.ACTION_TAG);
+        repost.setTag(FeedContract.ACTION_TAG);
+        share.setTag(FeedContract.ACTION_TAG);
+        save.setTag(FeedContract.ACTION_TAG);
         avatar.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onAuthor(post); });
         name.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onAuthor(post); });
         follow.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onFollow(post); });
         more.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onMore(post, more); });
+        header.setOnClickListener(v -> { if (post != null && delegate != null && !detail) delegate.onOpen(post); });
         full.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onOpen(post); });
         body.setOnClickListener(v -> { if (post != null && delegate != null && !detail) delegate.onOpen(post); });
         like.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onLike(post); });
+        likeCount.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onLike(post); });
         comment.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onComment(post); });
         repost.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onRepost(post); });
         share.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onShare(post); });
         save.setOnClickListener(v -> { if (post != null && delegate != null) delegate.onSave(post); });
+    }
+
+    /**
+     * False when the tap lands on like, comment, media, or another action.
+     * The list row's open-detail click must ignore those taps.
+     */
+    public boolean tapOpensDetail(float x, float y) {
+        ArrayList<FeedContract.Zone> zones = new ArrayList<>();
+        collectActions(this, 0, 0, zones);
+        return FeedContract.tapOpensDetail(detail, zones, x, y);
+    }
+
+    private void collectActions(View view, float originX, float originY, ArrayList<FeedContract.Zone> zones) {
+        if (view.getVisibility() != VISIBLE) {
+            return;
+        }
+        if (view != this && FeedContract.ACTION_TAG.equals(view.getTag())) {
+            zones.add(new FeedContract.Zone(originX, originY, originX + view.getWidth(), originY + view.getHeight()));
+            return;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                collectActions(child, originX + child.getLeft(), originY + child.getTop(), zones);
+            }
+        }
     }
 
     private TextView label(Context context, boolean bold) {
@@ -252,19 +318,37 @@ public class FeedPostCell extends LinearLayout {
 
     public void setPost(FeedModels.Post post) {
         this.post = post;
+        applyTheme();
         if (post == null || post.unavailable) {
             name.setText(getString(R.string.FeedUnavailable));
             body.setText("");
+            titleView.setVisibility(GONE);
+            pin.setVisibility(GONE);
             meta.setText("");
             follow.setVisibility(GONE);
             album.setVisibility(GONE);
+            files.setVisibility(GONE);
             linkCard.setVisibility(GONE);
             quoteCard.setVisibility(GONE);
             pollBox.setVisibility(GONE);
             location.setVisibility(GONE);
             repostLine.setVisibility(GONE);
+            like.setVisibility(GONE);
+            likeCount.setVisibility(GONE);
+            comment.setVisibility(GONE);
+            commentCount.setVisibility(GONE);
+            repost.setVisibility(GONE);
+            share.setVisibility(GONE);
+            save.setVisibility(GONE);
             return;
         }
+        like.setVisibility(VISIBLE);
+        likeCount.setVisibility(VISIBLE);
+        comment.setVisibility(VISIBLE);
+        commentCount.setVisibility(VISIBLE);
+        repost.setVisibility(VISIBLE);
+        share.setVisibility(VISIBLE);
+        save.setVisibility(VISIBLE);
         FeedUi.bindAvatar(avatar, post.author, account);
         name.setText(FeedUi.displayName(post.author, account));
         String audience = FeedUi.audienceLabel(post.audienceKind);
@@ -281,13 +365,20 @@ public class FeedPostCell extends LinearLayout {
         } else {
             follow.setVisibility(GONE);
         }
+        pin.setVisibility(post.pinned ? VISIBLE : GONE);
         if (post.repostedByName != null && post.repostedByName.length() > 0) {
             repostLine.setVisibility(VISIBLE);
             repostLine.setText(LocaleSafe(post.repostedByName));
         } else {
             repostLine.setVisibility(GONE);
         }
-        body.setText(post.text);
+        if (post.title != null && post.title.length() > 0) {
+            titleView.setVisibility(VISIBLE);
+            titleView.setText(FeedContract.plainText(post.title));
+        } else {
+            titleView.setVisibility(GONE);
+        }
+        body.setText(FeedContract.plainText(post.text));
         body.setTextSize(SharedConfig.fontSize);
         if (detail) {
             body.setMaxLines(Integer.MAX_VALUE);
@@ -306,9 +397,26 @@ public class FeedPostCell extends LinearLayout {
             });
         }
         album.bind(post, delegate);
-        if (post.linkPreview != null && !post.hasImages() && !post.hasVideo() && post.poll == null) {
+        bindFiles(post);
+        if (post.linkPreview != null && post.poll == null) {
             linkCard.setVisibility(VISIBLE);
-            linkCard.setText(post.linkPreview.title.length() > 0 ? post.linkPreview.title + "\n" + post.linkPreview.url : post.linkPreview.url);
+            StringBuilder link = new StringBuilder();
+            if (post.linkPreview.title.length() > 0) {
+                link.append(post.linkPreview.title);
+            }
+            if (post.linkPreview.description.length() > 0) {
+                if (link.length() > 0) {
+                    link.append('\n');
+                }
+                link.append(post.linkPreview.description);
+            }
+            if (post.linkPreview.url.length() > 0) {
+                if (link.length() > 0) {
+                    link.append('\n');
+                }
+                link.append(post.linkPreview.url);
+            }
+            linkCard.setText(link.length() == 0 ? post.linkPreview.url : link);
         } else {
             linkCard.setVisibility(GONE);
         }
@@ -348,6 +456,73 @@ public class FeedPostCell extends LinearLayout {
         return getString(R.string.FeedRepostedBy).replace("%s", name);
     }
 
+    private void applyTheme() {
+        int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+        int gray = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
+        int card = Theme.getColor(Theme.key_graySection);
+        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        name.setTextColor(text);
+        titleView.setTextColor(text);
+        body.setTextColor(text);
+        meta.setTextColor(gray);
+        repostLine.setTextColor(gray);
+        location.setTextColor(gray);
+        full.setTextColor(gray);
+        pin.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        follow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        linkCard.setTextColor(text);
+        quoteCard.setTextColor(text);
+        linkCard.setBackground(Theme.createRoundRectDrawable(dp(8), card));
+        quoteCard.setBackground(Theme.createRoundRectDrawable(dp(8), card));
+        divider.setColor(Theme.getColor(Theme.key_divider));
+    }
+
+    private void bindFiles(FeedModels.Post post) {
+        files.removeAllViews();
+        int shown = 0;
+        if ("article".equals(post.kind) || "story".equals(post.kind)) {
+            String label = "article".equals(post.kind) ? getString(R.string.FeedArticle) : getString(R.string.FeedStory);
+            files.addView(infoCard(label, ""), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            shown++;
+        }
+        for (int i = 0; i < post.media.size(); i++) {
+            FeedModels.Media media = post.media.get(i);
+            if (!media.isFile()) {
+                continue;
+            }
+            String label = fileLabel(media);
+            String subtitle = media.name != null && media.name.length() > 0 && !media.name.equals(label) ? media.name : "";
+            TextView row = infoCard(label, subtitle);
+            files.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, shown == 0 ? 0 : 6, 0, 0));
+            shown++;
+        }
+        files.setVisibility(shown == 0 ? GONE : VISIBLE);
+    }
+
+    private String fileLabel(FeedModels.Media media) {
+        if (media == null) {
+            return getString(R.string.FeedFile);
+        }
+        if ("pdf".equals(media.type) || (media.mime != null && media.mime.contains("pdf"))) {
+            return getString(R.string.FeedPdf);
+        }
+        if (media.isFile() && ("audio".equals(media.type) || "voice".equals(media.type) || (media.mime != null && media.mime.startsWith("audio")))) {
+            return getString(R.string.FeedAudio);
+        }
+        return getString(R.string.FeedFile);
+    }
+
+    private TextView infoCard(String title, String subtitle) {
+        TextView view = card(getContext());
+        view.setVisibility(VISIBLE);
+        if (subtitle != null && subtitle.length() > 0) {
+            view.setText(title + "\n" + subtitle);
+        } else {
+            view.setText(title);
+        }
+        return view;
+    }
+
     private void bindPoll(FeedModels.Post post) {
         pollBox.removeAllViews();
         if (post.poll == null) {
@@ -355,6 +530,8 @@ public class FeedPostCell extends LinearLayout {
             return;
         }
         pollBox.setVisibility(VISIBLE);
+        pollBox.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_graySection)));
+        pollBox.setPadding(dp(10), dp(8), dp(10), dp(8));
         TextView question = new TextView(getContext());
         question.setText(post.poll.question);
         question.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -406,128 +583,153 @@ public class FeedPostCell extends LinearLayout {
         canvas.drawRect(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight(), divider);
     }
 
-    private class AlbumView extends RecyclerListView {
-        AlbumView(Context context) {
-            super(context);
-            setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
-            setOverScrollMode(OVER_SCROLL_NEVER);
-        }
+    /**
+     * Moments grid: 1 large, 2 or 4 in two columns, 3/9/10 and the rest in
+     * three columns. Not a nested list, so load-more cannot recycle it out
+     * from under the parent scroller.
+     */
+    private class MediaGrid extends ViewGroup {
+        private final ArrayList<FeedModels.Media> items = new ArrayList<>();
+        private int cellWidth;
+        private int cellHeight;
+        private int gap;
 
-        @Override
-        public boolean canScrollHorizontally(int direction) {
-            Adapter adapter = getAdapter();
-            return adapter != null && adapter.getItemCount() > 1;
+        MediaGrid(Context context) {
+            super(context);
         }
 
         void bind(FeedModels.Post post, Delegate delegate) {
-            int count = 0;
-            String kind = null;
+            items.clear();
+            for (int i = getChildCount() - 1; i >= 0; i--) {
+                FeedPlayback.untrack(getChildAt(i));
+            }
+            removeAllViews();
+            if (post == null) {
+                setVisibility(GONE);
+                return;
+            }
             for (int i = 0; i < post.media.size(); i++) {
-                String type = post.media.get(i).type;
-                if ("image".equals(type) || "video".equals(type)) {
-                    if (kind == null) {
-                        kind = type;
-                    }
-                    if (type.equals(kind)) {
-                        count++;
-                    }
+                FeedModels.Media media = post.media.get(i);
+                if (media.isImage() || media.isVideo()) {
+                    items.add(media);
                 }
             }
-            if (count == 0) {
+            if (items.isEmpty()) {
                 setVisibility(GONE);
-                setAdapter(null);
                 return;
             }
             setVisibility(VISIBLE);
-            final String mediaKind = kind;
-            final int mediaCount = count;
-            setAdapter(new RecyclerListView.SelectionAdapter() {
-                @Override
-                public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                    return true;
+            int count = items.size();
+            for (int position = 0; position < count; position++) {
+                FeedModels.Media media = items.get(position);
+                FrameLayout frame = new FrameLayout(getContext());
+                frame.setTag(FeedContract.ACTION_TAG);
+                BackupImageView image = new BackupImageView(getContext());
+                image.setRoundRadius(dp(count == 1 ? 12 : 8));
+                frame.addView(image, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                String thumb = media.thumbUrl(account);
+                String play = media.displayUrl(account);
+                if (thumb.length() > 0) {
+                    image.setImage(thumb, count == 1 ? "800_800" : "320_320", new ColorDrawable(Theme.getColor(Theme.key_graySection)));
+                } else {
+                    image.setImage(null, null, new ColorDrawable(Theme.getColor(Theme.key_graySection)));
                 }
-
-                @NonNull
-                @Override
-                public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                    FrameLayout frame = new FrameLayout(parent.getContext());
-                    BackupImageView image = new BackupImageView(parent.getContext());
-                    image.setRoundRadius(dp(8));
-                    frame.addView(image, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
-                    frame.setLayoutParams(new RecyclerView.LayoutParams(dp(168), dp(180)));
-                    return new RecyclerListView.Holder(frame);
+                int viewerIndex = viewerIndex(post, media);
+                if (post.id != null && viewerIndex >= 0) {
+                    image.setTag(post.id + ":" + viewerIndex);
+                    thumbs.put(post.id + ":" + viewerIndex, new WeakReference<>(image));
                 }
-
-                @Override
-                public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                    FrameLayout frame = (FrameLayout) holder.itemView;
-                    BackupImageView image = (BackupImageView) frame.getChildAt(0);
-                    int seen = 0;
-                    FeedModels.Media media = null;
-                    for (int i = 0; i < post.media.size(); i++) {
-                        if (mediaKind.equals(post.media.get(i).type)) {
-                            if (seen == position) {
-                                media = post.media.get(i);
-                                break;
-                            }
-                            seen++;
-                        }
+                image.setContentDescription((media.isVideo() ? getString(R.string.FeedVideo) + ", " + (media.durationMs / 1000) + "s" : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + count);
+                if (media.isVideo() && play.startsWith("http")) {
+                    TextureView texture = new TextureView(getContext());
+                    frame.addView(texture, 0, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                    FeedPlayback.track(frame, play, texture);
+                }
+                if (media.isVideo()) {
+                    TextView badge = new TextView(getContext());
+                    badge.setText(getString(R.string.FeedVideo));
+                    badge.setTextColor(0xffffffff);
+                    badge.setTextSize(12);
+                    badge.setPadding(dp(6), dp(2), dp(6), dp(2));
+                    badge.setBackground(Theme.createRoundRectDrawable(dp(6), 0x66000000));
+                    frame.addView(badge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 6, 0, 0, 6));
+                }
+                final int openIndex = viewerIndex >= 0 ? viewerIndex : position;
+                final int page = position;
+                frame.setOnClickListener(v -> {
+                    post.albumPage = page;
+                    if (delegate != null) {
+                        delegate.onMedia(post, openIndex);
                     }
-                    int viewerIndex = viewerIndex(post, media);
-                    String thumb = media == null ? "" : media.thumbUrl(account);
-                    String play = media == null ? "" : media.displayUrl(account);
-                    if (thumb.length() > 0) {
-                        image.setImage(thumb, "160_180", new ColorDrawable(Theme.getColor(Theme.key_graySection)));
-                    } else {
-                        image.setImage(null, null, new ColorDrawable(Theme.getColor(Theme.key_graySection)));
-                    }
-                    if (post.id != null && viewerIndex >= 0) {
-                        image.setTag(post.id + ":" + viewerIndex);
-                        thumbs.put(post.id + ":" + viewerIndex, new WeakReference<>(image));
-                    }
-                    image.setContentDescription(("video".equals(mediaKind) ? getString(R.string.FeedVideo) + ", " + (media == null ? 0 : media.durationMs / 1000) + "s" : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + mediaCount);
-                    FeedPlayback.untrack(frame);
-                    if (frame.getChildCount() > 1) {
-                        frame.removeViewAt(0);
-                    }
-                    if ("video".equals(mediaKind) && play.startsWith("http")) {
-                        TextureView texture = new TextureView(frame.getContext());
-                        frame.addView(texture, 0, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
-                        FeedPlayback.track(frame, play, texture);
-                    }
-                    final int openIndex = viewerIndex >= 0 ? viewerIndex : position;
-                    frame.setOnClickListener(v -> {
-                        post.albumPage = position;
+                });
+                if (FeedConfig.DOUBLE_TAP_LIKE && media.isImage()) {
+                    frame.setOnTouchListener(new DoubleTap(v -> {
                         if (delegate != null) {
-                            delegate.onMedia(post, openIndex);
+                            delegate.onLike(post);
+                            FeedUi.playHeart(frame);
                         }
-                    });
-                    if (FeedConfig.DOUBLE_TAP_LIKE && "image".equals(mediaKind)) {
-                        frame.setOnTouchListener(new DoubleTap(v -> {
-                            if (delegate != null) {
-                                delegate.onLike(post);
-                                FeedUi.playHeart(frame);
-                            }
-                        }));
-                    }
+                    }));
                 }
-
-                @Override
-                public int getItemCount() {
-                    return mediaCount;
-                }
-            });
-            if (post.albumPage > 0 && post.albumPage < count) {
-                scrollToPosition(post.albumPage);
+                addView(frame);
             }
+            requestLayout();
+        }
+
+        private int columns() {
+            int n = items.size();
+            if (n <= 1) {
+                return 1;
+            }
+            if (n == 2 || n == 4) {
+                return 2;
+            }
+            return 3;
         }
 
         @Override
-        public boolean onInterceptTouchEvent(MotionEvent e) {
-            if (getParent() != null) {
-                getParent().requestDisallowInterceptTouchEvent(true);
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int width = MeasureSpec.getSize(widthMeasureSpec);
+            int n = items.size();
+            if (n == 0 || width <= 0) {
+                setMeasuredDimension(width, 0);
+                return;
             }
-            return super.onInterceptTouchEvent(e);
+            gap = dp(3);
+            int cols = columns();
+            int rows = (n + cols - 1) / cols;
+            if (n == 1) {
+                cellWidth = width;
+                FeedModels.Media media = items.get(0);
+                if (media.isVideo()) {
+                    cellHeight = Math.max(dp(180), width * 9 / 16);
+                } else if (media.w > 0 && media.h > 0) {
+                    cellHeight = Math.min(dp(360), Math.max(dp(120), width * media.h / Math.max(1, media.w)));
+                } else {
+                    cellHeight = dp(220);
+                }
+            } else {
+                cellWidth = (width - gap * (cols - 1)) / cols;
+                cellHeight = cellWidth;
+            }
+            int childW = MeasureSpec.makeMeasureSpec(Math.max(1, cellWidth), MeasureSpec.EXACTLY);
+            int childH = MeasureSpec.makeMeasureSpec(Math.max(1, cellHeight), MeasureSpec.EXACTLY);
+            for (int i = 0; i < getChildCount(); i++) {
+                getChildAt(i).measure(childW, childH);
+            }
+            int height = rows * cellHeight + Math.max(0, rows - 1) * gap;
+            setMeasuredDimension(width, height);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            int cols = columns();
+            for (int i = 0; i < getChildCount(); i++) {
+                int col = i % cols;
+                int row = i / cols;
+                int x = col * (cellWidth + gap);
+                int y = row * (cellHeight + gap);
+                getChildAt(i).layout(x, y, x + cellWidth, y + cellHeight);
+            }
         }
     }
 

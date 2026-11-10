@@ -113,6 +113,92 @@ public class FeedContractTest {
     }
 
     @Test
+    public void recommendPageKeepsBothCursorsAndStopsOnAnEmptyLastPage() {
+        String page = "{\"items\":[{\"id\":\"p1\",\"reason\":\"recommend\"},{\"id\":\"p1\",\"reason\":\"recommend\"}],\"cursor\":\"c2\",\"next_cursor\":\"c2\"}";
+        FeedContract.FeedList list = FeedContract.parseFeedList(page);
+        assertEquals("c2", list.cursor);
+        assertEquals(Arrays.asList("p1"), list.idsToHydrate());
+        assertEquals("/v1/feed/recommend?cursor=c2", FeedContract.nextPagePath("recommend", list.cursor, "", ""));
+        assertNull(FeedContract.nextPagePath("recommend", "", "", ""));
+        assertNull(FeedContract.nextPagePath("recommend", "null", "", ""));
+
+        String done = "{\"items\":[]}";
+        FeedContract.FeedList last = FeedContract.parseFeedList(done);
+        assertEquals("", last.cursor);
+        FeedContract.PageApply end = FeedContract.applyPage(Arrays.asList("p1", "p2"), last.idsToHydrate(), false, last.cursor);
+        assertEquals(Arrays.asList("p1", "p2"), end.ids);
+        assertEquals(0, end.added);
+        assertTrue(end.stopPaging);
+        assertFalse(end.keptExisting);
+        assertEquals("", end.nextCursor);
+    }
+
+    @Test
+    public void loadMoreDedupesIdsAndAnEmptyRefreshKeepsTheList() {
+        FeedContract.PageApply more = FeedContract.applyPage(
+                Arrays.asList("a", "b"),
+                Arrays.asList("b", "b", "c"),
+                false,
+                "next");
+        assertEquals(Arrays.asList("a", "b", "c"), more.ids);
+        assertEquals(1, more.added);
+        assertFalse(more.stopPaging);
+        assertEquals("next", more.nextCursor);
+
+        FeedContract.PageApply repeated = FeedContract.applyPage(
+                Arrays.asList("a", "b"),
+                Arrays.asList("a", "b"),
+                false,
+                "again");
+        assertEquals(Arrays.asList("a", "b"), repeated.ids);
+        assertEquals(0, repeated.added);
+        assertTrue(repeated.stopPaging);
+        assertEquals("", repeated.nextCursor);
+
+        FeedContract.PageApply refresh = FeedContract.applyPage(
+                Arrays.asList("a", "b"),
+                Arrays.asList(),
+                true,
+                "");
+        assertTrue(refresh.keptExisting);
+        assertEquals(Arrays.asList("a", "b"), refresh.ids);
+        assertFalse(refresh.stopPaging);
+    }
+
+    @Test
+    public void likeTapDoesNotOpenThePost() {
+        FeedContract.Zone like = new FeedContract.Zone(40, 200, 88, 248);
+        java.util.List<FeedContract.Zone> actions = Arrays.asList(like);
+        assertFalse(FeedContract.tapOpensDetail(false, actions, 50, 220));
+        assertTrue(FeedContract.tapOpensDetail(false, actions, 12, 30));
+        assertFalse(FeedContract.tapOpensDetail(true, actions, 12, 30));
+        assertEquals("Hello", FeedContract.plainText("<p>Hello</p>"));
+        assertEquals("/v1/feed/posts/post%2F1", FeedContract.postPath("post/1"));
+        assertNull(FeedContract.postPath(""));
+        assertTrue(FeedContract.noBodySuccess(204));
+        assertFalse(FeedContract.noBodySuccess(405));
+        assertFalse(FeedContract.noBodySuccess(200));
+    }
+
+    @Test
+    public void likeControlIsSeparateFromTheRowClick() throws Exception {
+        String cell = read("ui/Feed/FeedPostCell.java");
+        String list = read("ui/Feed/FeedListView.java");
+        String activity = read("ui/Feed/FeedActivity.java");
+        assertTrue(cell.contains("FeedContract.ACTION_TAG"));
+        assertTrue(cell.contains("delegate.onLike"));
+        assertTrue(cell.contains("tapOpensDetail"));
+        assertTrue(list.contains("tapOpensDetail"));
+        int like = activity.indexOf("void onLike");
+        int comment = activity.indexOf("void onComment");
+        assertTrue(like >= 0 && comment > like);
+        String method = activity.substring(like, comment);
+        assertTrue(method.contains("toggleLike"));
+        assertFalse(method.contains("FeedDetailActivity"));
+        assertFalse(method.contains("presentFragment"));
+    }
+
+    @Test
     public void clientSourcesDoNotCallRemovedEndpoints() throws Exception {
         String feed = read("messenger/feed/FeedController.java")
                 + read("messenger/feed/FeedContract.java")

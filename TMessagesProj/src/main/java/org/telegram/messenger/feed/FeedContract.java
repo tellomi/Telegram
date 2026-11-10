@@ -35,6 +35,8 @@ public final class FeedContract {
     public static final String CARDS_PATH = "/v1/feed/cards";
     public static final String STATUS_PATH = "/v1/feed/status";
     public static final String CAPABILITIES_PATH = "/v1/capabilities";
+    /** Passed to the load callback when a refresh returned no rows and the list was kept. */
+    public static final String KEPT_EXISTING = "kept";
 
     public static final String NOTIFICATION_INTERACTIONS = "interactions";
     public static final String NOTIFICATION_FOLLOWS = "follows";
@@ -62,11 +64,55 @@ public final class FeedContract {
             ArrayList<String> ids = new ArrayList<>();
             for (int i = 0; i < refs.size(); i++) {
                 Ref ref = refs.get(i);
-                if (ref.fullJson == null && ref.id.length() > 0) {
+                if (ref.fullJson == null && ref.id.length() > 0 && !ids.contains(ref.id)) {
                     ids.add(ref.id);
                 }
             }
             return ids;
+        }
+    }
+
+    /**
+     * Result of merging one feed page into the rows already on screen.
+     * {@code keptExisting} means a refresh came back empty and the visible
+     * rows were left alone. {@code stopPaging} means another load-more would
+     * only repeat ids or the cursor is missing.
+     */
+    public static final class PageApply {
+        public final ArrayList<String> ids;
+        public final int added;
+        public final boolean keptExisting;
+        public final boolean stopPaging;
+        public final String nextCursor;
+
+        public PageApply(ArrayList<String> ids, int added, boolean keptExisting, boolean stopPaging, String nextCursor) {
+            this.ids = ids;
+            this.added = added;
+            this.keptExisting = keptExisting;
+            this.stopPaging = stopPaging;
+            this.nextCursor = nextCursor == null ? "" : nextCursor;
+        }
+    }
+
+    /** View tag for a control that must not open the post. */
+    public static final String ACTION_TAG = "feed-action";
+
+    /** A rectangle in the post cell. A tap inside an action zone does not open the post. */
+    public static final class Zone {
+        public final float left;
+        public final float top;
+        public final float right;
+        public final float bottom;
+
+        public Zone(float left, float top, float right, float bottom) {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        public boolean contains(float x, float y) {
+            return x >= left && x < right && y >= top && y < bottom;
         }
     }
 
@@ -87,12 +133,37 @@ public final class FeedContract {
         if (!isEngineStream(stream)) {
             return null;
         }
-        String path = "/v1/feed/" + stream + "?cursor=" + enc(cursor);
+        String path = "/v1/feed/" + stream + "?cursor=" + enc(normalizeCursor(cursor));
         if (STREAM_NEARBY.equals(stream)) {
             String nearbySort = sort == null || sort.length() == 0 ? "latest" : sort;
             path += "&city=" + enc(city) + "&sort=" + enc(nearbySort);
         }
         return path;
+    }
+
+    /**
+     * Load-more URL. Null when there is no cursor.
+     * {@code /v1/feed/recommend?cursor=} is the first page. Sending it again
+     * used to repeat the same ids.
+     */
+    public static String nextPagePath(String stream, String cursor, String city, String sort) {
+        if (normalizeCursor(cursor).length() == 0) {
+            return null;
+        }
+        return streamPath(stream, cursor, city, sort);
+    }
+
+    /** GET /v1/feed/posts/{id}. Null when the id is missing. */
+    public static String postPath(String id) {
+        if (id == null || id.length() == 0) {
+            return null;
+        }
+        return "/v1/feed/posts/" + enc(id);
+    }
+
+    /** 204/205 have no JSON body. They are success, including notifications/read. */
+    public static boolean noBodySuccess(int code) {
+        return code == 204 || code == 205;
     }
 
     /**
@@ -215,9 +286,9 @@ public final class FeedContract {
         if (root == null) {
             return list;
         }
-        list.cursor = string(root, "cursor");
+        list.cursor = normalizeCursor(string(root, "cursor"));
         if (list.cursor.length() == 0) {
-            list.cursor = string(root, "next_cursor");
+            list.cursor = normalizeCursor(string(root, "next_cursor"));
         }
         JsonArray items = array(root.get("items"));
         if (items == null) {
@@ -375,6 +446,136 @@ public final class FeedContract {
             return 0;
         }
         return MAX_IMAGES - Math.max(0, already);
+    }
+
+    /** JSON null, a blank cursor, and the literal "null" all mean "no next page". */
+    public static String normalizeCursor(String cursor) {
+        if (cursor == null) {
+            return "";
+        }
+        String value = cursor.trim();
+        if (value.length() == 0 || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value)) {
+            return "";
+        }
+        return value;
+    }
+
+    public static ArrayList<String> uniqueIds(List<String> ids) {
+        ArrayList<String> out = new ArrayList<>();
+        if (ids == null) {
+            return out;
+        }
+        for (int i = 0; i < ids.size(); i++) {
+            String id = ids.get(i);
+            if (id == null || id.length() == 0 || out.contains(id)) {
+                continue;
+            }
+            out.add(id);
+        }
+        return out;
+    }
+
+    /**
+     * Merge a page into the ids already shown. Load-more that adds nothing
+     * stops, even when the server repeats a cursor or sends null. A refresh
+     * with no rows keeps the ids that are already on screen.
+     */
+    public static PageApply applyPage(List<String> existingIds, List<String> incomingIds, boolean refresh, String nextCursor) {
+        ArrayList<String> existing = uniqueIds(existingIds);
+        ArrayList<String> incoming = uniqueIds(incomingIds);
+        String cursor = normalizeCursor(nextCursor);
+        if (refresh && incoming.isEmpty()) {
+            boolean kept = !existing.isEmpty();
+            return new PageApply(existing, 0, kept, !kept, kept ? cursor : "");
+        }
+        if (!refresh && incoming.isEmpty()) {
+            return new PageApply(existing, 0, false, true, "");
+        }
+        ArrayList<String> result = new ArrayList<>();
+        int added;
+        if (refresh) {
+            result.addAll(incoming);
+            added = incoming.size();
+        } else {
+            result.addAll(existing);
+            added = 0;
+            for (int i = 0; i < incoming.size(); i++) {
+                String id = incoming.get(i);
+                if (!result.contains(id)) {
+                    result.add(id);
+                    added++;
+                }
+            }
+        }
+        boolean stop = cursor.length() == 0 || (!refresh && added == 0);
+        if (!refresh && added == 0) {
+            cursor = "";
+        }
+        return new PageApply(result, added, false, stop, cursor);
+    }
+
+    /**
+     * Detail mode never opens another detail. A tap on a like/comment/media
+     * zone toggles that control. Everywhere else in the row opens the post.
+     */
+    public static boolean tapOpensDetail(boolean detailCell, List<Zone> actionZones, float x, float y) {
+        if (detailCell) {
+            return false;
+        }
+        if (actionZones != null) {
+            for (int i = 0; i < actionZones.size(); i++) {
+                Zone zone = actionZones.get(i);
+                if (zone != null && zone.contains(x, y)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Article HTML and story markup are shown as text, not raw tags. */
+    public static String plainText(String text) {
+        if (text == null || text.length() == 0) {
+            return "";
+        }
+        if (text.indexOf('<') < 0 && text.indexOf('&') < 0) {
+            return text;
+        }
+        StringBuilder out = new StringBuilder(text.length());
+        boolean tag = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '<') {
+                tag = true;
+                continue;
+            }
+            if (c == '>' && tag) {
+                tag = false;
+                if (out.length() > 0 && !Character.isWhitespace(out.charAt(out.length() - 1))) {
+                    out.append(' ');
+                }
+                continue;
+            }
+            if (!tag) {
+                out.append(c);
+            }
+        }
+        return out.toString()
+                .replace("&nbsp;", " ")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .trim();
+    }
+
+    /** Unix seconds and unix millis both become millis. */
+    public static long epochMillis(long value) {
+        if (value > 0 && value < 10_000_000_000L) {
+            return value * 1000L;
+        }
+        return Math.max(0, value);
     }
 
     private static boolean isPostRef(JsonObject item) {

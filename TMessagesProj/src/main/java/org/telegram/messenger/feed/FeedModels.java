@@ -45,6 +45,8 @@ public final class FeedModels {
         public String key = "";
         public String url = "";
         public String coverKey = "";
+        public String name = "";
+        public String mime = "";
         public int w;
         public int h;
         public int durationMs;
@@ -55,10 +57,12 @@ public final class FeedModels {
             if (o == null) {
                 return m;
             }
-            m.type = o.optString("type", "image");
+            m.type = o.optString("type", o.optString("kind", "image"));
             m.key = o.optString("key", "");
             m.url = o.optString("url", o.optString("src", ""));
             m.coverKey = o.optString("cover_key", o.optString("cover", ""));
+            m.name = o.optString("name", o.optString("filename", o.optString("file_name", "")));
+            m.mime = o.optString("mime", o.optString("content_type", ""));
             m.w = o.optInt("w", o.optInt("width", 0));
             m.h = o.optInt("h", o.optInt("height", 0));
             m.durationMs = o.optInt("duration_ms", o.optInt("duration", 0));
@@ -67,6 +71,18 @@ public final class FeedModels {
             }
             m.original = o.optBoolean("is_original", false);
             return m;
+        }
+
+        public boolean isImage() {
+            return "image".equals(type) || "photo".equals(type) || "picture".equals(type);
+        }
+
+        public boolean isVideo() {
+            return "video".equals(type) || "gif".equals(type);
+        }
+
+        public boolean isFile() {
+            return "file".equals(type) || "pdf".equals(type) || "document".equals(type) || "audio".equals(type) || "voice".equals(type);
         }
 
         /** Playable file. Relative keys use media_base_url from GET /v1/feed/config. */
@@ -181,6 +197,8 @@ public final class FeedModels {
         public String id = "";
         public int version;
         public boolean unavailable;
+        public String kind = "post";
+        public String title = "";
         public Author author = new Author();
         public String text = "";
         public ArrayList<Media> media = new ArrayList<>();
@@ -217,7 +235,7 @@ public final class FeedModels {
 
         public boolean hasImages() {
             for (int i = 0; i < media.size(); i++) {
-                if ("image".equals(media.get(i).type)) {
+                if (media.get(i).isImage()) {
                     return true;
                 }
             }
@@ -226,7 +244,7 @@ public final class FeedModels {
 
         public boolean hasVideo() {
             for (int i = 0; i < media.size(); i++) {
-                if ("video".equals(media.get(i).type)) {
+                if (media.get(i).isVideo()) {
                     return true;
                 }
             }
@@ -261,19 +279,61 @@ public final class FeedModels {
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
             }
+            p.kind = o.optString("type", o.optString("kind", "post"));
+            if (p.kind.length() == 0) {
+                p.kind = "post";
+            }
+            p.title = o.optString("title", "");
             p.author = Author.parse(o.optJSONObject("author"));
-            p.text = o.optString("text", "");
-            JSONArray media = o.optJSONArray("media");
-            if (media != null) {
-                for (int i = 0; i < media.length(); i++) {
-                    JSONObject item = media.optJSONObject(i);
-                    if (item != null) {
-                        p.media.add(Media.parse(item));
-                    }
+            if (o.has("author_name") && p.author.name.length() == 0) {
+                p.author.name = o.optString("author_name", "");
+            }
+            p.text = firstText(o, "text", "body", "caption", "excerpt", "summary");
+            JSONObject content = o.optJSONObject("content");
+            if (content != null) {
+                if (p.title.length() == 0) {
+                    p.title = content.optString("title", "");
                 }
+                if (p.text.length() == 0) {
+                    p.text = firstText(content, "text", "body", "markdown", "html");
+                }
+                absorbMedia(p, content.optJSONArray("media"));
+            }
+            JSONObject article = o.optJSONObject("article");
+            if (article != null) {
+                p.kind = "article";
+                if (p.title.length() == 0) {
+                    p.title = article.optString("title", "");
+                }
+                if (p.text.length() == 0) {
+                    p.text = firstText(article, "text", "body", "excerpt", "html", "markdown");
+                }
+                absorbMedia(p, article.optJSONArray("media"));
+                if (article.has("cover")) {
+                    p.media.add(0, Media.parse(article.optJSONObject("cover")));
+                }
+            }
+            JSONObject story = o.optJSONObject("story");
+            if (story != null) {
+                p.kind = "story";
+                if (p.text.length() == 0) {
+                    p.text = firstText(story, "text", "caption");
+                }
+                absorbMedia(p, story.optJSONArray("media"));
+            }
+            absorbMedia(p, o.optJSONArray("media"));
+            absorbMedia(p, o.optJSONArray("attachments"));
+            if (o.has("file") && !o.isNull("file")) {
+                p.media.add(Media.parse(o.optJSONObject("file")));
             }
             p.poll = Poll.parse(o.optJSONObject("poll"));
             p.linkPreview = LinkPreview.parse(o.optJSONObject("link_preview"));
+            if (p.linkPreview == null) {
+                p.linkPreview = LinkPreview.parse(o.optJSONObject("link"));
+            }
+            if (p.linkPreview == null) {
+                p.linkPreview = LinkPreview.parse(o.optJSONObject("preview"));
+            }
             if (o.has("quote_of") && !o.isNull("quote_of")) {
                 Object q = o.opt("quote_of");
                 if (q instanceof String) {
@@ -307,24 +367,30 @@ public final class FeedModels {
                 p.allowNearby = location.optBoolean("allow_nearby", false);
             }
             p.pinned = o.optBoolean("pinned", o.optLong("pinned_at", 0) > 0);
-            p.editedAt = o.optLong("edited_at", 0);
-            p.createdAt = o.optLong("created_at", 0);
+            p.editedAt = FeedContract.epochMillis(o.optLong("edited_at", 0));
+            p.createdAt = FeedContract.epochMillis(o.optLong("created_at", 0));
             JSONObject counts = o.optJSONObject("counts");
+            if (counts == null) {
+                counts = o.optJSONObject("stats");
+            }
             if (counts != null) {
-                p.likes = counts.optInt("likes", 0);
-                p.comments = counts.optInt("comments", 0);
-                p.reposts = counts.optInt("reposts", 0);
+                p.likes = counts.optInt("likes", counts.optInt("like_count", 0));
+                p.comments = counts.optInt("comments", counts.optInt("comment_count", 0));
+                p.reposts = counts.optInt("reposts", counts.optInt("repost_count", 0));
             } else {
-                p.likes = o.optInt("like_count", 0);
-                p.comments = o.optInt("comment_count", 0);
-                p.reposts = o.optInt("repost_count", 0);
+                p.likes = o.optInt("likes", o.optInt("like_count", 0));
+                p.comments = o.optInt("comments", o.optInt("comment_count", 0));
+                p.reposts = o.optInt("reposts", o.optInt("repost_count", 0));
             }
             JSONObject viewer = o.optJSONObject("viewer");
             if (viewer != null) {
-                p.liked = viewer.optBoolean("liked", false);
+                p.liked = viewer.optBoolean("liked", viewer.optBoolean("liked_by_me", false));
                 p.saved = viewer.optBoolean("saved", false);
                 p.following = viewer.optBoolean("following", false);
                 p.mutual = viewer.optBoolean("mutual", false);
+            } else {
+                p.liked = o.optBoolean("liked", false);
+                p.saved = o.optBoolean("saved", false);
             }
             JSONObject reposted = o.optJSONObject("reposted_by");
             if (reposted != null) {
@@ -333,6 +399,34 @@ public final class FeedModels {
                 p.repostedByName = o.optString("reposted_by_name", "");
             }
             return p;
+        }
+
+        private static void absorbMedia(Post post, JSONArray media) {
+            if (post == null || media == null) {
+                return;
+            }
+            for (int i = 0; i < media.length(); i++) {
+                JSONObject item = media.optJSONObject(i);
+                if (item != null) {
+                    post.media.add(Media.parse(item));
+                }
+            }
+        }
+
+        private static String firstText(JSONObject o, String... keys) {
+            if (o == null || keys == null) {
+                return "";
+            }
+            for (int i = 0; i < keys.length; i++) {
+                if (!o.has(keys[i]) || o.isNull(keys[i])) {
+                    continue;
+                }
+                Object value = o.opt(keys[i]);
+                if (value instanceof String && ((String) value).length() > 0) {
+                    return (String) value;
+                }
+            }
+            return "";
         }
 
         /** `{id, reason}` from a feed list, before POST /v1/feed/cards. */
@@ -507,7 +601,7 @@ public final class FeedModels {
                 }
             }
         }
-        page.nextCursor = o.optString("next_cursor", o.optString("cursor", ""));
+        page.nextCursor = FeedContract.normalizeCursor(o.optString("next_cursor", o.optString("cursor", "")));
         return page;
     }
 }

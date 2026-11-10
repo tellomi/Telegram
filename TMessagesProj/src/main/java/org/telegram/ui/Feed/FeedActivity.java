@@ -167,12 +167,14 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                     if (tab >= loading.length) {
                         return;
                     }
-                    if (!loading[tab] && controller().cursor(streams[tab]).length() > 0) {
+                    if (!loading[tab] && FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0) {
                         loading[tab] = true;
                         controller().load(streams[tab], false, (ok, error) -> {
                             loading[tab] = false;
                             failed[tab] = !ok;
-                            lists[tab].refresh();
+                            if (tab < lists.length && lists[tab] != null) {
+                                lists[tab].refresh();
+                            }
                         });
                     }
                 }
@@ -189,7 +191,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
                 @Override
                 public boolean hasMore() {
-                    return controller().cursor(streams[tab]).length() > 0;
+                    return FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0;
                 }
 
                 @Override
@@ -316,6 +318,9 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             if (tab < lists.length && lists[tab] != null) {
                 lists[tab].refresh();
             }
+            if (FeedContract.KEPT_EXISTING.equals(error)) {
+                BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, getString(R.string.FeedRefreshKept)).show();
+            }
         });
     }
 
@@ -328,7 +333,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private String emptyActionFor(String stream) {
         if (FeedModels.STREAM_NEARBY.equals(stream)) return getString(R.string.FeedChangeCity);
         if (FeedModels.STREAM_FOLLOWING.equals(stream)) return getString(R.string.FeedFindPeople);
-        return getString(R.string.FeedPublish);
+        return null;
     }
 
     private void onEmpty(String stream) {

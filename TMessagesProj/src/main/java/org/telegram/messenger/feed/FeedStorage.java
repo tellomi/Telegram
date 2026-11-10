@@ -112,6 +112,8 @@ public class FeedStorage {
         author.put("username", p.author.username);
         author.put("avatar", p.author.avatarUrl);
         o.put("author", author);
+        o.put("type", p.kind);
+        o.put("title", p.title);
         o.put("text", p.text);
         JSONArray media = new JSONArray();
         for (int i = 0; i < p.media.size(); i++) {
@@ -120,6 +122,8 @@ public class FeedStorage {
             item.put("type", m.type);
             item.put("key", m.key);
             item.put("url", m.url);
+            item.put("name", m.name);
+            item.put("mime", m.mime);
             item.put("w", m.w);
             item.put("h", m.h);
             item.put("duration_ms", m.durationMs);
