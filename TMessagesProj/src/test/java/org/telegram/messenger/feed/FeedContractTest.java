@@ -74,10 +74,12 @@ public class FeedContractTest {
 
     @Test
     public void momentsTabNeedsConfigKeyAndVisibleStatus() {
-        assertFalse(FeedContract.showMomentsTab(false, true));
-        assertFalse(FeedContract.showMomentsTab(true, false));
-        assertFalse(FeedContract.showMomentsTab(false, false));
+        assertTrue(FeedContract.showMomentsTab(false, true));
+        assertTrue(FeedContract.showMomentsTab(true, false));
+        assertTrue(FeedContract.showMomentsTab(false, false));
         assertTrue(FeedContract.showMomentsTab(true, true));
+        assertEquals(1, FeedContract.imageSampleSize(4032, 3024, "800_800", 3f));
+        assertTrue(FeedContract.imageSampleSize(4032, 3024, FeedContract.imageFilter(864, 864, 3f), 3f) >= 4);
         assertTrue(FeedContract.statusVisible("{\"visible\":true}"));
         assertFalse(FeedContract.statusVisible("{\"visible\":false}"));
         assertTrue(FeedContract.statusVisible("{\"status\":{\"visible\":true}}"));
@@ -270,7 +272,7 @@ public class FeedContractTest {
         assertTrue(design.contains("78%"));
         assertTrue(design.contains("msg_send"));
         assertTrue(design.contains("#FF2E38"));
-        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("tab_article"));
         assertTrue(design.contains("msg_discussion"));
         assertTrue(design.contains("filled_fab_compose_32"));
         assertTrue(design.contains("media_like_active"));

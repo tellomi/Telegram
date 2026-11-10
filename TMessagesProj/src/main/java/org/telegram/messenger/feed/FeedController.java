@@ -77,9 +77,10 @@ public class FeedController {
     private boolean uploadsResumed;
     private boolean remoteConfigReady;
     private boolean remoteConfigLoading;
-    private boolean statusVisible;
     private final ArrayList<String> tabs = new ArrayList<>();
     private final ArrayList<Runnable> configWaiters = new ArrayList<>();
+    private final HashMap<String, FeedModels.Page> primed = new HashMap<>();
+    private final HashMap<String, String> primedCursor = new HashMap<>();
 
     private FeedController(int account) {
         this.account = account;
@@ -134,29 +135,8 @@ public class FeedController {
         return new ArrayList<>(tabs);
     }
 
-    /** 动态 is shown only when the app-config key is present and status.visible is true. */
     public boolean momentsTabVisible() {
-        return FeedContract.showMomentsTab(FeedConfig.configKeyPresent(account), statusVisible);
-    }
-
-    public void refreshGate() {
-        if (!FeedConfig.configKeyPresent(account) || FeedConfig.engineBase(account).length() == 0) {
-            if (statusVisible) {
-                statusVisible = false;
-                notifyListeners();
-            }
-            return;
-        }
-        api.getJson(FeedContract.STATUS_PATH, (json, error) -> {
-            boolean visible = error == null && json != null && FeedContract.statusVisible(json.toString());
-            if (!FeedConfig.configKeyPresent(account)) {
-                visible = false;
-            }
-            if (visible != statusVisible) {
-                statusVisible = visible;
-                notifyListeners();
-            }
-        });
+        return true;
     }
 
     public int unreadCount() {
@@ -171,13 +151,15 @@ public class FeedController {
 
     public void load(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
         if (!FeedConfig.enabled(account)) {
-            if (refresh) {
-                posts(stream).clear();
-                notifyListeners();
-            }
             if (done != null) {
-                done.run(true, null);
+                done.run(false, "unreachable");
             }
+            return;
+        }
+        if (refresh) {
+            primed.remove(stream);
+            primedCursor.remove(stream);
+        } else if (consumePrimed(stream, done)) {
             return;
         }
         if (remoteConfigReady && !refresh) {
@@ -185,6 +167,53 @@ public class FeedController {
             return;
         }
         ensureRemoteConfig(() -> loadStream(stream, refresh, done));
+    }
+
+    public void prefetchNext(String stream) {
+        if (!FeedConfig.enabled(account) || primed.containsKey(stream)) {
+            return;
+        }
+        String cursor = FeedContract.normalizeCursor(cursor(stream));
+        if (cursor.length() == 0) {
+            return;
+        }
+        String path = FeedContract.nextPagePath(stream, cursor, cityCode(), nearbySort());
+        if (path == null) {
+            return;
+        }
+        api.getJson(path, (json, error) -> {
+            if (json == null || !cursor.equals(FeedContract.normalizeCursor(cursor(stream)))) {
+                return;
+            }
+            FeedContract.FeedList refs = FeedContract.parseFeedList(json.toString());
+            if (!refs.needsCards) {
+                primed.put(stream, FeedModels.parsePage(json));
+                primedCursor.put(stream, cursor);
+                return;
+            }
+            hydrate(refs, (posts, hydrateError) -> {
+                if (posts == null || !cursor.equals(FeedContract.normalizeCursor(cursor(stream)))) {
+                    return;
+                }
+                FeedModels.Page page = new FeedModels.Page();
+                page.items = posts;
+                page.nextCursor = refs.cursor;
+                primed.put(stream, page);
+                primedCursor.put(stream, cursor);
+            });
+        });
+    }
+
+    private boolean consumePrimed(String stream, Utilities.Callback2<Boolean, String> done) {
+        FeedModels.Page page = primed.get(stream);
+        String cursor = primedCursor.get(stream);
+        if (page == null || cursor == null || !cursor.equals(FeedContract.normalizeCursor(cursor(stream)))) {
+            return false;
+        }
+        primed.remove(stream);
+        primedCursor.remove(stream);
+        applyStreamPage(stream, false, cursor, page, done);
+        return true;
     }
 
     public void forgetRemoteConfig() {

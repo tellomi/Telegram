@@ -94,11 +94,13 @@ public final class FeedConfig {
             return debug;
         }
         AppGlobalConfig config = AppGlobalConfig.getInstance(account);
-        if (config == null || !config.tellomiDiscoverFeedEnabled.get()) {
-            return "";
+        if (config != null) {
+            String origin = httpsOrigin(config.tellomiDiscoverFeedBaseUrl.get());
+            if (origin != null && origin.length() > 0) {
+                return origin;
+            }
         }
-        String origin = httpsOrigin(config.tellomiDiscoverFeedBaseUrl.get());
-        return origin == null ? "" : origin;
+        return "https://feed.tellomi.cn";
     }
 
     /** Debug builds only. Release builds ignore the preference. */

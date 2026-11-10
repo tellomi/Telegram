@@ -52,7 +52,7 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 
 | Use | Drawable |
 | --- | --- |
-| Moments tab | `msg_list` |
+| Moments tab | `R.raw.tab_article` (`GlassTabView.TabAnimation.FEED`), same 24 dp Lottie as Contacts, Chats, and Settings. Always shown. |
 | Notifications | `media_like` |
 | Compose | `filled_fab_compose_32` on `FragmentFloatingButton` |
 | Comment sheet expand | `msg_zoomin`, and `msg_zoomout` when full screen |

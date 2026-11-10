@@ -131,7 +131,7 @@ public class FeedCommentSheet extends Dialog {
                     return;
                 }
                 LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (manager != null && manager.findLastVisibleItemPosition() >= rows.size() - 3) {
+                if (manager != null && org.telegram.messenger.feed.FeedContract.shouldLoadMore(rows.size() - 1 - manager.findLastVisibleItemPosition(), threadCursor.length() > 0, loadingMore)) {
                     loadMore();
                 }
             }
