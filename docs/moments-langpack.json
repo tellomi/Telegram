@@ -302,6 +302,11 @@
       "zh-Hans": "互关好友"
     },
     {
+      "key": "Moments_Nearby_Mixed",
+      "en": "Recommended",
+      "zh-Hans": "综合"
+    },
+    {
       "key": "Moments_Nearby_Permission",
       "en": "Location is only used to pick your city. It is not saved.",
       "zh-Hans": "位置只用来选择城市，不会保存"

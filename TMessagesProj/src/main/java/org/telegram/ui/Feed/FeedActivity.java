@@ -19,6 +19,7 @@ import org.telegram.messenger.feed.FeedConfig;
 import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -53,6 +54,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private TextView[] tabs = new TextView[0];
     private TextView uploadBanner;
     private TextView newPosts;
+    private TextView nearbySortView;
     private int index;
     private boolean resetOnShow;
     private String appliedEngineBase = "";
@@ -107,6 +109,19 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         });
         content.addView(newPosts, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
 
+        nearbySortView = new TextView(context);
+        nearbySortView.setTextSize(13);
+        nearbySortView.setTypeface(AndroidUtilities.bold());
+        nearbySortView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        nearbySortView.setPadding(dp(12), dp(4), dp(12), dp(4));
+        nearbySortView.setVisibility(View.GONE);
+        nearbySortView.setOnClickListener(v -> {
+            controller().setNearbySort(FeedContract.nextNearbySort(controller().nearbySort()));
+            paintTabs();
+            ensure(index, true);
+        });
+        content.addView(nearbySortView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
+
         FragmentFloatingButton fab = new FragmentFloatingButton(context, resourceProvider);
         fab.setImageResource(R.drawable.filled_fab_compose_32);
         fab.setContentDescription(LocaleController.getString("Moments_Publish", R.string.Moments_Publish));
@@ -117,6 +132,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         paintTabs();
         controller().addListener(this);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdateConnectionState);
+        applyConnectionTitle();
         controller().resumeUploads();
         if (controller().debugFixtures() && streams.length > 0 && controller().posts(streams[0]).isEmpty()) {
             controller().setDebugFixtures(true);
@@ -311,6 +328,51 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         if (index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]) && controller().cityName().length() > 0) {
             tabs[index].setText(LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby) + " · " + controller().cityName());
         }
+        boolean nearby = index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]);
+        if (nearbySortView != null) {
+            nearbySortView.setVisibility(nearby ? View.VISIBLE : View.GONE);
+            if (nearby) {
+                boolean mixed = "mixed".equals(controller().nearbySort());
+                nearbySortView.setText(mixed
+                        ? LocaleController.getString("Moments_Nearby_Mixed", R.string.Moments_Nearby_Mixed)
+                        : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest));
+                nearbySortView.setContentDescription(nearbySortView.getText());
+            }
+        }
+        if (pager != null && pager.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) pager.getLayoutParams();
+            int top = dp(nearby ? 72 : 40);
+            if (lp.topMargin != top) {
+                lp.topMargin = top;
+                pager.setLayoutParams(lp);
+            }
+        }
+    }
+
+    private void applyConnectionTitle() {
+        if (actionBar == null) {
+            return;
+        }
+        String key = FeedContract.connectionTitleKey(ConnectionsManager.getInstance(currentAccount).getConnectionState());
+        if (key == null) {
+            actionBar.setTitleOverlayText(null, 0, null);
+            return;
+        }
+        int res = titleRes(key);
+        actionBar.setTitleOverlayText(key, res, null);
+    }
+
+    private static int titleRes(String key) {
+        if ("WaitingForNetwork".equals(key)) {
+            return R.string.WaitingForNetwork;
+        }
+        if ("Updating".equals(key)) {
+            return R.string.Updating;
+        }
+        if ("ConnectingToProxyWithDots".equals(key)) {
+            return R.string.ConnectingToProxyWithDots;
+        }
+        return R.string.Connecting;
     }
 
     private void ensure(int tab, boolean refresh) {
@@ -386,6 +448,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         super.onResume();
         AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
         AndroidUtilities.runOnUIThread(probeNewPosts, FeedConfig.NEW_POSTS_POLL_MS);
+        applyConnectionTitle();
         if (resetOnShow) {
             resetOnShow = false;
             index = 0;
@@ -427,6 +490,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
         controller().removeListener(this);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
         super.onFragmentDestroy();
     }
 
@@ -445,6 +509,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             if (index < loading.length && !loading[index]) {
                 ensure(index, true);
             }
+        } else if (id == NotificationCenter.didUpdateConnectionState && account == currentAccount) {
+            applyConnectionTitle();
         }
     }
 

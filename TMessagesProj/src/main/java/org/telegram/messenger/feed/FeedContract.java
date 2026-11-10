@@ -396,6 +396,31 @@ public final class FeedContract {
         return width * height * 4L;
     }
 
+    /**
+     * Same values as {@code ConnectionsManager}: connecting 1, waiting 2,
+     * proxy 4, updating 5. Null means the Moments title stays.
+     */
+    public static String connectionTitleKey(int state) {
+        if (state == 1) {
+            return "Connecting";
+        }
+        if (state == 2) {
+            return "WaitingForNetwork";
+        }
+        if (state == 4) {
+            return "ConnectingToProxyWithDots";
+        }
+        if (state == 5) {
+            return "Updating";
+        }
+        return null;
+    }
+
+    /** Nearby toggles between time order and the mixed recommendation order. */
+    public static String nextNearbySort(String current) {
+        return "mixed".equals(current) ? "latest" : "mixed";
+    }
+
     /** True when a freshly fetched first row is not the row already on top. An empty list is not "new posts". */
     public static boolean hasNewerHead(String currentTopId, String incomingHeadId) {
         if (incomingHeadId == null || incomingHeadId.length() == 0) {

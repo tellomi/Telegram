@@ -43,7 +43,11 @@ List images are prefetched with Telegram `ImageReceiver`s, the same way `PeerSto
 
 Following and Nearby show a `Moments_NewPosts` pill when a later fetch has a different first id. The pill does not insert rows. Tapping it, or pulling to refresh, loads them. Recommend does not poll.
 
-Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 dp horizontal and 8 dp vertical.
+Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 dp horizontal and 8 dp vertical. A voice file is the same card. Tapping it plays that file and pauses list video and any Telegram voice. The playing card uses `featuredStickers_addButton`. Tapping it again stops.
+
+The action bar title stays `Moments_Title`. While Telegram is waiting, connecting, updating, or connecting to a proxy, the title uses the same overlay strings as the chat list: `WaitingForNetwork`, `Connecting`, `Updating`, `ConnectingToProxyWithDots`.
+
+Nearby shows `Moments_Sort_Latest` or `Moments_Nearby_Mixed` under the segments. Latest is the default. Mixed is the recommended order (`sort=mixed`).
 
 ## Actions
 

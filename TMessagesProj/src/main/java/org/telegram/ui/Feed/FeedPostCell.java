@@ -549,6 +549,12 @@ public class FeedPostCell extends LinearLayout {
             if (!media.isFile()) {
                 continue;
             }
+            if (isVoiceMedia(media)) {
+                TextView row = voiceRow(media);
+                files.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, shown == 0 ? 0 : 6, 0, 0));
+                shown++;
+                continue;
+            }
             String label = fileLabel(media);
             String subtitle = media.name != null && media.name.length() > 0 && !media.name.equals(label) ? media.name : "";
             TextView row = infoCard(label, subtitle);
@@ -556,6 +562,35 @@ public class FeedPostCell extends LinearLayout {
             shown++;
         }
         files.setVisibility(shown == 0 ? GONE : VISIBLE);
+    }
+
+    private static boolean isVoiceMedia(FeedModels.Media media) {
+        if (media == null) {
+            return false;
+        }
+        return "audio".equals(media.type) || "voice".equals(media.type) || (media.mime != null && media.mime.startsWith("audio"));
+    }
+
+    private TextView voiceRow(FeedModels.Media media) {
+        TextView row = card(getContext());
+        row.setVisibility(VISIBLE);
+        String url = media.displayUrl(account);
+        int seconds = Math.max(0, media.durationMs / 1000);
+        String title = LocaleController.getString("Moments_Voice", R.string.Moments_Voice);
+        if (seconds > 0) {
+            title = title + " · " + seconds + "s";
+        }
+        row.setText(title);
+        row.setContentDescription(title);
+        row.setTag(url);
+        FeedPlayback.watchVoice(row);
+        row.setOnClickListener(v -> {
+            if (url.length() == 0) {
+                return;
+            }
+            FeedPlayback.toggleVoice(url);
+        });
+        return row;
     }
 
     private String fileLabel(FeedModels.Media media) {

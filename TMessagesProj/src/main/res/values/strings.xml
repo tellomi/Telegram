@@ -11713,6 +11713,7 @@
     <string name="Moments_DeleteThread">Replies will be deleted too.</string>
     <string name="Moments_Sort_Hot">Top</string>
     <string name="Moments_Sort_Latest">Latest</string>
+    <string name="Moments_Nearby_Mixed">Recommended</string>
     <string name="Moments_Sort_Relevance">Relevance</string>
     <string name="Moments_Notif_Interactions">Interactions</string>
     <string name="Moments_Notif_Follows">Follows</string>
