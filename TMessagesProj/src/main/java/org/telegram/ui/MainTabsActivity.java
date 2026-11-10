@@ -80,6 +80,8 @@ import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.messenger.feed.FeedController;
+import org.telegram.ui.Feed.FeedActivity;
 import org.telegram.ui.Wallet.WalletActivity;
 
 import java.util.ArrayList;
@@ -90,20 +92,35 @@ import me.vkryl.android.animator.FactorAnimator;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
 
-    public static final int TABS_COUNT = 4;
-    private static final int POSITION_CHATS = 0;
-    private static final int POSITION_CONTACTS = 1;
-    private static final int POSITION_CALLS_OR_SETTINGS = 2;
-    private static final int POSITION_PROFILE = 3;
+    /** Contacts, calls, moments, chats, settings, profile. Search is a tab button, not a page. */
+    public static final int TABS_COUNT = 6;
+    private static final int POSITION_CONTACTS = 0;
+    private static final int POSITION_CALLS = 1;
+    private static final int POSITION_FEED = 2;
+    private static final int POSITION_CHATS = 3;
+    private static final int POSITION_SETTINGS = 4;
+    private static final int POSITION_PROFILE = 5;
 
-    private static final int INDEX_CHATS = 0;
-    private static final int INDEX_CONTACTS = 1;
-    private static final int INDEX_SETTINGS = 2;
-    private static final int INDEX_CALLS = 3;
-    private static final int INDEX_PROFILE = 4;
+    private static final int INDEX_CONTACTS = 0;
+    private static final int INDEX_CALLS = 1;
+    private static final int INDEX_FEED = 2;
+    private static final int INDEX_CHATS = 3;
+    private static final int INDEX_SETTINGS = 4;
+    private static final int INDEX_PROFILE = 5;
+    private static final int INDEX_SEARCH = 6;
+
+    private boolean searchTabActive;
+    private boolean feedLeftMainTab;
+    private boolean feedTabShown;
+    private FeedActivity feedActivity;
+    private FeedController.Listener feedTabListener;
+    private Runnable searchCloseListener;
 
     private static int indexToPosition(int index) {
-        return index > 2 ? index - 1 : index;
+        if (index == INDEX_SEARCH) {
+            return -1;
+        }
+        return index;
     }
 
     private static final int ANIMATOR_ID_TABS_VISIBLE = 0;
@@ -277,6 +294,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         checkUnreadCount(true);
 
         showAccountChangeHint();
+        FeedController.getInstance(currentAccount).refreshGate();
     }
 
     private void checkContactsTabBadge() {
@@ -309,14 +327,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setClipChildren(false);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
-        tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+        tabsView.setMaxWidth(dp(560 + DialogsActivity.MAIN_TABS_MARGIN * 2));
 
-        tabs = new GlassTabView[5];
-        tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
+        tabs = new GlassTabView[7];
         tabs[INDEX_CONTACTS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.MainTabsContacts);
-        tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
         tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
+        tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.FeedTab);
+        tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
+        tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
         tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.MainTabsProfile);
+        tabs[INDEX_SEARCH] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SEARCH, R.string.FeedSearchTab);
         tabs[INDEX_CHATS].setOnLongClickListener(this::openFoldersSelector);
         tabs[INDEX_CONTACTS].setOnLongClickListener(this::openContactsSelector);
         tabs[INDEX_CALLS].setOnLongClickListener(this::openCallsSelector);
@@ -326,6 +346,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.addTabToIgnoreClick(tabs[INDEX_CONTACTS]);
         tabsView.addTabToIgnoreClick(tabs[INDEX_PROFILE]);
         tabsView.addTabToIgnoreClick(tabs[INDEX_CALLS]);
+        tabsView.addTabToIgnoreClick(tabs[INDEX_FEED]);
+        tabsView.addTabToIgnoreClick(tabs[INDEX_SEARCH]);
+        tabsView.addTabToIgnoreClick(tabs[INDEX_SETTINGS]);
 
         for (int index = 0; index < tabs.length; index++) {
             final GlassTabView view = tabs[index];
@@ -335,6 +358,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 if (viewPager.isManualScrolling() || viewPager.isTouch()) {
                     return;
                 }
+                if (position < 0) {
+                    openSearchTab();
+                    return;
+                }
+                searchTabActive = false;
 
                 if (viewPager.getCurrentPosition() == position) {
                     final BaseFragment fragment = getCurrentVisibleFragment();
@@ -352,6 +380,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabsView.setViewVisible(view, true, false);
         }
         checkUi_callTabVisible(getUserConfig().showCallsTab, false);
+        checkUi_feedTabVisible(FeedController.getInstance(currentAccount).momentsTabVisible(), false);
+        if (feedTabListener == null) {
+            feedTabListener = () -> {
+                if (tabsView == null) {
+                    return;
+                }
+                checkUi_feedTabVisible(FeedController.getInstance(currentAccount).momentsTabVisible(), true);
+            };
+        }
+        FeedController.getInstance(currentAccount).addListener(feedTabListener);
+        FeedController.getInstance(currentAccount).refreshGate();
 
         selectTab(viewPager.getCurrentPosition(), false);
 
@@ -408,6 +447,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabs[INDEX_CHATS].setCounter(unreadCountFmt, false, animated);
         } else {
             tabs[INDEX_CHATS].setCounter(null, false, animated);
+        }
+        if (tabs[INDEX_FEED] != null) {
+            int feedUnread = org.telegram.messenger.feed.FeedController.getInstance(currentAccount).unreadCount();
+            tabs[INDEX_FEED].setCounter(feedUnread > 0 ? " " : null, true, animated);
         }
     }
 
@@ -733,9 +776,25 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         if (viewPager != null) {
             final int currentPosition = viewPager.getCurrentPosition();
-            if (currentPosition != POSITION_CALLS_OR_SETTINGS && dropCallsFragmentAfterPageScroll) {
-                dropFragmentAtPosition(POSITION_CALLS_OR_SETTINGS);
+            if (currentPosition != POSITION_CALLS && dropCallsFragmentAfterPageScroll) {
+                dropFragmentAtPosition(POSITION_CALLS);
                 dropCallsFragmentAfterPageScroll = false;
+            }
+            if (feedActivity != null && currentPosition != POSITION_FEED && viewPager.getCurrentPosition() != POSITION_FEED) {
+                feedLeftMainTab = true;
+            }
+            if (currentPosition == POSITION_FEED && feedLeftMainTab && feedActivity != null) {
+                feedActivity.consumeLeave();
+                feedLeftMainTab = false;
+            }
+            if (!getUserConfig().showCallsTab && currentPosition == POSITION_CALLS) {
+                int dest = feedTabShown ? POSITION_FEED : POSITION_CHATS;
+                viewPager.scrollToPosition(dest);
+                selectTab(dest, true);
+            }
+            if (!feedTabShown && currentPosition == POSITION_FEED) {
+                viewPager.scrollToPosition(POSITION_CHATS);
+                selectTab(POSITION_CHATS, true);
             }
             if (currentPosition != POSITION_PROFILE) {
                 dropFragmentAtPosition(POSITION_PROFILE);
@@ -801,6 +860,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         bundle.putBoolean("hasMainTabs", true);
         dialogsActivity = new DialogsActivity(bundle);
         dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+        dialogsActivity.setMainTabSearchCloseListener(this::onMainSearchClosed);
         putFragmentAtPosition(POSITION_CHATS, dialogsActivity);
         return dialogsActivity;
     }
@@ -813,13 +873,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("needFinishFragment", false);
             args.putBoolean("hasMainTabs", true);
             return new ContactsActivity(args);
-        } else if (position == POSITION_CALLS_OR_SETTINGS) {
-            if (getUserConfig().showCallsTab) {
-                Bundle args = new Bundle();
-                args.putBoolean("needFinishFragment", false);
-                args.putBoolean("hasMainTabs", true);
-                return new CallLogActivity(args);
-            }
+        } else if (position == POSITION_CALLS) {
+            Bundle args = new Bundle();
+            args.putBoolean("needFinishFragment", false);
+            args.putBoolean("hasMainTabs", true);
+            return new CallLogActivity(args);
+        } else if (position == POSITION_FEED) {
+            Bundle args = new Bundle();
+            args.putBoolean("hasMainTabs", true);
+            feedActivity = new FeedActivity(args);
+            return feedActivity;
+        } else if (position == POSITION_SETTINGS) {
             Bundle args = new Bundle();
             args.putBoolean("hasMainTabs", true);
             return new SettingsActivity(args);
@@ -828,6 +892,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("hasMainTabs", true);
             dialogsActivity = new DialogsActivity(args);
             dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+            dialogsActivity.setMainTabSearchCloseListener(this::onMainSearchClosed);
             return dialogsActivity;
         } else if (position == POSITION_PROFILE) {
             Bundle args = new Bundle();
@@ -851,12 +916,43 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     public void selectTab(int position, boolean animated) {
         for (int a = 0; a < tabs.length; a++) {
             GlassTabView tab = tabs[a];
-            tab.setSelected(indexToPosition(a) == position, animated);
+            boolean selected = searchTabActive ? a == INDEX_SEARCH : indexToPosition(a) == position;
+            tab.setSelected(selected, animated);
+        }
+    }
+
+    private void openSearchTab() {
+        searchTabActive = true;
+        selectTab(viewPager.getCurrentPosition(), true);
+        Runnable open = () -> {
+            if (dialogsActivity != null) {
+                dialogsActivity.openSearchFromMainTab();
+            }
+        };
+        if (viewPager.getCurrentPosition() != POSITION_CHATS) {
+            viewPager.scrollToPosition(POSITION_CHATS);
+            AndroidUtilities.runOnUIThread(open, 280);
+        } else {
+            open.run();
+        }
+    }
+
+    public void onMainSearchClosed() {
+        if (!searchTabActive) {
+            return;
+        }
+        searchTabActive = false;
+        if (viewPager != null) {
+            selectTab(viewPager.getCurrentPosition(), true);
         }
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {
         for (int index = 0; index < tabs.length; index++) {
+            if (index == INDEX_SEARCH) {
+                tabs[index].setGestureSelectedOverride(0f, false);
+                continue;
+            }
             final int position = indexToPosition(index);
             final float visibility = Math.max(0, 1f - Math.abs(position - animatedPosition));
             tabs[index].setGestureSelectedOverride(visibility, allow);
@@ -994,12 +1090,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else if (id == NotificationCenter.callTabsVisibleToggled) {
             final boolean callTabsVisible = getUserConfig().showCallsTab;
             checkUi_callTabVisible(callTabsVisible, true);
-            if (viewPager != null && viewPager.getCurrentPosition() == POSITION_CALLS_OR_SETTINGS) {
+            if (viewPager != null && viewPager.getCurrentPosition() == POSITION_CALLS) {
                 viewPager.scrollToPosition(POSITION_CHATS);
                 selectTab(POSITION_CHATS, true);
                 dropCallsFragmentAfterPageScroll = true;
-            } else {
-                dropFragmentAtPosition(POSITION_CALLS_OR_SETTINGS);
+            } else if (!callTabsVisible) {
+                dropFragmentAtPosition(POSITION_CALLS);
             }
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             if (tabs != null && tabs[INDEX_PROFILE] != null) {
@@ -1007,6 +1103,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         } else if (id == NotificationCenter.contactsPermissionBadgeCheck) {
             checkContactsTabBadge();
+        } else if (id == NotificationCenter.appConfigUpdated) {
+            FeedController.getInstance(currentAccount).refreshGate();
         }
     }
 
@@ -1024,6 +1122,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .add(NotificationCenter.callTabsVisibleToggled)
             .add(NotificationCenter.mainUserInfoChanged)
             .add(NotificationCenter.contactsPermissionBadgeCheck)
+            .add(NotificationCenter.appConfigUpdated)
             .addGlobal(NotificationCenter.appUpdateAvailable)
             .addGlobal(NotificationCenter.appUpdateLoading)
             .addGlobal(NotificationCenter.needSetDayNightTheme);
@@ -1036,6 +1135,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
 
+        if (feedTabListener != null) {
+            FeedController.getInstance(currentAccount).removeListener(feedTabListener);
+        }
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
@@ -1086,9 +1188,20 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
     }
 
+    private void checkUi_feedTabVisible(boolean visible, boolean animated) {
+        feedTabShown = visible;
+        if (tabsView != null && tabs != null && tabs[INDEX_FEED] != null) {
+            tabsView.setViewVisible(tabs[INDEX_FEED], visible, animated);
+        }
+        if (!visible && viewPager != null && viewPager.getCurrentPosition() == POSITION_FEED) {
+            viewPager.scrollToPosition(POSITION_CHATS);
+            selectTab(POSITION_CHATS, true);
+        }
+    }
+
     private void checkUi_callTabVisible(boolean callTabsVisible, boolean animated) {
         if (tabsView != null) {
-            tabsView.setViewVisible(tabs[INDEX_SETTINGS], !callTabsVisible, animated);
+            tabsView.setViewVisible(tabs[INDEX_SETTINGS], true, animated);
             tabsView.setViewVisible(tabs[INDEX_CALLS], callTabsVisible, animated);
         }
     }

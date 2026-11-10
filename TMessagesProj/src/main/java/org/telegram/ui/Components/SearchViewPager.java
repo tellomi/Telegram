@@ -105,6 +105,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     public boolean postsAreNew;
     public final @NonNull PostsSearchContainer postsSearchContainer;
+    public final @NonNull org.telegram.ui.Feed.FeedSearchPage momentsSearchContainer;
 
     public boolean expandedPublicPosts = false;
     private DefaultItemAnimator hashtagItemAnimator;
@@ -617,6 +618,17 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         });
         postsSearchContainer.listView.addEdgeEffectListener(this::invalidateBlur);
 
+        momentsSearchContainer = new org.telegram.ui.Feed.FeedSearchPage(context, fragment);
+        momentsSearchContainer.getListView().setClipToPadding(false);
+        momentsSearchContainer.getListView().addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                onPageScrolled(dx, dy);
+            }
+        });
+        momentsSearchContainer.getListView().addEdgeEffectListener(this::invalidateBlur);
+
         setAdapter(viewPagerAdapter = new ViewPagerAdapter());
     }
 
@@ -723,6 +735,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
         } else if (view == postsSearchContainer) {
             postsSearchContainer.search(query);
+        } else if (view == momentsSearchContainer) {
+            momentsSearchContainer.search(query);
         } else if (view == hashtagSearchContainer) {
             if (hashtagSearchAdapter.getHashtag(query) == null) {
                 return;
@@ -1497,6 +1511,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             return downloadsContainer.recyclerListView;
         } else if (page == postsSearchContainer) {
             return postsSearchContainer.listView;
+        } else if (page == momentsSearchContainer) {
+            return momentsSearchContainer.getListView();
         } else if (page instanceof FilteredSearchView) {
             return ((FilteredSearchView) page).recyclerListView;
         }
@@ -1533,6 +1549,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         private final static int BOTS_TYPE = 4;
         private final static int PUBLIC_POSTS_TYPE = 5;
         private final static int POSTS_TYPE = 6;
+        private final static int MOMENTS_TYPE = 7;
 
         public ViewPagerAdapter() {
             updateItems();
@@ -1541,6 +1558,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         public void updateItems() {
             items.clear();
             items.add(new Item(DIALOGS_TYPE));
+            items.add(new Item(MOMENTS_TYPE));
             if (communityId != 0) {
                 return;
             }
@@ -1577,6 +1595,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         public CharSequence getItemTitle(int position) {
             if (items.get(position).type == DIALOGS_TYPE) {
                 return getString(R.string.SearchAllChatsShort);
+            } else if (items.get(position).type == MOMENTS_TYPE) {
+                return getString(R.string.FeedSearchMoments);
             } else if (items.get(position).type == CHANNELS_TYPE) {
                 return getString(R.string.ChannelsTab);
             } else if (items.get(position).type == BOTS_TYPE) {
@@ -1627,6 +1647,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 return downloadsContainer;
             } else if (viewType == 6) {
                 return postsSearchContainer;
+            } else if (viewType == 8) {
+                return momentsSearchContainer;
             } else {
                 FilteredSearchView filteredSearchView = new FilteredSearchView(parent);
                 filteredSearchView.setChatPreviewDelegate(chatPreviewDelegate);
@@ -1667,6 +1689,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
             if (items.get(position).type == POSTS_TYPE) {
                 return 6;
+            }
+            if (items.get(position).type == MOMENTS_TYPE) {
+                return 8;
             }
             return items.get(position).type + position;
         }

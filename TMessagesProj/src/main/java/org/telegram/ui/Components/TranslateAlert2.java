@@ -51,6 +51,7 @@ import com.google.common.base.Charsets;
 
 import org.json.JSONArray;
 import org.json.JSONTokener;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LanguageDetector;
@@ -859,11 +860,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     newEntity.offset = entity.offset;
                     newEntity.length = entity.length;
                     received.entities.set(i, newEntity);
-                } else if (
-                    entity.url.startsWith("https://t.me/") &&
-                    text.startsWith("@") &&
-                    TextUtils.equals(text.substring(1), entity.url.substring(13))
-                ) {
+                } else if (BuildVars.isMentionLink(entity.url, text)) {
                     TLRPC.TL_messageEntityMention newEntity = new TLRPC.TL_messageEntityMention();
                     newEntity.offset = entity.offset;
                     newEntity.length = entity.length;

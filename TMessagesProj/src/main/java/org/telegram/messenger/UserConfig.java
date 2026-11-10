@@ -312,7 +312,11 @@ public class UserConfig extends BaseController {
             webappRatingLoadTime = preferences.getInt("webappRatingLoadTime", 0);
             loginTime = preferences.getInt("loginTime", currentAccount);
             syncContacts = preferences.getBoolean("syncContacts", true);
-            showCallsTab = preferences.getBoolean("showCallsTab", false);
+            showCallsTab = preferences.getBoolean("showCallsTab", true);
+            if (!preferences.getBoolean("feedNavCallsShown", false)) {
+                showCallsTab = true;
+                preferences.edit().putBoolean("showCallsTab", true).putBoolean("feedNavCallsShown", true).apply();
+            }
             suggestContacts = preferences.getBoolean("suggestContacts", true);
             hasSecureData = preferences.getBoolean("hasSecureData", false);
             notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded4", false);
@@ -484,7 +488,7 @@ public class UserConfig extends BaseController {
         draftsLoaded = false;
         contactsReimported = true;
         syncContacts = true;
-        showCallsTab = false;
+        showCallsTab = true;
         suggestContacts = true;
         unreadDialogsLoaded = true;
         hasValidDialogLoadIds = true;

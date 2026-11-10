@@ -185,6 +185,7 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.TellomiMapApps;
 import org.telegram.messenger.Timer;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
@@ -36515,13 +36516,13 @@ public class ChatActivity extends BaseFragment implements
                                 TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                                 String username = ChatObject.getPublicUsername(currentChat);
                                 if (currentChat != null && username != null) {
-                                    link = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(finalTimestamp);
+                                    link = BuildVars.shareLink(username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(finalTimestamp));
                                 }
                             } else {
                                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                                 String username = UserObject.getPublicUsername(user);
                                 if (user != null && username != null) {
-                                    link = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(finalTimestamp);
+                                    link = BuildVars.shareLink(username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(finalTimestamp));
                                 }
                             }
                             if (link == null) {
@@ -36986,7 +36987,7 @@ public class ChatActivity extends BaseFragment implements
                     if (messageObject != null && messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage != null && messageObject.messageOwner.media.webpage.cached_page != null) {
                         String lowerUrl = urlFinal.toLowerCase();
                         String lowerUrl2 = messageObject.messageOwner.media.webpage.url.toLowerCase();
-                        if ((lowerUrl.contains("telegram.org/blog") || Browser.isTelegraphUrl(lowerUrl, false) || lowerUrl.contains("t.me/iv")) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
+                        if ((lowerUrl.contains("telegram.org/blog") || Browser.isTelegraphUrl(lowerUrl, false) || BuildVars.containsInstantView(lowerUrl)) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
                             if (LaunchActivity.instance != null && LaunchActivity.instance.getBottomSheetTabs() != null && LaunchActivity.instance.getBottomSheetTabs().tryReopenTab(messageObject) != null) {
                                 return;
                             }
@@ -41486,7 +41487,9 @@ public class ChatActivity extends BaseFragment implements
             if (media.webpage != null) {
                 didPressWebPage(cell, media.webpage, media.webpage.url, media.safe);
             } else if (media.geo != null) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                String placeName = media.address != null ? media.address : (answer != null && answer.text != null ? answer.text.text : "");
+                if (!TellomiMapApps.inAppMapCanRender()) {
+                    TellomiMapApps.showMapAppChooser(ChatActivity.this, media.geo.lat, media.geo._long, placeName, false);
                     return;
                 }
 
@@ -41891,7 +41894,16 @@ public class ChatActivity extends BaseFragment implements
                     alertUserOpenError(message);
                 }
             } else if (message.type == MessageObject.TYPE_GEO) {
-                if (!AndroidUtilities.isMapsInstalled(ChatActivity.this)) {
+                TLRPC.GeoPoint geo = message.messageOwner != null && message.messageOwner.media != null ? message.messageOwner.media.geo : null;
+                if (geo == null) {
+                    return;
+                }
+                String placeName = message.messageOwner.media.title;
+                if (placeName == null || placeName.length() == 0) {
+                    placeName = message.messageOwner.media.address;
+                }
+                if (!TellomiMapApps.inAppMapCanRender()) {
+                    TellomiMapApps.showMapAppChooser(ChatActivity.this, geo.lat, geo._long, placeName, false);
                     return;
                 }
                 if (message.isLiveLocation()) {
@@ -42577,6 +42589,7 @@ public class ChatActivity extends BaseFragment implements
         if (currentChat == null || urlFinal == null || chatMode != 0) {
             return false;
         }
+        urlFinal = BuildVars.toTgUrl(urlFinal);
         Runnable setupProgressLoading = cell != null && (span != null || fromMessageProgressType != PROGRESS_LINK) ? () -> {
             progressDialogAtMessageId = fromMessageId;
             progressDialogAtMessageType = fromMessageProgressType;
@@ -42606,8 +42619,9 @@ public class ChatActivity extends BaseFragment implements
         } else if (ChatObject.getPublicUsername(currentChat) != null) {
             try {
                 if (publicMsgUrlPattern == null) {
-                    publicMsgUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)/([0-9]+)/?([0-9]+)?");
-                    voiceChatUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)\\?(voicechat+)");
+                    final String linkHosts = "(?:" + Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)";
+                    publicMsgUrlPattern = Pattern.compile("(https://)?" + linkHosts + "/([0-9a-zA-Z_]+)/([0-9]+)/?([0-9]+)?");
+                    voiceChatUrlPattern = Pattern.compile("(https://)?" + linkHosts + "/([0-9a-zA-Z_]+)\\?(voicechat+)");
                 }
                 Matcher matcher = publicMsgUrlPattern.matcher(urlFinal);
                 if (matcher.find(2) && matcher.find(3) && ChatObject.hasPublicLink(currentChat, matcher.group(2))) {
@@ -42689,7 +42703,8 @@ public class ChatActivity extends BaseFragment implements
         } else {
             try {
                 if (privateMsgUrlPattern == null) {
-                    privateMsgUrlPattern = Pattern.compile("(https://)?t.me/c/([0-9]+)/([0-9]+)/?([0-9]+)?");
+                    final String linkHosts = "(?:" + Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)";
+                    privateMsgUrlPattern = Pattern.compile("(https://)?" + linkHosts + "/c/([0-9]+)/([0-9]+)/?([0-9]+)?");
                 }
                 Matcher matcher = privateMsgUrlPattern.matcher(urlFinal);
                 if (matcher.find(2) && matcher.find(3) && matcher.group(4) == null) {
@@ -44931,13 +44946,13 @@ public class ChatActivity extends BaseFragment implements
                     TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                     String username = ChatObject.getPublicUsername(currentChat);
                     if (currentChat != null && username != null) {
-                        link = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
+                        link = BuildVars.shareLink(username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp));
                     }
                 } else {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
                     String username = UserObject.getPublicUsername(user);
                     if (user != null && username != null) {
-                        link = "https://t.me/" + username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp);
+                        link = BuildVars.shareLink(username + "/" + messageId + "?t=" + AndroidUtilities.formatTimestamp(timestamp));
                     }
                 }
                 if (link == null) {
@@ -44962,7 +44977,7 @@ public class ChatActivity extends BaseFragment implements
             }
         });
 
-        if (inAppBrowser && !isHashtag && !isMail && !str.startsWith("tg:")) {
+        if (inAppBrowser && !isHashtag && !isMail && !BuildVars.toTgUrl(str).startsWith("tg:")) {
             options.add(R.drawable.outline_saved_24, getString(R.string.WebBookmarkAdd), () -> {
                 ArticleViewer.addBookmark(str, currentAccount, contentView, null, themeDelegate);
             });

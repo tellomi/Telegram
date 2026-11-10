@@ -112,6 +112,11 @@ public class AppGlobalConfig {
 
     public final ConfigStringSet botAllowedSuffixes = ofStringSet("bot_allowed_suffixes", Collections.singleton("bot"));
 
+    /** help.getAppConfig. Missing or not true keeps the discover feed off. */
+    public final ConfigBoolean tellomiDiscoverFeedEnabled = ofBoolean("tellomi_discover_feed_enabled", false);
+    /** https://host[:port] with no path. Missing means the feed has no engine to call. */
+    public final ConfigString tellomiDiscoverFeedBaseUrl = ofString("tellomi_discover_feed_base_url", null);
+
     public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", BuildVars.DEBUG_VERSION);
     public final ConfigBoolean walletPaidMessageRecipientMessageAmountCheck = ofBoolean("wallet_paid_message_recipient_message_amount_check", true);
     public final ConfigLong walletTransferMinNanos = ofLong("wallet_transfer_min_nanos", 100_000_000);
@@ -293,6 +298,10 @@ public class AppGlobalConfig {
             return TextUtils.equals(get(), value);
         }
 
+        public boolean clear(SharedPreferences.Editor editor) {
+            return handler.clear(editor);
+        }
+
         private static class Internal implements ConfigInternal {
             private final String name;
             private final String defaultValue;
@@ -319,6 +328,15 @@ public class AppGlobalConfig {
             @Override
             public void load(SharedPreferences preferences) {
                 value = preferences.getString(name, defaultValue);
+            }
+
+            private boolean clear(SharedPreferences.Editor editor) {
+                editor.remove(name);
+                if (TextUtils.equals(value, defaultValue)) {
+                    return false;
+                }
+                value = defaultValue;
+                return true;
             }
         }
     }
@@ -383,6 +401,10 @@ public class AppGlobalConfig {
             return handler.value;
         }
 
+        public boolean clear(SharedPreferences.Editor editor) {
+            return handler.clear(editor);
+        }
+
         private static class Internal implements ConfigInternal {
             private final String name;
             private final boolean defaultValue;
@@ -409,6 +431,15 @@ public class AppGlobalConfig {
             @Override
             public void load(SharedPreferences preferences) {
                 value = preferences.getBoolean(name, defaultValue);
+            }
+
+            private boolean clear(SharedPreferences.Editor editor) {
+                editor.remove(name);
+                if (value == defaultValue) {
+                    return false;
+                }
+                value = defaultValue;
+                return true;
             }
         }
     }

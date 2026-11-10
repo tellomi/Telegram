@@ -2,8 +2,9 @@
 """Static checks for .github/workflows/android-apk.yml.
 
 Ordinary push and pull_request must not install the release keystore or upload
-an installable APK. Run workflow, a v* tag, and release/android still package.
-The publish job keeps its existing triggers and does not gain new ones.
+an installable APK. Run workflow, a v* tag, release/android, and the moments
+feed branch still package. The feed branch is debug-only and is not a publish
+path. The publish job keeps its existing triggers and does not gain new ones.
 """
 
 import pathlib
@@ -16,7 +17,8 @@ PACKAGE_EXPR = (
     "github.event_name == 'workflow_dispatch' || "
     "(github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') "
     "|| github.ref == 'refs/heads/release/android' "
-    "|| github.ref == 'refs/heads/cursor/android-official-restore-2a44'))"
+    "|| github.ref == 'refs/heads/cursor/android-official-restore-2a44' "
+    "|| github.ref == 'refs/heads/cursor/feed-on-master-7033'))"
 )
 
 PUBLISH_IF = """needs.apk.outputs.type == 'release' && (
@@ -31,6 +33,7 @@ def packages(event, ref):
             ref.startswith("refs/tags/v")
             or ref == "refs/heads/release/android"
             or ref == "refs/heads/cursor/android-official-restore-2a44"
+            or ref == "refs/heads/cursor/feed-on-master-7033"
         )
     )
 
@@ -141,6 +144,8 @@ def main():
         ("push", "refs/heads/master", None, False, False),
         ("push", "refs/heads/cursor/example-38d3", None, False, False),
         ("push", "refs/heads/cursor/android-official-restore-2a44", None, True, False),
+        ("push", "refs/heads/cursor/feed-on-master-7033", None, True, False),
+        ("pull_request", "refs/heads/cursor/feed-on-master-7033", "none", False, False),
         ("pull_request", "refs/heads/cursor/android-official-restore-2a44", "none", False, False),
         ("push", "refs/tags/1.2.3", None, False, False),
         ("push", "refs/tags/v1.2.3", None, True, True),
@@ -155,6 +160,16 @@ def main():
         require(got_package is want_package, f"package {event} {ref} -> {got_package}, want {want_package}")
         require(got_publish is want_publish, f"publish {event} {ref} {publish_input} -> {got_publish}, want {want_publish}")
         require(not publishes(event, ref, publish_input, "debug"), f"debug APK must not publish for {event} {ref}")
+
+    require("Tools/tellomi-android-version.py" in text, "release versionCode must come from tellomi-android-version.py")
+    require("dl.tellomi.cn/android/latest.json" in (ROOT / "Tools" / "tellomi-android-version.py").read_text(), "release must read the published feed")
+    require("--release" in text, "publish=release must opt into the live versionCode")
+    require('expected APP_VERSION_NAME 14.0.10' in text, "package step must require versionName 14.0.10")
+    gradle = (ROOT / "gradle.properties").read_text()
+    require("APP_VERSION_NAME=14.0.10" in gradle, "gradle.properties must be 14.0.10")
+    require("APP_VERSION_CODE=180470" in gradle, "configured base must be the decade above live 14.0.9 afat 1804699")
+    publish_script = (ROOT / "Tools" / "tellomi-publish-installer.sh").read_text()
+    require("--require-above" in publish_script, "publish must refuse a versionCode that is not above latest.json")
 
     print(f"ok {WORKFLOW} ({len(cases)} event cases)")
 

@@ -20,6 +20,7 @@ import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -507,6 +508,6 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     }
 
     public void onGiftClick(Gift gift) {
-        Browser.openUrl(getContext(), "https://t.me/nft/" + gift.slug);
+        Browser.openUrl(getContext(), BuildVars.shareLink("nft/" + gift.slug));
     }
 }

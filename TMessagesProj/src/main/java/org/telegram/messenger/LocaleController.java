@@ -1456,7 +1456,7 @@ public class LocaleController {
         if (value == null) {
             value = getInstance().getLocalizedString(key);
         }
-        return value;
+        return TellomiBrand.rewrite(value);
     }
 
     public static String getString(@StringRes int res) {
@@ -4437,7 +4437,7 @@ public class LocaleController {
     }
     private String getLocalizedString(String key) {
         checkLocalizationInternal();
-        return localizationInternal.getByResName(key);
+        return TellomiBrand.rewrite(localizationInternal.getByResName(key));
     }
 
     @Nullable
@@ -4448,22 +4448,22 @@ public class LocaleController {
         if (BuildVars.USE_CLOUD_STRINGS) {
             value = localizationExternal.getByResNameOrResId(context, key, stringRes);
             if (value != null) {
-                return value;
+                return TellomiBrand.rewrite(value);
             }
 
             value = localizationExternal.getByResName(fallback);
             if (value != null) {
-                return value;
+                return TellomiBrand.rewrite(value);
             }
         }
 
         checkLocalizationInternal();
         value = localizationInternal.getByResNameOrResId(context, key, stringRes);
         if (value != null) {
-            return value;
+            return TellomiBrand.rewrite(value);
         }
 
-        return localizationInternal.getByResName(fallback);
+        return TellomiBrand.rewrite(localizationInternal.getByResName(fallback));
     }
 
 

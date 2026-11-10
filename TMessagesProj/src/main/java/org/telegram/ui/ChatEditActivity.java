@@ -48,6 +48,7 @@ import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -1361,19 +1362,19 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             editIntroCell.setBackground(Theme.getSelectorDrawable(false));
             editIntroCell.setTextAndIcon(getString(R.string.BotEditIntro), R.drawable.msg_log, true);
             infoContainer.addView(editIntroCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            editIntroCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), "https://t.me/BotFather?start=" + getActiveUsername(currentUser) + "-intro"));
+            editIntroCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), BuildVars.shareLink("BotFather?start=" + getActiveUsername(currentUser) + "-intro")));
 
             editCommandsCell = new TextCell(context);
             editCommandsCell.setBackground(Theme.getSelectorDrawable(false));
             editCommandsCell.setTextAndIcon(getString(R.string.BotEditCommands), R.drawable.msg_media, true);
             infoContainer.addView(editCommandsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            editCommandsCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), "https://t.me/BotFather?start=" + getActiveUsername(currentUser) + "-commands"));
+            editCommandsCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), BuildVars.shareLink("BotFather?start=" + getActiveUsername(currentUser) + "-commands")));
 
             changeBotSettingsCell = new TextCell(context);
             changeBotSettingsCell.setBackground(Theme.getSelectorDrawable(false));
             changeBotSettingsCell.setTextAndIcon(getString(R.string.BotChangeSettings), R.drawable.msg_bot, true);
             infoContainer.addView(changeBotSettingsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            changeBotSettingsCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), "https://t.me/BotFather?start=" + getActiveUsername(currentUser)));
+            changeBotSettingsCell.setOnClickListener(v -> Browser.openUrl(v.getContext(), BuildVars.shareLink("BotFather?start=" + getActiveUsername(currentUser))));
         }
 
         if (currentChat != null) {
@@ -1395,7 +1396,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 span.setSpan(new ClickableSpan() {
                     @Override
                     public void onClick(@NonNull View widget) {
-                        Browser.openUrl(widget.getContext(), "https://t.me/BotFather");
+                        Browser.openUrl(widget.getContext(), BuildVars.shareLink("BotFather"));
                     }
 
                     @Override
@@ -1643,7 +1644,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
             publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLinks), LocaleController.formatString(R.string.BotPublicLinksCount, usernamesActive, currentUser.usernames.size()), R.drawable.msg_link2, true);
         } else {
-            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), "t.me/" + currentUser.username, R.drawable.msg_link2, true);
+            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), BuildVars.shareHost() + "/" + currentUser.username, R.drawable.msg_link2, true);
         }
     }
 

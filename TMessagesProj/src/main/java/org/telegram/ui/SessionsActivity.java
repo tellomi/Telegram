@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DocumentObject;
@@ -328,7 +329,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         if (!TextUtils.isEmpty(username)) {
                             if (chatbots.length() > 0) chatbots.append(", ");
                             SpannableStringBuilder link = new SpannableStringBuilder("@").append(username);
-                            link.setSpan(new URLSpanNoUnderline("https://t.me/" + username), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            link.setSpan(new URLSpanNoUnderline(BuildVars.shareLink(username)), 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             chatbots.append(link);
                         } else {
                             chatbots.append(UserObject.getUserName(botUser));

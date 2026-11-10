@@ -23,6 +23,7 @@ import android.text.TextUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiLinks;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
@@ -204,14 +205,9 @@ public class Browser {
         if (link.startsWith("@")) {
             return link.substring(1);
         }
-        if (link.startsWith("t.me/")) {
-            return link.substring(5);
-        }
-        if (link.startsWith("http://t.me/")) {
-            return link.substring(12);
-        }
-        if (link.startsWith("https://t.me/")) {
-            return link.substring(13);
+        String knownPath = TellomiLinks.pathAfterKnownHost(link, BuildVars.LINK_HOST);
+        if (knownPath != null) {
+            return knownPath;
         }
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(link);
         if (prefixMatcher.find()) {
@@ -221,16 +217,18 @@ public class Browser {
     }
 
     public static boolean urlMustNotHaveConfirmation(String url) {
+        final String hosts = "(?:" + java.util.regex.Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)";
         return (
             isTelegraphUrl(url, false, true) ||
-            url.matches("^(https://)?t\\.me/iv\\??(/.*|$)") || // t.me/iv?
+            url.matches("^(https://)?" + hosts + "/iv\\??(/.*|$)") ||
             url.matches("^(https://)?telegram\\.org/(blog|tour)(/.*|$)") || // telegram.org/blog, telegram.org/tour
             url.matches("^(https://)?fragment\\.com(/.*|$)") // fragment.com
         );
     }
 
     public static boolean isGetPremiumUrl(String url) {
-        return url != null && url.matches("(?i)^(https?://)?(t\\.me|telegram\\.me|telegram\\.dog)/getpremium([/?#].*)?$");
+        final String hosts = "(?:" + java.util.regex.Pattern.quote(BuildVars.LINK_HOST) + "|t\\.me|telegram\\.me|telegram\\.dog)";
+        return url != null && url.matches("(?i)^(https?://)?" + hosts + "/getpremium([/?#].*)?$");
     }
 
     public static class Progress {
@@ -294,6 +292,9 @@ public class Browser {
 
     public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser, boolean allowIntent, boolean allowInAppBrowser, boolean forceRequest) {
         if (context == null || uri == null) {
+            return;
+        }
+        if (org.telegram.ui.Feed.FeedLinks.open(uri)) {
             return;
         }
         final int currentAccount = UserConfig.selectedAccount;
@@ -659,8 +660,12 @@ public class Browser {
 
     public static boolean isTMe(String url) {
         try {
+            final String host = AndroidUtilities.getHostAuthority(url);
+            if (BuildVars.isLinkHost(host)) {
+                return true;
+            }
             final String linkPrefix = MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix;
-            return TextUtils.equals(AndroidUtilities.getHostAuthority(url), linkPrefix);
+            return TextUtils.equals(host, linkPrefix);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -684,7 +689,7 @@ public class Browser {
 
         Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
         if (prefixMatcher.find()) {
-            uri = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery()));
+            uri = Uri.parse(BuildVars.shareLink(prefixMatcher.group(1) + (TextUtils.isEmpty(uri.getPath()) ? "" : "/" + uri.getPath()) + (TextUtils.isEmpty(uri.getQuery()) ? "" : "?" + uri.getQuery())));
 
             host = uri.getHost();
             host = host != null ? host.toLowerCase() : "";
@@ -701,7 +706,7 @@ public class Browser {
 
             }
             return true;
-        } else if ("tg".equals(uri.getScheme())) {
+        } else if (BuildVars.isAppScheme(uri.getScheme())) {
             return true;
         } else if ("telegram.dog".equals(host)) {
             String path = uri.getPath();
@@ -718,7 +723,7 @@ public class Browser {
                 }
                 return true;
             }
-        } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
+        } else if (BuildVars.isLinkHost(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 if (all) {

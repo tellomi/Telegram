@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.LocaleController;
@@ -391,7 +392,7 @@ public class CreateBotAlert {
                                     ),
                                     () -> {
                                         sheet.dismiss();
-                                        Browser.openUrl(context, "https://t.me/BotFather?start=deletebot");
+                                        Browser.openUrl(context, BuildVars.shareLink("BotFather?start=deletebot"));
                                     },
                                     resourcesProvider
                                 )

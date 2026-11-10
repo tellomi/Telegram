@@ -49,6 +49,7 @@ import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.AiTonesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.utils.code.highlight.CodeHighlighting;
@@ -219,7 +220,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                             .show();
                     })
                     .add(R.drawable.msg_share, getString(R.string.AIEditorShareStyle), () -> {
-                        final String link = "https://t.me/addstyle/" + tone.slug;
+                        final String link = BuildVars.shareLink("addstyle/" + tone.slug);
                         new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
                             @Override
                             protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
