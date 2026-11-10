@@ -49,6 +49,8 @@ The action bar title stays `Moments_Title`. While Telegram is waiting, connectin
 
 Nearby shows `Moments_Sort_Latest` or `Moments_Nearby_Mixed` under the segments. Latest is the default. Mixed is the recommended order (`sort=mixed`).
 
+A row that is still waiting for its card is a 220 dp grey block, 280 dp tall, not an empty gap. Photos and video posters bind to the post id. A video poster is the cover image, never the video file. Tapping a photo or video opens `PhotoViewer`. Tapping the row opens the post detail screen and the comment sheet. A like updates that row only. Switching segments cancels the previous list read.
+
 ## Actions
 
 The row aligns with the text column. Icon, then the count. No text labels. Grey `dialogIcon`. A count of zero is hidden. There is no share count.

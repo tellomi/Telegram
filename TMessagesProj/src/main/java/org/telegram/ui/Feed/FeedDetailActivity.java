@@ -44,6 +44,7 @@ import static org.telegram.messenger.LocaleController.getString;
 public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Delegate {
 
     public boolean focusReply;
+    private boolean commentsOpened;
     private final String postId;
     private FeedModels.Post post;
     private final ArrayList<FeedModels.Comment> comments = new ArrayList<>();
@@ -71,6 +72,20 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         return new FeedDetailActivity(args);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (!commentsOpened && postId != null && postId.length() > 0) {
+            commentsOpened = true;
+            FeedModels.Post known = post != null ? post : controller().find(postId);
+            if (known != null && !known.unavailable) {
+                FeedCommentSheet.open(this, known, focusReply);
+            } else {
+                FeedCommentSheet.open(this, postId, focusReply);
+            }
+        }
+    }
+
     private FeedController controller() {
         return FeedController.getInstance(currentAccount);
     }
@@ -78,6 +93,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     @Override
     public View createView(android.content.Context context) {
         actionBar.setTitle(LocaleController.getString("Moments_DetailTitle", R.string.Moments_DetailTitle));
+        actionBar.setAllowOverlayTitle(true);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override

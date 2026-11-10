@@ -215,13 +215,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                     }
                     if (!loading[tab] && FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0) {
                         loading[tab] = true;
-                        controller().load(streams[tab], false, (ok, error) -> {
-                            loading[tab] = false;
-                            failed[tab] = !ok;
-                            if (tab < lists.length && lists[tab] != null) {
-                                lists[tab].refresh();
-                            }
-                        });
+                        final String stream = streams[tab];
+                        controller().load(stream, false, (ok, error) -> finishLoad(stream, ok, error));
                     }
                 }
 
@@ -395,24 +390,46 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         lists[tab].refresh();
         final String stream = streams[tab];
         controller().load(stream, true, (ok, error) -> {
-            if (tab >= loading.length) {
-                return;
-            }
-            loading[tab] = false;
-            failed[tab] = !ok;
-            loadedAt[tab] = System.currentTimeMillis();
-            if (!ok && controller().debugFixtures()) {
+            if (!ok && !"cancelled".equals(error) && controller().debugFixtures()) {
                 controller().posts(stream).clear();
                 controller().posts(stream).addAll(FeedController.fixtures(stream));
-                failed[tab] = false;
+                ok = true;
             }
-            if (tab < lists.length && lists[tab] != null) {
-                lists[tab].refresh();
-            }
+            finishLoad(stream, ok, error);
             if (FeedContract.KEPT_EXISTING.equals(error)) {
                 BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("Moments_RefreshKept", R.string.Moments_RefreshKept)).show();
             }
         });
+    }
+
+    private int streamIndex(String stream) {
+        if (stream == null) {
+            return -1;
+        }
+        for (int i = 0; i < streams.length; i++) {
+            if (stream.equals(streams[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void finishLoad(String stream, boolean ok, String error) {
+        int live = streamIndex(stream);
+        if (live < 0 || live >= loading.length) {
+            return;
+        }
+        loading[live] = false;
+        if ("cancelled".equals(error)) {
+            return;
+        }
+        failed[live] = !ok;
+        if (live < loadedAt.length) {
+            loadedAt[live] = System.currentTimeMillis();
+        }
+        if (live < lists.length && lists[live] != null) {
+            lists[live].refresh();
+        }
     }
 
     private String emptyMessage(String stream) {
@@ -562,7 +579,21 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onOpen(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post, false);
+        if (post == null || post.pending) {
+            return;
+        }
+        FeedDetailActivity detail = FeedDetailActivity.forPost(post.id);
+        detail.focusReply = false;
+        presentFragment(detail);
+    }
+
+    @Override
+    public void onPostUpdated(String postId) {
+        for (int i = 0; i < lists.length; i++) {
+            if (lists[i] != null) {
+                lists[i].notifyPost(postId);
+            }
+        }
     }
 
     @Override

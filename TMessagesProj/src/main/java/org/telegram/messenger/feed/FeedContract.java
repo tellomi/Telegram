@@ -416,6 +416,23 @@ public final class FeedContract {
         return null;
     }
 
+    /**
+     * One counter per feed stream. Starting a load invalidates the previous
+     * token so a late response cannot update that stream.
+     */
+    public static final class LoadEpoch {
+        private int current;
+
+        public int begin() {
+            current++;
+            return current;
+        }
+
+        public boolean isCurrent(int token) {
+            return token == current && token != 0;
+        }
+    }
+
     /** Nearby toggles between time order and the mixed recommendation order. */
     public static String nextNearbySort(String current) {
         return "mixed".equals(current) ? "latest" : "mixed";

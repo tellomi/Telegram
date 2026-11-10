@@ -17,6 +17,11 @@ public class FeedController {
 
     public interface Listener {
         void onChanged();
+
+        /** One row changed. The default refreshes everything. */
+        default void onPostUpdated(String postId) {
+            onChanged();
+        }
     }
 
     public static class UploadTask {
@@ -72,6 +77,7 @@ public class FeedController {
     private final ArrayList<Listener> listeners = new ArrayList<>();
     private final HashMap<String, ArrayList<FeedModels.Post>> pages = new HashMap<>();
     private final HashMap<String, String> cursors = new HashMap<>();
+    private final HashMap<String, FeedContract.LoadEpoch> loadEpochs = new HashMap<>();
     private final ArrayList<UploadTask> uploads = new ArrayList<>();
     private int unread;
     private boolean uploadsResumed;
@@ -117,6 +123,28 @@ public class FeedController {
         }
     }
 
+    private void notifyPost(String postId) {
+        for (int i = 0; i < listeners.size(); i++) {
+            listeners.get(i).onPostUpdated(postId);
+        }
+    }
+
+    /** Invalidates any in-flight list or card read for this stream. */
+    public int beginLoad(String stream) {
+        FeedContract.LoadEpoch epoch = loadEpochs.get(stream);
+        if (epoch == null) {
+            epoch = new FeedContract.LoadEpoch();
+            loadEpochs.put(stream, epoch);
+        }
+        api.cancelReads();
+        return epoch.begin();
+    }
+
+    public boolean loadIsCurrent(String stream, int token) {
+        FeedContract.LoadEpoch epoch = loadEpochs.get(stream);
+        return epoch != null && epoch.isCurrent(token);
+    }
+
     public ArrayList<FeedModels.Post> posts(String stream) {
         ArrayList<FeedModels.Post> list = pages.get(stream);
         if (list == null) {
@@ -156,6 +184,7 @@ public class FeedController {
             }
             return;
         }
+        final int epoch = beginLoad(stream);
         if (refresh) {
             primed.remove(stream);
             primedCursor.remove(stream);
@@ -163,10 +192,18 @@ public class FeedController {
             return;
         }
         if (remoteConfigReady && !refresh) {
-            loadStream(stream, refresh, done);
+            loadStream(stream, refresh, epoch, done);
             return;
         }
-        ensureRemoteConfig(() -> loadStream(stream, refresh, done));
+        ensureRemoteConfig(() -> {
+            if (!loadIsCurrent(stream, epoch)) {
+                if (done != null) {
+                    done.run(false, "cancelled");
+                }
+                return;
+            }
+            loadStream(stream, refresh, epoch, done);
+        });
     }
 
     public void prefetchNext(String stream) {
@@ -273,7 +310,7 @@ public class FeedController {
         cursors.put(stream, FeedContract.normalizeCursor(cached.nextCursor));
     }
 
-    private void loadStream(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
+    private void loadStream(final String stream, final boolean refresh, final int epoch, final Utilities.Callback2<Boolean, String> done) {
         if (!FeedContract.isEngineStream(stream)) {
             if (done != null) {
                 done.run(false, null);
@@ -291,6 +328,12 @@ public class FeedController {
             return;
         }
         api.getJson(path, (json, error) -> {
+            if (!loadIsCurrent(stream, epoch) || "cancelled".equals(error)) {
+                if (done != null) {
+                    done.run(false, "cancelled");
+                }
+                return;
+            }
             if (json == null) {
                 if (done != null) {
                     done.run(false, error);
@@ -302,7 +345,16 @@ public class FeedController {
                 applyStreamPage(stream, refresh, cursor, FeedModels.parsePage(json), done);
                 return;
             }
-            hydrate(refs, (posts, hydrateError) -> {
+            if (posts(stream).isEmpty()) {
+                applyStreamPage(stream, refresh, cursor, FeedModels.placeholders(refs), null);
+            }
+            hydrate(refs, epoch, (posts, hydrateError) -> {
+                if (!loadIsCurrent(stream, epoch)) {
+                    if (done != null) {
+                        done.run(false, "cancelled");
+                    }
+                    return;
+                }
                 if (posts == null) {
                     if (done != null) {
                         done.run(false, hydrateError);
@@ -396,6 +448,10 @@ public class FeedController {
     }
 
     private void hydrate(FeedContract.FeedList refs, Utilities.Callback2<ArrayList<FeedModels.Post>, String> done) {
+        hydrate(refs, 0, done);
+    }
+
+    private void hydrate(FeedContract.FeedList refs, int epoch, Utilities.Callback2<ArrayList<FeedModels.Post>, String> done) {
         JSONObject body;
         try {
             body = new JSONObject(FeedContract.cardsRequest(refs.idsToHydrate()));
@@ -405,7 +461,7 @@ public class FeedController {
             }
             return;
         }
-        api.sendJson("POST", FeedContract.CARDS_PATH, body, (json, error) -> {
+        api.sendRead("POST", FeedContract.CARDS_PATH, body, (json, error) -> {
             if (json == null) {
                 if (done != null) {
                     done.run(null, error);
@@ -467,7 +523,7 @@ public class FeedController {
         if (post.likes < 0) {
             post.likes = 0;
         }
-        notifyListeners();
+        notifyPost(post.id);
         String method = next ? "PUT" : "DELETE";
         api.sendJson(method, "/v1/feed/posts/" + FeedApi.enc(post.id) + "/like", null, (json, error) -> {
             if (error != null) {
@@ -476,7 +532,7 @@ public class FeedController {
                 if (post.likes < 0) {
                     post.likes = 0;
                 }
-                notifyListeners();
+                notifyPost(post.id);
             }
         });
     }

@@ -109,7 +109,7 @@ public class FeedContractTest {
     }
 
     @Test
-    public void commentVoiceUsesMediaKeys() {
+    public void commentVoiceUsesMediaKeys() throws Exception {
         String voice = FeedContract.commentBody("hello", "root-1", "audio", "upload-key");
         assertTrue(voice.contains("\"media_keys\""));
         assertTrue(voice.contains("upload-key"));
@@ -138,6 +138,22 @@ public class FeedContractTest {
         assertEquals("mixed", FeedContract.nextNearbySort("latest"));
         assertEquals("latest", FeedContract.nextNearbySort("mixed"));
         assertEquals("mixed", FeedContract.nextNearbySort(null));
+        FeedContract.LoadEpoch epoch = new FeedContract.LoadEpoch();
+        int first = epoch.begin();
+        assertTrue(epoch.isCurrent(first));
+        int second = epoch.begin();
+        assertFalse(epoch.isCurrent(first));
+        assertTrue(epoch.isCurrent(second));
+        org.json.JSONObject author = new org.json.JSONObject("{\"telegram_id\":\"42\",\"avatar\":{\"url\":\"https://cdn.example/a.jpg\"}}");
+        org.telegram.messenger.feed.FeedModels.Author parsed = org.telegram.messenger.feed.FeedModels.Author.parse(author);
+        assertEquals(42L, parsed.userId);
+        assertEquals("https://cdn.example/a.jpg", parsed.avatarUrl);
+        org.json.JSONObject video = new org.json.JSONObject("{\"type\":\"video\",\"url\":\"https://cdn.example/v.mp4\",\"poster\":\"https://cdn.example/p.jpg\"}");
+        org.telegram.messenger.feed.FeedModels.Media media = org.telegram.messenger.feed.FeedModels.Media.parse(video);
+        assertEquals("https://cdn.example/p.jpg", media.posterUrl(0));
+        assertFalse(media.posterUrl(0).endsWith(".mp4"));
+        org.telegram.messenger.feed.FeedModels.Media bareVideo = org.telegram.messenger.feed.FeedModels.Media.parse(new org.json.JSONObject("{\"type\":\"video\",\"url\":\"https://cdn.example/v.mp4\"}"));
+        assertEquals("", bareVideo.posterUrl(0));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
@@ -321,6 +337,11 @@ public class FeedContractTest {
         assertTrue(playback.contains("toggleVoice"));
         assertTrue(playback.contains("pauseMessage"));
         assertTrue(cell.contains("voiceRow"));
+        assertTrue(cell.contains("bindLike"));
+        assertTrue(cell.contains("posterUrl"));
+        assertTrue(activity.contains("FeedDetailActivity"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("PAYLOAD_LIKE"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("setHasStableIds"));
     }
 
     @Test

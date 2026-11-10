@@ -17,6 +17,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * HTTPS client for content-engine /v1/feed. Auth is discover.engineCredential (token, expires, region).
@@ -31,6 +33,25 @@ public class FeedApi {
     private final int account;
     private String token = "";
     private int tokenExpires;
+    private final AtomicInteger readEpoch = new AtomicInteger();
+    private final CopyOnWriteArrayList<HttpURLConnection> reads = new CopyOnWriteArrayList<>();
+
+    /** Drop list and card reads. Uploads and likes are not reads. */
+    public int cancelReads() {
+        int epoch = readEpoch.incrementAndGet();
+        for (int i = 0; i < reads.size(); i++) {
+            try {
+                reads.get(i).disconnect();
+            } catch (Exception ignore) {
+            }
+        }
+        reads.clear();
+        return epoch;
+    }
+
+    public boolean readsCurrent(int epoch) {
+        return readEpoch.get() == epoch;
+    }
 
     public FeedApi(int account) {
         this.account = account;
@@ -50,11 +71,15 @@ public class FeedApi {
     }
 
     public void getJson(String pathAndQuery, Callback<JSONObject> callback) {
-        request("GET", pathAndQuery, null, callback);
+        request("GET", pathAndQuery, null, true, callback);
     }
 
     public void sendJson(String method, String path, JSONObject body, Callback<JSONObject> callback) {
-        request(method, path, body, callback);
+        request(method, path, body, false, callback);
+    }
+
+    public void sendRead(String method, String path, JSONObject body, Callback<JSONObject> callback) {
+        request(method, path, body, true, callback);
     }
 
     public void uploadFile(final File file, final String filename, final String mime, final Callback<String> callback) {
@@ -82,11 +107,12 @@ public class FeedApi {
         });
     }
 
-    private void request(final String method, final String path, final JSONObject body, final Callback<JSONObject> callback) {
+    private void request(final String method, final String path, final JSONObject body, final boolean cancelable, final Callback<JSONObject> callback) {
         if (!FeedConfig.enabled(account)) {
             callback.run(null, "disabled");
             return;
         }
+        final int epoch = readEpoch.get();
         withToken(new Callback<String>() {
             @Override
             public void run(final String tokenValue, String error) {
@@ -95,8 +121,12 @@ public class FeedApi {
                     return;
                 }
                 Utilities.stageQueue.postRunnable(() -> {
-                    HttpResult result = call(method, path, body, tokenValue);
+                    HttpResult result = call(method, path, body, tokenValue, cancelable);
                     AndroidUtilities.runOnUIThread(() -> {
+                        if (cancelable && !readsCurrent(epoch)) {
+                            callback.run(null, "cancelled");
+                            return;
+                        }
                         if (result.code == 401) {
                             token = "";
                             tokenExpires = 0;
@@ -152,13 +182,16 @@ public class FeedApi {
         }));
     }
 
-    private HttpResult call(String method, String path, JSONObject body, String bearer) {
+    private HttpResult call(String method, String path, JSONObject body, String bearer, boolean cancelable) {
         HttpResult result = new HttpResult();
         HttpURLConnection connection = null;
         try {
             String base = FeedConfig.engineBase(account);
             URL url = new URL(base + (path.startsWith("/") ? path : "/" + path));
             connection = (HttpURLConnection) url.openConnection();
+            if (cancelable) {
+                reads.add(connection);
+            }
             connection.setConnectTimeout(15000);
             connection.setReadTimeout(20000);
             connection.setRequestMethod(method);
@@ -216,6 +249,7 @@ public class FeedApi {
             result.error = "network";
         } finally {
             if (connection != null) {
+                reads.remove(connection);
                 connection.disconnect();
             }
         }
