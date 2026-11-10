@@ -513,11 +513,11 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # 14.0.9. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # 14.0.10. afat versionCode = APP_VERSION_CODE * 10 + 9.
           # publish=release (and a push to release/android) reads
           # android/latest.json and uses the next decade above that versionCode.
-          # 14.0.8 afat is 1804679, so configured APP_VERSION_CODE 180468
-          # produces afat 1804689 until the feed moves past it. Digit 0 is unused.
+          # Live 14.0.9 afat is 1804699, so configured APP_VERSION_CODE 180470
+          # produces afat 1804709 until the feed moves past it. Digit 0 is unused.
           PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
           TELLOMI_VERSION_CODE_FLOOR: "1804679"
         run: |
@@ -541,14 +541,14 @@ jobs:
             esac
           done < <(python3 Tools/tellomi-android-version.py \
             --gradle gradle.properties \
-            --expect-version-name 14.0.9 \
+            --expect-version-name 14.0.10 \
             --floor "${TELLOMI_VERSION_CODE_FLOOR:?}" \
             "${release_args[@]+"${release_args[@]}"}")
           case "$app_version_code" in
             ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          if [ "$version_name" != "14.0.9" ]; then
-            echo "expected APP_VERSION_NAME 14.0.9, found ${version_name:-missing}" >&2
+          if [ "$version_name" != "14.0.10" ]; then
+            echo "expected APP_VERSION_NAME 14.0.10, found ${version_name:-missing}" >&2
             exit 1
           fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
