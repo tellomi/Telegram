@@ -179,4 +179,9 @@
     <string name="Moments_Report_Other">其他</string>
     <string name="Moments_Report_Detail">补充说明</string>
     <string name="Moments_Report_Sent">已提交举报</string>
+
+    <string name="TellomiTools">工具</string>
+    <string name="TellomiMenuSettings">选单设定</string>
+    <string name="TellomiHideTabLabels">隐藏按钮文字</string>
+    <string name="TellomiNavBarButtons">导航栏按钮</string>
 </resources>

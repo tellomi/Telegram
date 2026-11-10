@@ -1131,4 +1131,9 @@
     <string name="Moments_Report_Other">Andere reden</string>
     <string name="Moments_Report_Detail">Toelichting</string>
     <string name="Moments_Report_Sent">Melding verstuurd</string>
+
+    <string name="TellomiTools">Hulpmiddelen</string>
+    <string name="TellomiMenuSettings">Menu-instellingen</string>
+    <string name="TellomiHideTabLabels">Knoplabels verbergen</string>
+    <string name="TellomiNavBarButtons">Knoppen van de navigatiebalk</string>
 </resources>
