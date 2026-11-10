@@ -12,9 +12,9 @@
     <string name="FeedPublish">发布</string>
     <string name="FeedUploadFailed">发布失败，点击重试</string>
     <string name="FeedUploading">正在发布</string>
-    <string name="FeedEmptyRecommend">还没有内容，发布第一条动态吧</string>
+    <string name="FeedEmptyRecommend">还没有内容，来发第一条吧</string>
     <string name="FeedEmptyFollowing">你关注的人还没有发动态</string>
-    <string name="FeedEmptyFriends">互相关注后就是好友，好友的动态会出现在这里</string>
+    <string name="FeedEmptyFriends">互相关注就成为好友</string>
     <string name="FeedEmptyNearby">这座城市还没有动态</string>
     <string name="FeedFindPeople">找人关注</string>
     <string name="FeedChangeCity">切换城市</string>
@@ -35,7 +35,7 @@
     <string name="FeedChangeAudience">修改谁可以看</string>
     <string name="FeedFollow">关注</string>
     <string name="FeedFollowingState">已关注</string>
-    <string name="FeedMutual">互相关注</string>
+    <string name="FeedMutual">互关好友</string>
     <string name="FeedFullText">全文</string>
     <string name="FeedEdited">已编辑</string>
     <string name="FeedRepostedBy">%s 转发了</string>
@@ -60,14 +60,14 @@
     <string name="FeedSendOriginal">发送原图</string>
     <string name="FeedVideoTooLong">请把视频裁剪到 60 秒以内</string>
     <string name="FeedRecording">正在录音…</string>
-    <string name="FeedDraftTitle">保存草稿？</string>
+    <string name="FeedDraftTitle">保存这份草稿？</string>
     <string name="FeedDraftMessage">这条动态还没有发布</string>
     <string name="FeedDraftSave">保存草稿</string>
     <string name="FeedDraftDiscard">放弃</string>
     <string name="FeedDraftKeep">继续编辑</string>
     <string name="FeedDetailTitle">动态</string>
     <string name="FeedReplyHint">回复</string>
-    <string name="FeedCommentsClosed">作者已关闭评论</string>
+    <string name="FeedCommentsClosed">评论已关闭</string>
     <string name="FeedCommentsMutual">只有互关好友可以评论</string>
     <string name="FeedCommentsFollowing">只有作者关注的人可以评论</string>
     <string name="FeedCommentsMentioned">只有被提及的人可以评论</string>
@@ -87,7 +87,7 @@
     <string name="FeedFilterPosts">帖子</string>
     <string name="FeedFilterRepostsOnly">转发</string>
     <string name="FeedAndOthers">和其他人</string>
-    <string name="FeedLocationExplain">只用来确定你所在的城市，不保存位置</string>
+    <string name="FeedLocationExplain">位置只用来选择城市，不会保存</string>
     <string name="FeedUseLocation">使用当前城市</string>
     <string name="FeedLocationDenied">改为手动选择城市</string>
     <string name="FeedListsHeader">列表</string>

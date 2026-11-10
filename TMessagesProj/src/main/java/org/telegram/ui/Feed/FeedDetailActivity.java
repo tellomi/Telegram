@@ -76,7 +76,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(getString(R.string.FeedDetailTitle));
+        actionBar.setTitle(FeedUi.s("Moments.Title", R.string.FeedDetailTitle));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -118,9 +118,9 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         bar.addView(recordWave, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 112));
         LinearLayout tools = new LinearLayout(context);
         tools.setOrientation(LinearLayout.HORIZONTAL);
-        addReplyTool(tools, getString(R.string.FeedToolPhoto), this::pickCommentPhoto);
-        addReplyTool(tools, getString(R.string.FeedToolVoice), this::toggleCommentVoice);
-        addReplyTool(tools, getString(R.string.FeedToolSticker), this::toggleStickers);
+        addReplyTool(tools, FeedUi.s("Moments.Tool.Photo", R.string.FeedToolPhoto), this::pickCommentPhoto);
+        addReplyTool(tools, FeedUi.s("Moments.Voice", R.string.FeedToolVoice), this::toggleCommentVoice);
+        addReplyTool(tools, FeedUi.s("Moments.Tool.Sticker", R.string.FeedToolSticker), this::toggleStickers);
         bar.addView(tools);
         emojiView = new EmojiView(this, false, true, true, context, false, null, null, true, resourceProvider, false);
         emojiView.setVisibility(View.GONE);
@@ -140,7 +140,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         bar.addView(emojiView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 240));
         LinearLayout row = new LinearLayout(context);
         reply = new EditText(context);
-        reply.setHint(getString(R.string.FeedReplyHint));
+        reply.setHint(FeedUi.s("Moments.Comment.Placeholder", R.string.FeedReplyHint));
         reply.setBackground(null);
         reply.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         reply.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -223,14 +223,14 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         }
         String policy = post.commentPolicy == null ? "" : post.commentPolicy;
         if ("closed".equals(policy)) {
-            hint.setText(getString(R.string.FeedCommentsClosed));
+            hint.setText(FeedUi.s("Moments.Comment.Closed", R.string.FeedCommentsClosed));
             reply.setEnabled(false);
         } else if ("mutual_followers".equals(policy)) {
-            hint.setText(getString(R.string.FeedCommentsMutual));
+            hint.setText(FeedUi.s("Moments.Comment.Mutual", R.string.FeedCommentsMutual));
         } else if ("author_following".equals(policy)) {
-            hint.setText(getString(R.string.FeedCommentsFollowing));
+            hint.setText(FeedUi.s("Moments.Comment.Following", R.string.FeedCommentsFollowing));
         } else if ("mentioned_only".equals(policy)) {
-            hint.setText(getString(R.string.FeedCommentsMentioned));
+            hint.setText(FeedUi.s("Moments.Comment.Mentioned", R.string.FeedCommentsMentioned));
         } else {
             hint.setText("");
             reply.setEnabled(true);
@@ -257,7 +257,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         readyAttachment = null;
         attachmentPath = path;
         attachmentKind = kind;
-        attachmentLabel.setText(kind + " · " + getString(R.string.FeedRemovePreview));
+        attachmentLabel.setText(kind + " · " + FeedUi.s("Moments.Remove", R.string.FeedRemovePreview));
         attachmentLabel.setVisibility(View.VISIBLE);
         if (emojiView != null) {
             emojiView.setVisibility(View.GONE);
@@ -280,7 +280,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             }
         } catch (Exception ignore) {
         }
-        attachmentLabel.setText(kind + " · " + getString(R.string.FeedRemovePreview));
+        attachmentLabel.setText(kind + " · " + FeedUi.s("Moments.Remove", R.string.FeedRemovePreview));
         attachmentLabel.setVisibility(View.VISIBLE);
         emojiView.setVisibility(View.GONE);
     }
@@ -338,7 +338,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         commentVoice.start();
         recordWave.updateColors();
         recordWave.setVisibility(View.VISIBLE);
-        attachmentLabel.setText(getString(R.string.FeedRecording));
+        attachmentLabel.setText(FeedUi.s("Moments.Recording", R.string.FeedRecording));
         attachmentLabel.setVisibility(View.VISIBLE);
     }
 
@@ -456,14 +456,14 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> confirmDelete(comment));
         }
         if (FeedConfig.COMMENT_LIKES) {
-            options.add(R.drawable.media_like, getString(R.string.FeedLike), () -> controller().api.sendJson(comment.liked ? "DELETE" : "PUT", "/v1/feed/comments/" + comment.id + "/like", null, (json, error) -> load()));
+            options.add(R.drawable.media_like, FeedUi.s("Moments.Like", R.string.FeedLike), () -> controller().api.sendJson(comment.liked ? "DELETE" : "PUT", "/v1/feed/comments/" + comment.id + "/like", null, (json, error) -> load()));
         }
         options.show();
     }
 
     private void confirmDelete(FeedModels.Comment comment) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setMessage(comment.replyCount > 0 ? getString(R.string.FeedDeleteThread) : getString(R.string.Delete));
+        builder.setMessage(comment.replyCount > 0 ? FeedUi.s("Moments.DeleteThread", R.string.FeedDeleteThread) : getString(R.string.Delete));
         builder.setPositiveButton(getString(R.string.Delete), (d, w) -> controller().deleteComment(postId, comment.id, error -> load()));
         builder.setNegativeButton(getString(R.string.Cancel), null);
         showDialog(builder.create());
@@ -522,7 +522,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             attachment.setVisibility(View.VISIBLE);
             attachment.setTextColor(text);
             attachment.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_graySection)));
-            String kind = comment.attachment.isFile() ? ( "audio".equals(comment.attachment.type) || "voice".equals(comment.attachment.type) ? getString(R.string.FeedAudio) : getString(R.string.FeedFile)) : comment.attachment.isVideo() ? getString(R.string.FeedVideo) : getString(R.string.FeedPhoto);
+            String kind = comment.attachment.isFile() ? ( "audio".equals(comment.attachment.type) || "voice".equals(comment.attachment.type) ? FeedUi.s("Moments.Voice", R.string.FeedAudio) : FeedUi.s("Moments.File", R.string.FeedFile)) : comment.attachment.isVideo() ? FeedUi.s("Moments.Tool.Video", R.string.FeedVideo) : FeedUi.s("Moments.Photo", R.string.FeedPhoto);
             attachment.setText(kind);
         } else {
             attachment.setVisibility(View.GONE);
@@ -566,7 +566,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             }
             if (position == 1) {
                 TextView sortView = (TextView) holder.itemView;
-                sortView.setText(("hot".equals(sort) ? getString(R.string.FeedSortHot) : getString(R.string.FeedSortNew)) + " · " + comments.size());
+                sortView.setText(("hot".equals(sort) ? FeedUi.s("Moments.Sort.Hot", R.string.FeedSortHot) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew)) + " · " + comments.size());
                 sortView.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
                     load();

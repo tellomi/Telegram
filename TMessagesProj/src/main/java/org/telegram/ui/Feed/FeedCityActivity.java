@@ -53,7 +53,7 @@ public class FeedCityActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(getString(R.string.FeedChangeCity));
+        actionBar.setTitle(FeedUi.s("Moments.SwitchCity", R.string.FeedChangeCity));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -65,12 +65,12 @@ public class FeedCityActivity extends BaseFragment {
         root.setOrientation(LinearLayout.VERTICAL);
         if (explain) {
             TextView note = new TextView(context);
-            note.setText(getString(R.string.FeedLocationExplain));
+            note.setText(FeedUi.s("Moments.Nearby.Permission", R.string.FeedLocationExplain));
             note.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             note.setPadding(dp(16), dp(12), dp(16), dp(8));
             root.addView(note);
             TextView allow = new TextView(context);
-            allow.setText(getString(R.string.FeedUseLocation));
+            allow.setText(FeedUi.s("Moments.UseLocation", R.string.FeedUseLocation));
             allow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
             allow.setPadding(dp(16), dp(8), dp(16), dp(8));
             allow.setOnClickListener(v -> requestLocation());
@@ -224,6 +224,6 @@ public class FeedCityActivity extends BaseFragment {
     @SuppressWarnings("unused")
     private void explainDenied() {
         if (getParentActivity() == null) return;
-        new AlertDialog.Builder(getParentActivity()).setMessage(getString(R.string.FeedLocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
+        new AlertDialog.Builder(getParentActivity()).setMessage(FeedUi.s("Moments.LocationDenied", R.string.FeedLocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
     }
 }

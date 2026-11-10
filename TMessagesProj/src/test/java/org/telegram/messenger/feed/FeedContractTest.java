@@ -199,6 +199,33 @@ public class FeedContractTest {
     }
 
     @Test
+    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+        String english = read("../../../res/values/strings.xml");
+        String chinese = read("../../../res/values-zh-rCN/strings.xml");
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Feed[A-Za-z0-9]+)\"")
+                .matcher(english);
+        int count = 0;
+        while (names.find()) {
+            String name = names.group(1);
+            assertTrue(name, chinese.contains("name=\"" + name + "\""));
+            count++;
+        }
+        assertTrue(count >= 40);
+        String ui = read("ui/Feed/FeedUi.java")
+                + read("ui/Feed/FeedActivity.java")
+                + read("ui/Feed/FeedPostCell.java");
+        assertTrue(ui.contains("Moments.Title"));
+        assertTrue(ui.contains("Moments.Segment.Recommend"));
+        assertTrue(ui.contains("Moments.Like"));
+        assertTrue(ui.contains("Moments.Empty.Recommend"));
+        assertTrue(ui.contains("LocaleController.getString(key, res)"));
+        String design = readDesign();
+        assertTrue(design.contains("36 dp"));
+        assertTrue(design.contains("5 lines"));
+        assertTrue(design.contains("#FF2E38"));
+    }
+
+    @Test
     public void clientSourcesDoNotCallRemovedEndpoints() throws Exception {
         String feed = read("messenger/feed/FeedController.java")
                 + read("messenger/feed/FeedContract.java")
@@ -224,6 +251,19 @@ public class FeedContractTest {
         char[] chars = new char[n];
         Arrays.fill(chars, c);
         return new String(chars);
+    }
+
+    private static String readDesign() throws Exception {
+        java.nio.file.Path[] candidates = new java.nio.file.Path[]{
+                java.nio.file.Paths.get("docs/FEED-DESIGN.md"),
+                java.nio.file.Paths.get("../docs/FEED-DESIGN.md")
+        };
+        for (int i = 0; i < candidates.length; i++) {
+            if (java.nio.file.Files.isRegularFile(candidates[i])) {
+                return new String(java.nio.file.Files.readAllBytes(candidates[i]), "UTF-8");
+            }
+        }
+        throw new IllegalStateException("missing docs/FEED-DESIGN.md");
     }
 
     private static String read(String relative) throws Exception {

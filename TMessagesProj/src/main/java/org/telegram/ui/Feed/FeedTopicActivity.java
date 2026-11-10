@@ -98,7 +98,7 @@ public class FeedTopicActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
                 TextView text = (TextView) holder.itemView;
-                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? getString(R.string.FeedSortHot) : getString(R.string.FeedSortNew)));
+                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? FeedUi.s("Moments.Sort.Hot", R.string.FeedSortHot) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew)));
                 text.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
                     load();

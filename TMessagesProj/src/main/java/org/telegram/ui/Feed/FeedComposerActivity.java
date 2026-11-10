@@ -111,7 +111,7 @@ public class FeedComposerActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(getString(R.string.FeedComposerTitle));
+        actionBar.setTitle(FeedUi.s("Moments.Composer.Title", R.string.FeedComposerTitle));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -123,7 +123,7 @@ public class FeedComposerActivity extends BaseFragment {
         });
         ActionBarMenu menu = actionBar.createMenu();
         publish = new TextView(context);
-        publish.setText(getString(R.string.FeedPublish));
+        publish.setText(FeedUi.s("Moments.Publish", R.string.FeedPublish));
         publish.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         publish.setTypeface(AndroidUtilities.bold());
         publish.setPadding(dp(12), dp(8), dp(12), dp(8));
@@ -136,7 +136,7 @@ public class FeedComposerActivity extends BaseFragment {
         column.setPadding(dp(16), dp(12), dp(16), dp(12));
 
         audienceView = new TextView(context);
-        audienceView.setText(getString(R.string.FeedAudiencePleaseChoose));
+        audienceView.setText(FeedUi.s("Moments.Audience.Choose", R.string.FeedAudiencePleaseChoose));
         audienceView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         audienceView.setTextSize(15);
         audienceView.setOnClickListener(v -> FeedAudiencePicker.open(this, privacy, picked -> {
@@ -148,7 +148,7 @@ public class FeedComposerActivity extends BaseFragment {
         column.addView(audienceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
         field = new EditText(context);
-        field.setHint(getString(R.string.FeedComposerHint));
+        field.setHint(FeedUi.s("Moments.Composer.Hint", R.string.FeedComposerHint));
         field.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         field.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         field.setBackground(null);
@@ -204,32 +204,32 @@ public class FeedComposerActivity extends BaseFragment {
 
         LinearLayout tools = new LinearLayout(context);
         tools.setOrientation(LinearLayout.HORIZONTAL);
-        addTool(tools, getString(R.string.FeedToolPhoto), () -> pickMedia(false));
-        addTool(tools, getString(R.string.FeedToolVideo), () -> pickMedia(true));
-        addTool(tools, getString(R.string.FeedToolVoice), this::toggleVoice);
-        addTool(tools, getString(R.string.FeedToolPoll), this::openPoll);
-        addTool(tools, getString(R.string.FeedToolPlace), () -> presentFragment(new FeedCityActivity(false)));
+        addTool(tools, FeedUi.s("Moments.Tool.Photo", R.string.FeedToolPhoto), () -> pickMedia(false));
+        addTool(tools, FeedUi.s("Moments.Tool.Video", R.string.FeedToolVideo), () -> pickMedia(true));
+        addTool(tools, FeedUi.s("Moments.Voice", R.string.FeedToolVoice), this::toggleVoice);
+        addTool(tools, FeedUi.s("Moments.Tool.Poll", R.string.FeedToolPoll), this::openPoll);
+        addTool(tools, FeedUi.s("Moments.Tool.Place", R.string.FeedToolPlace), () -> presentFragment(new FeedCityActivity(false)));
         column.addView(tools, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView nearby = new TextView(context);
-        nearby.setText(getString(R.string.FeedAllowNearby));
+        nearby.setText(FeedUi.s("Moments.AllowNearby", R.string.FeedAllowNearby));
         nearby.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         nearby.setOnClickListener(v -> {
             if (privacy == null || privacy.type != StoryPrivacyBottomSheet.TYPE_EVERYONE) {
                 return;
             }
             allowNearby = !allowNearby;
-            nearby.setText(getString(R.string.FeedAllowNearby) + (allowNearby ? " ✓" : ""));
+            nearby.setText(FeedUi.s("Moments.AllowNearby", R.string.FeedAllowNearby) + (allowNearby ? " ✓" : ""));
             dirty = true;
         });
         column.addView(nearby, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
         TextView originalView = new TextView(context);
-        originalView.setText(getString(R.string.FeedSendOriginal));
+        originalView.setText(FeedUi.s("Moments.SendOriginal", R.string.FeedSendOriginal));
         originalView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         originalView.setOnClickListener(v -> {
             original = !original;
-            originalView.setText(getString(R.string.FeedSendOriginal) + (original ? " ✓" : ""));
+            originalView.setText(FeedUi.s("Moments.SendOriginal", R.string.FeedSendOriginal) + (original ? " ✓" : ""));
         });
         column.addView(originalView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
@@ -237,7 +237,7 @@ public class FeedComposerActivity extends BaseFragment {
         root.addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fragmentView = root;
         if (quoteId != null) {
-            field.setHint(getString(R.string.FeedQuoteHint));
+            field.setHint(FeedUi.s("Moments.QuoteHint", R.string.FeedQuoteHint));
         }
         refreshPublish();
         return fragmentView;
@@ -267,7 +267,7 @@ public class FeedComposerActivity extends BaseFragment {
                 builder.append(types.get(i));
             }
             if (poll != null) {
-                builder.append(builder.length() == 0 ? "" : ", ").append(getString(R.string.FeedToolPoll));
+                builder.append(builder.length() == 0 ? "" : ", ").append(FeedUi.s("Moments.Tool.Poll", R.string.FeedToolPoll));
             }
             attachments.setText(builder.toString());
         }
@@ -328,7 +328,7 @@ public class FeedComposerActivity extends BaseFragment {
                 continue;
             }
             if (photo.isVideo && photo.duration > FeedConfig.MAX_VIDEO_SEC && !trimmed(photo)) {
-                new AlertDialog.Builder(getParentActivity()).setMessage(getString(R.string.FeedVideoTooLong)).setPositiveButton(getString(R.string.OK), null).show();
+                new AlertDialog.Builder(getParentActivity()).setMessage(FeedUi.s("Moments.VideoTooLong", R.string.FeedVideoTooLong)).setPositiveButton(getString(R.string.OK), null).show();
                 continue;
             }
             if (photo.path == null) {
@@ -395,7 +395,7 @@ public class FeedComposerActivity extends BaseFragment {
         voice.start();
         recordWave.updateColors();
         recordWave.setVisibility(View.VISIBLE);
-        attachments.setText(getString(R.string.FeedRecording));
+        attachments.setText(FeedUi.s("Moments.Recording", R.string.FeedRecording));
     }
 
     private void openPoll() {
@@ -444,9 +444,9 @@ public class FeedComposerActivity extends BaseFragment {
         ArrayList<String> blocked = mentionsWithoutAccess();
         if (!blocked.isEmpty()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(getString(R.string.FeedMentionTitle));
-            builder.setMessage(getString(R.string.FeedMentionWarning) + "\n" + TextUtils.join(", ", blocked));
-            builder.setPositiveButton(getString(R.string.FeedPublish), (d, w) -> publishNow());
+            builder.setTitle(FeedUi.s("Moments.MentionTitle", R.string.FeedMentionTitle));
+            builder.setMessage(FeedUi.s("Moments.MentionWarning", R.string.FeedMentionWarning) + "\n" + TextUtils.join(", ", blocked));
+            builder.setPositiveButton(FeedUi.s("Moments.Publish", R.string.FeedPublish), (d, w) -> publishNow());
             builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
             return;
@@ -508,17 +508,17 @@ public class FeedComposerActivity extends BaseFragment {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(getString(R.string.FeedDraftTitle));
-        builder.setMessage(getString(R.string.FeedDraftMessage));
-        builder.setPositiveButton(getString(R.string.FeedDraftSave), (d, w) -> {
+        builder.setTitle(FeedUi.s("Moments.Draft.Title", R.string.FeedDraftTitle));
+        builder.setMessage(FeedUi.s("Moments.Draft.Message", R.string.FeedDraftMessage));
+        builder.setPositiveButton(FeedUi.s("Moments.Draft.Save", R.string.FeedDraftSave), (d, w) -> {
             saveDraft();
             finishFragment();
         });
-        builder.setNegativeButton(getString(R.string.FeedDraftDiscard), (d, w) -> {
+        builder.setNegativeButton(FeedUi.s("Moments.Draft.Discard", R.string.FeedDraftDiscard), (d, w) -> {
             dirty = false;
             finishFragment();
         });
-        builder.setNeutralButton(getString(R.string.FeedDraftKeep), null);
+        builder.setNeutralButton(FeedUi.s("Moments.Draft.Continue", R.string.FeedDraftKeep), null);
         showDialog(builder.create());
     }
 
@@ -587,7 +587,7 @@ public class FeedComposerActivity extends BaseFragment {
                 return;
             }
             String title = page.title != null && page.title.length() > 0 ? page.title : page.site_name;
-            previewView.setText((title == null ? url : title) + "\n" + getString(R.string.FeedRemovePreview));
+            previewView.setText((title == null ? url : title) + "\n" + FeedUi.s("Moments.Remove", R.string.FeedRemovePreview));
             previewView.setVisibility(View.VISIBLE);
         }));
     }

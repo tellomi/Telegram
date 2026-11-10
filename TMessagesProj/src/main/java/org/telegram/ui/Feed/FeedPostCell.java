@@ -159,7 +159,7 @@ public class FeedPostCell extends LinearLayout {
         addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         pin = label(context, true);
-        pin.setText(getString(R.string.FeedPinned));
+        pin.setText(FeedUi.s("Moments.Pinned", R.string.FeedPinned));
         pin.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         pin.setPadding(dp(46), dp(2), 0, 0);
         pin.setVisibility(GONE);
@@ -184,7 +184,7 @@ public class FeedPostCell extends LinearLayout {
         addView(body, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         full = label(context, true);
-        full.setText(getString(R.string.FeedFullText));
+        full.setText(FeedUi.s("Moments.FullText", R.string.FeedFullText));
         full.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         full.setPadding(dp(46), dp(2), 0, 0);
         addView(full, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -219,13 +219,13 @@ public class FeedPostCell extends LinearLayout {
         actions.setOrientation(HORIZONTAL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
         actions.setPadding(dp(40), 0, 0, 0);
-        like = FeedUi.icon(context, R.drawable.media_like, getString(R.string.FeedLike));
+        like = FeedUi.icon(context, R.drawable.media_like, FeedUi.s("Moments.Like", R.string.FeedLike));
         likeCount = label(context, false);
-        comment = FeedUi.icon(context, R.drawable.input_reply, getString(R.string.FeedComment));
+        comment = FeedUi.icon(context, R.drawable.input_reply, FeedUi.s("Moments.Comment", R.string.FeedComment));
         commentCount = label(context, false);
-        repost = FeedUi.icon(context, R.drawable.msg_forward, getString(R.string.FeedRepost));
-        share = FeedUi.icon(context, R.drawable.msg_share, getString(R.string.FeedShare));
-        save = FeedUi.icon(context, R.drawable.msg_saved, getString(R.string.FeedSave));
+        repost = FeedUi.icon(context, R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost));
+        share = FeedUi.icon(context, R.drawable.msg_share, FeedUi.s("Moments.Share", R.string.FeedShare));
+        save = FeedUi.icon(context, R.drawable.msg_saved, FeedUi.s("Moments.Save", R.string.FeedSave));
         actions.addView(like, LayoutHelper.createLinear(40, 40));
         actions.addView(likeCount, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
         actions.addView(comment, LayoutHelper.createLinear(40, 40));
@@ -320,7 +320,7 @@ public class FeedPostCell extends LinearLayout {
         this.post = post;
         applyTheme();
         if (post == null || post.unavailable) {
-            name.setText(getString(R.string.FeedUnavailable));
+            name.setText(FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable));
             body.setText("");
             titleView.setVisibility(GONE);
             pin.setVisibility(GONE);
@@ -353,15 +353,15 @@ public class FeedPostCell extends LinearLayout {
         name.setText(FeedUi.displayName(post.author, account));
         String audience = FeedUi.audienceLabel(post.audienceKind);
         String when = FeedUi.timeAgo(post.createdAt);
-        String edited = post.editedAt > 0 ? " · " + getString(R.string.FeedEdited) : "";
+        String edited = post.editedAt > 0 ? " · " + FeedUi.s("Moments.Edited", R.string.FeedEdited) : "";
         meta.setText(audience.length() == 0 ? when + edited : when + " · " + audience + edited);
         meta.setContentDescription(meta.getText());
         if (showFollow && !FeedUi.isSelf(account, post.author) && !post.following) {
             follow.setVisibility(VISIBLE);
-            follow.setText(getString(R.string.FeedFollow));
+            follow.setText(FeedUi.s("Moments.Follow", R.string.FeedFollow));
         } else if (showFollow && post.following && !FeedUi.isSelf(account, post.author)) {
             follow.setVisibility(VISIBLE);
-            follow.setText(post.mutual ? getString(R.string.FeedMutual) : getString(R.string.FeedFollowingState));
+            follow.setText(post.mutual ? FeedUi.s("Moments.Audience.Mutual", R.string.FeedMutual) : FeedUi.s("Moments.FollowingState", R.string.FeedFollowingState));
         } else {
             follow.setVisibility(GONE);
         }
@@ -423,7 +423,7 @@ public class FeedPostCell extends LinearLayout {
         if (post.quote != null || (post.quoteId != null && post.quoteId.length() > 0)) {
             quoteCard.setVisibility(VISIBLE);
             if (post.quote == null || post.quote.unavailable) {
-                quoteCard.setText(getString(R.string.FeedUnavailable));
+                quoteCard.setText(FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable));
             } else {
                 quoteCard.setText(FeedUi.displayName(post.quote.author, account) + "\n" + post.quote.text);
             }
@@ -443,17 +443,17 @@ public class FeedPostCell extends LinearLayout {
         like.setImageResource(post.liked ? R.drawable.media_like_active : R.drawable.media_like);
         like.setColorFilter(post.liked ? 0xFFFF2E38 : Theme.getColor(Theme.key_dialogIcon));
         likeCount.setText(post.likes > 0 ? String.valueOf(post.likes) : "");
-        like.setContentDescription(getString(R.string.FeedLike) + " " + post.likes);
+        like.setContentDescription(FeedUi.s("Moments.Like", R.string.FeedLike) + " " + post.likes);
         commentCount.setText(post.comments > 0 ? String.valueOf(post.comments) : "");
-        comment.setContentDescription(getString(R.string.FeedComment) + " " + post.comments);
+        comment.setContentDescription(FeedUi.s("Moments.Comment", R.string.FeedComment) + " " + post.comments);
         save.setColorFilter(post.saved ? Theme.getColor(Theme.key_featuredStickers_addButton) : Theme.getColor(Theme.key_dialogIcon));
-        save.setContentDescription(post.saved ? getString(R.string.FeedSaved) : getString(R.string.FeedSave));
+        save.setContentDescription(post.saved ? FeedUi.s("Moments.Saved", R.string.FeedSaved) : FeedUi.s("Moments.Save", R.string.FeedSave));
         boolean canRepost = post.isPublic() || !FeedConfig.ONLY_PUBLIC_CAN_REPOST;
         repost.setAlpha(canRepost ? 1f : 0.35f);
     }
 
     private String LocaleSafe(String name) {
-        return getString(R.string.FeedRepostedBy).replace("%s", name);
+        return FeedUi.s("Moments.RepostHeader", R.string.FeedRepostedBy).replace("%s", name);
     }
 
     private void applyTheme() {
@@ -481,7 +481,7 @@ public class FeedPostCell extends LinearLayout {
         files.removeAllViews();
         int shown = 0;
         if ("article".equals(post.kind) || "story".equals(post.kind)) {
-            String label = "article".equals(post.kind) ? getString(R.string.FeedArticle) : getString(R.string.FeedStory);
+            String label = "article".equals(post.kind) ? FeedUi.s("Moments.Article", R.string.FeedArticle) : FeedUi.s("Moments.Story", R.string.FeedStory);
             files.addView(infoCard(label, ""), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             shown++;
         }
@@ -501,15 +501,15 @@ public class FeedPostCell extends LinearLayout {
 
     private String fileLabel(FeedModels.Media media) {
         if (media == null) {
-            return getString(R.string.FeedFile);
+            return FeedUi.s("Moments.File", R.string.FeedFile);
         }
         if ("pdf".equals(media.type) || (media.mime != null && media.mime.contains("pdf"))) {
-            return getString(R.string.FeedPdf);
+            return FeedUi.s("Moments.Pdf", R.string.FeedPdf);
         }
         if (media.isFile() && ("audio".equals(media.type) || "voice".equals(media.type) || (media.mime != null && media.mime.startsWith("audio")))) {
-            return getString(R.string.FeedAudio);
+            return FeedUi.s("Moments.Voice", R.string.FeedAudio);
         }
-        return getString(R.string.FeedFile);
+        return FeedUi.s("Moments.File", R.string.FeedFile);
     }
 
     private TextView infoCard(String title, String subtitle) {
@@ -639,7 +639,7 @@ public class FeedPostCell extends LinearLayout {
                     image.setTag(post.id + ":" + viewerIndex);
                     thumbs.put(post.id + ":" + viewerIndex, new WeakReference<>(image));
                 }
-                image.setContentDescription((media.isVideo() ? getString(R.string.FeedVideo) + ", " + (media.durationMs / 1000) + "s" : getString(R.string.FeedPhoto)) + " " + (position + 1) + "/" + count);
+                image.setContentDescription((media.isVideo() ? FeedUi.s("Moments.Tool.Video", R.string.FeedVideo) + ", " + (media.durationMs / 1000) + "s" : FeedUi.s("Moments.Photo", R.string.FeedPhoto)) + " " + (position + 1) + "/" + count);
                 if (media.isVideo() && play.startsWith("http")) {
                     TextureView texture = new TextureView(getContext());
                     frame.addView(texture, 0, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
@@ -647,7 +647,7 @@ public class FeedPostCell extends LinearLayout {
                 }
                 if (media.isVideo()) {
                     TextView badge = new TextView(getContext());
-                    badge.setText(getString(R.string.FeedVideo));
+                    badge.setText(FeedUi.s("Moments.Tool.Video", R.string.FeedVideo));
                     badge.setTextColor(0xffffffff);
                     badge.setTextSize(12);
                     badge.setPadding(dp(6), dp(2), dp(6), dp(2));

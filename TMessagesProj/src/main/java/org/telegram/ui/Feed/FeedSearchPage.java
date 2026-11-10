@@ -37,12 +37,12 @@ public class FeedSearchPage extends LinearLayout {
         this.parent = parent;
         setOrientation(VERTICAL);
         TextView toggle = new TextView(context);
-        toggle.setText(getString(R.string.FeedSortRelevance));
+        toggle.setText(FeedUi.s("Moments.Sort.Relevance", R.string.FeedSortRelevance));
         toggle.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         toggle.setPadding(dp(16), dp(8), dp(16), dp(8));
         toggle.setOnClickListener(v -> {
             sort = "relevance".equals(sort) ? "latest" : "relevance";
-            toggle.setText("relevance".equals(sort) ? getString(R.string.FeedSortRelevance) : getString(R.string.FeedSortNew));
+            toggle.setText("relevance".equals(sort) ? FeedUi.s("Moments.Sort.Relevance", R.string.FeedSortRelevance) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew));
             search(query);
         });
         addView(toggle);
@@ -197,7 +197,7 @@ public class FeedSearchPage extends LinearLayout {
         static Row post(FeedModels.Post post) {
             Row row = new Row();
             row.post = post;
-            row.label = post.unavailable ? org.telegram.messenger.LocaleController.getString(R.string.FeedUnavailable) : FeedUi.displayName(post.author, UserSafe()) + "\n" + post.text;
+            row.label = post.unavailable ? FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable) : FeedUi.displayName(post.author, UserSafe()) + "\n" + post.text;
             return row;
         }
         static Row topic(String name, int count) {
