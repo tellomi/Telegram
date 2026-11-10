@@ -513,11 +513,13 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # 14.0.11. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # 14.0.12. afat versionCode = APP_VERSION_CODE * 10 + 9.
           # publish=release (and a push to release/android) reads
           # android/latest.json and uses the next decade above that versionCode.
-          # Live 14.0.10 afat is 1804709, so configured APP_VERSION_CODE 180471
-          # produces afat 1804719 until the feed moves past it. Digit 0 is unused.
+          # Live 14.0.11 afat is 1804719, so configured APP_VERSION_CODE 180472
+          # produces afat 1804729 until the feed moves past it. Digit 0 is unused.
+          # This step does not pass -PTELLOMI_USE_CLOUD_STRINGS. The value stays
+          # the one in gradle.properties (true). BuildConfig is checked below.
           PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
           TELLOMI_VERSION_CODE_FLOOR: "1804679"
         run: |
@@ -541,14 +543,14 @@ jobs:
             esac
           done < <(python3 Tools/tellomi-android-version.py \
             --gradle gradle.properties \
-            --expect-version-name 14.0.11 \
+            --expect-version-name 14.0.12 \
             --floor "${TELLOMI_VERSION_CODE_FLOOR:?}" \
             "${release_args[@]+"${release_args[@]}"}")
           case "$app_version_code" in
             ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          if [ "$version_name" != "14.0.11" ]; then
-            echo "expected APP_VERSION_NAME 14.0.11, found ${version_name:-missing}" >&2
+          if [ "$version_name" != "14.0.12" ]; then
+            echo "expected APP_VERSION_NAME 14.0.12, found ${version_name:-missing}" >&2
             exit 1
           fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
@@ -610,6 +612,15 @@ jobs:
             esac
             if grep -q '10.0.2.2' "$config"; then
               echo "emulator DC 10.0.2.2 leaked into $config" >&2
+              exit 1
+            fi
+            cloud_line=$(grep -F 'TELLOMI_USE_CLOUD_STRINGS' "$config" || true)
+            case "$cloud_line" in
+              *'true'*) ;;
+              *) echo "expected TELLOMI_USE_CLOUD_STRINGS=true in $config: ${cloud_line:-missing}" >&2; exit 1 ;;
+            esac
+            if grep -q 'TELLOMI_USE_CLOUD_STRINGS = false' "$config"; then
+              echo "release build turned cloud strings off in $config" >&2
               exit 1
             fi
             echo "BuildConfig DC: $config" | tee -a "$GITHUB_STEP_SUMMARY"

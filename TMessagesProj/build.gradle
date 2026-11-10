@@ -108,6 +108,7 @@ dependencies {
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
 }
 
 def tellomiJavaString = { String value ->
@@ -236,7 +237,7 @@ android {
         buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
         buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "false")
-        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
+        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "true")
         buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
 
         def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
