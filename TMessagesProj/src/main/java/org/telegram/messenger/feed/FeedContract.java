@@ -245,8 +245,49 @@ public final class FeedContract {
     }
 
     /** The 动态 tab is shown only when both gates pass. */
+    /** The Moments tab is part of the client. App-config and engine status do not hide it. */
     public static boolean showMomentsTab(boolean configKeyPresent, boolean statusVisible) {
-        return configKeyPresent && statusVisible;
+        return true;
+    }
+
+    /**
+     * ImageLoader reads a "W_H" filter as dp and multiplies by density.
+     * "800_800" on a 3x phone asks for a 2400 px bitmap and then decodes a
+     * 12 MP photo at sample size 1. The filter is the cell size in dp.
+     */
+    public static String imageFilter(int cellWidthPx, int cellHeightPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int width = Math.max(1, Math.min(360, Math.round(cellWidthPx / scale)));
+        int height = Math.max(1, Math.min(360, Math.round(cellHeightPx / scale)));
+        return width + "_" + height;
+    }
+
+    /** Same sample-size rule as ImageLoader.CacheOutTask for a JPEG. */
+    public static int imageSampleSize(int photoW, int photoH, String filter, float density) {
+        String[] args = filter == null ? new String[0] : filter.split("_");
+        if (args.length < 2 || photoW <= 0 || photoH <= 0) {
+            return 1;
+        }
+        float scale = density <= 0f ? 1f : density;
+        float wFilter = Float.parseFloat(args[0]) * scale;
+        float hFilter = Float.parseFloat(args[1]) * scale;
+        float factor;
+        if (wFilter >= hFilter && photoW > photoH) {
+            factor = Math.max(photoW / wFilter, photoH / hFilter);
+        } else {
+            factor = Math.min(photoW / wFilter, photoH / hFilter);
+        }
+        if (factor < 1.2f) {
+            factor = 1f;
+        }
+        if (factor > 1f && (photoW > wFilter || photoH > hFilter)) {
+            int sample = 1;
+            while (sample * 2 < factor) {
+                sample *= 2;
+            }
+            return sample;
+        }
+        return Math.max(1, (int) factor);
     }
 
     public static boolean statusVisible(String json) {

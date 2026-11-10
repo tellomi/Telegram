@@ -77,7 +77,6 @@ public class FeedController {
     private boolean uploadsResumed;
     private boolean remoteConfigReady;
     private boolean remoteConfigLoading;
-    private boolean statusVisible;
     private final ArrayList<String> tabs = new ArrayList<>();
     private final ArrayList<Runnable> configWaiters = new ArrayList<>();
 
@@ -134,29 +133,9 @@ public class FeedController {
         return new ArrayList<>(tabs);
     }
 
-    /** 动态 is shown only when the app-config key is present and status.visible is true. */
+    /** The Moments tab is always in the bar. Engine status does not hide it. */
     public boolean momentsTabVisible() {
-        return FeedContract.showMomentsTab(FeedConfig.configKeyPresent(account), statusVisible);
-    }
-
-    public void refreshGate() {
-        if (!FeedConfig.configKeyPresent(account) || FeedConfig.engineBase(account).length() == 0) {
-            if (statusVisible) {
-                statusVisible = false;
-                notifyListeners();
-            }
-            return;
-        }
-        api.getJson(FeedContract.STATUS_PATH, (json, error) -> {
-            boolean visible = error == null && json != null && FeedContract.statusVisible(json.toString());
-            if (!FeedConfig.configKeyPresent(account)) {
-                visible = false;
-            }
-            if (visible != statusVisible) {
-                statusVisible = visible;
-                notifyListeners();
-            }
-        });
+        return true;
     }
 
     public int unreadCount() {
@@ -171,12 +150,8 @@ public class FeedController {
 
     public void load(final String stream, final boolean refresh, final Utilities.Callback2<Boolean, String> done) {
         if (!FeedConfig.enabled(account)) {
-            if (refresh) {
-                posts(stream).clear();
-                notifyListeners();
-            }
             if (done != null) {
-                done.run(true, null);
+                done.run(false, "unreachable");
             }
             return;
         }

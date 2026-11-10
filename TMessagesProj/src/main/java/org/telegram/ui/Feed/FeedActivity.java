@@ -95,7 +95,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         controller().addListener(this);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
         controller().resumeUploads();
-        controller().refreshGate();
         if (controller().debugFixtures() && streams.length > 0 && controller().posts(streams[0]).isEmpty()) {
             controller().setDebugFixtures(true);
         }
@@ -367,7 +366,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             ensure(0, true);
             paintTabs();
         }
-        controller().refreshGate();
     }
 
     @Override
@@ -380,7 +378,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.appConfigUpdated && account == currentAccount) {
-            controller().refreshGate();
             if (lists == null || index < 0 || index >= lists.length || lists[index] == null) {
                 return;
             }
