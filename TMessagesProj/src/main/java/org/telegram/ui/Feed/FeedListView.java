@@ -110,14 +110,14 @@ public class FeedListView extends FrameLayout {
         if (host.loading()) {
             showStatus(getString(R.string.Loading), null);
         } else if (host.failed()) {
-            showStatus(getString(R.string.FeedRetry), v -> host.onRefresh());
+            showStatus(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry), v -> host.onRefresh());
         } else {
             footer.setVisibility(GONE);
             if (emptyView != null) {
                 removeView(emptyView);
             }
             String action = host.emptyAction();
-            if (action != null && action.equals(getString(R.string.FeedPublish))) {
+            if (action != null && action.equals(FeedUi.s("Moments.Publish", R.string.FeedPublish))) {
                 action = null;
             }
             emptyView = FeedUi.empty(getContext(), host.emptyText(), action, host.emptyClick());
@@ -163,7 +163,7 @@ public class FeedListView extends FrameLayout {
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == 1) {
                 TextView retry = new TextView(parent.getContext());
-                retry.setText(getString(R.string.FeedRetry));
+                retry.setText(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry));
                 retry.setGravity(android.view.Gravity.CENTER);
                 retry.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 retry.setPadding(dp(16), dp(16), dp(16), dp(16));

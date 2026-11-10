@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import org.telegram.ui.Feed.FeedUi;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.ilerp;
@@ -12192,8 +12193,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (myProfile) {
                     setUsernameItem = otherItem.addSubItem(set_username, R.drawable.menu_username_change, getString(R.string.ProfileUsernameEdit));
                     linkItem = otherItem.addSubItem(copy_link_profile, R.drawable.msg_link2, getString(R.string.ProfileCopyLink));
-                    otherItem.addSubItem(feed_saved, R.drawable.msg_saved, getString(R.string.FeedSavedTitle));
-                    otherItem.addSubItem(feed_liked, R.drawable.media_like, getString(R.string.FeedLikedTitle));
+                    otherItem.addSubItem(feed_saved, R.drawable.msg_saved, FeedUi.s("Moments.Profile.Saved", R.string.FeedSavedTitle));
+                    otherItem.addSubItem(feed_liked, R.drawable.media_like, FeedUi.s("Moments.Profile.Liked", R.string.FeedLikedTitle));
                     updateItemsUsername();
                 }
                 selfUser = true;
@@ -12255,7 +12256,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!isBot && !UserObject.isDeleted(user)) {
-                    otherItem.addSubItem(feed_mute, R.drawable.msg_archive_hide, getString(R.string.FeedMute));
+                    otherItem.addSubItem(feed_mute, R.drawable.msg_archive_hide, FeedUi.s("Moments.Mute", R.string.FeedMute));
                     otherItem.addSubItem(feed_report, R.drawable.msg_report, getString(R.string.ReportChat));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {

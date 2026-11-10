@@ -105,8 +105,16 @@ public class FeedContractTest {
         assertTrue(voice.contains("root-1"));
         assertFalse(voice.contains("attachment"));
         String photo = FeedContract.commentBody("pic", null, "image", "img-key");
-        assertTrue(photo.contains("attachment"));
-        assertFalse(photo.contains("media_keys"));
+        assertTrue(photo.contains("media_keys"));
+        assertTrue(photo.contains("img-key"));
+        assertFalse(photo.contains("attachment"));
+        String sticker = FeedContract.commentBody("", "parent", "sticker", "stk");
+        assertTrue(sticker.contains("media_keys"));
+        assertTrue(sticker.contains("\"sticker\":true"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", ""));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1&cursor=c2", FeedContract.commentsPath("p1", "c2"));
+        assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
+        assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
         assertFalse(longText.contains(repeat('b', 501)));
         assertTrue(longText.contains("\"media_keys\""));
@@ -199,6 +207,39 @@ public class FeedContractTest {
     }
 
     @Test
+    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+        String english = read("../../../res/values/strings.xml");
+        String chinese = read("../../../res/values-zh-rCN/strings.xml");
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Feed[A-Za-z0-9]+)\"")
+                .matcher(english);
+        int count = 0;
+        while (names.find()) {
+            String name = names.group(1);
+            assertTrue(name, chinese.contains("name=\"" + name + "\""));
+            count++;
+        }
+        assertTrue(count >= 40);
+        String ui = read("ui/Feed/FeedUi.java")
+                + read("ui/Feed/FeedActivity.java")
+                + read("ui/Feed/FeedPostCell.java");
+        assertTrue(ui.contains("Moments.Title"));
+        assertTrue(ui.contains("Moments.Segment.Recommend"));
+        assertTrue(ui.contains("Moments.Like"));
+        assertTrue(ui.contains("Moments.Empty.Recommend"));
+        assertTrue(ui.contains("LocaleController.getString(key, res)"));
+        String design = readDesign();
+        assertTrue(design.contains("40 dp"));
+        assertTrue(design.contains("5 lines"));
+        assertTrue(design.contains("78%"));
+        assertTrue(design.contains("msg_send"));
+        assertTrue(design.contains("#FF2E38"));
+        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("msg_discussion"));
+        assertTrue(design.contains("filled_fab_compose_32"));
+        assertTrue(design.contains("media_like_active"));
+    }
+
+    @Test
     public void clientSourcesDoNotCallRemovedEndpoints() throws Exception {
         String feed = read("messenger/feed/FeedController.java")
                 + read("messenger/feed/FeedContract.java")
@@ -224,6 +265,19 @@ public class FeedContractTest {
         char[] chars = new char[n];
         Arrays.fill(chars, c);
         return new String(chars);
+    }
+
+    private static String readDesign() throws Exception {
+        java.nio.file.Path[] candidates = new java.nio.file.Path[]{
+                java.nio.file.Paths.get("docs/FEED-DESIGN.md"),
+                java.nio.file.Paths.get("../docs/FEED-DESIGN.md")
+        };
+        for (int i = 0; i < candidates.length; i++) {
+            if (java.nio.file.Files.isRegularFile(candidates[i])) {
+                return new String(java.nio.file.Files.readAllBytes(candidates[i]), "UTF-8");
+            }
+        }
+        throw new IllegalStateException("missing docs/FEED-DESIGN.md");
     }
 
     private static String read(String relative) throws Exception {

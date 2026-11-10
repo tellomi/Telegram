@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import org.telegram.ui.Feed.FeedUi;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -1264,7 +1265,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == newChatsSectionRow) {
                         privacyCell.setText(getString("ArchiveAndMuteInfo", R.string.ArchiveAndMuteInfo));
                     } else if (position == feedDetailRow) {
-                        privacyCell.setText(getString(R.string.FeedPushHeader));
+                        privacyCell.setText(FeedUi.s("Moments.Push", R.string.FeedPushHeader));
                     }
                     break;
                 case 2:
@@ -1284,7 +1285,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == newChatsHeaderRow) {
                         headerCell.setText(getString("NewChatsFromNonContacts", R.string.NewChatsFromNonContacts));
                     } else if (position == feedSectionRow) {
-                        headerCell.setText(getString(R.string.FeedTitle));
+                        headerCell.setText(FeedUi.s("Moments.Title", R.string.FeedTitle));
                     }
                     break;
                 case 3:
@@ -1395,7 +1396,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         }
                         textCell2.setTextAndValueAndIcon(getString("BlockedUsers", R.string.BlockedUsers), value, true, R.drawable.msg2_block2, true);
                     } else if (position == feedRow) {
-                        textCell2.setTextAndValueAndIcon(getString(R.string.FeedTitle), "", true, R.drawable.feed_tab_posts, true);
+                        textCell2.setTextAndValueAndIcon(FeedUi.s("Moments.Title", R.string.FeedTitle), "", true, R.drawable.msg_list, true);
                     }
                     textCell2.setDrawLoading(showLoading, loadingLen, animated);
                     break;

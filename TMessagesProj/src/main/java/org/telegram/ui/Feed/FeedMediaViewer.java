@@ -9,6 +9,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -171,7 +172,7 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         }
         if (id == NotificationCenter.httpFileDidFailedLoad) {
             if (fragment.getParentActivity() != null) {
-                BulletinFactory.of(fragment).createErrorBulletin(org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.FeedRetry)).show();
+                BulletinFactory.of(fragment).createErrorBulletin(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry)).show();
             }
             return;
         }
