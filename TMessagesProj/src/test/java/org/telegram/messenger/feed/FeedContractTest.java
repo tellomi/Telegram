@@ -98,6 +98,25 @@ public class FeedContractTest {
     }
 
     @Test
+    public void feedImageFilterDoesNotDecodeAPhotoAtFullSize() throws Exception {
+        int full = FeedContract.imageSampleSize(4032, 3024, "800_800", 3f);
+        assertEquals(1, full);
+        String filter = FeedContract.imageFilter(864, 864, 3f);
+        int sample = FeedContract.imageSampleSize(4032, 3024, filter, 3f);
+        assertTrue(sample >= 4);
+        assertFalse(filter.startsWith("800_"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("FeedContract.imageFilter"));
+        assertFalse(cell.contains("800_800"));
+        String controller = read("messenger/feed/FeedController.java");
+        assertTrue(controller.contains("status_visible"));
+        int gate = controller.indexOf("void refreshGate");
+        int next = controller.indexOf("public int unreadCount");
+        String method = controller.substring(gate, next);
+        assertFalse(method.contains("error == null && json"));
+    }
+
+    @Test
     public void commentVoiceUsesMediaKeys() {
         String voice = FeedContract.commentBody("hello", "root-1", "audio", "upload-key");
         assertTrue(voice.contains("\"media_keys\""));
@@ -233,7 +252,7 @@ public class FeedContractTest {
         assertTrue(design.contains("78%"));
         assertTrue(design.contains("msg_send"));
         assertTrue(design.contains("#FF2E38"));
-        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("tab_article"));
         assertTrue(design.contains("msg_discussion"));
         assertTrue(design.contains("filled_fab_compose_32"));
         assertTrue(design.contains("media_like_active"));

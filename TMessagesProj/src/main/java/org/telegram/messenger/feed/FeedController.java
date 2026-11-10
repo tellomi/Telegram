@@ -98,6 +98,7 @@ public class FeedController {
         } catch (Exception ignore) {
             unread = 0;
         }
+        statusVisible = "1".equals(storage.getPref("status_visible", ""));
     }
 
     public void addListener(Listener listener) {
@@ -141,19 +142,19 @@ public class FeedController {
 
     public void refreshGate() {
         if (!FeedConfig.configKeyPresent(account) || FeedConfig.engineBase(account).length() == 0) {
-            if (statusVisible) {
-                statusVisible = false;
-                notifyListeners();
-            }
             return;
         }
         api.getJson(FeedContract.STATUS_PATH, (json, error) -> {
-            boolean visible = error == null && json != null && FeedContract.statusVisible(json.toString());
+            if (error != null || json == null) {
+                return;
+            }
+            boolean visible = FeedContract.statusVisible(json.toString());
             if (!FeedConfig.configKeyPresent(account)) {
                 visible = false;
             }
             if (visible != statusVisible) {
                 statusVisible = visible;
+                storage.putPref("status_visible", visible ? "1" : "0");
                 notifyListeners();
             }
         });

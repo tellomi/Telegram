@@ -29,7 +29,7 @@ Media sits in the text column, 8 dp below the text. Corners are 12 dp.
 
 | Count | Layout |
 | --- | --- |
-| 1 photo | full column width, height from the aspect ratio, clamped to 120–360 dp |
+| 1 photo | full column width, height from the aspect ratio, clamped to 120–360 dp. The bitmap filter is that cell in dp, capped at 360, not `800_800` |
 | 1 video | full column width, height `max(180 dp, width * 9 / 16)` |
 | 2 or more | horizontal carousel. Each cell is 78% of the column and square, 8 dp gap, so the next image peeks. Swipe, do not use a grid |
 
@@ -52,7 +52,7 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 
 | Use | Drawable |
 | --- | --- |
-| Moments tab | `msg_list` |
+| Moments tab | `R.raw.tab_article` (`GlassTabView.TabAnimation.FEED`), same 24 dp Lottie, tint, and select animation as Contacts, Chats, and Settings |
 | Notifications | `media_like` |
 | Compose | `filled_fab_compose_32` on `FragmentFloatingButton` |
 | Comment sheet expand | `msg_zoomin`, and `msg_zoomout` when full screen |
@@ -76,6 +76,8 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 | Compose margins | 20 dp from the trailing edge, 16 dp above the main tab bar |
 
 The round blue compose button is the reference.
+
+The Moments tab is in the bar on the first frame when the last saved status was on. A later status response is the only thing that removes it.
 
 ## Comment sheet (Douyin)
 

@@ -667,7 +667,8 @@ public class FeedPostCell extends LinearLayout {
                 String thumb = media.thumbUrl(account);
                 String play = media.displayUrl(account);
                 if (thumb.length() > 0) {
-                    image.setImage(thumb, count == 1 ? "800_800" : "320_320", new ColorDrawable(Theme.getColor(Theme.key_graySection)));
+                    int[] cell = cellPixels(count, position);
+                    image.setImage(thumb, FeedContract.imageFilter(cell[0], cell[1], AndroidUtilities.density), new ColorDrawable(Theme.getColor(Theme.key_graySection)));
                 } else {
                     image.setImage(null, null, new ColorDrawable(Theme.getColor(Theme.key_graySection)));
                 }
@@ -710,6 +711,24 @@ public class FeedPostCell extends LinearLayout {
                 addView(frame);
             }
             requestLayout();
+        }
+
+        private int[] cellPixels(int count, int position) {
+            int column = Math.max(dp(200), AndroidUtilities.displaySize.x - dp(72));
+            if (count <= 1) {
+                FeedModels.Media media = items.isEmpty() ? null : items.get(Math.min(position, items.size() - 1));
+                int height;
+                if (media != null && media.isVideo()) {
+                    height = Math.max(dp(180), column * 9 / 16);
+                } else if (media != null && media.w > 0 && media.h > 0) {
+                    height = Math.min(dp(360), Math.max(dp(120), column * media.h / Math.max(1, media.w)));
+                } else {
+                    height = dp(220);
+                }
+                return new int[]{column, height};
+            }
+            int width = (int) (column * 0.78f);
+            return new int[]{width, width};
         }
 
         @Override
