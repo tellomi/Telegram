@@ -820,7 +820,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
                 if (image.getImageReceiver() != null) {
                     image.getImageReceiver().setPreloadingReceivers(preloadReceivers);
                 }
-                String poster = media.posterUrl(account);
+                String poster = media.listUrl(account, count);
                 String play = media.displayUrl(account);
                 if (image.getImageReceiver() != null) {
                     image.getImageReceiver().cancelLoadImage();

@@ -88,6 +88,25 @@ public class FeedContractTest {
         assertTrue(FeedContract.cardUnavailable(false, "unavailable"));
         assertTrue(FeedContract.cardUnavailable(true, "published"));
         assertFalse(FeedContract.cardUnavailable(false, "published"));
+        assertEquals(1080, FeedContract.renditionTargetPx(1));
+        assertEquals(360, FeedContract.renditionTargetPx(2));
+        ArrayList<FeedContract.Tier> tiers = new ArrayList<>();
+        tiers.add(new FeedContract.Tier("big", "", 1080, 720));
+        tiers.add(new FeedContract.Tier("small", "https://cdn.example/s.jpg", 360, 240));
+        assertEquals(1, FeedContract.chooseRendition(tiers, 360));
+        assertEquals(0, FeedContract.chooseRendition(tiers, 1080));
+        assertEquals(-1, FeedContract.chooseRendition(tiers, 2000));
+        assertEquals("https://cdn.example/s.jpg", FeedContract.resolveMediaUrl("small", "https://cdn.example/s.jpg", "https://media.example"));
+        assertEquals("https://media.example/big.jpg", FeedContract.resolveMediaUrl("big.jpg", "", "https://media.example/"));
+        ArrayList<FeedContract.Tier> parsed = FeedContract.parseRenditions("{\"renditions\":[{\"key\":\"a\",\"w\":1080,\"h\":1080},{\"key\":\"b\",\"url\":\"https://cdn.example/b.jpg\",\"w\":360,\"h\":360}]}");
+        assertEquals(2, parsed.size());
+        assertEquals("a", parsed.get(0).key);
+        assertEquals(360, parsed.get(1).longEdge());
+        assertEquals("https://cdn.example/b.jpg", parsed.get(1).url);
+        FeedContract.Tier poster = FeedContract.parsePoster("{\"poster\":{\"key\":\"p\",\"url\":\"https://cdn.example/p.jpg\",\"w\":640,\"h\":360}}");
+        assertEquals("p", poster.key);
+        assertEquals("https://cdn.example/p.jpg", poster.url);
+        assertNull(FeedContract.parsePoster("{\"cover_key\":\"legacy\"}"));
     }
 
     @Test
@@ -346,7 +365,7 @@ public class FeedContractTest {
         assertTrue(playback.contains("pauseMessage"));
         assertTrue(cell.contains("voiceRow"));
         assertTrue(cell.contains("bindLike"));
-        assertTrue(cell.contains("posterUrl"));
+        assertTrue(cell.contains("listUrl"));
         assertTrue(activity.contains("FeedDetailActivity"));
         assertTrue(read("ui/Feed/FeedListView.java").contains("PAYLOAD_LIKE"));
         assertTrue(read("ui/Feed/FeedListView.java").contains("setHasStableIds"));

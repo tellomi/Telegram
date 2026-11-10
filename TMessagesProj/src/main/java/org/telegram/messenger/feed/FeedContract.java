@@ -328,6 +328,121 @@ public final class FeedContract {
      * ImageLoader reads "W_H" as dp and multiplies by density. 800_800 on a
      * 3x phone asks for 2400 px and leaves a 12 MP photo at sample size 1.
      */
+    /** Single large image uses the ~1080 tier. Carousel cells use the ~360 tier. */
+    public static int renditionTargetPx(int visualCount) {
+        return visualCount <= 1 ? 1080 : 360;
+    }
+
+    /**
+     * One JPEG tier. Renditions are largest-first and never larger than the original.
+     * A direct http(s) url wins. Otherwise the path is media_base_url + key.
+     */
+    public static final class Tier {
+        public final String key;
+        public final String url;
+        public final int w;
+        public final int h;
+
+        public Tier(String key, String url, int w, int h) {
+            this.key = key == null ? "" : key;
+            this.url = url == null ? "" : url;
+            this.w = w;
+            this.h = h;
+        }
+
+        public int longEdge() {
+            return Math.max(w, h);
+        }
+    }
+
+    /** Index of the smallest tier whose long edge is at least targetPx, or -1 to use the original. */
+    public static int chooseRendition(List<Tier> tiers, int targetPx) {
+        int best = -1;
+        int bestEdge = Integer.MAX_VALUE;
+        if (tiers == null || targetPx <= 0) {
+            return -1;
+        }
+        for (int i = 0; i < tiers.size(); i++) {
+            Tier tier = tiers.get(i);
+            if (tier == null) {
+                continue;
+            }
+            int edge = tier.longEdge();
+            if (edge >= targetPx && edge < bestEdge) {
+                best = i;
+                bestEdge = edge;
+            }
+        }
+        return best;
+    }
+
+    public static String resolveMediaUrl(String key, String url, String base) {
+        if (url != null && (url.startsWith("https://") || url.startsWith("http://"))) {
+            return url;
+        }
+        String path = key != null && key.length() > 0 ? key : (url == null ? "" : url);
+        if (path.startsWith("https://") || path.startsWith("http://")) {
+            return path;
+        }
+        if (path.length() == 0 || base == null || base.length() == 0) {
+            return "";
+        }
+        while (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        String root = base;
+        while (root.endsWith("/")) {
+            root = root.substring(0, root.length() - 1);
+        }
+        return root + "/" + path;
+    }
+
+    public static ArrayList<Tier> parseRenditions(String mediaJson) {
+        ArrayList<Tier> tiers = new ArrayList<>();
+        JsonObject root = object(mediaJson);
+        if (root == null || !root.has("renditions") || !root.get("renditions").isJsonArray()) {
+            return tiers;
+        }
+        JsonArray renditions = root.getAsJsonArray("renditions");
+        for (int i = 0; i < renditions.size(); i++) {
+            if (renditions.get(i) == null || !renditions.get(i).isJsonObject()) {
+                continue;
+            }
+            tiers.add(tier(renditions.get(i).getAsJsonObject()));
+        }
+        return tiers;
+    }
+
+    /** poster, or a cover object. Null when neither is an object. */
+    public static Tier parsePoster(String mediaJson) {
+        JsonObject root = object(mediaJson);
+        if (root == null) {
+            return null;
+        }
+        if (root.has("poster") && root.get("poster").isJsonObject()) {
+            return tier(root.getAsJsonObject("poster"));
+        }
+        if (root.has("cover") && root.get("cover").isJsonObject()) {
+            return tier(root.getAsJsonObject("cover"));
+        }
+        return null;
+    }
+
+    private static Tier tier(JsonObject object) {
+        return new Tier(string(object, "key"), string(object, "url"), number(object, "w"), number(object, "h"));
+    }
+
+    private static int number(JsonObject object, String key) {
+        if (object == null || !object.has(key) || object.get(key).isJsonNull() || !object.get(key).isJsonPrimitive()) {
+            return 0;
+        }
+        try {
+            return object.get(key).getAsInt();
+        } catch (Exception ignore) {
+            return 0;
+        }
+    }
+
     public static String imageFilter(int cellWidthPx, int cellHeightPx, float density) {
         float scale = density <= 0f ? 1f : density;
         int width = Math.max(1, Math.min(360, Math.round(cellWidthPx / scale)));
