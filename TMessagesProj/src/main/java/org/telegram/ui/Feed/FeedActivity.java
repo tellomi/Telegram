@@ -65,13 +65,13 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public View createView(Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.Title", R.string.FeedTitle));
+        actionBar.setTitle(LocaleController.getString("Moments_Title", R.string.Moments_Title));
         actionBar.setBackButtonDrawable(null);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setCastShadows(false);
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem heart = menu.addItem(1, R.drawable.media_like);
-        heart.setContentDescription(FeedUi.s("Moments.Notifications", R.string.FeedNotifications));
+        heart.setContentDescription(LocaleController.getString("Moments_Notifications", R.string.Moments_Notifications));
         heart.setOnClickListener(v -> presentFragment(new FeedNotificationsActivity()));
 
         content = new FrameLayout(context);
@@ -86,7 +86,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
         FragmentFloatingButton fab = new FragmentFloatingButton(context, resourceProvider);
         fab.setImageResource(R.drawable.filled_fab_compose_32);
-        fab.setContentDescription(FeedUi.s("Moments.Publish", R.string.FeedPublish));
+        fab.setContentDescription(LocaleController.getString("Moments_Publish", R.string.Moments_Publish));
         fab.setOnClickListener(v -> presentFragment(new FeedComposerActivity(null)));
         content.addView(fab, LayoutHelper.createFrame(56, 56, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, 20, 0, 20, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS + 16));
 
@@ -266,12 +266,12 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     private String titleFor(String stream) {
         if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
-            return FeedUi.s("Moments.Segment.Following", R.string.FeedFollowing);
+            return LocaleController.getString("Moments_Segment_Following", R.string.Moments_Segment_Following);
         }
         if (FeedModels.STREAM_NEARBY.equals(stream)) {
-            return FeedUi.s("Moments.Segment.Nearby", R.string.FeedNearby);
+            return LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby);
         }
-        return FeedUi.s("Moments.Segment.Recommend", R.string.FeedRecommend);
+        return LocaleController.getString("Moments_Segment_Recommend", R.string.Moments_Segment_Recommend);
     }
 
     private void paintTabs() {
@@ -280,7 +280,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             tabs[i].setText(titleFor(streams[i]));
         }
         if (index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]) && controller().cityName().length() > 0) {
-            tabs[index].setText(FeedUi.s("Moments.Segment.Nearby", R.string.FeedNearby) + " · " + controller().cityName());
+            tabs[index].setText(LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby) + " · " + controller().cityName());
         }
     }
 
@@ -319,20 +319,20 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                 lists[tab].refresh();
             }
             if (FeedContract.KEPT_EXISTING.equals(error)) {
-                BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, FeedUi.s("Moments.RefreshKept", R.string.FeedRefreshKept)).show();
+                BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("Moments_RefreshKept", R.string.Moments_RefreshKept)).show();
             }
         });
     }
 
     private String emptyMessage(String stream) {
-        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return FeedUi.s("Moments.Empty.Following", R.string.FeedEmptyFollowing);
-        if (FeedModels.STREAM_NEARBY.equals(stream)) return FeedUi.s("Moments.Empty.Nearby", R.string.FeedEmptyNearby);
-        return FeedUi.s("Moments.Empty.Recommend", R.string.FeedEmptyRecommend);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return LocaleController.getString("Moments_Empty_Following", R.string.Moments_Empty_Following);
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_Empty_Nearby", R.string.Moments_Empty_Nearby);
+        return LocaleController.getString("Moments_Empty_Recommend", R.string.Moments_Empty_Recommend);
     }
 
     private String emptyActionFor(String stream) {
-        if (FeedModels.STREAM_NEARBY.equals(stream)) return FeedUi.s("Moments.SwitchCity", R.string.FeedChangeCity);
-        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return FeedUi.s("Moments.FindPeople", R.string.FeedFindPeople);
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_SwitchCity", R.string.Moments_SwitchCity);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return LocaleController.getString("Moments_FindPeople", R.string.Moments_FindPeople);
         return null;
     }
 
@@ -420,10 +420,10 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             FeedController.UploadTask task = tasks.get(0);
             uploadBanner.setVisibility(View.VISIBLE);
             if ("failed".equals(task.state)) {
-                uploadBanner.setText(FeedUi.s("Moments.FailedRetry", R.string.FeedUploadFailed));
+                uploadBanner.setText(LocaleController.getString("Moments_FailedRetry", R.string.Moments_FailedRetry));
                 uploadBanner.setOnClickListener(v -> controller().retry(task));
             } else {
-                uploadBanner.setText(FeedUi.s("Moments.Uploading", R.string.FeedUploading) + " " + task.progress + "%");
+                uploadBanner.setText(LocaleController.getString("Moments_Uploading", R.string.Moments_Uploading) + " " + task.progress + "%");
                 uploadBanner.setOnClickListener(v -> controller().cancel(task));
             }
         }
@@ -460,17 +460,17 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void onRepost(FeedModels.Post post) {
         if (!post.isPublic() && FeedConfig.ONLY_PUBLIC_CAN_REPOST) {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, FeedUi.s("Moments.RepostBlocked", R.string.FeedRepostBlocked)).show();
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("Moments_RepostBlocked", R.string.Moments_RepostBlocked)).show();
             return;
         }
         ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_saved, post.saved ? FeedUi.s("Moments.Saved", R.string.FeedSaved) : FeedUi.s("Moments.Save", R.string.FeedSave), () -> controller().toggleSave(post));
-        options.add(R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost), () -> controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/repost", new org.json.JSONObject(), (json, error) -> {
+        options.add(R.drawable.msg_saved, post.saved ? LocaleController.getString("Moments_Saved", R.string.Moments_Saved) : LocaleController.getString("Moments_Save", R.string.Moments_Save), () -> controller().toggleSave(post));
+        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Repost", R.string.Moments_Repost), () -> controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/repost", new org.json.JSONObject(), (json, error) -> {
             if (error != null) {
                 BulletinFactory.of(this).createErrorBulletin(error).show();
             }
         }));
-        options.add(R.drawable.msg_forward, FeedUi.s("Moments.Quote", R.string.FeedQuote), () -> presentFragment(FeedComposerActivity.quote(post.id)));
+        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Quote", R.string.Moments_Quote), () -> presentFragment(FeedComposerActivity.quote(post.id)));
         options.show();
     }
 
@@ -478,11 +478,11 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     public void onShare(FeedModels.Post post) {
         String link = FeedUi.linkFor(post.id);
         ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_share, FeedUi.s("Moments.ShareChat", R.string.FeedShareChat), () -> {
+        options.add(R.drawable.msg_share, LocaleController.getString("Moments_ShareChat", R.string.Moments_ShareChat), () -> {
             ShareAlert alert = ShareAlert.createShareAlert(getContext(), null, link, false, link, false);
             showDialog(alert);
         });
-        options.add(R.drawable.msg_link2, FeedUi.s("Moments.CopyLink", R.string.FeedCopyLink), () -> {
+        options.add(R.drawable.msg_link2, LocaleController.getString("Moments_CopyLink", R.string.Moments_CopyLink), () -> {
             AndroidUtilities.addToClipboard(link);
             BulletinFactory.of(this).createCopyLinkBulletin().show();
         });
@@ -499,7 +499,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         ItemOptions options = ItemOptions.makeOptions(this, anchor);
         if (FeedUi.isSelf(currentAccount, post.author)) {
             options.add(R.drawable.msg_edit, getString(R.string.Edit), () -> presentFragment(FeedComposerActivity.edit(post.id)));
-            options.add(R.drawable.msg_openin, FeedUi.s("Moments.WhoCanSee", R.string.FeedChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> {
+            options.add(R.drawable.msg_openin, LocaleController.getString("Moments_ChangeAudience", R.string.Moments_ChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> {
                 org.json.JSONObject body = new org.json.JSONObject();
                 try {
                     body.put("kind", FeedAudiencePicker.kind(privacy.type));
@@ -509,12 +509,12 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             }));
             options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> controller().deletePost(post.id));
         } else {
-            options.add(R.drawable.msg_block, FeedUi.s("Moments.NotInterested", R.string.FeedNotInterested), () -> controller().notInterested(post));
-            options.add(R.drawable.msg_archive_hide, FeedUi.s("Moments.HidePost", R.string.FeedHidePost), () -> controller().hidePost(post));
-            options.add(R.drawable.msg_block2, FeedUi.s("Moments.Mute", R.string.FeedMute), () -> controller().mute(post.author.profileId, true));
+            options.add(R.drawable.msg_block, LocaleController.getString("Moments_NotInterested", R.string.Moments_NotInterested), () -> controller().notInterested(post));
+            options.add(R.drawable.msg_archive_hide, LocaleController.getString("Moments_HidePost", R.string.Moments_HidePost), () -> controller().hidePost(post));
+            options.add(R.drawable.msg_block2, LocaleController.getString("Moments_Mute", R.string.Moments_Mute), () -> controller().mute(post.author.profileId, true));
             options.add(R.drawable.msg_report, getString(R.string.ReportChat), () -> FeedReportSheet.open(this, "post", post.id));
             if (post.isPublic()) {
-                options.add(R.drawable.msg_link2, FeedUi.s("Moments.CopyLink", R.string.FeedCopyLink), () -> AndroidUtilities.addToClipboard(FeedUi.linkFor(post.id)));
+                options.add(R.drawable.msg_link2, LocaleController.getString("Moments_CopyLink", R.string.Moments_CopyLink), () -> AndroidUtilities.addToClipboard(FeedUi.linkFor(post.id)));
             }
         }
         options.show();

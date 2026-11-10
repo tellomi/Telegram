@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -36,7 +37,7 @@ public class FeedNotificationsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.Notifications", R.string.FeedNotifications));
+        actionBar.setTitle(LocaleController.getString("Moments_Notifications", R.string.Moments_Notifications));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -48,12 +49,12 @@ public class FeedNotificationsActivity extends BaseFragment {
         root.setOrientation(LinearLayout.VERTICAL);
         LinearLayout filters = new LinearLayout(context);
         filters.setOrientation(LinearLayout.HORIZONTAL);
-        int[] labels = new int[]{R.string.FeedNotifInteractions, R.string.FeedNotifFollows, R.string.FeedNotifSystem};
-        String[] labelKeys = new String[]{"Moments.Notif.Interactions", "Moments.Notif.Follows", "Moments.Notif.System"};
+        int[] labels = new int[]{R.string.Moments_Notif_Interactions, R.string.Moments_Notif_Follows, R.string.Moments_Notif_System};
+        String[] labelKeys = new String[]{"Moments_Notif_Interactions", "Moments_Notif_Follows", "Moments_Notif_System"};
         for (int i = 0; i < labels.length; i++) {
             final int index = i;
             TextView chip = new TextView(context);
-            chip.setText(FeedUi.s(labelKeys[i], labels[i]));
+            chip.setText(LocaleController.getString(labelKeys[i], labels[i]));
             chip.setTextSize(13);
             chip.setPadding(dp(8), dp(8), dp(8), dp(8));
             chip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -113,7 +114,7 @@ public class FeedNotificationsActivity extends BaseFragment {
                 names.append(FeedUi.displayName(item.actors.get(i), currentAccount));
             }
             if (item.actors.size() > 2) {
-                names.append(" ").append(FeedUi.s("Moments.AndOthers", R.string.FeedAndOthers));
+                names.append(" ").append(LocaleController.getString("Moments_AndOthers", R.string.Moments_AndOthers));
             }
             String line = names + " · " + kindLabel(item.kind);
             if (item.text != null && item.text.length() > 0) {
@@ -130,12 +131,12 @@ public class FeedNotificationsActivity extends BaseFragment {
     }
 
     private String kindLabel(String kind) {
-        if ("like".equals(kind)) return FeedUi.s("Moments.Filter.Likes", R.string.FeedFilterLikes);
-        if ("comment".equals(kind) || "reply".equals(kind)) return FeedUi.s("Moments.Filter.Comments", R.string.FeedFilterComments);
-        if ("mention".equals(kind)) return FeedUi.s("Moments.Filter.Mentions", R.string.FeedFilterMentions);
-        if ("follow".equals(kind) || "mutual".equals(kind)) return FeedUi.s("Moments.Notif.Follows", R.string.FeedFilterFollows);
-        if ("repost".equals(kind) || "quote".equals(kind)) return FeedUi.s("Moments.Filter.Reposts", R.string.FeedFilterReposts);
-        if ("new_post".equals(kind)) return FeedUi.s("Moments.Profile.Posts", R.string.FeedFilterPosts);
+        if ("like".equals(kind)) return LocaleController.getString("Moments_Filter_Likes", R.string.Moments_Filter_Likes);
+        if ("comment".equals(kind) || "reply".equals(kind)) return LocaleController.getString("Moments_Filter_Comments", R.string.Moments_Filter_Comments);
+        if ("mention".equals(kind)) return LocaleController.getString("Moments_Filter_Mentions", R.string.Moments_Filter_Mentions);
+        if ("follow".equals(kind) || "mutual".equals(kind)) return LocaleController.getString("Moments_Notif_Follows", R.string.Moments_Notif_Follows);
+        if ("repost".equals(kind) || "quote".equals(kind)) return LocaleController.getString("Moments_Filter_Reposts", R.string.Moments_Filter_Reposts);
+        if ("new_post".equals(kind)) return LocaleController.getString("Moments_Filter_Posts", R.string.Moments_Filter_Posts);
         return kind == null ? "" : kind;
     }
 
@@ -146,7 +147,7 @@ public class FeedNotificationsActivity extends BaseFragment {
             FeedUi.openProfile(this, item.actor);
         } else if (getParentActivity() != null) {
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setMessage(FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable))
+                    .setMessage(LocaleController.getString("Moments_Unavailable", R.string.Moments_Unavailable))
                     .setPositiveButton(getString(R.string.OK), null)
                     .show();
         }

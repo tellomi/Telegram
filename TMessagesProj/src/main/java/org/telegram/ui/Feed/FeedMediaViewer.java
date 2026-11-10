@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.os.Build;
 import android.view.View;
 
@@ -172,7 +173,7 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         }
         if (id == NotificationCenter.httpFileDidFailedLoad) {
             if (fragment.getParentActivity() != null) {
-                BulletinFactory.of(fragment).createErrorBulletin(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry)).show();
+                BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("Moments_LoadFailed", R.string.Moments_LoadFailed)).show();
             }
             return;
         }

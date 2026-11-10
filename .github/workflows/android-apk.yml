@@ -57,6 +57,7 @@ jobs:
       - name: Check package conditions
         run: |
           python3 Tools/check-android-apk-workflow.py
+          python3 Tools/check-moments-langpack.py
           python3 Tools/tellomi-android-version.py --self-test
 
   native:
@@ -411,6 +412,7 @@ jobs:
       - name: Check workflow package conditions
         run: |
           python3 Tools/check-android-apk-workflow.py
+          python3 Tools/check-moments-langpack.py
           python3 Tools/tellomi-android-version.py --self-test
 
       - name: Download native libraries

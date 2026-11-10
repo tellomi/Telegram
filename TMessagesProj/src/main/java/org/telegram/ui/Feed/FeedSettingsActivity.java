@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -42,7 +43,7 @@ public class FeedSettingsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.Title", R.string.FeedTitle));
+        actionBar.setTitle(LocaleController.getString("Moments_Title", R.string.Moments_Title));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -167,20 +168,20 @@ public class FeedSettingsActivity extends BaseFragment {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
-                ((HeaderCell) holder.itemView).setText(FeedUi.s("Moments.Lists", R.string.FeedListsHeader));
+                ((HeaderCell) holder.itemView).setText(LocaleController.getString("Moments_Lists", R.string.Moments_Lists));
             } else if (position == 1) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s("Moments.Settings.FollowingList", R.string.FeedFollowingPublic), followingPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString("Moments_Settings_FollowingList", R.string.Moments_Settings_FollowingList), followingPublic, true);
             } else if (position == 2) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s("Moments.Settings.FollowersList", R.string.FeedFollowersPublic), followersPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString("Moments_Settings_FollowersList", R.string.Moments_Settings_FollowersList), followersPublic, true);
             } else if (position == 3) {
-                ((TextSettingsCell) holder.itemView).setTextAndValue(FeedUi.s("Moments.Mutes", R.string.FeedMutes), "", true);
+                ((TextSettingsCell) holder.itemView).setTextAndValue(LocaleController.getString("Moments_Mutes", R.string.Moments_Mutes), "", true);
             } else if (position == 4) {
-                ((HeaderCell) holder.itemView).setText(FeedUi.s("Moments.Push", R.string.FeedPushHeader));
+                ((HeaderCell) holder.itemView).setText(LocaleController.getString("Moments_Push", R.string.Moments_Push));
             } else {
                 int index = position - 5;
-                int[] titles = new int[]{R.string.FeedPushComment, R.string.FeedPushReply, R.string.FeedPushMention, R.string.FeedPushFollow, R.string.FeedPushLike, R.string.FeedPushRepost, R.string.FeedPushNewPost};
-                String[] titleKeys = new String[]{"Moments.Push.Comments", "Moments.Push.Replies", "Moments.Push.Mentions", "Moments.Push.Follows", "Moments.Push.Likes", "Moments.Push.Reposts", "Moments.Push.NewPosts"};
-                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s(titleKeys[index], titles[index]), values[index], index != titles.length - 1);
+                int[] titles = new int[]{R.string.Moments_Push_Comments, R.string.Moments_Push_Replies, R.string.Moments_Push_Mentions, R.string.Moments_Push_Follows, R.string.Moments_Push_Likes, R.string.Moments_Push_Reposts, R.string.Moments_Push_NewPosts};
+                String[] titleKeys = new String[]{"Moments_Push_Comments", "Moments_Push_Replies", "Moments_Push_Mentions", "Moments_Push_Follows", "Moments_Push_Likes", "Moments_Push_Reposts", "Moments_Push_NewPosts"};
+                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString(titleKeys[index], titles[index]), values[index], index != titles.length - 1);
             }
         }
 

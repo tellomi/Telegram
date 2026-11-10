@@ -1,0 +1,620 @@
+{
+  "resolution": "Release resources.arsc discards @string values. LocaleController.getString(name, R.string.name) reads localization_en.bin or localization_zh_cn.bin by the Java hash of the resource name. The server langpack should use these same Moments_* keys for en and zh-Hans.",
+  "keys": [
+    {
+      "key": "Moments_AllowNearby",
+      "en": "Show in Nearby",
+      "zh-Hans": "在同城展示"
+    },
+    {
+      "key": "Moments_AndOthers",
+      "en": "and others",
+      "zh-Hans": "和其他人"
+    },
+    {
+      "key": "Moments_Article",
+      "en": "Article",
+      "zh-Hans": "文章"
+    },
+    {
+      "key": "Moments_Audience_Choose",
+      "en": "Who can see this: choose",
+      "zh-Hans": "谁可以看：请选择"
+    },
+    {
+      "key": "Moments_Audience_Custom",
+      "en": "Custom",
+      "zh-Hans": "自定义"
+    },
+    {
+      "key": "Moments_Audience_Done",
+      "en": "Done",
+      "zh-Hans": "完成"
+    },
+    {
+      "key": "Moments_Audience_Followers",
+      "en": "Followers",
+      "zh-Hans": "粉丝"
+    },
+    {
+      "key": "Moments_Audience_Mutual",
+      "en": "Mutual followers",
+      "zh-Hans": "互关好友"
+    },
+    {
+      "key": "Moments_Audience_Subtitle",
+      "en": "Nothing is selected until you choose.",
+      "zh-Hans": "需要你自己选择，不会记住上次"
+    },
+    {
+      "key": "Moments_Author",
+      "en": "Author",
+      "zh-Hans": "作者"
+    },
+    {
+      "key": "Moments_ChangeAudience",
+      "en": "Who can view",
+      "zh-Hans": "修改谁可以看"
+    },
+    {
+      "key": "Moments_Comment",
+      "en": "Comment",
+      "zh-Hans": "评论"
+    },
+    {
+      "key": "Moments_CommentCount",
+      "en": "%d comments",
+      "zh-Hans": "%d条评论"
+    },
+    {
+      "key": "Moments_CommentHint",
+      "en": "Say something",
+      "zh-Hans": "发条评论，说说你的感受"
+    },
+    {
+      "key": "Moments_Comment_Closed",
+      "en": "Comments are turned off",
+      "zh-Hans": "评论已关闭"
+    },
+    {
+      "key": "Moments_Comment_Following",
+      "en": "Only people the author follows can comment.",
+      "zh-Hans": "只有作者关注的人可以评论"
+    },
+    {
+      "key": "Moments_Comment_Mentioned",
+      "en": "Only people mentioned in the post can comment.",
+      "zh-Hans": "只有被提及的人可以评论"
+    },
+    {
+      "key": "Moments_Comment_Mutual",
+      "en": "Only mutual followers can comment.",
+      "zh-Hans": "只有互关好友可以评论"
+    },
+    {
+      "key": "Moments_Comment_Placeholder",
+      "en": "Reply",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Composer_Hint",
+      "en": "What\\'s new?",
+      "zh-Hans": "写点什么"
+    },
+    {
+      "key": "Moments_Composer_Title",
+      "en": "New post",
+      "zh-Hans": "新动态"
+    },
+    {
+      "key": "Moments_CopyLink",
+      "en": "Copy link",
+      "zh-Hans": "复制链接"
+    },
+    {
+      "key": "Moments_DeleteThread",
+      "en": "Replies will be deleted too.",
+      "zh-Hans": "回复也会一起删除"
+    },
+    {
+      "key": "Moments_DetailTitle",
+      "en": "Post",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Draft_Continue",
+      "en": "Keep editing",
+      "zh-Hans": "继续编辑"
+    },
+    {
+      "key": "Moments_Draft_Discard",
+      "en": "Discard",
+      "zh-Hans": "放弃"
+    },
+    {
+      "key": "Moments_Draft_Message",
+      "en": "You have not posted this yet.",
+      "zh-Hans": "这条动态还没有发布"
+    },
+    {
+      "key": "Moments_Draft_Save",
+      "en": "Save draft",
+      "zh-Hans": "保存草稿"
+    },
+    {
+      "key": "Moments_Draft_Title",
+      "en": "Save this draft?",
+      "zh-Hans": "保存这份草稿？"
+    },
+    {
+      "key": "Moments_Edited",
+      "en": "Edited",
+      "zh-Hans": "已编辑"
+    },
+    {
+      "key": "Moments_EmptyFriends",
+      "en": "Follow each other to become friends.",
+      "zh-Hans": "互相关注就成为好友"
+    },
+    {
+      "key": "Moments_Empty_Following",
+      "en": "People you follow have not posted yet.",
+      "zh-Hans": "你关注的人还没有发动态"
+    },
+    {
+      "key": "Moments_Empty_Nearby",
+      "en": "No posts in this city yet.",
+      "zh-Hans": "这座城市还没有动态"
+    },
+    {
+      "key": "Moments_Empty_Recommend",
+      "en": "Nothing here yet. Post the first one.",
+      "zh-Hans": "还没有内容，来发第一条吧"
+    },
+    {
+      "key": "Moments_FailedRetry",
+      "en": "Could not post. Retry",
+      "zh-Hans": "发布失败，点击重试"
+    },
+    {
+      "key": "Moments_File",
+      "en": "File",
+      "zh-Hans": "文件"
+    },
+    {
+      "key": "Moments_FilterAll",
+      "en": "All",
+      "zh-Hans": "全部"
+    },
+    {
+      "key": "Moments_FilterRepostsOnly",
+      "en": "Reposts",
+      "zh-Hans": "转发"
+    },
+    {
+      "key": "Moments_Filter_Comments",
+      "en": "Comments",
+      "zh-Hans": "评论和回复"
+    },
+    {
+      "key": "Moments_Filter_Likes",
+      "en": "Likes",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_Filter_Mentions",
+      "en": "Mentions",
+      "zh-Hans": "提及"
+    },
+    {
+      "key": "Moments_Filter_Posts",
+      "en": "Posts",
+      "zh-Hans": "帖子"
+    },
+    {
+      "key": "Moments_Filter_Reposts",
+      "en": "Reposts",
+      "zh-Hans": "转发和引用"
+    },
+    {
+      "key": "Moments_FindPeople",
+      "en": "Find people",
+      "zh-Hans": "找人关注"
+    },
+    {
+      "key": "Moments_Follow",
+      "en": "Follow",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Followers",
+      "en": "Followers",
+      "zh-Hans": "粉丝"
+    },
+    {
+      "key": "Moments_FollowingState",
+      "en": "Following",
+      "zh-Hans": "已关注"
+    },
+    {
+      "key": "Moments_Friends",
+      "en": "Friends",
+      "zh-Hans": "好友"
+    },
+    {
+      "key": "Moments_FullText",
+      "en": "Full text",
+      "zh-Hans": "全文"
+    },
+    {
+      "key": "Moments_HidePost",
+      "en": "Hide this post",
+      "zh-Hans": "隐藏该帖子"
+    },
+    {
+      "key": "Moments_Like",
+      "en": "Like",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_ListPrivate",
+      "en": "This list is private",
+      "zh-Hans": "对方未公开"
+    },
+    {
+      "key": "Moments_Lists",
+      "en": "Lists",
+      "zh-Hans": "列表"
+    },
+    {
+      "key": "Moments_LoadFailed",
+      "en": "Could not load. Tap to retry.",
+      "zh-Hans": "加载失败，点击重试"
+    },
+    {
+      "key": "Moments_LocationDenied",
+      "en": "Choose a city instead.",
+      "zh-Hans": "改为手动选择城市"
+    },
+    {
+      "key": "Moments_MentionTitle",
+      "en": "They cannot see this",
+      "zh-Hans": "对方看不到"
+    },
+    {
+      "key": "Moments_MentionWarning",
+      "en": "These people cannot see this post and will not be notified.",
+      "zh-Hans": "以下用户看不到这条动态，也不会收到提醒。"
+    },
+    {
+      "key": "Moments_Mute",
+      "en": "Mute in feed",
+      "zh-Hans": "屏蔽动态"
+    },
+    {
+      "key": "Moments_Mutes",
+      "en": "Muted in feed",
+      "zh-Hans": "已屏蔽的人"
+    },
+    {
+      "key": "Moments_Mutual",
+      "en": "Mutual followers",
+      "zh-Hans": "互关好友"
+    },
+    {
+      "key": "Moments_Nearby_Permission",
+      "en": "Location is only used to pick your city. It is not saved.",
+      "zh-Hans": "位置只用来选择城市，不会保存"
+    },
+    {
+      "key": "Moments_NewPosts",
+      "en": "New posts",
+      "zh-Hans": "有新动态"
+    },
+    {
+      "key": "Moments_NotInterested",
+      "en": "Not interested",
+      "zh-Hans": "不感兴趣"
+    },
+    {
+      "key": "Moments_Notif_Follows",
+      "en": "Follows",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Notif_Interactions",
+      "en": "Interactions",
+      "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_Notif_System",
+      "en": "System",
+      "zh-Hans": "系统"
+    },
+    {
+      "key": "Moments_Notifications",
+      "en": "Activity",
+      "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_Pdf",
+      "en": "PDF",
+      "zh-Hans": "PDF"
+    },
+    {
+      "key": "Moments_Photo",
+      "en": "Photo",
+      "zh-Hans": "图片"
+    },
+    {
+      "key": "Moments_Pinned",
+      "en": "Pinned",
+      "zh-Hans": "置顶"
+    },
+    {
+      "key": "Moments_Profile_Liked",
+      "en": "Liked",
+      "zh-Hans": "赞过"
+    },
+    {
+      "key": "Moments_Profile_Posts",
+      "en": "Posts",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Profile_Saved",
+      "en": "Saved posts",
+      "zh-Hans": "动态收藏"
+    },
+    {
+      "key": "Moments_Publish",
+      "en": "Post",
+      "zh-Hans": "发布"
+    },
+    {
+      "key": "Moments_Push",
+      "en": "Push",
+      "zh-Hans": "动态推送"
+    },
+    {
+      "key": "Moments_Push_Comments",
+      "en": "Comments",
+      "zh-Hans": "评论"
+    },
+    {
+      "key": "Moments_Push_Follows",
+      "en": "New followers",
+      "zh-Hans": "新关注"
+    },
+    {
+      "key": "Moments_Push_Likes",
+      "en": "Likes",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_Push_Mentions",
+      "en": "Mentions",
+      "zh-Hans": "提及"
+    },
+    {
+      "key": "Moments_Push_NewPosts",
+      "en": "Posts from people you follow",
+      "zh-Hans": "关注对象的新帖"
+    },
+    {
+      "key": "Moments_Push_Replies",
+      "en": "Replies",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Push_Reposts",
+      "en": "Reposts and quotes",
+      "zh-Hans": "转发和引用"
+    },
+    {
+      "key": "Moments_Quote",
+      "en": "Quote",
+      "zh-Hans": "引用"
+    },
+    {
+      "key": "Moments_QuoteHint",
+      "en": "Add a comment",
+      "zh-Hans": "说点什么"
+    },
+    {
+      "key": "Moments_Recording",
+      "en": "Recording…",
+      "zh-Hans": "正在录音…"
+    },
+    {
+      "key": "Moments_RefreshKept",
+      "en": "Couldn\\'t refresh. Still showing these posts.",
+      "zh-Hans": "刷新没有新内容，仍显示这些动态。"
+    },
+    {
+      "key": "Moments_Remove",
+      "en": "Remove",
+      "zh-Hans": "移除"
+    },
+    {
+      "key": "Moments_Reply",
+      "en": "Reply",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_ReplyTo",
+      "en": "Reply @%s",
+      "zh-Hans": "回复 @%s"
+    },
+    {
+      "key": "Moments_Repost",
+      "en": "Repost",
+      "zh-Hans": "转发"
+    },
+    {
+      "key": "Moments_RepostBlocked",
+      "en": "Only public posts can be reposted or quoted.",
+      "zh-Hans": "只有公开帖可以转发或引用"
+    },
+    {
+      "key": "Moments_RepostHeader",
+      "en": "%s reposted",
+      "zh-Hans": "%s 转发了"
+    },
+    {
+      "key": "Moments_Save",
+      "en": "Save",
+      "zh-Hans": "收藏"
+    },
+    {
+      "key": "Moments_Saved",
+      "en": "Saved",
+      "zh-Hans": "已收藏"
+    },
+    {
+      "key": "Moments_Search",
+      "en": "Moments",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_SearchTab",
+      "en": "Search",
+      "zh-Hans": "搜索"
+    },
+    {
+      "key": "Moments_Segment_Following",
+      "en": "Following",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Segment_Nearby",
+      "en": "Nearby",
+      "zh-Hans": "同城"
+    },
+    {
+      "key": "Moments_Segment_Recommend",
+      "en": "For you",
+      "zh-Hans": "推荐"
+    },
+    {
+      "key": "Moments_SendOriginal",
+      "en": "Send original",
+      "zh-Hans": "发送原图"
+    },
+    {
+      "key": "Moments_Settings_FollowersList",
+      "en": "Who can see my followers",
+      "zh-Hans": "谁能看到我的粉丝列表"
+    },
+    {
+      "key": "Moments_Settings_FollowingList",
+      "en": "Who can see my following",
+      "zh-Hans": "谁能看到我的关注列表"
+    },
+    {
+      "key": "Moments_Settings_OnlyMe",
+      "en": "Only me",
+      "zh-Hans": "仅自己"
+    },
+    {
+      "key": "Moments_Share",
+      "en": "Share",
+      "zh-Hans": "分享"
+    },
+    {
+      "key": "Moments_ShareChat",
+      "en": "Share to chat",
+      "zh-Hans": "分享到聊天"
+    },
+    {
+      "key": "Moments_ShowReplies",
+      "en": "Show %d replies",
+      "zh-Hans": "展开%d条回复"
+    },
+    {
+      "key": "Moments_Sort_Hot",
+      "en": "Top",
+      "zh-Hans": "热门"
+    },
+    {
+      "key": "Moments_Sort_Latest",
+      "en": "Latest",
+      "zh-Hans": "最新"
+    },
+    {
+      "key": "Moments_Sort_Relevance",
+      "en": "Relevance",
+      "zh-Hans": "相关度"
+    },
+    {
+      "key": "Moments_Story",
+      "en": "Story",
+      "zh-Hans": "故事"
+    },
+    {
+      "key": "Moments_SwitchCity",
+      "en": "Switch city",
+      "zh-Hans": "切换城市"
+    },
+    {
+      "key": "Moments_Title",
+      "en": "Moments",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Tool_Photo",
+      "en": "Photo",
+      "zh-Hans": "图片"
+    },
+    {
+      "key": "Moments_Tool_Place",
+      "en": "Place",
+      "zh-Hans": "位置"
+    },
+    {
+      "key": "Moments_Tool_Poll",
+      "en": "Poll",
+      "zh-Hans": "投票"
+    },
+    {
+      "key": "Moments_Tool_Sticker",
+      "en": "Sticker",
+      "zh-Hans": "贴纸"
+    },
+    {
+      "key": "Moments_Tool_Video",
+      "en": "Video",
+      "zh-Hans": "视频"
+    },
+    {
+      "key": "Moments_Unavailable",
+      "en": "Content unavailable",
+      "zh-Hans": "内容不可用"
+    },
+    {
+      "key": "Moments_Uploading",
+      "en": "Posting",
+      "zh-Hans": "正在发布"
+    },
+    {
+      "key": "Moments_UseLocation",
+      "en": "Use my city",
+      "zh-Hans": "使用当前城市"
+    },
+    {
+      "key": "Moments_VideoTooLong",
+      "en": "Trim the video to 60 seconds or less.",
+      "zh-Hans": "请把视频裁剪到 60 秒以内"
+    },
+    {
+      "key": "Moments_Voice",
+      "en": "Voice",
+      "zh-Hans": "语音"
+    },
+    {
+      "key": "Moments_WhoCanSee",
+      "en": "Who can view",
+      "zh-Hans": "谁可以看"
+    }
+  ]
+}

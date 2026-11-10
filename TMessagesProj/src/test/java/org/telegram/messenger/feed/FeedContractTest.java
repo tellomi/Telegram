@@ -207,23 +207,10 @@ public class FeedContractTest {
     }
 
     @Test
-    public void momentsTitleLookupCannotCrashLaunch() throws Exception {
-        String tabs = read("ui/MainTabsActivity.java");
-        assertTrue(tabs.contains("FeedUi.s(\"Moments.Title\""));
-        assertTrue(tabs.contains("FeedUi.s(\"Moments.SearchTab\""));
-        String ui = read("ui/Feed/FeedUi.java");
-        int method = ui.indexOf("String resourceString");
-        assertTrue(method > 0);
-        String body = ui.substring(method, ui.indexOf("public static boolean reduceMotion"));
-        assertTrue(body.contains("createConfigurationContext"));
-        assertTrue(body.contains("catch (Throwable"));
-    }
-
-    @Test
-    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+    public void momentsKeysMatchResourcesAndSurviveReleaseShrinking() throws Exception {
         String english = read("../../../res/values/strings.xml");
         String chinese = read("../../../res/values-zh-rCN/strings.xml");
-        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Feed[A-Za-z0-9]+)\"")
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
                 .matcher(english);
         int count = 0;
         while (names.find()) {
@@ -232,14 +219,51 @@ public class FeedContractTest {
             count++;
         }
         assertTrue(count >= 40);
-        String ui = read("ui/Feed/FeedUi.java")
-                + read("ui/Feed/FeedActivity.java")
-                + read("ui/Feed/FeedPostCell.java");
-        assertTrue(ui.contains("Moments.Title"));
-        assertTrue(ui.contains("Moments.Segment.Recommend"));
-        assertTrue(ui.contains("Moments.Like"));
-        assertTrue(ui.contains("Moments.Empty.Recommend"));
-        assertTrue(ui.contains("LocaleController.getString(key, res)"));
+        assertFalse(english.contains("name=\"Feed"));
+        String sources = "";
+        String[] files = new String[]{
+                "ui/MainTabsActivity.java",
+                "ui/Feed/FeedUi.java",
+                "ui/Feed/FeedActivity.java",
+                "ui/Feed/FeedPostCell.java",
+                "ui/Feed/FeedCommentSheet.java"
+        };
+        for (int i = 0; i < files.length; i++) {
+            sources += read(files[i]);
+        }
+        assertTrue(sources.contains("LocaleController.getString(\"Moments_Title\", R.string.Moments_Title)"));
+        assertFalse(sources.contains("createConfigurationContext"));
+        assertFalse(sources.contains("FeedUi.s("));
+        java.util.regex.Matcher calls = java.util.regex.Pattern.compile(
+                "LocaleController\\.(?:getString|formatString)\\(\"([^\"]+)\", R\\.string\\.([A-Za-z0-9_]+)")
+                .matcher(sources);
+        int callsFound = 0;
+        while (calls.find()) {
+            assertEquals(calls.group(1), calls.group(2));
+            assertTrue(english.contains("name=\"" + calls.group(1) + "\""));
+            callsFound++;
+        }
+        assertTrue(callsFound >= 10);
+    }
+
+    @Test
+    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+        String english = read("../../../res/values/strings.xml");
+        String chinese = read("../../../res/values-zh-rCN/strings.xml");
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
+                .matcher(english);
+        int count = 0;
+        while (names.find()) {
+            assertTrue(names.group(1), chinese.contains("name=\"" + names.group(1) + "\""));
+            count++;
+        }
+        assertTrue(count >= 40);
+        String ui = read("ui/Feed/FeedActivity.java") + read("ui/Feed/FeedPostCell.java");
+        assertTrue(ui.contains("Moments_Title"));
+        assertTrue(ui.contains("Moments_Segment_Recommend"));
+        assertTrue(ui.contains("Moments_Like"));
+        assertTrue(ui.contains("Moments_Empty_Recommend"));
+        assertFalse(ui.contains("Moments.Title"));
         String design = readDesign();
         assertTrue(design.contains("40 dp"));
         assertTrue(design.contains("5 lines"));

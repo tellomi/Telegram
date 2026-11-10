@@ -1086,7 +1086,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 ItemInner pad = ItemInner.asPad(24);
                 items.add(pad);
                 if (feedMode) {
-                    items.add(ItemInner.asHeader2(FeedUi.s("Moments.WhoCanSee", R.string.FeedAudienceTitle), FeedUi.s("Moments.Audience.Subtitle", R.string.FeedAudienceSubtitle)));
+                    items.add(ItemInner.asHeader2(LocaleController.getString("Moments_WhoCanSee", R.string.Moments_WhoCanSee), LocaleController.getString("Moments_Audience_Subtitle", R.string.Moments_Audience_Subtitle)));
                     pad.subtractHeight += dp(72);
                 } else if (liveSettings) {
                     items.add(ItemInner.asHeader3(getString(R.string.LiveStorySettingsHeader)));
@@ -1638,11 +1638,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 button.setShowZero(false);
                 button.setEnabled(!feedMode || selectedType != 0);
                 if (feedMode) {
-                    button.setText(FeedUi.s("Moments.Audience.Done", R.string.FeedAudienceDone), animated);
+                    button.setText(LocaleController.getString("Moments_Audience_Done", R.string.Moments_Audience_Done), animated);
                 }
                 button.setCount(0, animated);
                 if (feedMode) {
-                    button.setText(FeedUi.s("Moments.Audience.Done", R.string.FeedAudienceDone), animated);
+                    button.setText(LocaleController.getString("Moments_Audience_Done", R.string.Moments_Audience_Done), animated);
                 } else if (liveSettings) {
                     button.setText(getString(R.string.StoryPrivacyButtonSave), animated);
                 } else if (isEdit) {
@@ -3299,8 +3299,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_CLOSE_FRIENDS);
                 avatarDrawable.setColor(0xFF88D93A, 0xFF2DB63B);
             } else if (type == TYPE_MUTUAL_FOLLOWERS) {
-                titleTextView.setText(FeedUi.s("Moments.Audience.Mutual", R.string.FeedAudienceMutual));
-                setSubtitle(FeedUi.s("Moments.Audience.Subtitle", R.string.FeedAudienceSubtitle));
+                titleTextView.setText(LocaleController.getString("Moments_Audience_Mutual", R.string.Moments_Audience_Mutual));
+                setSubtitle(LocaleController.getString("Moments_Audience_Subtitle", R.string.Moments_Audience_Subtitle));
                 subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
                 avatarDrawable.setColor(0xFF7C6CFF, 0xFF4B6CFF);
@@ -4286,7 +4286,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         @Override
         public String toString() {
             if (type == TYPE_MUTUAL_FOLLOWERS) {
-                return FeedUi.s("Moments.Audience.Mutual", R.string.FeedAudienceMutual);
+                return LocaleController.getString("Moments_Audience_Mutual", R.string.Moments_Audience_Mutual);
             }
             if (!sendToUsers.isEmpty()) {
                 return LocaleController.formatPluralString("StoryPrivacyRecipients", sendToUsers.size());

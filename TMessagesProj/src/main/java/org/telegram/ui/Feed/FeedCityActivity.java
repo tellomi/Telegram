@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -53,7 +54,7 @@ public class FeedCityActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.SwitchCity", R.string.FeedChangeCity));
+        actionBar.setTitle(LocaleController.getString("Moments_SwitchCity", R.string.Moments_SwitchCity));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -65,12 +66,12 @@ public class FeedCityActivity extends BaseFragment {
         root.setOrientation(LinearLayout.VERTICAL);
         if (explain) {
             TextView note = new TextView(context);
-            note.setText(FeedUi.s("Moments.Nearby.Permission", R.string.FeedLocationExplain));
+            note.setText(LocaleController.getString("Moments_Nearby_Permission", R.string.Moments_Nearby_Permission));
             note.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             note.setPadding(dp(16), dp(12), dp(16), dp(8));
             root.addView(note);
             TextView allow = new TextView(context);
-            allow.setText(FeedUi.s("Moments.UseLocation", R.string.FeedUseLocation));
+            allow.setText(LocaleController.getString("Moments_UseLocation", R.string.Moments_UseLocation));
             allow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
             allow.setPadding(dp(16), dp(8), dp(16), dp(8));
             allow.setOnClickListener(v -> requestLocation());
@@ -224,6 +225,6 @@ public class FeedCityActivity extends BaseFragment {
     @SuppressWarnings("unused")
     private void explainDenied() {
         if (getParentActivity() == null) return;
-        new AlertDialog.Builder(getParentActivity()).setMessage(FeedUi.s("Moments.LocationDenied", R.string.FeedLocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
+        new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_LocationDenied", R.string.Moments_LocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
     }
 }

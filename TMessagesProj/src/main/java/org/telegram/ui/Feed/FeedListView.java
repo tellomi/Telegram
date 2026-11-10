@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.content.Context;
 import android.view.MotionEvent;
 import android.view.View;
@@ -110,14 +111,14 @@ public class FeedListView extends FrameLayout {
         if (host.loading()) {
             showStatus(getString(R.string.Loading), null);
         } else if (host.failed()) {
-            showStatus(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry), v -> host.onRefresh());
+            showStatus(LocaleController.getString("Moments_LoadFailed", R.string.Moments_LoadFailed), v -> host.onRefresh());
         } else {
             footer.setVisibility(GONE);
             if (emptyView != null) {
                 removeView(emptyView);
             }
             String action = host.emptyAction();
-            if (action != null && action.equals(FeedUi.s("Moments.Publish", R.string.FeedPublish))) {
+            if (action != null && action.equals(LocaleController.getString("Moments_Publish", R.string.Moments_Publish))) {
                 action = null;
             }
             emptyView = FeedUi.empty(getContext(), host.emptyText(), action, host.emptyClick());
@@ -163,7 +164,7 @@ public class FeedListView extends FrameLayout {
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == 1) {
                 TextView retry = new TextView(parent.getContext());
-                retry.setText(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry));
+                retry.setText(LocaleController.getString("Moments_LoadFailed", R.string.Moments_LoadFailed));
                 retry.setGravity(android.view.Gravity.CENTER);
                 retry.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 retry.setPadding(dp(16), dp(16), dp(16), dp(16));
