@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="NewConversationShortcut">新對話</string>
+    <string name="ContactShortcutMessage">傳訊息給 %1$s</string>
+    <string name="ContactShortcutVoiceCall">語音通話 %1$s</string>
+    <string name="ContactShortcutVideoCall">視訊通話 %1$s</string>
+</resources>
