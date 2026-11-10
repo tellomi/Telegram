@@ -58,7 +58,10 @@ public class FeedListView extends FrameLayout {
         listView = new RecyclerListView(context);
         preloader.setParent(listView);
         listView.setLayoutManager(new LinearLayoutManager(context));
-        listView.setAdapter(new Adapter());
+        listView.setItemAnimator(null);
+        Adapter adapter = new Adapter();
+        adapter.setHasStableIds(true);
+        listView.setAdapter(adapter);
         listView.setOnItemClickListener((View view, int position, float x, float y) -> {
             ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts = host.posts();
             if (!(view instanceof FeedPostCell) || position < 0 || position >= posts.size() || host.delegate() == null) {
@@ -184,6 +187,22 @@ public class FeedListView extends FrameLayout {
         listView.scrollToPosition(0);
     }
 
+    public static final String PAYLOAD_LIKE = "like";
+
+    public void notifyPost(String postId) {
+        if (postId == null || listView.getAdapter() == null) {
+            return;
+        }
+        ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts = host.posts();
+        for (int i = 0; i < posts.size(); i++) {
+            org.telegram.messenger.feed.FeedModels.Post post = posts.get(i);
+            if (post != null && postId.equals(post.id)) {
+                listView.getAdapter().notifyItemChanged(i, PAYLOAD_LIKE);
+                return;
+            }
+        }
+    }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
@@ -224,6 +243,12 @@ public class FeedListView extends FrameLayout {
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            onBindViewHolder(holder, position, java.util.Collections.emptyList());
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull java.util.List payloads) {
             if (holder.getItemViewType() == 1) {
                 holder.itemView.setOnClickListener(v -> host.onLoadMore());
                 return;
@@ -232,7 +257,22 @@ public class FeedListView extends FrameLayout {
             if (!(holder.itemView instanceof FeedPostCell) || position < 0 || position >= posts.size()) {
                 return;
             }
-            ((FeedPostCell) holder.itemView).setPost(posts.get(position));
+            FeedPostCell cell = (FeedPostCell) holder.itemView;
+            org.telegram.messenger.feed.FeedModels.Post post = posts.get(position);
+            if (payloads != null && payloads.contains(PAYLOAD_LIKE)) {
+                cell.bindLike(post);
+                return;
+            }
+            cell.setPost(post);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts = host.posts();
+            if (position < 0 || position >= posts.size() || posts.get(position) == null || posts.get(position).id == null) {
+                return RecyclerView.NO_ID;
+            }
+            return posts.get(position).id.hashCode() & 0xffffffffL;
         }
 
         @Override

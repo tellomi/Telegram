@@ -21,6 +21,7 @@ public final class FeedModels {
 
     public static class Author {
         public long userId;
+        public long accessHash;
         public String profileId = "";
         public String name = "";
         public String username = "";
@@ -32,16 +33,46 @@ public final class FeedModels {
             if (o == null) {
                 return a;
             }
-            a.userId = o.optLong("user_id", o.optLong("telegram_user_id", 0));
+            try {
+                return parseFields(a, o);
+            } catch (RuntimeException ignore) {
+                return a;
+            }
+        }
+
+        private static Author parseFields(Author a, JSONObject o) {
+            a.userId = longField(o, "user_id", "telegram_user_id", "telegram_id", "uid");
+            a.accessHash = o.optLong("access_hash", 0);
             JSONObject nativeUser = o.optJSONObject("native");
-            if (nativeUser != null && a.userId == 0) {
-                a.userId = nativeUser.optLong("user_id", nativeUser.optLong("telegram_user_id", 0));
+            if (nativeUser != null) {
+                if (a.userId == 0) {
+                    a.userId = longField(nativeUser, "user_id", "telegram_user_id", "telegram_id", "uid");
+                }
+                if (a.accessHash == 0) {
+                    a.accessHash = nativeUser.optLong("access_hash", 0);
+                }
+            }
+            JSONObject user = o.optJSONObject("user");
+            if (user != null && a.userId == 0) {
+                a.userId = longField(user, "id", "user_id", "telegram_user_id");
+                if (a.accessHash == 0) {
+                    a.accessHash = user.optLong("access_hash", 0);
+                }
             }
             a.profileId = o.optString("id", o.optString("profile_id", ""));
             a.name = o.optString("name", o.optString("display_name", ""));
             a.username = o.optString("username", o.optString("handle", ""));
-            a.avatarUrl = o.optString("avatar", o.optString("avatar_url", ""));
+            a.avatarUrl = firstUrl(o, "avatar_url", "avatar", "photo_url", "photo", "image");
             a.avatarKey = o.optString("avatar_key", "");
+            JSONObject avatar = o.optJSONObject("avatar");
+            if (avatar != null) {
+                if (a.avatarUrl.length() == 0) {
+                    a.avatarUrl = firstUrl(avatar, "url", "src", "avatar_url");
+                }
+                if (a.avatarKey.length() == 0) {
+                    a.avatarKey = avatar.optString("key", "");
+                }
+            }
             return a;
         }
     }
@@ -66,7 +97,16 @@ public final class FeedModels {
             m.type = o.optString("type", o.optString("kind", "image"));
             m.key = o.optString("key", "");
             m.url = o.optString("url", o.optString("src", ""));
-            m.coverKey = o.optString("cover_key", o.optString("cover", ""));
+            Object coverValue = o.opt("cover");
+            if (coverValue instanceof String) {
+                m.coverKey = (String) coverValue;
+            } else if (coverValue instanceof JSONObject) {
+                JSONObject cover = (JSONObject) coverValue;
+                m.coverKey = cover.optString("key", cover.optString("url", ""));
+            }
+            if (m.coverKey.length() == 0) {
+                m.coverKey = o.optString("cover_key", o.optString("poster", o.optString("thumb", o.optString("thumbnail", ""))));
+            }
             m.name = o.optString("name", o.optString("filename", o.optString("file_name", "")));
             m.mime = o.optString("mime", o.optString("content_type", ""));
             m.w = o.optInt("w", o.optInt("width", 0));
@@ -100,16 +140,78 @@ public final class FeedModels {
             return FeedConfig.mediaUrl(account, path);
         }
 
-        /** Still image. Video uses cover_key when the config published a media base. */
-        public String thumbUrl(int account) {
+        /** Still image, or a video cover. A video file is not used as a poster. */
+        public String posterUrl(int account) {
             if (coverKey != null && coverKey.length() > 0) {
+                if (coverKey.startsWith("https://") || coverKey.startsWith("http://")) {
+                    return coverKey;
+                }
                 String cover = FeedConfig.mediaUrl(account, coverKey);
                 if (cover.length() > 0) {
                     return cover;
                 }
             }
+            if (isVideo()) {
+                return "";
+            }
             return displayUrl(account);
         }
+
+        public String thumbUrl(int account) {
+            return posterUrl(account);
+        }
+    }
+
+    static long longField(JSONObject o, String... keys) {
+        if (o == null || keys == null) {
+            return 0;
+        }
+        for (int i = 0; i < keys.length; i++) {
+            if (!o.has(keys[i]) || o.isNull(keys[i])) {
+                continue;
+            }
+            Object value = o.opt(keys[i]);
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            }
+            if (value instanceof String) {
+                try {
+                    return Long.parseLong((String) value);
+                } catch (Exception ignore) {
+                }
+            }
+        }
+        return 0;
+    }
+
+    static String firstUrl(JSONObject o, String... keys) {
+        if (o == null || keys == null) {
+            return "";
+        }
+        for (int i = 0; i < keys.length; i++) {
+            Object value = o.opt(keys[i]);
+            if (value instanceof String && ((String) value).length() > 0) {
+                return (String) value;
+            }
+        }
+        return "";
+    }
+
+    public static Page placeholders(FeedContract.FeedList refs) {
+        Page page = new Page();
+        if (refs == null) {
+            return page;
+        }
+        for (int i = 0; i < refs.refs.size(); i++) {
+            FeedContract.Ref ref = refs.refs.get(i);
+            Post post = new Post();
+            post.id = ref == null ? "" : ref.id;
+            post.pending = true;
+            post.feedReason = ref == null ? "" : ref.reason;
+            page.items.add(post);
+        }
+        page.nextCursor = refs.cursor;
+        return page;
     }
 
     public static class LinkPreview {
@@ -203,6 +305,8 @@ public final class FeedModels {
         public String id = "";
         public int version;
         public boolean unavailable;
+        /** Shown at a fixed height until the card payload arrives. */
+        public boolean pending;
         public String kind = "post";
         public String title = "";
         public Author author = new Author();

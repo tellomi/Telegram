@@ -80,6 +80,7 @@
     <string name="Moments_DeleteThread">回复也会一起删除</string>
     <string name="Moments_Sort_Hot">热门</string>
     <string name="Moments_Sort_Latest">最新</string>
+    <string name="Moments_Nearby_Mixed">综合</string>
     <string name="Moments_Sort_Relevance">相关度</string>
     <string name="Moments_Notif_Interactions">互动</string>
     <string name="Moments_Notif_Follows">关注</string>

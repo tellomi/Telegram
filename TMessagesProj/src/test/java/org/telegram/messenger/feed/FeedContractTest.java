@@ -130,6 +130,20 @@ public class FeedContractTest {
         assertFalse(FeedContract.hasNewerHead("p1", ""));
         assertFalse(FeedContract.hasNewerHead("p1", "p1"));
         assertTrue(FeedContract.hasNewerHead("p1", "p2"));
+        assertEquals("WaitingForNetwork", FeedContract.connectionTitleKey(2));
+        assertEquals("Connecting", FeedContract.connectionTitleKey(1));
+        assertEquals("ConnectingToProxyWithDots", FeedContract.connectionTitleKey(4));
+        assertEquals("Updating", FeedContract.connectionTitleKey(5));
+        assertNull(FeedContract.connectionTitleKey(3));
+        assertEquals("mixed", FeedContract.nextNearbySort("latest"));
+        assertEquals("latest", FeedContract.nextNearbySort("mixed"));
+        assertEquals("mixed", FeedContract.nextNearbySort(null));
+        FeedContract.LoadEpoch epoch = new FeedContract.LoadEpoch();
+        int first = epoch.begin();
+        assertTrue(epoch.isCurrent(first));
+        int second = epoch.begin();
+        assertFalse(epoch.isCurrent(first));
+        assertTrue(epoch.isCurrent(second));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
@@ -293,6 +307,8 @@ public class FeedContractTest {
         assertTrue(design.contains("media_like_active"));
         assertTrue(design.contains("360 dp"));
         assertTrue(design.contains("RecyclerViewPreloader"));
+        assertTrue(design.contains("WaitingForNetwork"));
+        assertTrue(design.contains("Moments_Nearby_Mixed"));
         String cell = read("ui/Feed/FeedPostCell.java");
         assertTrue(cell.contains("canScrollHorizontally"));
         assertTrue(cell.contains("setLockPager"));
@@ -305,6 +321,17 @@ public class FeedContractTest {
         String voteMethod = activity.substring(vote, media);
         assertTrue(voteMethod.contains("controller().vote"));
         assertFalse(voteMethod.contains("FeedCommentSheet"));
+        assertTrue(activity.contains("didUpdateConnectionState"));
+        assertTrue(activity.contains("Moments_Nearby_Mixed"));
+        String playback = read("ui/Feed/FeedPlayback.java");
+        assertTrue(playback.contains("toggleVoice"));
+        assertTrue(playback.contains("pauseMessage"));
+        assertTrue(cell.contains("voiceRow"));
+        assertTrue(cell.contains("bindLike"));
+        assertTrue(cell.contains("posterUrl"));
+        assertTrue(activity.contains("FeedDetailActivity"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("PAYLOAD_LIKE"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("setHasStableIds"));
     }
 
     @Test

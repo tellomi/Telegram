@@ -98,24 +98,63 @@ public final class FeedUi {
     }
 
     public static void bindAvatar(BackupImageView view, FeedModels.Author author, int account) {
-        TLRPC.User user = author != null && author.userId != 0 ? org.telegram.messenger.MessagesController.getInstance(account).getUser(author.userId) : null;
-        if (user != null) {
-            AvatarDrawable drawable = new AvatarDrawable(user);
-            view.setForUserOrChat(user, drawable);
+        if (view == null) {
             return;
         }
-        AvatarDrawable drawable = new AvatarDrawable();
-        String name = author == null ? "" : (author.name.length() > 0 ? author.name : author.username);
-        drawable.setInfo(author == null ? 0 : author.userId, name, null);
-        String avatar = author == null ? "" : author.avatarUrl;
-        if ((avatar == null || avatar.length() == 0) && author != null && author.avatarKey != null && author.avatarKey.length() > 0) {
-            avatar = FeedConfig.mediaUrl(account, author.avatarKey);
+        if (view.getImageReceiver() != null) {
+            view.getImageReceiver().cancelLoadImage();
         }
-        if (avatar != null && avatar.length() > 0) {
-            view.setImage(avatar, "40_40", drawable);
+        TLRPC.User user = telegramUser(author, account);
+        String http = avatarHttp(author, account);
+        if (user != null && user.photo != null) {
+            view.setForUserOrChat(user, new AvatarDrawable(user));
+            return;
+        }
+        AvatarDrawable drawable = user != null ? new AvatarDrawable(user) : new AvatarDrawable();
+        if (user == null) {
+            String name = author == null ? "" : (author.name.length() > 0 ? author.name : author.username);
+            drawable.setInfo(author == null ? 0 : author.userId, name, null);
+        }
+        if (http.length() > 0) {
+            view.setImage(http, "40_40", drawable);
+        } else if (user != null) {
+            view.setForUserOrChat(user, drawable);
         } else {
             view.setImage(null, null, drawable);
         }
+    }
+
+    private static TLRPC.User telegramUser(FeedModels.Author author, int account) {
+        if (author == null || author.userId == 0) {
+            return null;
+        }
+        org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
+        TLRPC.User user = controller.getUser(author.userId);
+        if (user == null && author.accessHash != 0) {
+            TLRPC.TL_user stub = new TLRPC.TL_user();
+            stub.id = author.userId;
+            stub.access_hash = author.accessHash;
+            controller.putUser(stub, false);
+            user = controller.getUser(author.userId);
+            controller.reloadUser(author.userId);
+        } else if (user != null && user.photo == null) {
+            controller.reloadUser(author.userId);
+        }
+        return user;
+    }
+
+    static String avatarHttp(FeedModels.Author author, int account) {
+        if (author == null) {
+            return "";
+        }
+        if (author.avatarUrl != null && (author.avatarUrl.startsWith("https://") || author.avatarUrl.startsWith("http://"))) {
+            return author.avatarUrl;
+        }
+        String key = author.avatarKey != null && author.avatarKey.length() > 0 ? author.avatarKey : author.avatarUrl;
+        if (key == null || key.length() == 0) {
+            return "";
+        }
+        return FeedConfig.mediaUrl(account, key);
     }
 
     public static String displayName(FeedModels.Author author, int account) {
