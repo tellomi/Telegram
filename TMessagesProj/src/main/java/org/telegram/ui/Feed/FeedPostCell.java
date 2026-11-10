@@ -98,6 +98,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
     private final boolean detail;
     private final boolean showFollow;
     private final Delegate delegate;
+    private long boundPhotoId = Long.MIN_VALUE;
     private FeedModels.Post post;
     private List<ImageReceiver> preloadReceivers;
 
@@ -180,7 +181,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         meta.setSingleLine(true);
         meta.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         header.addView(meta, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
-        more = FeedUi.icon(context, R.drawable.ic_ab_other, getString(R.string.AccDescrMoreOptions));
+        more = FeedUi.icon(context, R.drawable.ic_ab_other, LocaleController.getString("Moments_More", R.string.Moments_More));
         header.addView(more, LayoutHelper.createLinear(32, 32, Gravity.CENTER_VERTICAL));
         header.setClickable(true);
         header.setTag(FeedContract.ACTION_TAG);
@@ -420,6 +421,8 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         share.setVisibility(VISIBLE);
         save.setVisibility(GONE);
         FeedUi.bindAvatar(avatar, post.author, account);
+        org.telegram.tgnet.TLRPC.User shown = post.author == null ? null : org.telegram.messenger.MessagesController.getInstance(account).getUser(post.author.userId);
+        boundPhotoId = shown != null && shown.photo != null ? shown.photo.photo_id : 0;
         if (avatar.getImageReceiver() != null) {
             avatar.getImageReceiver().setPreloadingReceivers(preloadReceivers);
         }
@@ -605,7 +608,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         int seconds = Math.max(0, media.durationMs / 1000);
         String title = LocaleController.getString("Moments_Voice", R.string.Moments_Voice);
         if (seconds > 0) {
-            title = title + " · " + seconds + "s";
+            title = title + " · " + FeedContract.clock(media.durationMs);
         }
         row.setText(title);
         row.setContentDescription(title);
@@ -728,9 +731,16 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.updateInterfaces && post != null && post.author != null && post.author.userId != 0) {
-            FeedUi.bindAvatar(avatar, post.author, this.account);
+        if (id != NotificationCenter.updateInterfaces || post == null || post.author == null || post.author.userId == 0) {
+            return;
         }
+        org.telegram.tgnet.TLRPC.User user = org.telegram.messenger.MessagesController.getInstance(this.account).getUser(post.author.userId);
+        long photoId = user != null && user.photo != null ? user.photo.photo_id : 0;
+        if (photoId == boundPhotoId && boundPhotoId != Long.MIN_VALUE) {
+            return;
+        }
+        boundPhotoId = photoId;
+        FeedUi.bindAvatar(avatar, post.author, this.account);
     }
 
     @Override
@@ -765,13 +775,64 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         private int cellHeight;
         private int gap;
         private int pendingPage = -1;
+        private String boundKey = "";
+        private FeedModels.Post current;
 
         MediaGrid(Context context) {
             super(context);
         }
 
         void bind(FeedModels.Post post, Delegate delegate) {
+            current = post;
+            ArrayList<FeedModels.Media> next = new ArrayList<>();
+            ArrayList<String> urls = new ArrayList<>();
+            if (post != null && post.media != null) {
+                for (int i = 0; i < post.media.size(); i++) {
+                    FeedModels.Media media = post.media.get(i);
+                    if (media != null && (media.isImage() || media.isVideo())) {
+                        next.add(media);
+                        urls.add(media.listUrl(account, 0));
+                    }
+                }
+            }
+            int visualCount = Math.max(1, next.size());
+            urls.clear();
+            for (int i = 0; i < next.size(); i++) {
+                urls.add(next.get(i).listUrl(account, visualCount));
+            }
+            String key = FeedContract.mediaBindKey(post == null ? "" : post.id, urls);
+            if (FeedContract.sameMediaBind(boundKey, key) && getChildCount() == next.size()) {
+                items.clear();
+                items.addAll(next);
+                pendingPage = post == null ? -1 : post.albumPage;
+                setVisibility(next.isEmpty() ? GONE : VISIBLE);
+                return;
+            }
+            boundKey = key;
+            releaseChildren();
+            if (getParent() instanceof HorizontalScrollView) {
+                ((HorizontalScrollView) getParent()).scrollTo(0, 0);
+            }
             items.clear();
+            items.addAll(next);
+            if (items.isEmpty()) {
+                setVisibility(GONE);
+                pendingPage = -1;
+                if (getParent() instanceof HorizontalScrollView) {
+                    ((HorizontalScrollView) getParent()).scrollTo(0, 0);
+                }
+                return;
+            }
+            setVisibility(VISIBLE);
+            pendingPage = post.albumPage;
+            int count = items.size();
+            for (int position = 0; position < count; position++) {
+                addView(slide(items.get(position), position, count, delegate));
+            }
+            requestLayout();
+        }
+
+        private void releaseChildren() {
             for (int i = getChildCount() - 1; i >= 0; i--) {
                 View child = getChildAt(i);
                 FeedPlayback.untrack(child);
@@ -780,99 +841,82 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
                     for (int c = 0; c < group.getChildCount(); c++) {
                         if (group.getChildAt(c) instanceof BackupImageView) {
                             BackupImageView image = (BackupImageView) group.getChildAt(c);
+                            Object tag = image.getTag();
+                            if (tag instanceof String) {
+                                thumbs.remove(tag);
+                            }
+                            image.setTag(null);
                             if (image.getImageReceiver() != null) {
                                 image.getImageReceiver().cancelLoadImage();
-                                image.getImageReceiver().clearImage();
                             }
                         }
                     }
                 }
             }
             removeAllViews();
-            if (getParent() instanceof HorizontalScrollView) {
-                ((HorizontalScrollView) getParent()).scrollTo(0, 0);
+        }
+
+        private View slide(FeedModels.Media media, int position, int count, Delegate delegate) {
+            FrameLayout frame = new FrameLayout(getContext());
+            frame.setTag(FeedContract.ACTION_TAG);
+            frame.setClickable(true);
+            BackupImageView image = new BackupImageView(getContext());
+            image.setRoundRadius(dp(12));
+            frame.addView(image, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            if (image.getImageReceiver() != null) {
+                image.getImageReceiver().setPreloadingReceivers(preloadReceivers);
             }
-            if (post == null) {
-                setVisibility(GONE);
-                return;
+            String poster = media.listUrl(account, count);
+            String play = media.displayUrl(account);
+            int[] cell = FeedContract.mediaCellPx(count, AndroidUtilities.displaySize.x, AndroidUtilities.density);
+            String filter = FeedContract.imageFilter(cell[0], cell[1], AndroidUtilities.density);
+            ColorDrawable placeholder = new ColorDrawable(Theme.getColor(Theme.key_graySection));
+            if (poster.length() > 0) {
+                image.setImage(poster, filter, placeholder);
+            } else {
+                image.setImage(null, null, placeholder);
             }
-            for (int i = 0; i < post.media.size(); i++) {
-                FeedModels.Media media = post.media.get(i);
-                if (media.isImage() || media.isVideo()) {
-                    items.add(media);
-                }
+            int viewerIndex = viewerIndex(current, media);
+            if (current != null && current.id != null && viewerIndex >= 0) {
+                image.setTag(current.id + ":" + viewerIndex);
+                thumbs.put(current.id + ":" + viewerIndex, new WeakReference<>(image));
             }
-            if (items.isEmpty()) {
-                setVisibility(GONE);
-                pendingPage = -1;
-                return;
+            String kind = media.isVideo()
+                    ? LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video) + " " + FeedContract.clock(media.durationMs)
+                    : LocaleController.getString("Moments_Photo", R.string.Moments_Photo);
+            image.setContentDescription(kind + " " + (position + 1) + "/" + count);
+            if (media.isVideo() && play.startsWith("http")) {
+                TextureView texture = new TextureView(getContext());
+                frame.addView(texture, 0, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                FeedPlayback.track(frame, play, texture);
             }
-            setVisibility(VISIBLE);
-            pendingPage = post.albumPage;
-            int count = items.size();
-            for (int position = 0; position < count; position++) {
-                FeedModels.Media media = items.get(position);
-                FrameLayout frame = new FrameLayout(getContext());
-                frame.setTag(FeedContract.ACTION_TAG);
-                BackupImageView image = new BackupImageView(getContext());
-                image.setRoundRadius(dp(12));
-                frame.addView(image, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                if (image.getImageReceiver() != null) {
-                    image.getImageReceiver().setPreloadingReceivers(preloadReceivers);
+            if (media.isVideo()) {
+                TextView badge = new TextView(getContext());
+                badge.setText(FeedContract.clock(media.durationMs));
+                badge.setTextColor(0xffffffff);
+                badge.setTextSize(12);
+                badge.setPadding(dp(6), dp(2), dp(6), dp(2));
+                badge.setBackground(Theme.createRoundRectDrawable(dp(6), 0x66000000));
+                frame.addView(badge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 6, 0, 0, 6));
+            }
+            final int openIndex = viewerIndex >= 0 ? viewerIndex : position;
+            final int page = position;
+            frame.setOnClickListener(v -> {
+                if (current == null || delegate == null) {
+                    return;
                 }
-                String poster = media.listUrl(account, count);
-                String play = media.displayUrl(account);
-                if (image.getImageReceiver() != null) {
-                    image.getImageReceiver().cancelLoadImage();
-                    image.getImageReceiver().clearImage();
-                }
-                int[] cell = FeedContract.mediaCellPx(count, AndroidUtilities.displaySize.x, AndroidUtilities.density);
-                String filter = FeedContract.imageFilter(cell[0], cell[1], AndroidUtilities.density);
-                ColorDrawable placeholder = new ColorDrawable(Theme.getColor(Theme.key_graySection));
-                if (poster.length() > 0) {
-                    image.setImage(poster, filter, placeholder);
-                } else {
-                    image.setImage(null, null, placeholder);
-                }
-                int viewerIndex = viewerIndex(post, media);
-                if (post.id != null && viewerIndex >= 0) {
-                    image.setTag(post.id + ":" + viewerIndex);
-                    thumbs.put(post.id + ":" + viewerIndex, new WeakReference<>(image));
-                }
-                image.setContentDescription((media.isVideo() ? LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video) + ", " + (media.durationMs / 1000) + "s" : LocaleController.getString("Moments_Photo", R.string.Moments_Photo)) + " " + (position + 1) + "/" + count);
-                if (media.isVideo() && play.startsWith("http")) {
-                    TextureView texture = new TextureView(getContext());
-                    frame.addView(texture, 0, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                    FeedPlayback.track(frame, play, texture);
-                }
-                if (media.isVideo()) {
-                    TextView badge = new TextView(getContext());
-                    badge.setText(LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video));
-                    badge.setTextColor(0xffffffff);
-                    badge.setTextSize(12);
-                    badge.setPadding(dp(6), dp(2), dp(6), dp(2));
-                    badge.setBackground(Theme.createRoundRectDrawable(dp(6), 0x66000000));
-                    frame.addView(badge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 6, 0, 0, 6));
-                }
-                final int openIndex = viewerIndex >= 0 ? viewerIndex : position;
-                final int page = position;
-                frame.setOnClickListener(v -> {
-                    post.albumPage = page;
-                    if (delegate != null) {
-                        delegate.onMedia(post, openIndex);
+                current.albumPage = page;
+                delegate.onMedia(current, openIndex);
+            });
+            if (FeedConfig.DOUBLE_TAP_LIKE && media.isImage()) {
+                frame.setOnTouchListener(new DoubleTap(v -> {
+                    if (delegate != null && current != null) {
+                        delegate.onLike(current);
+                        FeedUi.playHeart(frame);
                     }
-                });
-                if (FeedConfig.DOUBLE_TAP_LIKE && media.isImage()) {
-                    frame.setOnTouchListener(new DoubleTap(v -> {
-                        if (delegate != null) {
-                            delegate.onLike(post);
-                            FeedUi.playHeart(frame);
-                        }
-                    }));
-                }
-                addView(frame);
+                }));
             }
-            requestLayout();
+            return frame;
         }
 
         @Override

@@ -20,6 +20,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -29,13 +30,36 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ProfileActivity;
 
+import java.util.HashSet;
+import java.util.WeakHashMap;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 
 public final class FeedUi {
 
+    private static final WeakHashMap<BackupImageView, String> avatarKeys = new WeakHashMap<>();
+    private static final HashSet<Long> avatarReloads = new HashSet<>();
+
     private FeedUi() {
+    }
+
+    public static void openEntry(BaseFragment fragment, FeedModels.Post post, String entry, boolean focus) {
+        if (fragment == null || post == null || post.pending || post.unavailable) {
+            return;
+        }
+        openEntry(fragment, post.id, entry, focus);
+    }
+
+    public static void openEntry(BaseFragment fragment, String postId, String entry, boolean focus) {
+        if (fragment == null || postId == null || postId.length() == 0) {
+            return;
+        }
+        if (FeedContract.opensStandaloneDetail(entry)) {
+            fragment.presentFragment(FeedDetailActivity.forPost(postId));
+            return;
+        }
+        FeedCommentSheet.open(fragment, postId, focus);
     }
 
     public static boolean reduceMotion() {
@@ -46,20 +70,61 @@ public final class FeedUi {
     }
 
     public static String timeAgo(long millis) {
-        if (millis <= 0) {
+        FeedContract.RelativeBucket bucket = FeedContract.relativeBucket(System.currentTimeMillis(), millis);
+        if (bucket.unit.length() == 0) {
             return "";
         }
-        long delta = Math.max(0, System.currentTimeMillis() - millis);
-        if (delta < 60_000L) {
-            return getString(R.string.RightNow);
+        String language = "";
+        LocaleController.LocaleInfo info = LocaleController.getInstance().getCurrentLocaleInfo();
+        if (info != null && info.shortName != null) {
+            language = info.shortName;
         }
-        if (delta < 3600_000L) {
-            return formatPluralString("MinutesAgo", (int) (delta / 60_000L));
+        String shared = sharedTimer(bucket);
+        if (shared.length() == 0 || shared.startsWith("LOC_ERR") || FeedContract.replaceEnglishTimer(language, shared, bucket.english)) {
+            return momentsTimer(bucket);
         }
-        if (delta < 86400_000L) {
-            return formatPluralString("HoursAgo", (int) (delta / 3600_000L));
+        return shared;
+    }
+
+    private static String sharedTimer(FeedContract.RelativeBucket bucket) {
+        if ("now".equals(bucket.unit)) {
+            return LocaleController.getString("RightNow", R.string.RightNow);
         }
-        return LocaleController.formatDateChat(millis / 1000L, false);
+        if ("minute".equals(bucket.unit)) {
+            return LocaleController.formatPluralString("MinutesAgo", bucket.count);
+        }
+        if ("hour".equals(bucket.unit)) {
+            return LocaleController.formatPluralString("HoursAgo", bucket.count);
+        }
+        if ("day".equals(bucket.unit)) {
+            return LocaleController.formatPluralString("DaysAgo", bucket.count);
+        }
+        return "";
+    }
+
+    private static String momentsTimer(FeedContract.RelativeBucket bucket) {
+        if ("now".equals(bucket.unit)) {
+            return LocaleController.getString("Moments_Time_Now", R.string.Moments_Time_Now);
+        }
+        if ("minute".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Minutes", R.string.Moments_Time_Minutes, bucket.count);
+        }
+        if ("hour".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Hours", R.string.Moments_Time_Hours, bucket.count);
+        }
+        if ("day".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Days", R.string.Moments_Time_Days, bucket.count);
+        }
+        if ("week".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Weeks", R.string.Moments_Time_Weeks, bucket.count);
+        }
+        if ("month".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Months", R.string.Moments_Time_Months, bucket.count);
+        }
+        if ("year".equals(bucket.unit)) {
+            return LocaleController.formatString("Moments_Time_Years", R.string.Moments_Time_Years, bucket.count);
+        }
+        return "";
     }
 
     public static String audienceLabel(String kind) {
@@ -70,13 +135,13 @@ public final class FeedUi {
             return LocaleController.getString("Moments_Audience_Mutual", R.string.Moments_Audience_Mutual);
         }
         if ("contacts".equals(kind)) {
-            return getString(R.string.StoryPrivacyOptionContacts);
+            return LocaleController.getString("Moments_Audience_Contacts", R.string.Moments_Audience_Contacts);
         }
         if ("close_friends".equals(kind)) {
-            return getString(R.string.StoryPrivacyOptionCloseFriends);
+            return LocaleController.getString("Moments_Audience_CloseFriends", R.string.Moments_Audience_CloseFriends);
         }
         if ("selected".equals(kind) || "include".equals(kind)) {
-            return getString(R.string.StoryPrivacyOptionSelectedContacts);
+            return LocaleController.getString("Moments_Audience_Selected", R.string.Moments_Audience_Selected);
         }
         if ("private".equals(kind) || "only_me".equals(kind) || "self".equals(kind)) {
             return LocaleController.getString("Moments_Settings_OnlyMe", R.string.Moments_Settings_OnlyMe);
@@ -101,12 +166,17 @@ public final class FeedUi {
         if (view == null) {
             return;
         }
-        if (view.getImageReceiver() != null) {
-            view.getImageReceiver().cancelLoadImage();
-        }
         TLRPC.User user = telegramUser(author, account);
         String http = avatarHttp(author, account);
-        if (user != null && user.photo != null) {
+        boolean telegramPhoto = user != null && user.photo != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty);
+        String source = FeedContract.avatarSource(telegramPhoto, http);
+        long photoId = telegramPhoto ? user.photo.photo_id : 0;
+        String key = source + ":" + (author == null ? 0 : author.userId) + ":" + photoId + ":" + http;
+        if (key.equals(avatarKeys.get(view))) {
+            return;
+        }
+        avatarKeys.put(view, key);
+        if ("telegram".equals(source)) {
             view.setForUserOrChat(user, new AvatarDrawable(user));
             return;
         }
@@ -115,8 +185,8 @@ public final class FeedUi {
             String name = author == null ? "" : (author.name.length() > 0 ? author.name : author.username);
             drawable.setInfo(author == null ? 0 : author.userId, name, null);
         }
-        if (http.length() > 0) {
-            view.setImage(http, "40_40", drawable);
+        if ("http".equals(source)) {
+            view.setImage(http, FeedContract.AVATAR_FILTER, drawable);
         } else if (user != null) {
             view.setForUserOrChat(user, drawable);
         } else {
@@ -130,14 +200,15 @@ public final class FeedUi {
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
         TLRPC.User user = controller.getUser(author.userId);
+        boolean missingPhoto = user == null || user.photo == null || user.photo instanceof TLRPC.TL_userProfilePhotoEmpty;
         if (user == null && author.accessHash != 0) {
             TLRPC.TL_user stub = new TLRPC.TL_user();
             stub.id = author.userId;
             stub.access_hash = author.accessHash;
             controller.putUser(stub, false);
             user = controller.getUser(author.userId);
-            controller.reloadUser(author.userId);
-        } else if (user != null && user.photo == null) {
+        }
+        if (missingPhoto && avatarReloads.add(author.userId)) {
             controller.reloadUser(author.userId);
         }
         return user;
@@ -173,7 +244,7 @@ public final class FeedUi {
         if (!TextUtils.isEmpty(author.username)) {
             return "@" + author.username;
         }
-        return getString(R.string.HiddenName);
+        return LocaleController.getString("Moments_HiddenName", R.string.Moments_HiddenName);
     }
 
     public static TextView text(Context context, int size, int colorKey) {
