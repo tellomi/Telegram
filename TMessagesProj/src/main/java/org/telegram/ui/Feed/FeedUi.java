@@ -149,8 +149,12 @@ public final class FeedUi {
         AvatarDrawable drawable = new AvatarDrawable();
         String name = author == null ? "" : (author.name.length() > 0 ? author.name : author.username);
         drawable.setInfo(author == null ? 0 : author.userId, name, null);
-        if (author != null && author.avatarUrl != null && author.avatarUrl.length() > 0) {
-            view.setImage(author.avatarUrl, "40_40", drawable);
+        String avatar = author == null ? "" : author.avatarUrl;
+        if ((avatar == null || avatar.length() == 0) && author != null && author.avatarKey != null && author.avatarKey.length() > 0) {
+            avatar = FeedConfig.mediaUrl(account, author.avatarKey);
+        }
+        if (avatar != null && avatar.length() > 0) {
+            view.setImage(avatar, "40_40", drawable);
         } else {
             view.setImage(null, null, drawable);
         }

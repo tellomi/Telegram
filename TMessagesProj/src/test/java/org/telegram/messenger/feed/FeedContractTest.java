@@ -105,8 +105,16 @@ public class FeedContractTest {
         assertTrue(voice.contains("root-1"));
         assertFalse(voice.contains("attachment"));
         String photo = FeedContract.commentBody("pic", null, "image", "img-key");
-        assertTrue(photo.contains("attachment"));
-        assertFalse(photo.contains("media_keys"));
+        assertTrue(photo.contains("media_keys"));
+        assertTrue(photo.contains("img-key"));
+        assertFalse(photo.contains("attachment"));
+        String sticker = FeedContract.commentBody("", "parent", "sticker", "stk");
+        assertTrue(sticker.contains("media_keys"));
+        assertTrue(sticker.contains("\"sticker\":true"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", ""));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1&cursor=c2", FeedContract.commentsPath("p1", "c2"));
+        assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
+        assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
         assertFalse(longText.contains(repeat('b', 501)));
         assertTrue(longText.contains("\"media_keys\""));

@@ -25,6 +25,7 @@ public final class FeedModels {
         public String name = "";
         public String username = "";
         public String avatarUrl = "";
+        public String avatarKey = "";
 
         public static Author parse(JSONObject o) {
             Author a = new Author();
@@ -32,10 +33,15 @@ public final class FeedModels {
                 return a;
             }
             a.userId = o.optLong("user_id", o.optLong("telegram_user_id", 0));
+            JSONObject nativeUser = o.optJSONObject("native");
+            if (nativeUser != null && a.userId == 0) {
+                a.userId = nativeUser.optLong("user_id", nativeUser.optLong("telegram_user_id", 0));
+            }
             a.profileId = o.optString("id", o.optString("profile_id", ""));
             a.name = o.optString("name", o.optString("display_name", ""));
             a.username = o.optString("username", o.optString("handle", ""));
             a.avatarUrl = o.optString("avatar", o.optString("avatar_url", ""));
+            a.avatarKey = o.optString("avatar_key", "");
             return a;
         }
     }
@@ -464,10 +470,12 @@ public final class FeedModels {
         public int likes;
         public boolean liked;
         public boolean disliked;
-        /** True only when the payload includes a dislike field. */
-        public boolean showDislike;
+        /** Post author, from `is_author`. Not `me.author`. */
+        public boolean isAuthor;
+        public boolean sticker;
         public String province = "";
         public int replyCount;
+        public String repliesCursor = "";
         public ArrayList<Comment> replies = new ArrayList<>();
         public boolean unavailable;
 
@@ -477,30 +485,59 @@ public final class FeedModels {
                 c.unavailable = true;
                 return c;
             }
-            c.id = o.optString("id", "");
-            c.postId = o.optString("post_id", "");
-            c.rootId = o.optString("root_id", "");
-            c.parentId = o.optString("parent_id", "");
-            c.author = Author.parse(o.optJSONObject("author"));
-            JSONObject replyTo = o.optJSONObject("reply_to_user");
+            JSONObject card = o.optJSONObject("card");
+            JSONObject body = card != null ? card : o;
+            c.id = o.optString("id", body.optString("id", ""));
+            c.postId = body.optString("post_id", o.optString("post_id", ""));
+            c.rootId = body.optString("root_id", o.optString("root_id", ""));
+            c.parentId = body.optString("parent_id", o.optString("parent_id", ""));
+            c.isAuthor = o.optBoolean("is_author", false);
+            c.author = Author.parse(body.optJSONObject("author") != null ? body.optJSONObject("author") : o.optJSONObject("author"));
+            JSONObject replyTo = body.optJSONObject("reply_to");
+            if (replyTo == null) {
+                replyTo = o.optJSONObject("reply_to_user");
+            }
             if (replyTo != null) {
-                c.replyToName = replyTo.optString("name", replyTo.optString("username", ""));
+                c.replyToName = firstText(replyTo, "display_name", "name", "handle", "username");
             } else {
                 c.replyToName = o.optString("reply_to_name", "");
             }
-            c.text = o.optString("text", "");
-            if (o.has("attachment") && !o.isNull("attachment")) {
+            c.text = body.optString("text", o.optString("text", ""));
+            JSONArray media = body.optJSONArray("media");
+            if (media != null && media.length() > 0 && media.optJSONObject(0) != null) {
+                JSONObject first = media.optJSONObject(0);
+                c.attachment = Media.parse(first);
+                c.sticker = first.optBoolean("sticker", false) || "sticker".equals(c.attachment.type);
+                if (c.sticker) {
+                    c.attachment.type = "sticker";
+                }
+            } else if (o.has("attachment") && !o.isNull("attachment")) {
                 c.attachment = Media.parse(o.optJSONObject("attachment"));
+            } else if (body.has("media_keys") && !body.isNull("media_keys")) {
+                c.attachment = voiceFromKeys(body.opt("media_keys"));
             } else if (o.has("media_keys") && !o.isNull("media_keys")) {
                 c.attachment = voiceFromKeys(o.opt("media_keys"));
             }
-            c.createdAt = o.optLong("created_at", 0);
-            c.likes = o.optInt("likes", o.optInt("like_count", 0));
-            c.liked = o.optBoolean("liked", false);
-            c.showDislike = o.has("disliked") || o.has("dislikes");
-            c.disliked = o.optBoolean("disliked", false);
-            c.province = firstText(o, "province", "ip_province", "ip_location", "region");
-            c.replyCount = o.optInt("reply_count", 0);
+            c.createdAt = body.optLong("created_at", o.optLong("created_at", 0));
+            JSONObject stats = o.optJSONObject("stats");
+            if (stats != null) {
+                c.likes = stats.optInt("likes", 0);
+            } else {
+                c.likes = o.optInt("likes", o.optInt("like_count", 0));
+            }
+            JSONObject me = o.optJSONObject("me");
+            if (me != null) {
+                c.liked = me.optBoolean("liked", false);
+                c.disliked = me.optBoolean("disliked", false);
+            } else {
+                c.liked = o.optBoolean("liked", false);
+                c.disliked = o.optBoolean("disliked", false);
+            }
+            c.province = firstText(body, "ip_region_label", "province", "ip_province", "ip_location", "region");
+            if (c.province.length() == 0) {
+                c.province = firstText(o, "ip_region_label", "province", "ip_province", "region");
+            }
+            c.replyCount = o.optInt("reply_count", body.optInt("reply_count", 0));
             c.unavailable = o.optBoolean("unavailable", false);
             JSONArray replies = o.optJSONArray("replies");
             if (replies != null) {
@@ -548,6 +585,43 @@ public final class FeedModels {
                 }
             }
             return null;
+        }
+    }
+
+    public static class CommentPage {
+        public ArrayList<Comment> comments = new ArrayList<>();
+        public String cursor = "";
+        public int total;
+
+        public static CommentPage parse(JSONObject o) {
+            CommentPage page = new CommentPage();
+            if (o == null) {
+                return page;
+            }
+            JSONArray items = o.optJSONArray("comments");
+            if (items == null) {
+                items = o.optJSONArray("replies");
+            }
+            if (items == null) {
+                items = o.optJSONArray("items");
+            }
+            if (items != null) {
+                for (int i = 0; i < items.length(); i++) {
+                    JSONObject item = items.optJSONObject(i);
+                    if (item != null) {
+                        Comment comment = Comment.parse(item);
+                        if (!comment.disliked) {
+                            page.comments.add(comment);
+                        }
+                    }
+                }
+            }
+            page.cursor = o.optString("cursor", o.optString("next_cursor", ""));
+            if ("null".equals(page.cursor)) {
+                page.cursor = "";
+            }
+            page.total = o.has("total") ? o.optInt("total", page.comments.size()) : page.comments.size();
+            return page;
         }
     }
 

@@ -19,14 +19,24 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatAttachAlert;
+import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+
+import java.io.File;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,10 +53,17 @@ public class FeedCommentSheet extends Dialog {
     private final HashSet<String> expanded = new HashSet<>();
     private final ArrayList<Row> rows = new ArrayList<>();
     private final ArrayList<FeedModels.Comment> roots = new ArrayList<>();
-    private FeedModels.Post post;
     private String replyTo = "";
     private String replyName = "";
+    private String threadCursor = "";
+    private String pendingKey = "";
+    private String pendingKind = "";
+    private int commentTotal;
     private boolean full;
+    private boolean loadingMore;
+    private final HashSet<String> loadingReplies = new HashSet<>();
+    private TextView pending;
+    private EmojiView emojiView;
     private TextView title;
     private EditText input;
     private LinearLayout panel;
@@ -106,6 +123,18 @@ public class FeedCommentSheet extends Dialog {
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new CommentAdapter();
         list.setAdapter(adapter);
+        list.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy <= 0 || threadCursor.length() == 0 || loadingMore) {
+                    return;
+                }
+                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (manager != null && manager.findLastVisibleItemPosition() >= rows.size() - 3) {
+                    loadMore();
+                }
+            }
+        });
         panel.addView(list, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
         LinearLayout bar = new LinearLayout(getContext());
@@ -119,6 +148,12 @@ public class FeedCommentSheet extends Dialog {
         input.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         input.setHint(FeedUi.s("Moments.CommentHint", R.string.FeedCommentHint));
         input.setSingleLine(true);
+        pending = new TextView(getContext());
+        pending.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        pending.setTextSize(12);
+        pending.setVisibility(View.GONE);
+        pending.setOnClickListener(v -> clearPending());
+        bar.addView(pending, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
         input.setImeOptions(EditorInfo.IME_ACTION_SEND);
         input.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEND) {
@@ -129,9 +164,11 @@ public class FeedCommentSheet extends Dialog {
         });
         bar.addView(input, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
         ImageView photo = icon(R.drawable.msg_gallery, FeedUi.s("Moments.Photo", R.string.FeedPhoto));
+        photo.setOnClickListener(v -> pickPhoto());
         ImageView mention = icon(R.drawable.msg_mention, "@");
         mention.setOnClickListener(v -> input.getText().insert(input.getSelectionStart() < 0 ? input.length() : input.getSelectionStart(), "@"));
         ImageView emoji = icon(R.drawable.input_smile, FeedUi.s("Moments.Comment", R.string.FeedComment));
+        emoji.setOnClickListener(v -> toggleEmoji());
         bar.addView(photo, LayoutHelper.createLinear(36, 36));
         bar.addView(mention, LayoutHelper.createLinear(36, 36));
         bar.addView(emoji, LayoutHelper.createLinear(36, 36));
@@ -155,25 +192,54 @@ public class FeedCommentSheet extends Dialog {
     }
 
     private void load() {
-        FeedController controller = FeedController.getInstance(fragment.getCurrentAccount());
-        controller.api.getJson(org.telegram.messenger.feed.FeedContract.postPath(postId), (json, error) -> {
-            if (json != null) {
-                post = FeedModels.Post.parse(json);
-            }
-            AndroidUtilities.runOnUIThread(this::rebuild);
-        });
-        controller.loadComments(postId, "time", "", (comments, next) -> AndroidUtilities.runOnUIThread(() -> {
+        threadCursor = "";
+        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, "", page -> AndroidUtilities.runOnUIThread(() -> {
             roots.clear();
-            if (comments != null) {
-                roots.addAll(comments);
+            if (page != null) {
+                roots.addAll(page.comments);
+                threadCursor = page.cursor;
+                commentTotal = page.total;
             }
             rebuild();
         }));
     }
 
+    private void loadMore() {
+        if (loadingMore || threadCursor.length() == 0) {
+            return;
+        }
+        loadingMore = true;
+        String cursor = threadCursor;
+        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, cursor, page -> AndroidUtilities.runOnUIThread(() -> {
+            loadingMore = false;
+            if (page == null) {
+                return;
+            }
+            for (int i = 0; i < page.comments.size(); i++) {
+                FeedModels.Comment comment = page.comments.get(i);
+                if (!contains(comment.id)) {
+                    roots.add(comment);
+                }
+            }
+            threadCursor = page.cursor;
+            if (page.total > commentTotal) {
+                commentTotal = page.total;
+            }
+            rebuild();
+        }));
+    }
+
+    private boolean contains(String id) {
+        for (int i = 0; i < roots.size(); i++) {
+            if (id.equals(roots.get(i).id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void rebuild() {
         rows.clear();
-        int count = post != null && post.comments > 0 ? post.comments : roots.size();
         for (int i = 0; i < roots.size(); i++) {
             FeedModels.Comment comment = roots.get(i);
             rows.add(Row.comment(comment));
@@ -187,44 +253,184 @@ public class FeedCommentSheet extends Dialog {
                     }
                 }
             }
-            count = Math.max(count, 1);
         }
-        if (post != null) {
-            count = Math.max(post.comments, roots.size());
-        }
-        title.setText(countTitle(count));
+        title.setText(countTitle(commentTotal > 0 ? commentTotal : roots.size()));
         adapter.notifyDataSetChanged();
+    }
+
+    private void fetchReplies(FeedModels.Comment comment) {
+        if (comment == null || comment.id.length() == 0 || loadingReplies.contains(comment.id)) {
+            return;
+        }
+        loadingReplies.add(comment.id);
+        FeedController.getInstance(fragment.getCurrentAccount()).loadReplies(comment.id, comment.repliesCursor, page -> AndroidUtilities.runOnUIThread(() -> {
+            loadingReplies.remove(comment.id);
+            if (page != null) {
+                for (int i = 0; i < page.comments.size(); i++) {
+                    FeedModels.Comment reply = page.comments.get(i);
+                    if (!hasReply(comment, reply.id)) {
+                        comment.replies.add(reply);
+                    }
+                }
+                comment.repliesCursor = page.cursor;
+                if (page.total > comment.replyCount) {
+                    comment.replyCount = page.total;
+                }
+            }
+            expanded.add(comment.id);
+            rebuild();
+        }));
+    }
+
+    private boolean hasReply(FeedModels.Comment parent, String id) {
+        for (int i = 0; i < parent.replies.size(); i++) {
+            if (id.equals(parent.replies.get(i).id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void removeComment(String id) {
+        for (int i = 0; i < roots.size(); i++) {
+            FeedModels.Comment comment = roots.get(i);
+            if (id.equals(comment.id)) {
+                roots.remove(i);
+                if (commentTotal > 0) {
+                    commentTotal--;
+                }
+                rebuild();
+                return;
+            }
+            for (int r = 0; r < comment.replies.size(); r++) {
+                if (id.equals(comment.replies.get(r).id)) {
+                    comment.replies.remove(r);
+                    if (comment.replyCount > 0) {
+                        comment.replyCount--;
+                    }
+                    rebuild();
+                    return;
+                }
+            }
+        }
     }
 
     private void send() {
         String text = input.getText() == null ? "" : input.getText().toString().trim();
-        if (text.length() == 0) {
+        if (text.length() == 0 && pendingKey.length() == 0) {
             return;
         }
         String parent = replyTo;
+        org.json.JSONObject attachment = null;
+        if (pendingKey.length() > 0) {
+            attachment = new org.json.JSONObject();
+            try {
+                attachment.put("type", pendingKind.length() == 0 ? "image" : pendingKind);
+                attachment.put("key", pendingKey);
+            } catch (Exception ignore) {
+            }
+        }
         input.setText("");
         replyTo = "";
         replyName = "";
+        clearPending();
         input.setHint(FeedUi.s("Moments.CommentHint", R.string.FeedCommentHint));
-        FeedController.getInstance(fragment.getCurrentAccount()).sendComment(postId, text, parent, null, error -> AndroidUtilities.runOnUIThread(() -> {
+        FeedController.getInstance(fragment.getCurrentAccount()).sendComment(postId, text, parent, attachment, error -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 load();
             }
         }));
     }
 
-    private String countTitle(int count) {
-        return FeedUi.s("Moments.CommentCount", R.string.FeedCommentCount).replace("%d", String.valueOf(count));
+    private void clearPending() {
+        pendingKey = "";
+        pendingKind = "";
+        pending.setVisibility(View.GONE);
     }
 
-    private boolean isAuthor(FeedModels.Author author) {
-        if (post == null || author == null) {
-            return false;
+    private void holdUpload(File file, String mime, String kind) {
+        if (file == null || !file.exists()) {
+            return;
         }
-        if (post.author.profileId.length() > 0 && post.author.profileId.equals(author.profileId)) {
-            return true;
+        FeedController.getInstance(fragment.getCurrentAccount()).api.uploadFile(file, file.getName(), mime, (key, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (key == null || key.length() == 0) {
+                return;
+            }
+            pendingKey = key;
+            pendingKind = kind;
+            pending.setText(FeedUi.s("sticker".equals(kind) ? "Moments.Tool.Sticker" : "Moments.Photo", "sticker".equals(kind) ? R.string.FeedToolSticker : R.string.FeedPhoto));
+            pending.setVisibility(View.VISIBLE);
+        }));
+    }
+
+    private void pickPhoto() {
+        if (fragment.getParentActivity() == null) {
+            return;
         }
-        return post.author.userId != 0 && post.author.userId == author.userId;
+        ChatAttachAlert alert = new ChatAttachAlert(fragment.getParentActivity(), fragment, false, false, true, fragment.getResourceProvider());
+        alert.setMaxSelectedPhotos(1, false);
+        alert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
+            @Override
+            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+                ArrayList<Object> order = ChatAttachAlertPhotoLayout.selectedPhotosOrder;
+                if (!order.isEmpty()) {
+                    Object entry = ChatAttachAlertPhotoLayout.selectedPhotos.get(order.get(0));
+                    if (entry instanceof MediaController.PhotoEntry && !((MediaController.PhotoEntry) entry).isVideo && ((MediaController.PhotoEntry) entry).path != null) {
+                        holdUpload(new File(((MediaController.PhotoEntry) entry).path), "image/jpeg", "image");
+                    }
+                }
+                ChatAttachAlertPhotoLayout.selectedPhotos.clear();
+                ChatAttachAlertPhotoLayout.selectedPhotosOrder.clear();
+                alert.dismiss();
+            }
+        });
+        alert.show();
+    }
+
+    private void toggleEmoji() {
+        if (emojiView == null) {
+            emojiView = new EmojiView(fragment, false, true, false, getContext(), false, null, null, true, fragment.getResourceProvider(), false);
+            emojiView.setVisibility(View.GONE);
+            emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
+                @Override
+                public void onStickerSelected(View view, TLRPC.Document sticker, String query, Object parent, org.telegram.messenger.MessageObject.SendAnimationData sendAnimationData, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                    emojiView.setVisibility(View.GONE);
+                    useSticker(sticker);
+                }
+            });
+            panel.addView(emojiView, panel.getChildCount() - 1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 240));
+        }
+        emojiView.setVisibility(emojiView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+    }
+
+    private void useSticker(TLRPC.Document document) {
+        if (document == null) {
+            return;
+        }
+        int account = fragment.getCurrentAccount();
+        File file = FileLoader.getInstance(account).getPathToAttach(document, true);
+        if (file != null && file.exists()) {
+            holdUpload(file, "image/webp", "sticker");
+            return;
+        }
+        String name = FileLoader.getAttachFileName(document);
+        NotificationCenter center = NotificationCenter.getInstance(account);
+        NotificationCenter.NotificationCenterDelegate delegate = new NotificationCenter.NotificationCenterDelegate() {
+            @Override
+            public void didReceivedNotification(int id, int account, Object... args) {
+                if (id == NotificationCenter.fileLoaded && args.length > 0 && name.equals(args[0])) {
+                    center.removeObserver(this, NotificationCenter.fileLoaded);
+                    File loaded = FileLoader.getInstance(account).getPathToAttach(document, true);
+                    holdUpload(loaded, "image/webp", "sticker");
+                }
+            }
+        };
+        center.addObserver(delegate, NotificationCenter.fileLoaded);
+        FileLoader.getInstance(account).loadFile(document, document, FileLoader.PRIORITY_HIGH, 1);
+    }
+
+    private String countTitle(int count) {
+        return FeedUi.s("Moments.CommentCount", R.string.FeedCommentCount).replace("%d", String.valueOf(count));
     }
 
     private ImageView icon(int res, String description) {
@@ -313,12 +519,22 @@ public class FeedCommentSheet extends Dialog {
                 String label = FeedUi.s("Moments.ShowReplies", R.string.FeedShowReplies).replace("%d", String.valueOf(count));
                 view.setText("—— " + label);
                 view.setOnClickListener(v -> {
-                    if (expanded.contains(row.comment.id)) {
-                        expanded.remove(row.comment.id);
-                    } else {
-                        expanded.add(row.comment.id);
+                    boolean open = expanded.contains(row.comment.id);
+                    if (open && row.comment.repliesCursor.length() > 0) {
+                        fetchReplies(row.comment);
+                        return;
                     }
-                    rebuild();
+                    if (open) {
+                        expanded.remove(row.comment.id);
+                        rebuild();
+                        return;
+                    }
+                    expanded.add(row.comment.id);
+                    if (row.comment.replies.isEmpty()) {
+                        fetchReplies(row.comment);
+                    } else {
+                        rebuild();
+                    }
                 });
                 return;
             }
@@ -394,7 +610,7 @@ public class FeedCommentSheet extends Dialog {
             setPadding(dp(reply ? 48 : 16), dp(8), dp(8), dp(4));
             FeedUi.bindAvatar(avatar, comment.author, fragment.getCurrentAccount());
             name.setText(FeedUi.displayName(comment.author, fragment.getCurrentAccount()));
-            author.setVisibility(isAuthor(comment.author) ? VISIBLE : GONE);
+            author.setVisibility(comment.isAuthor ? VISIBLE : GONE);
             String body = comment.text == null ? "" : comment.text;
             if (reply && comment.replyToName != null && comment.replyToName.length() > 0) {
                 body = FeedUi.s("Moments.ReplyTo", R.string.FeedReplyTo).replace("%s", comment.replyToName) + " " + body;
@@ -424,7 +640,7 @@ public class FeedCommentSheet extends Dialog {
             like.setImageResource(comment.liked ? R.drawable.media_like_active : R.drawable.media_like);
             like.setColorFilter(comment.liked ? 0xFFFF2E38 : Theme.getColor(Theme.key_dialogIcon));
             likeCount.setText(comment.likes > 0 ? String.valueOf(comment.likes) : "");
-            View.OnClickListener toggle = v -> FeedController.getInstance(fragment.getCurrentAccount()).api.sendJson(comment.liked ? "DELETE" : "PUT", "/v1/feed/comments/" + comment.id + "/like", null, (json, error) -> AndroidUtilities.runOnUIThread(() -> {
+            View.OnClickListener toggle = v -> FeedController.getInstance(fragment.getCurrentAccount()).api.sendJson(comment.liked ? "DELETE" : "PUT", FeedContract.commentLikePath(comment.id), null, (json, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error == null) {
                     comment.liked = !comment.liked;
                     comment.likes += comment.liked ? 1 : -1;
@@ -436,7 +652,11 @@ public class FeedCommentSheet extends Dialog {
             }));
             like.setOnClickListener(toggle);
             likeCount.setOnClickListener(toggle);
-            dislike.setVisibility(comment.showDislike ? VISIBLE : GONE);
+            dislike.setOnClickListener(v -> FeedController.getInstance(fragment.getCurrentAccount()).api.sendJson("PUT", FeedContract.commentDislikePath(comment.id), new org.json.JSONObject(), (json, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (error == null) {
+                    removeComment(comment.id);
+                }
+            })));
         }
     }
 }

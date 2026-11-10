@@ -87,17 +87,19 @@ Tapping a post or the comment icon opens this sheet over the list. It does not p
 | Collapsed height | 72% of the screen |
 | Expanded height | full screen below the status bar |
 | Scrim | `#66000000` |
-| Title | centred, 15 sp bold, `Moments.CommentCount` (`%d comments` / `%d条评论`) |
+| Title | centred, 15 sp bold, `Moments.CommentCount`. The number is `total` from `GET /v1/feed/posts/{id}/comments?sort=hot&thread=1` |
 | Comment avatar | 32 dp |
 | Nickname | 13 sp, `windowBackgroundWhiteGrayText` |
-| Author tag | `Moments.Author` (`Author` / `作者`), `#FF2E38`, when the comment author is the post author |
+| Author tag | `Moments.Author` (`Author` / `作者`), `#FF2E38`, when `is_author` is true. `me.author` means the viewer wrote it and is not this tag |
 | Comment text | 15 sp, primary |
 | Comment image | 120 dp, 8 dp corners, when `attachment` is an image or sticker |
-| Meta | 12 sp grey: relative time, ` · `, province when present, ` · `, `Moments.Reply` |
+| Meta | 12 sp grey: relative time, ` · `, `card.ip_region_label` when present, ` · `, `Moments.Reply` |
 | Reply indent | 48 dp start padding |
-| Reply prefix | `Moments.ReplyTo` (`Reply @%s` / `回复 @%s`) |
-| Collapsed replies | `—— ` plus `Moments.ShowReplies` (`Show %d replies` / `展开%d条回复`). Expanding shows `replies[]` from the payload |
-| Like | heart and count, trailing |
+| Reply prefix | `Moments.ReplyTo` (`Reply @%s` / `回复 @%s`), name from `card.reply_to.display_name` |
+| Collapsed replies | `—— ` plus `Moments.ShowReplies` (`Show %d replies` / `展开%d条回复`). Expanding calls `GET /v1/feed/comments/{id}/replies`, 20 at a time, and follows `cursor` |
+| Like | heart and count from `stats.likes` and `me.liked`. `PUT` or `DELETE /v1/feed/comments/{id}/like` |
+| Dislike | `msg_cancel`. `PUT /v1/feed/comments/{id}/dislike` hides that comment for the viewer. There is no public count |
 | Input | one line, hint `Moments.CommentHint` (`Say something` / `发条评论，说说你的感受`), image, @, and emoji at the trailing end |
+| Image or sticker | `POST` body `media_keys` is one tus key. `sticker: true` marks a sticker. The gallery uploads one photo. The emoji button picks a sticker and uploads its file the same way |
 
-Province is read from `province`, `ip_province`, `ip_location`, or `region`. It is omitted when those keys are absent. The dislike icon is omitted unless the payload has `disliked` or `dislikes`. Nested replies render only from `replies[]`; a `reply_count` with an empty `replies` array still shows the expand line, and expanding it shows nothing further.
+`card.media[0]` is the comment image. `avatar_url` is used when present; otherwise the avatar is `media_base_url` plus `avatar_key`. A hot cursor is not reused as a time cursor.
