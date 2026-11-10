@@ -35,6 +35,8 @@ Media sits in the text column, 8 dp below the text. Corners are 12 dp.
 
 Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 dp horizontal and 8 dp vertical.
 
+The bitmap filter is the cell size in dp, capped at 360. Prefetch uses that same filter, so the cache hits. Load the next page when 10 or fewer posts remain. Prefetch 3 posts ahead and 1 behind, the avatar plus the first 2 images, and a video cover only. At most 2 downloads at once. Cancel anything that leaves that window. Do not start a new prefetch during a fling faster than 4 screen heights per second. Follow the channel photo auto-download setting.
+
 ## Actions
 
 The row aligns with the text column. Icon, then the count. No text labels. Grey `dialogIcon`. A count of zero is hidden. There is no share count.

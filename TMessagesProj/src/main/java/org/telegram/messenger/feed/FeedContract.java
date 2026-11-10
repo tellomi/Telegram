@@ -245,6 +245,107 @@ public final class FeedContract {
     }
 
     /** The 动态 tab is shown only when both gates pass. */
+    public static final int LOAD_MORE_REMAINING = 10;
+    public static final int PREFETCH_AHEAD_POSTS = 3;
+    public static final int PREFETCH_BEHIND_POSTS = 1;
+    public static final int PREFETCH_IMAGES_PER_POST = 2;
+    public static final int PREFETCH_MAX_INFLIGHT = 2;
+    /** Screen-heights per second. Above this, do not start new prefetches. */
+    public static final float FLING_PAUSE_SPEED = 4f;
+    public static final String AVATAR_FILTER = "40_40";
+
+    public static final class PrefetchPost {
+        public String avatar = "";
+        public final ArrayList<String> images = new ArrayList<String>();
+        public String linkImage = "";
+        public String imageFilter = "";
+    }
+
+    public static final class PrefetchHit {
+        public final String url;
+        public final String filter;
+        public final String key;
+
+        public PrefetchHit(String url, String filter) {
+            this.url = url == null ? "" : url;
+            this.filter = filter == null ? "" : filter;
+            this.key = this.url + "\n" + this.filter;
+        }
+    }
+
+    public static boolean shouldLoadMore(int remaining, boolean hasCursor, boolean loading) {
+        return hasCursor && !loading && remaining <= LOAD_MORE_REMAINING;
+    }
+
+    public static int[] mediaCellPx(int count, int screenWidthPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int column = Math.max(Math.round(200f * scale), screenWidthPx - Math.round(72f * scale));
+        if (count <= 1) {
+            int height = Math.min(Math.round(360f * scale), Math.max(Math.round(120f * scale), column));
+            return new int[]{column, height};
+        }
+        int width = (int) (column * 0.78f);
+        return new int[]{width, width};
+    }
+
+    /**
+     * Nearest first. Positive direction is toward the end of the list.
+     * A video post must already have its cover in {@code images} and no video file url.
+     */
+    public static ArrayList<PrefetchHit> prefetchPlan(List<PrefetchPost> posts, int firstVisible, int lastVisible, int direction, boolean allowed, boolean lowTier) {
+        ArrayList<PrefetchHit> hits = new ArrayList<PrefetchHit>();
+        if (!allowed || posts == null || posts.isEmpty() || lastVisible < 0 || firstVisible < 0) {
+            return hits;
+        }
+        int ahead = lowTier ? 1 : PREFETCH_AHEAD_POSTS;
+        int perPost = lowTier ? 1 : PREFETCH_IMAGES_PER_POST;
+        int size = posts.size();
+        ArrayList<Integer> indexes = new ArrayList<Integer>();
+        if (direction >= 0) {
+            for (int step = 1; step <= ahead; step++) {
+                int index = lastVisible + step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = firstVisible - 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        } else {
+            for (int step = 1; step <= ahead; step++) {
+                int index = firstVisible - step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = lastVisible + 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        }
+        for (int i = 0; i < indexes.size(); i++) {
+            PrefetchPost post = posts.get(indexes.get(i));
+            if (post == null) {
+                continue;
+            }
+            if (post.avatar != null && post.avatar.length() > 0) {
+                hits.add(new PrefetchHit(post.avatar, AVATAR_FILTER));
+            }
+            int images = Math.min(perPost, post.images.size());
+            for (int image = 0; image < images; image++) {
+                String url = post.images.get(image);
+                if (url != null && url.length() > 0) {
+                    hits.add(new PrefetchHit(url, post.imageFilter));
+                }
+            }
+            if (post.linkImage != null && post.linkImage.length() > 0) {
+                hits.add(new PrefetchHit(post.linkImage, post.imageFilter));
+            }
+        }
+        return hits;
+    }
+
     /** The Moments tab is part of the client. App-config and engine status do not hide it. */
     public static boolean showMomentsTab(boolean configKeyPresent, boolean statusVisible) {
         return true;

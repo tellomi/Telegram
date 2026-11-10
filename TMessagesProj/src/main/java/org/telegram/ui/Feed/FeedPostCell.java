@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.feed.FeedConfig;
@@ -29,6 +30,7 @@ import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -95,6 +97,7 @@ public class FeedPostCell extends LinearLayout {
     private final boolean showFollow;
     private final Delegate delegate;
     private FeedModels.Post post;
+    private List<ImageReceiver> preloadReceivers;
 
     private final BackupImageView avatar;
     private final TextView name;
@@ -346,6 +349,13 @@ public class FeedPostCell extends LinearLayout {
         return view;
     }
 
+    public void setPreloadReceivers(List<ImageReceiver> receivers) {
+        preloadReceivers = receivers;
+        if (avatar != null && avatar.getImageReceiver() != null) {
+            avatar.getImageReceiver().setPreloadingReceivers(receivers);
+        }
+    }
+
     public void setPost(FeedModels.Post post) {
         this.post = post;
         applyTheme();
@@ -384,6 +394,9 @@ public class FeedPostCell extends LinearLayout {
         share.setVisibility(VISIBLE);
         save.setVisibility(GONE);
         FeedUi.bindAvatar(avatar, post.author, account);
+        if (avatar.getImageReceiver() != null) {
+            avatar.getImageReceiver().setPreloadingReceivers(preloadReceivers);
+        }
         name.setText(FeedUi.displayName(post.author, account));
         String audience = FeedUi.audienceLabel(post.audienceKind);
         String when = FeedUi.timeAgo(post.createdAt);
@@ -664,6 +677,9 @@ public class FeedPostCell extends LinearLayout {
                 BackupImageView image = new BackupImageView(getContext());
                 image.setRoundRadius(dp(12));
                 frame.addView(image, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                if (image.getImageReceiver() != null) {
+                    image.getImageReceiver().setPreloadingReceivers(preloadReceivers);
+                }
                 String thumb = media.thumbUrl(account);
                 String play = media.displayUrl(account);
                 if (thumb.length() > 0) {
@@ -714,12 +730,7 @@ public class FeedPostCell extends LinearLayout {
         }
 
         private int[] cellPixels(int count) {
-            int column = Math.max(dp(200), AndroidUtilities.displaySize.x - dp(72));
-            if (count <= 1) {
-                return new int[]{column, Math.min(dp(360), Math.max(dp(120), column))};
-            }
-            int width = (int) (column * 0.78f);
-            return new int[]{width, width};
+            return FeedContract.mediaCellPx(count, AndroidUtilities.displaySize.x, AndroidUtilities.density);
         }
 
         @Override

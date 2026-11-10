@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -209,6 +210,86 @@ public class FeedContractTest {
         assertTrue(method.contains("toggleLike"));
         assertFalse(method.contains("FeedDetailActivity"));
         assertFalse(method.contains("presentFragment"));
+    }
+
+    @Test
+    public void prefetchPlanMatchesTheSharedSpec() {
+        assertEquals(10, FeedContract.LOAD_MORE_REMAINING);
+        assertEquals(3, FeedContract.PREFETCH_AHEAD_POSTS);
+        assertEquals(1, FeedContract.PREFETCH_BEHIND_POSTS);
+        assertEquals(2, FeedContract.PREFETCH_IMAGES_PER_POST);
+        assertEquals(2, FeedContract.PREFETCH_MAX_INFLIGHT);
+        assertEquals(4f, FeedContract.FLING_PAUSE_SPEED, 0f);
+        assertTrue(FeedContract.shouldLoadMore(10, true, false));
+        assertFalse(FeedContract.shouldLoadMore(11, true, false));
+        assertFalse(FeedContract.shouldLoadMore(10, true, true));
+        assertFalse(FeedContract.shouldLoadMore(10, false, false));
+
+        ArrayList<FeedContract.PrefetchPost> posts = new ArrayList<FeedContract.PrefetchPost>();
+        for (int i = 0; i < 8; i++) {
+            FeedContract.PrefetchPost post = new FeedContract.PrefetchPost();
+            post.avatar = "avatar-" + i;
+            post.imageFilter = "288_288";
+            if (i == 3) {
+                post.images.add("cover-3");
+            } else {
+                post.images.add("img-" + i + "-0");
+                post.images.add("img-" + i + "-1");
+                post.images.add("img-" + i + "-2");
+            }
+            posts.add(post);
+        }
+        ArrayList<FeedContract.PrefetchHit> down = FeedContract.prefetchPlan(posts, 0, 1, 1, true, false);
+        String joined = keys(down);
+        assertTrue(joined.contains("avatar-2"));
+        assertTrue(joined.contains("img-2-0"));
+        assertTrue(joined.contains("img-2-1"));
+        assertFalse(joined.contains("img-2-2"));
+        assertTrue(joined.contains("cover-3"));
+        assertFalse(joined.contains("img-3"));
+        assertTrue(joined.contains("avatar-4"));
+        assertFalse(joined.contains("avatar-1"));
+        assertFalse(joined.contains("avatar-5"));
+
+        ArrayList<FeedContract.PrefetchHit> up = FeedContract.prefetchPlan(posts, 5, 6, -1, true, false);
+        String upKeys = keys(up);
+        assertTrue(upKeys.contains("avatar-4"));
+        assertTrue(upKeys.contains("avatar-3"));
+        assertTrue(upKeys.contains("avatar-2"));
+        assertTrue(upKeys.contains("avatar-7"));
+        assertFalse(upKeys.contains("avatar-1"));
+        assertFalse(upKeys.contains("avatar-5"));
+
+        assertTrue(FeedContract.prefetchPlan(posts, 0, 1, 1, false, false).isEmpty());
+        ArrayList<FeedContract.PrefetchHit> low = FeedContract.prefetchPlan(posts, 0, 1, 1, true, true);
+        int images = 0;
+        for (int i = 0; i < low.size(); i++) {
+            if (!low.get(i).filter.equals(FeedContract.AVATAR_FILTER)) {
+                images++;
+            }
+        }
+        assertEquals(1, images);
+        assertTrue(keys(low).contains("avatar-2"));
+        assertFalse(keys(low).contains("avatar-3"));
+
+        ArrayList<FeedContract.PrefetchHit> next = FeedContract.prefetchPlan(posts, 1, 2, 1, true, false);
+        HashSet<String> left = new HashSet<String>();
+        for (int i = 0; i < down.size(); i++) {
+            left.add(down.get(i).key);
+        }
+        for (int i = 0; i < next.size(); i++) {
+            left.remove(next.get(i).key);
+        }
+        assertTrue(left.contains("avatar-2\n" + FeedContract.AVATAR_FILTER));
+        assertFalse(left.contains("avatar-3\n" + FeedContract.AVATAR_FILTER));
+    }
+
+    private static String keys(ArrayList<FeedContract.PrefetchHit> hits) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < hits.size(); i++) {
+            builder.append(hits.get(i).url).append(' ');
+        }
+        return builder.toString();
     }
 
     @Test

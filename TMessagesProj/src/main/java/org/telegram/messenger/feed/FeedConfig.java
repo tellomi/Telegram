@@ -19,6 +19,12 @@ public final class FeedConfig {
     }
 
     public static final int PAGE_SIZE = 20;
+    public static final int LOAD_MORE_REMAINING = FeedContract.LOAD_MORE_REMAINING;
+    public static final int PREFETCH_AHEAD_POSTS = FeedContract.PREFETCH_AHEAD_POSTS;
+    public static final int PREFETCH_BEHIND_POSTS = FeedContract.PREFETCH_BEHIND_POSTS;
+    public static final int PREFETCH_IMAGES_PER_POST = FeedContract.PREFETCH_IMAGES_PER_POST;
+    public static final int PREFETCH_MAX_INFLIGHT = FeedContract.PREFETCH_MAX_INFLIGHT;
+    public static final float FLING_PAUSE_SPEED = FeedContract.FLING_PAUSE_SPEED;
     public static final long NEW_POSTS_POLL_MS = 60_000L;
     public static final int MAX_DRAFTS = 20;
     /** content-engine limits. See FeedContract. */

@@ -27,6 +27,7 @@ public class FeedListView extends FrameLayout {
         ArrayList<org.telegram.messenger.feed.FeedModels.Post> posts();
         void onRefresh();
         void onLoadMore();
+        void onPrefetchPage();
         boolean loading();
         boolean failed();
         boolean hasMore();
@@ -40,7 +41,11 @@ public class FeedListView extends FrameLayout {
 
     private final Host host;
     public final RecyclerListView listView;
+    private final FeedPreloader preloader;
     private final TextView footer;
+    private int scrollDirection = 1;
+    private long lastScrollAt;
+    private Runnable idlePrefetch;
     private View emptyView;
     private float downY;
     private boolean pulling;
@@ -49,7 +54,9 @@ public class FeedListView extends FrameLayout {
     public FeedListView(Context context, Host host) {
         super(context);
         this.host = host;
+        preloader = new FeedPreloader(host.account());
         listView = new RecyclerListView(context);
+        preloader.setParent(listView);
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(new Adapter());
         listView.setOnItemClickListener((View view, int position, float x, float y) -> {
@@ -65,13 +72,17 @@ public class FeedListView extends FrameLayout {
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
-                FeedPlayback.choose();
-                if (manager != null && host.hasMore() && !host.loading() && !host.posts().isEmpty()) {
-                    int last = manager.findLastVisibleItemPosition();
-                    if (last >= host.posts().size() - 3) {
-                        host.onLoadMore();
-                    }
+                if (dy != 0) {
+                    scrollDirection = dy > 0 ? 1 : -1;
+                }
+                considerLoadAndPrefetch(dy, listView.getScrollState() == RecyclerView.SCROLL_STATE_SETTLING);
+            }
+
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                considerLoadAndPrefetch(0, false);
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    scheduleIdlePage();
                 }
             }
         });
@@ -83,6 +94,49 @@ public class FeedListView extends FrameLayout {
         footer.setPadding(dp(24), dp(24), dp(24), dp(24));
         addView(footer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, android.view.Gravity.CENTER));
         footer.setOnClickListener(v -> host.onRefresh());
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        preloader.setAttached(true);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        preloader.setAttached(false);
+        super.onDetachedFromWindow();
+    }
+
+    private void considerLoadAndPrefetch(int dy, boolean settling) {
+        LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
+        FeedPlayback.choose();
+        if (manager == null) {
+            return;
+        }
+        int first = manager.findFirstVisibleItemPosition();
+        int last = manager.findLastVisibleItemPosition();
+        int count = host.posts().size();
+        if (last >= 0 && count > 0 && org.telegram.messenger.feed.FeedContract.shouldLoadMore(count - 1 - last, host.hasMore(), host.loading())) {
+            host.onLoadMore();
+        }
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean fling = false;
+        if (settling && dy != 0 && lastScrollAt > 0) {
+            float seconds = Math.max(0.016f, (now - lastScrollAt) / 1000f);
+            float screens = Math.abs(dy) / (float) Math.max(1, listView.getHeight());
+            fling = screens / seconds > org.telegram.messenger.feed.FeedContract.FLING_PAUSE_SPEED;
+        }
+        lastScrollAt = now;
+        preloader.update(host.posts(), first, last, scrollDirection, fling);
+    }
+
+    private void scheduleIdlePage() {
+        if (idlePrefetch != null) {
+            removeCallbacks(idlePrefetch);
+        }
+        idlePrefetch = () -> host.onPrefetchPage();
+        postDelayed(idlePrefetch, 1000);
     }
 
     public void refresh() {
@@ -171,6 +225,7 @@ public class FeedListView extends FrameLayout {
                 return new RecyclerListView.Holder(retry);
             }
             FeedPostCell cell = new FeedPostCell(parent.getContext(), host.account(), false, host.showFollow(), host.delegate());
+            cell.setPreloadReceivers(preloader.receivers());
             cell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(cell);
         }

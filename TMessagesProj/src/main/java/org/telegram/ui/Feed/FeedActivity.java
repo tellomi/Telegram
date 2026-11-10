@@ -162,6 +162,13 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                 }
 
                 @Override
+                public void onPrefetchPage() {
+                    if (!loading[tab] && FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0) {
+                        controller().prefetchNext(streams[tab]);
+                    }
+                }
+
+                @Override
                 public void onLoadMore() {
                     if (tab >= loading.length) {
                         return;
