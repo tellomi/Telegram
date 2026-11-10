@@ -554,6 +554,35 @@ public class LocaleController {
     private ArrayList<LocaleInfo> otherLanguages = new ArrayList<>();
 
     private static volatile LocaleController Instance = null;
+
+    static void replaceInstanceForTest(LocaleController controller) {
+        Instance = controller;
+    }
+
+    void useCloudPackForTest(HashMap<String, String> values, String pluralLangCode) {
+        HashMap<String, String> pack = values == null ? new HashMap<>() : values;
+        localizationExternal = new Localization.Builder().addLocalization(pack).build();
+        String code = pluralLangCode == null ? "" : pluralLangCode;
+        currentPluralRules = allRules.get(code);
+        int split = code.indexOf('_');
+        if (split < 0) {
+            split = code.indexOf('-');
+        }
+        if (currentPluralRules == null && split > 0) {
+            currentPluralRules = allRules.get(code.substring(0, split));
+        }
+        if (currentPluralRules == null) {
+            currentPluralRules = new PluralRules_None();
+        }
+        if (split > 0 && split + 1 < code.length()) {
+            currentLocale = new Locale(code.substring(0, split), code.substring(split + 1));
+        } else if (code.length() > 0) {
+            currentLocale = new Locale(code);
+        } else {
+            currentLocale = Locale.ENGLISH;
+        }
+    }
+
     public static LocaleController getInstance() {
         LocaleController localInstance = Instance;
         if (localInstance == null) {
@@ -568,6 +597,14 @@ public class LocaleController {
     }
 
     public LocaleController() {
+        this(true);
+    }
+
+    /**
+     * @param attachToProcess false keeps plural rules and built-in language rows only.
+     * Unit tests use that so a downloaded pack can be installed without a process context.
+     */
+    LocaleController(boolean attachToProcess) {
         addRules(new String[]{"bem", "brx", "da", "de", "el", "en", "eo", "es", "et", "fi", "fo", "gl", "he", "iw", "it", "nb",
                 "nl", "nn", "no", "sv", "af", "bg", "bn", "ca", "eu", "fur", "fy", "gu", "ha", "is", "ku",
                 "lb", "ml", "mr", "nah", "ne", "om", "or", "pa", "pap", "ps", "so", "sq", "sw", "ta", "te",
@@ -682,6 +719,11 @@ public class LocaleController {
         localeInfo.builtIn = true;
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
+
+        if (!attachToProcess) {
+            systemDefaultLocale = Locale.getDefault();
+            return;
+        }
 
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
@@ -1576,6 +1618,7 @@ public class LocaleController {
             if (value == null) {
                 value = getInstance().getLocalizedString(key + "_other");
             }
+            value = TellomiBrand.rewrite(value);
             value = value.replace("%d", "%1$s");
             value = value.replace("%1$d", "%1$s");
 

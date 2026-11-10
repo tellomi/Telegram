@@ -21,7 +21,7 @@ public class BuildVars {
     public static boolean DEBUG_VERSION = BuildConfig.DEBUG_VERSION;
     public static boolean LOGS_ENABLED = BuildConfig.DEBUG_VERSION;
     public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG_PRIVATE_VERSION;
-    // Langpack download would call translations.telegram.org. Own-server builds leave it off.
+    // langpack.* is MTProto to our server (teamgram-server), not translations.telegram.org.
     public static boolean USE_CLOUD_STRINGS = BuildConfig.TELLOMI_USE_CLOUD_STRINGS;
     public static boolean CHECK_UPDATES = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
