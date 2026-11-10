@@ -58,7 +58,7 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 | Comment sheet expand | `msg_zoomin`, and `msg_zoomout` when full screen |
 | Comment sheet close | `msg_close` |
 | Comment like | `media_like` / `media_like_active` |
-| Comment dislike | `msg_cancel`, only when the payload has `disliked` or `dislikes` |
+| Comment dislike | `msg_cancel`. Always shown. `PUT /v1/feed/comments/{id}/dislike` hides the comment for the viewer |
 | Comment image | `msg_gallery` |
 | Mention | `msg_mention` |
 | Emoji | `input_smile` |
