@@ -33,7 +33,7 @@ Media sits in the text column, 8 dp below the text. Corners are 12 dp.
 | 1 video | full column width, height `max(180 dp, width * 9 / 16)` |
 | 2 or more | horizontal carousel. Each cell is 78% of the column and square, 8 dp gap, so the next image peeks. Swipe, do not use a grid. A swipe on the carousel, including the first and last photo, does not change the feed tab |
 
-The list decodes each photo at the cell size, capped at 360 dp. `ImageLoader` reads a `W_H` filter as dp and multiplies by density. `800_800` on a 3x screen asks for 2400 px and leaves a 4032×3024 photo at sample size 1 (about 48 MB, ARGB_8888). Several of those during a fling get the process killed with no crash dialog. The cell filter is `imageFilter(cellPx, density)`.
+The feed requests the smallest JPEG rendition whose long edge is at least the cell: 1080 px for one large image, 360 px for a carousel cell. A missing tier uses the original key or url. `url` is used as-is; otherwise the path is `media_base_url` + `key`. PhotoViewer always opens the original. Video cells show `poster`, then `cover`, then the video file. The list still decodes at the cell size, capped at 360 dp. `ImageLoader` reads a `W_H` filter as dp and multiplies by density. `800_800` on a 3x screen asks for 2400 px and leaves a 4032×3024 photo at sample size 1 (about 48 MB, ARGB_8888). Several of those during a fling get the process killed with no crash dialog. The cell filter is `imageFilter(cellPx, density)`.
 
 List images are prefetched with Telegram `ImageReceiver`s, the same way `PeerStoriesView` preloads the next story: low file priority, and the visible cell reuses the bitmap when the url and filter match. The window is 3 posts ahead and 1 behind (1 ahead on a low-end device or while roaming), the avatar plus the first two images or a video cover, at most 2 downloads, cancelled when they leave the window. A fling faster than 4 screen heights per second starts nothing new. This follows Glide's `RecyclerViewPreloader` (same decode size, direction-aware, a few items ahead), Fresco's cancel-on-close prefetch, and Android's subsample-to-the-view guidance.
 
@@ -48,6 +48,8 @@ Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 d
 The action bar title stays `Moments_Title`. While Telegram is waiting, connecting, updating, or connecting to a proxy, the title uses the same overlay strings as the chat list: `WaitingForNetwork`, `Connecting`, `Updating`, `ConnectingToProxyWithDots`.
 
 Nearby shows `Moments_Sort_Latest` or `Moments_Nearby_Mixed` under the segments. Latest is the default. Mixed is the recommended order (`sort=mixed`).
+
+Friends is `GET /v1/feed/friends?cursor=`, same cursor as Following. An empty Friends list uses `Moments_EmptyFriends` and `Moments_FindPeople`. A following row shows a repost line only when `reason` is `repost`. `topic` and `source` are not shown. `mutual_followers` cannot be reposted or quoted (`Moments_RepostBlocked_Mutual`). Share to chat stays available. `state=unavailable` is `Moments_Unavailable`.
 
 A row that is still waiting for its card is a 220 dp grey block, 280 dp tall, not an empty gap. Photos and video posters bind to the post id. A video poster is the cover image, never the video file. Tapping a photo or video opens `PhotoViewer`. Tapping the row opens the post detail screen and the comment sheet. A like updates that row only. Switching segments cancels the previous list read.
 
@@ -83,7 +85,7 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 
 | Token | Value |
 | --- | --- |
-| Tab row | 40 dp, 14 sp bold |
+| Tab row | 40 dp, 14 sp bold. Always 推荐, 关注, 好友, 同城. Friends stays up if `/v1/feed/friends` fails |
 | Selected tab | `windowBackgroundWhiteBlackText` |
 | Other tabs | `windowBackgroundWhiteGrayText` |
 | Compose control | round `FragmentFloatingButton` |

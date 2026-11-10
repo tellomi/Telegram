@@ -12,11 +12,12 @@ public final class FeedModels {
 
     public static final String STREAM_RECOMMEND = FeedContract.STREAM_RECOMMEND;
     public static final String STREAM_FOLLOWING = FeedContract.STREAM_FOLLOWING;
+    public static final String STREAM_FRIENDS = FeedContract.STREAM_FRIENDS;
     public static final String STREAM_NEARBY = FeedContract.STREAM_NEARBY;
 
-    /** Engine streams. friends is not a route. */
+    /** Engine streams, in home order. */
     public static final String[] STREAMS = new String[]{
-            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_NEARBY
+            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_FRIENDS, STREAM_NEARBY
     };
 
     public static class Author {
@@ -88,6 +89,8 @@ public final class FeedModels {
         public int h;
         public int durationMs;
         public boolean original;
+        public final ArrayList<FeedContract.Tier> renditions = new ArrayList<>();
+        public FeedContract.Tier poster;
 
         static Media parse(JSONObject o) {
             Media m = new Media();
@@ -116,6 +119,16 @@ public final class FeedModels {
                 m.durationMs *= 1000;
             }
             m.original = o.optBoolean("is_original", false);
+            JSONArray renditions = o.optJSONArray("renditions");
+            if (renditions != null) {
+                m.renditions.addAll(FeedContract.parseRenditions("{\"renditions\":" + renditions.toString() + "}"));
+            }
+            JSONObject poster = o.optJSONObject("poster");
+            if (poster != null) {
+                m.poster = FeedContract.parsePoster("{\"poster\":" + poster.toString() + "}");
+            } else if (o.optJSONObject("cover") != null) {
+                m.poster = FeedContract.parsePoster("{\"cover\":" + o.optJSONObject("cover").toString() + "}");
+            }
             return m;
         }
 
@@ -140,8 +153,30 @@ public final class FeedModels {
             return FeedConfig.mediaUrl(account, path);
         }
 
-        /** Still image, or a video cover. A video file is not used as a poster. */
+        /** List image: smallest rendition that covers the cell, else the original. Videos use the poster. */
+        public String listUrl(int account, int visualCount) {
+            if (isVideo()) {
+                return posterUrl(account);
+            }
+            int index = FeedContract.chooseRendition(renditions, FeedContract.renditionTargetPx(visualCount));
+            if (index >= 0) {
+                FeedContract.Tier tier = renditions.get(index);
+                String resolved = FeedConfig.mediaUrl(account, tier.url.length() > 0 ? tier.url : tier.key);
+                if (resolved.length() > 0) {
+                    return resolved;
+                }
+            }
+            return displayUrl(account);
+        }
+
+        /** Video poster, then cover, then the video file. */
         public String posterUrl(int account) {
+            if (poster != null) {
+                String fromPoster = FeedConfig.mediaUrl(account, poster.url.length() > 0 ? poster.url : poster.key);
+                if (fromPoster.length() > 0) {
+                    return fromPoster;
+                }
+            }
             if (coverKey != null && coverKey.length() > 0) {
                 if (coverKey.startsWith("https://") || coverKey.startsWith("http://")) {
                     return coverKey;
@@ -150,9 +185,6 @@ public final class FeedModels {
                 if (cover.length() > 0) {
                     return cover;
                 }
-            }
-            if (isVideo()) {
-                return "";
             }
             return displayUrl(account);
         }
@@ -343,6 +375,10 @@ public final class FeedModels {
             return "public".equals(audienceKind);
         }
 
+        public boolean isMutual() {
+            return FeedContract.isMutualAudience(audienceKind);
+        }
+
         public boolean hasImages() {
             for (int i = 0; i < media.size(); i++) {
                 if (media.get(i).isImage()) {
@@ -385,7 +421,7 @@ public final class FeedModels {
             p.version = o.optInt("version", 0);
             String state = o.optString("state", "published");
             p.state = state;
-            p.unavailable = o.optBoolean("unavailable", false) || "unavailable".equals(state) || "deleted".equals(state);
+            p.unavailable = FeedContract.cardUnavailable(o.optBoolean("unavailable", false), state);
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
             }

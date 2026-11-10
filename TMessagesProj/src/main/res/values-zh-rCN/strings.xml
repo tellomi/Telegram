@@ -14,12 +14,13 @@
     <string name="Moments_Uploading">正在发布</string>
     <string name="Moments_Empty_Recommend">还没有内容，来发第一条吧</string>
     <string name="Moments_Empty_Following">你关注的人还没有发动态</string>
-    <string name="Moments_EmptyFriends">互相关注就成为好友</string>
+    <string name="Moments_EmptyFriends">互相关注后就是好友，好友的动态会出现在这里</string>
     <string name="Moments_Empty_Nearby">这座城市还没有动态</string>
     <string name="Moments_FindPeople">找人关注</string>
     <string name="Moments_SwitchCity">切换城市</string>
     <string name="Moments_LoadFailed">加载失败，点击重试</string>
     <string name="Moments_RepostBlocked">只有公开帖可以转发或引用</string>
+    <string name="Moments_RepostBlocked_Mutual">互关好友的帖子不能转发或引用</string>
     <string name="Moments_Repost">转发</string>
     <string name="Moments_Quote">引用</string>
     <string name="Moments_Share">分享</string>

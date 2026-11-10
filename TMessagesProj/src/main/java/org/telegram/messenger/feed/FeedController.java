@@ -92,11 +92,7 @@ public class FeedController {
         this.account = account;
         this.api = new FeedApi(account);
         this.storage = new FeedStorage(account);
-        ArrayList<String> storedTabs = FeedContract.parseTabPref(storage.getPref("tabs", ""));
-        if (storedTabs.isEmpty()) {
-            storedTabs = FeedContract.defaultTabs();
-        }
-        tabs.addAll(storedTabs);
+        tabs.addAll(FeedContract.defaultTabs());
         for (int i = 0; i < tabs.size(); i++) {
             rememberPage(tabs.get(i));
         }
@@ -276,6 +272,9 @@ public class FeedController {
             remoteConfigLoading = false;
             if (json != null) {
                 FeedConfig.rememberMediaBase(account, json.optString("media_base_url", ""));
+                if (json.has("tabs")) {
+                    applyCapabilities(json.toString());
+                }
                 remoteConfigReady = true;
                 notifyListeners();
             }
@@ -334,9 +333,9 @@ public class FeedController {
                 }
                 return;
             }
-            if (json == null) {
+            if (error != null || json == null) {
                 if (done != null) {
-                    done.run(false, error);
+                    done.run(false, error == null ? "network" : error);
                 }
                 return;
             }

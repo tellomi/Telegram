@@ -153,8 +153,8 @@
     },
     {
       "key": "Moments_EmptyFriends",
-      "en": "Follow each other to become friends.",
-      "zh-Hans": "互相关注就成为好友"
+      "en": "Follow each other and you are friends. Their posts show up here.",
+      "zh-Hans": "互相关注后就是好友，好友的动态会出现在这里"
     },
     {
       "key": "Moments_Empty_Following",
@@ -460,6 +460,11 @@
       "key": "Moments_RepostBlocked",
       "en": "Only public posts can be reposted or quoted.",
       "zh-Hans": "只有公开帖可以转发或引用"
+    },
+    {
+      "key": "Moments_RepostBlocked_Mutual",
+      "en": "Mutual-follower posts can\\'t be reposted or quoted.",
+      "zh-Hans": "互关好友的帖子不能转发或引用"
     },
     {
       "key": "Moments_RepostHeader",

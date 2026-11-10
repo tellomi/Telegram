@@ -224,19 +224,20 @@ public final class FeedPreloader {
             }
         }
         int visuals = 0;
+        ArrayList<FeedModels.Media> shown = new ArrayList<>();
         if (post.media != null) {
             for (int i = 0; i < post.media.size(); i++) {
                 FeedModels.Media media = post.media.get(i);
-                if (media == null) {
-                    continue;
+                if (media != null && (media.isVideo() || media.isImage())) {
+                    shown.add(media);
                 }
-                if (media.isVideo() || media.isImage()) {
-                    String cover = media.thumbUrl(account);
-                    if (cover.length() > 0) {
-                        described.images.add(cover);
-                    }
-                    visuals++;
-                }
+            }
+        }
+        visuals = shown.size();
+        for (int i = 0; i < shown.size(); i++) {
+            String cover = shown.get(i).listUrl(account, visuals);
+            if (cover.length() > 0) {
+                described.images.add(cover);
             }
         }
         int[] cell = FeedContract.mediaCellPx(Math.max(1, visuals), screen, density);

@@ -11647,12 +11647,13 @@
     <string name="Moments_Uploading">Posting</string>
     <string name="Moments_Empty_Recommend">Nothing here yet. Post the first one.</string>
     <string name="Moments_Empty_Following">People you follow have not posted yet.</string>
-    <string name="Moments_EmptyFriends">Follow each other to become friends.</string>
+    <string name="Moments_EmptyFriends">Follow each other and you are friends. Their posts show up here.</string>
     <string name="Moments_Empty_Nearby">No posts in this city yet.</string>
     <string name="Moments_FindPeople">Find people</string>
     <string name="Moments_SwitchCity">Switch city</string>
     <string name="Moments_LoadFailed">Could not load. Tap to retry.</string>
     <string name="Moments_RepostBlocked">Only public posts can be reposted or quoted.</string>
+    <string name="Moments_RepostBlocked_Mutual">Mutual-follower posts can\'t be reposted or quoted.</string>
     <string name="Moments_Repost">Repost</string>
     <string name="Moments_Quote">Quote</string>
     <string name="Moments_Share">Share</string>
