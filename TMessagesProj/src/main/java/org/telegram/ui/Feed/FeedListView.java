@@ -157,7 +157,7 @@ public class FeedListView extends FrameLayout {
             return;
         }
         if (host.loading()) {
-            showStatus(getString(R.string.Loading), null);
+            showStatus(LocaleController.getString("Moments_Loading", R.string.Moments_Loading), null);
         } else if (host.failed()) {
             showStatus(LocaleController.getString("Moments_LoadFailed", R.string.Moments_LoadFailed), v -> host.onRefresh());
         } else {
@@ -218,6 +218,7 @@ public class FeedListView extends FrameLayout {
     }
 
     private class Adapter extends RecyclerListView.SelectionAdapter {
+        private final org.telegram.messenger.feed.FeedContract.StableIds stableIds = new org.telegram.messenger.feed.FeedContract.StableIds();
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             return holder.getItemViewType() == 0;
@@ -272,7 +273,8 @@ public class FeedListView extends FrameLayout {
             if (position < 0 || position >= posts.size() || posts.get(position) == null || posts.get(position).id == null) {
                 return RecyclerView.NO_ID;
             }
-            return posts.get(position).id.hashCode() & 0xffffffffL;
+            long stable = stableIds.idFor(posts.get(position).id);
+            return stable == 0 ? RecyclerView.NO_ID : stable;
         }
 
         @Override

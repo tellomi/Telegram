@@ -27,45 +27,55 @@ public final class FeedReportSheet {
         if (fragment.getParentActivity() == null) {
             return;
         }
+        String[] keys = new String[]{
+                "Moments_Report_Spam",
+                "Moments_Report_Violence",
+                "Moments_Report_Child",
+                "Moments_Report_Drugs",
+                "Moments_Report_Personal",
+                "Moments_Report_Pornography",
+                "Moments_Report_Fake",
+                "Moments_Report_Other"
+        };
         int[] reasons = new int[]{
-                R.string.ReportChatSpam,
-                R.string.ReportChatViolence,
-                R.string.ReportChatChild,
-                R.string.ReportChatIllegalDrugs,
-                R.string.ReportChatPersonalDetails,
-                R.string.ReportChatPornography,
-                R.string.ReportChatFakeAccount,
-                R.string.ReportChatOther
+                R.string.Moments_Report_Spam,
+                R.string.Moments_Report_Violence,
+                R.string.Moments_Report_Child,
+                R.string.Moments_Report_Drugs,
+                R.string.Moments_Report_Personal,
+                R.string.Moments_Report_Pornography,
+                R.string.Moments_Report_Fake,
+                R.string.Moments_Report_Other
         };
         String[] codes = new String[]{"spam", "violence", "child_abuse", "illegal_drugs", "personal_details", "pornography", "fake", "other"};
         CharSequence[] labels = new CharSequence[reasons.length];
         for (int i = 0; i < reasons.length; i++) {
-            labels[i] = getString(reasons[i]);
+            labels[i] = LocaleController.getString(keys[i], reasons[i]);
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity(), fragment.getResourceProvider());
-        builder.setTitle(getString(R.string.ReportChat));
+        builder.setTitle(LocaleController.getString("Moments_Report", R.string.Moments_Report));
         builder.setItems(labels, (dialog, which) -> askDetail(fragment, targetType, targetId, codes[which]));
         fragment.showDialog(builder.create());
     }
 
     private static void askDetail(BaseFragment fragment, String targetType, String targetId, String reason) {
         EditText field = new EditText(fragment.getParentActivity());
-        field.setHint(getString(R.string.ReportChatDescription));
+        field.setHint(LocaleController.getString("Moments_Report_Detail", R.string.Moments_Report_Detail));
         field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity(), fragment.getResourceProvider());
-        builder.setTitle(getString(R.string.ReportChat));
+        builder.setTitle(LocaleController.getString("Moments_Report", R.string.Moments_Report));
         builder.setView(field);
-        builder.setPositiveButton(getString(R.string.ReportChat), (dialog, which) -> {
+        builder.setPositiveButton(LocaleController.getString("Moments_Report", R.string.Moments_Report), (dialog, which) -> {
             String detail = field.getText() == null ? "" : field.getText().toString().trim();
             FeedController.getInstance(fragment.getCurrentAccount()).report(targetType, targetId, reason, detail, error -> {
                 if (error != null) {
                     BulletinFactory.of(fragment).createErrorBulletin(error).show();
                 } else {
-                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_antispam, getString(R.string.ReportChatSent)).show();
+                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_antispam, LocaleController.getString("Moments_Report_Sent", R.string.Moments_Report_Sent)).show();
                 }
             });
         });
-        builder.setNegativeButton(getString(R.string.Cancel), null);
+        builder.setNegativeButton(LocaleController.getString("Moments_Cancel", R.string.Moments_Cancel), null);
         fragment.showDialog(builder.create());
         AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(field), 200);
     }

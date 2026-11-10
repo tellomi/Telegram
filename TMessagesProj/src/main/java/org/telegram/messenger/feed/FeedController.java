@@ -132,15 +132,31 @@ public class FeedController {
         }
     }
 
-    /** Invalidates any in-flight list or card read for this stream. */
+    /** Invalidates any in-flight list or card read for this stream. The epoch moves before the socket close so a synchronous cancel cannot paint. */
     public int beginLoad(String stream) {
+        int token = epochFor(stream).begin();
+        api.cancelReads();
+        return token;
+    }
+
+    /** Tab changes drop every other stream's in-flight page before those callbacks can render. */
+    public void cancelLoadsExcept(String keep) {
+        for (String stream : new ArrayList<>(loadEpochs.keySet())) {
+            if (keep != null && keep.equals(stream)) {
+                continue;
+            }
+            epochFor(stream).begin();
+        }
+        api.cancelReads();
+    }
+
+    private FeedContract.LoadEpoch epochFor(String stream) {
         FeedContract.LoadEpoch epoch = loadEpochs.get(stream);
         if (epoch == null) {
             epoch = new FeedContract.LoadEpoch();
             loadEpochs.put(stream, epoch);
         }
-        api.cancelReads();
-        return epoch.begin();
+        return epoch;
     }
 
     public boolean loadIsCurrent(String stream, int token) {
@@ -252,7 +268,7 @@ public class FeedController {
         }
         primed.remove(stream);
         primedCursor.remove(stream);
-        applyStreamPage(stream, false, cursor, page, done);
+        applyStreamPage(stream, false, cursor, page, epochFor(stream).begin(), done);
         return true;
     }
 
@@ -334,7 +350,8 @@ public class FeedController {
             return;
         }
         api.getJson(path, (json, error) -> {
-            if (!loadIsCurrent(stream, epoch) || "cancelled".equals(error)) {
+            if (!FeedContract.acceptPage(loadIsCurrent(stream, epoch), error)) {
+                dropPending(stream);
                 if (done != null) {
                     done.run(false, "cancelled");
                 }
@@ -348,14 +365,15 @@ public class FeedController {
             }
             FeedContract.FeedList refs = FeedContract.parseFeedList(json.toString());
             if (!refs.needsCards) {
-                applyStreamPage(stream, refresh, cursor, FeedModels.parsePage(json), done);
+                applyStreamPage(stream, refresh, cursor, FeedModels.parsePage(json), epoch, done);
                 return;
             }
-            if (posts(stream).isEmpty()) {
-                applyStreamPage(stream, refresh, cursor, FeedModels.placeholders(refs), null);
+            if (posts(stream).isEmpty() && loadIsCurrent(stream, epoch)) {
+                applyStreamPage(stream, refresh, cursor, FeedModels.placeholders(refs), epoch, null);
             }
             hydrate(refs, epoch, (posts, hydrateError) -> {
-                if (!loadIsCurrent(stream, epoch)) {
+                if (!FeedContract.acceptPage(loadIsCurrent(stream, epoch), hydrateError)) {
+                    dropPending(stream);
                     if (done != null) {
                         done.run(false, "cancelled");
                     }
@@ -370,12 +388,34 @@ public class FeedController {
                 FeedModels.Page page = new FeedModels.Page();
                 page.items = posts;
                 page.nextCursor = refs.cursor;
-                applyStreamPage(stream, refresh, cursor, page, done);
+                applyStreamPage(stream, refresh, cursor, page, epoch, done);
             });
         });
     }
 
-    private void applyStreamPage(String stream, boolean refresh, String cursor, FeedModels.Page page, Utilities.Callback2<Boolean, String> done) {
+    private void dropPending(String stream) {
+        ArrayList<FeedModels.Post> list = posts(stream);
+        boolean changed = false;
+        for (int i = list.size() - 1; i >= 0; i--) {
+            FeedModels.Post post = list.get(i);
+            if (post != null && post.pending) {
+                list.remove(i);
+                changed = true;
+            }
+        }
+        if (changed) {
+            notifyListeners();
+        }
+    }
+
+    private void applyStreamPage(String stream, boolean refresh, String cursor, FeedModels.Page page, int epoch, Utilities.Callback2<Boolean, String> done) {
+        if (!loadIsCurrent(stream, epoch)) {
+            dropPending(stream);
+            if (done != null) {
+                done.run(false, "cancelled");
+            }
+            return;
+        }
         ArrayList<FeedModels.Post> list = posts(stream);
         ArrayList<FeedModels.Post> incoming = page == null || page.items == null ? new ArrayList<FeedModels.Post>() : page.items;
         FeedContract.PageApply apply = FeedContract.applyPage(idsOf(list), idsOf(incoming), refresh, page == null ? "" : page.nextCursor);

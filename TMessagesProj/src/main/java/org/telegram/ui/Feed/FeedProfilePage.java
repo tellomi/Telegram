@@ -39,7 +39,7 @@ public class FeedProfilePage extends FrameLayout {
         } else {
             addLink(column, fragment, LocaleController.getString("Moments_Follow", R.string.Moments_Follow), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).follow(String.valueOf(dialogId), true));
             addLink(column, fragment, LocaleController.getString("Moments_Mute", R.string.Moments_Mute), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).mute(String.valueOf(dialogId), true));
-            addLink(column, fragment, getString(R.string.ReportChat), () -> FeedReportSheet.open(fragment, "user", String.valueOf(dialogId)));
+            addLink(column, fragment, LocaleController.getString("Moments_Report", R.string.Moments_Report), () -> FeedReportSheet.open(fragment, "user", String.valueOf(dialogId)));
         }
         addLink(column, fragment, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, String.valueOf(dialogId))));
         addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

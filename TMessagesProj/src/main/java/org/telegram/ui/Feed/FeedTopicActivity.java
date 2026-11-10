@@ -119,9 +119,9 @@ public class FeedTopicActivity extends BaseFragment {
 
     private FeedPostCell.Delegate simple() {
         return new FeedPostCell.Delegate() {
-            @Override public void onOpen(FeedModels.Post post) { if (FeedContract.opensCommentSheet(FeedContract.ENTRY_TOPIC)) FeedCommentSheet.open(FeedTopicActivity.this, post, false); }
+            @Override public void onOpen(FeedModels.Post post) { FeedUi.openEntry(FeedTopicActivity.this, post, FeedContract.ENTRY_TOPIC, false); }
             @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-            @Override public void onComment(FeedModels.Post post) { if (FeedContract.opensCommentSheet(FeedContract.ENTRY_TOPIC)) FeedCommentSheet.open(FeedTopicActivity.this, post, true); }
+            @Override public void onComment(FeedModels.Post post) { FeedUi.openEntry(FeedTopicActivity.this, post, FeedContract.ENTRY_COMMENT, true); }
             @Override public void onRepost(FeedModels.Post post) {}
             @Override public void onShare(FeedModels.Post post) {}
             @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }

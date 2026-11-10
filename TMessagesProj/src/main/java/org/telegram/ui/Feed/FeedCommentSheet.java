@@ -136,7 +136,7 @@ public class FeedCommentSheet extends Dialog {
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setText(countTitle(0));
-        ImageView close = icon(R.drawable.msg_close, getString(R.string.Close));
+        ImageView close = icon(R.drawable.msg_close, LocaleController.getString("Moments_Close", R.string.Moments_Close));
         close.setOnClickListener(v -> dismiss());
         header.addView(expand, LayoutHelper.createLinear(40, 40));
         header.addView(title, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -384,7 +384,7 @@ public class FeedCommentSheet extends Dialog {
             return;
         }
         ItemOptions options = ItemOptions.makeOptions(fragment, anchor);
-        options.add(R.drawable.input_reply, getString(R.string.Reply), () -> {
+        options.add(R.drawable.input_reply, LocaleController.getString("Moments_Reply", R.string.Moments_Reply), () -> {
             replyTo = comment.id;
             replyName = FeedUi.displayName(comment.author, fragment.getCurrentAccount());
             input.setHint(LocaleController.formatString("Moments_ReplyTo", R.string.Moments_ReplyTo, replyName));
@@ -394,21 +394,21 @@ public class FeedCommentSheet extends Dialog {
             }
         });
         if (comment.text != null && comment.text.length() > 0) {
-            options.add(R.drawable.msg_copy, getString(R.string.Copy), () -> AndroidUtilities.addToClipboard(comment.text));
+            options.add(R.drawable.msg_copy, LocaleController.getString("Moments_Copy", R.string.Moments_Copy), () -> AndroidUtilities.addToClipboard(comment.text));
         }
-        options.add(R.drawable.msg_forward, getString(R.string.Forward), () -> fragment.showDialog(ShareAlert.createShareAlert(getContext(), null, comment.text + "\n" + FeedUi.linkFor(postId), false, FeedUi.linkFor(postId), false)));
-        options.add(R.drawable.msg_report, getString(R.string.ReportChat), () -> FeedReportSheet.open(fragment, "comment", comment.id));
+        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Forward", R.string.Moments_Forward), () -> fragment.showDialog(ShareAlert.createShareAlert(getContext(), null, comment.text + "\n" + FeedUi.linkFor(postId), false, FeedUi.linkFor(postId), false)));
+        options.add(R.drawable.msg_report, LocaleController.getString("Moments_Report", R.string.Moments_Report), () -> FeedReportSheet.open(fragment, "comment", comment.id));
         int account = fragment.getCurrentAccount();
         if (FeedUi.isSelf(account, comment.author) || FeedUi.isSelf(account, postAuthor)) {
-        options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> {
+        options.add(R.drawable.msg_delete, LocaleController.getString("Moments_Delete", R.string.Moments_Delete), () -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-            builder.setMessage(comment.replyCount > 0 ? LocaleController.getString("Moments_DeleteThread", R.string.Moments_DeleteThread) : getString(R.string.Delete));
-            builder.setPositiveButton(getString(R.string.Delete), (d, w) -> FeedController.getInstance(fragment.getCurrentAccount()).deleteComment(postId, comment.id, error -> AndroidUtilities.runOnUIThread(() -> {
+            builder.setMessage(comment.replyCount > 0 ? LocaleController.getString("Moments_DeleteThread", R.string.Moments_DeleteThread) : LocaleController.getString("Moments_Delete", R.string.Moments_Delete));
+            builder.setPositiveButton(LocaleController.getString("Moments_Delete", R.string.Moments_Delete), (d, w) -> FeedController.getInstance(fragment.getCurrentAccount()).deleteComment(postId, comment.id, error -> AndroidUtilities.runOnUIThread(() -> {
                 if (error == null) {
                     removeComment(comment.id);
                 }
             })));
-            builder.setNegativeButton(getString(R.string.Cancel), null);
+            builder.setNegativeButton(LocaleController.getString("Moments_Cancel", R.string.Moments_Cancel), null);
             fragment.showDialog(builder.create());
         });
         }

@@ -995,6 +995,8 @@ public final class FeedContract {
     public static final String ENTRY_COMMENT = "comment";
     public static final String ENTRY_TOPIC = "topic";
     public static final String ENTRY_NOTIFICATION = "notification";
+    public static final String ENTRY_PROFILE = "profile";
+    public static final String ENTRY_SEARCH = "search";
     /** https://tell.cc/m and tellomi://tell.cc/m stay on the standalone detail screen. */
     public static final String ENTRY_DEEP_LINK = "deep_link";
 
@@ -1002,15 +1004,153 @@ public final class FeedContract {
             "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
     /**
-     * Sheet over the current list. Closing it returns to that tab and scroll position.
-     * Only a deep link opens the standalone detail screen.
+     * The comment button keeps the sheet over the current list.
+     * The post body, a profile post, search, a topic, a notification, and a deep link open detail.
      */
     public static boolean opensCommentSheet(String entry) {
         return !opensStandaloneDetail(entry);
     }
 
     public static boolean opensStandaloneDetail(String entry) {
-        return ENTRY_DEEP_LINK.equals(entry);
+        return ENTRY_BODY.equals(entry)
+                || ENTRY_TOPIC.equals(entry)
+                || ENTRY_NOTIFICATION.equals(entry)
+                || ENTRY_PROFILE.equals(entry)
+                || ENTRY_SEARCH.equals(entry)
+                || ENTRY_DEEP_LINK.equals(entry);
+    }
+
+    /** A cancelled or superseded load must not replace the rows on screen. */
+    public static boolean acceptPage(boolean epochCurrent, String error) {
+        return epochCurrent && (error == null || !"cancelled".equals(error));
+    }
+
+    /** Moments title overlay for a chat-list connection key. Null keeps the Moments title. */
+    public static String connectionMomentsKey(String connectionKey) {
+        if ("WaitingForNetwork".equals(connectionKey)) {
+            return "Moments_Conn_Waiting";
+        }
+        if ("Updating".equals(connectionKey)) {
+            return "Moments_Conn_Updating";
+        }
+        if ("ConnectingToProxyWithDots".equals(connectionKey)) {
+            return "Moments_Conn_Proxy";
+        }
+        if ("Connecting".equals(connectionKey)) {
+            return "Moments_Conn_Connecting";
+        }
+        return null;
+    }
+
+    /** Stable list ids. String.hashCode collides (Aa and BB), and a collision reuses the wrong row. */
+    public static final class StableIds {
+        private final java.util.HashMap<String, Long> ids = new java.util.HashMap<>();
+        private long next = 1;
+
+        public long idFor(String key) {
+            if (key == null || key.length() == 0) {
+                return 0;
+            }
+            Long have = ids.get(key);
+            if (have != null) {
+                return have;
+            }
+            long id = next++;
+            ids.put(key, id);
+            return id;
+        }
+    }
+
+    public static String mediaBindKey(String postId, java.util.List<String> urls) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(postId == null ? "" : postId);
+        if (urls != null) {
+            for (int i = 0; i < urls.size(); i++) {
+                builder.append('\n');
+                String url = urls.get(i);
+                builder.append(url == null ? "" : url);
+            }
+        }
+        return builder.toString();
+    }
+
+    public static boolean sameMediaBind(String previous, String next) {
+        return previous != null && previous.length() > 0 && previous.equals(next);
+    }
+
+    /** Video and voice lengths stay numeric so a Chinese UI never shows an English unit. */
+    public static String clock(int durationMs) {
+        int seconds = Math.max(0, durationMs / 1000);
+        return String.format(java.util.Locale.US, "%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    /**
+     * telegram: the viewer can see this contact's Telegram photo.
+     * http: the feed avatar url. letter: neither.
+     */
+    public static String avatarSource(boolean telegramPhotoVisible, String httpUrl) {
+        if (telegramPhotoVisible) {
+            return "telegram";
+        }
+        if (httpUrl != null && (httpUrl.startsWith("https://") || httpUrl.startsWith("http://"))) {
+            return "http";
+        }
+        return "letter";
+    }
+
+    public static final class RelativeBucket {
+        public final String unit;
+        public final int count;
+        public final String english;
+
+        public RelativeBucket(String unit, int count, String english) {
+            this.unit = unit == null ? "" : unit;
+            this.count = count;
+            this.english = english == null ? "" : english;
+        }
+    }
+
+    public static RelativeBucket relativeBucket(long nowMillis, long createdMillis) {
+        if (createdMillis <= 0) {
+            return new RelativeBucket("", 0, "");
+        }
+        long delta = Math.max(0, nowMillis - createdMillis);
+        if (delta < 60_000L) {
+            return new RelativeBucket("now", 0, "Just now");
+        }
+        if (delta < 3600_000L) {
+            int count = (int) Math.max(1, delta / 60_000L);
+            return new RelativeBucket("minute", count, count == 1 ? "1 minute ago" : count + " minutes ago");
+        }
+        if (delta < 86400_000L) {
+            int count = (int) Math.max(1, delta / 3600_000L);
+            return new RelativeBucket("hour", count, count == 1 ? "1 hour ago" : count + " hours ago");
+        }
+        if (delta < 86400_000L * 7) {
+            int count = (int) Math.max(1, delta / 86400_000L);
+            return new RelativeBucket("day", count, count == 1 ? "1 day ago" : count + " days ago");
+        }
+        if (delta < 86400_000L * 30) {
+            int count = (int) Math.max(1, delta / (86400_000L * 7));
+            return new RelativeBucket("week", count, count == 1 ? "1 week ago" : count + " weeks ago");
+        }
+        if (delta < 86400_000L * 365) {
+            int count = (int) Math.max(1, delta / (86400_000L * 30));
+            return new RelativeBucket("month", count, count == 1 ? "1 month ago" : count + " months ago");
+        }
+        int count = (int) Math.max(1, delta / (86400_000L * 365));
+        return new RelativeBucket("year", count, count == 1 ? "1 year ago" : count + " years ago");
+    }
+
+    /** Chinese keeps a real translation. An empty string or the English sentence uses the Moments string. */
+    public static boolean replaceEnglishTimer(String languageCode, String resolved, String english) {
+        if (languageCode == null || !languageCode.toLowerCase(java.util.Locale.US).startsWith("zh")) {
+            return false;
+        }
+        if (resolved == null || resolved.length() == 0 || resolved.startsWith("LOC_ERR")) {
+            return true;
+        }
+        return english != null && resolved.equals(english);
     }
 
     public static boolean isClientNonce(String nonce) {

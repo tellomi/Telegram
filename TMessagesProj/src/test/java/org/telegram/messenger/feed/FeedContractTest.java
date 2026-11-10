@@ -398,6 +398,75 @@ public class FeedContractTest {
         return new String(chars);
     }
 
+    @Test
+    public void cancelledLoadsAvatarsClocksAndLikesStayScoped() throws Exception {
+        assertFalse(FeedContract.acceptPage(false, null));
+        assertFalse(FeedContract.acceptPage(true, "cancelled"));
+        assertTrue(FeedContract.acceptPage(true, null));
+        assertFalse(FeedContract.acceptPage(false, "network"));
+
+        FeedContract.StableIds ids = new FeedContract.StableIds();
+        assertTrue(ids.idFor("Aa") != ids.idFor("BB"));
+        assertEquals(ids.idFor("Aa"), ids.idFor("Aa"));
+        assertEquals(0, ids.idFor(""));
+
+        assertEquals("0:00", FeedContract.clock(0));
+        assertEquals("0:09", FeedContract.clock(9_000));
+        assertEquals("1:05", FeedContract.clock(65_000));
+        assertEquals("telegram", FeedContract.avatarSource(true, "https://cdn.example/a"));
+        assertEquals("http", FeedContract.avatarSource(false, "https://cdn.example/a"));
+        assertEquals("letter", FeedContract.avatarSource(false, "avatar-key"));
+
+        String same = FeedContract.mediaBindKey("p1", java.util.Arrays.asList("https://cdn/a"));
+        assertTrue(FeedContract.sameMediaBind(same, FeedContract.mediaBindKey("p1", java.util.Arrays.asList("https://cdn/a"))));
+        assertFalse(FeedContract.sameMediaBind(same, FeedContract.mediaBindKey("p2", java.util.Arrays.asList("https://cdn/a"))));
+
+        FeedContract.RelativeBucket minutes = FeedContract.relativeBucket(180_000L, 1L);
+        assertEquals("minute", minutes.unit);
+        assertEquals(2, minutes.count);
+        assertEquals("2 minutes ago", minutes.english);
+        assertTrue(FeedContract.replaceEnglishTimer("zh_cn", "2 minutes ago", minutes.english));
+        assertFalse(FeedContract.replaceEnglishTimer("zh_cn", "2分钟前", minutes.english));
+        assertFalse(FeedContract.replaceEnglishTimer("en", "2 minutes ago", minutes.english));
+        assertEquals("now", FeedContract.relativeBucket(10_000L, 1L).unit);
+        assertEquals("", FeedContract.relativeBucket(10_000L, 0L).unit);
+        assertEquals("Moments_Conn_Waiting", FeedContract.connectionMomentsKey("WaitingForNetwork"));
+        assertNull(FeedContract.connectionMomentsKey(null));
+
+        String controller = read("messenger/feed/FeedController.java");
+        int begin = controller.indexOf("public int beginLoad");
+        int cancelReads = controller.indexOf("api.cancelReads()", begin);
+        int epochBegin = controller.indexOf(".begin()", begin);
+        assertTrue(begin >= 0 && epochBegin > begin && epochBegin < cancelReads);
+        assertTrue(controller.contains("cancelLoadsExcept"));
+        assertTrue(controller.contains("acceptPage"));
+        assertTrue(controller.contains("dropPending"));
+        String activity = read("ui/Feed/FeedActivity.java");
+        int animation = activity.indexOf("void onTabAnimationUpdate");
+        int scrollEnd = activity.indexOf("void onScrollEnd");
+        assertTrue(animation >= 0 && scrollEnd > animation);
+        String duringSwipe = activity.substring(animation, scrollEnd);
+        assertFalse(duringSwipe.contains("ensure("));
+        assertTrue(activity.contains("cancelLoadsExcept"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("sameMediaBind"));
+        assertTrue(cell.contains("delegate.onMedia"));
+        assertTrue(cell.contains("FeedContract.clock"));
+        assertFalse(cell.contains("clearImage"));
+        assertFalse(cell.contains("+ \"s\""));
+        String list = read("ui/Feed/FeedListView.java");
+        assertTrue(list.contains("PAYLOAD_LIKE"));
+        assertTrue(list.contains("bindLike"));
+        assertTrue(list.contains("StableIds"));
+        String like = controller.substring(controller.indexOf("void toggleLike"), controller.indexOf("void toggleSave"));
+        assertTrue(like.contains("notifyPost"));
+        assertFalse(like.contains("notifyListeners"));
+        String ui = read("ui/Feed/FeedUi.java");
+        assertTrue(ui.contains("Moments_Time_Now"));
+        assertTrue(ui.contains("avatarSource"));
+        assertFalse(ui.contains("cancelLoadImage"));
+    }
+
     private static String readDesign() throws Exception {
         java.nio.file.Path[] candidates = new java.nio.file.Path[]{
                 java.nio.file.Paths.get("docs/FEED-DESIGN.md"),

@@ -438,7 +438,7 @@ public class FeedComposerActivity extends BaseFragment {
                 continue;
             }
             if (photo.isVideo && photo.duration > FeedConfig.MAX_VIDEO_SEC && !trimmed(photo)) {
-                new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_VideoTooLong", R.string.Moments_VideoTooLong)).setPositiveButton(getString(R.string.OK), null).show();
+                new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_VideoTooLong", R.string.Moments_VideoTooLong)).setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null).show();
                 continue;
             }
             if (photo.path == null) {
@@ -557,7 +557,7 @@ public class FeedComposerActivity extends BaseFragment {
             builder.setTitle(LocaleController.getString("Moments_MentionTitle", R.string.Moments_MentionTitle));
             builder.setMessage(LocaleController.getString("Moments_MentionWarning", R.string.Moments_MentionWarning) + "\n" + TextUtils.join(", ", blocked));
             builder.setPositiveButton(LocaleController.getString("Moments_Publish", R.string.Moments_Publish), (d, w) -> publishNow());
-            builder.setNegativeButton(getString(R.string.Cancel), null);
+            builder.setNegativeButton(LocaleController.getString("Moments_Cancel", R.string.Moments_Cancel), null);
             showDialog(builder.create());
             return;
         }

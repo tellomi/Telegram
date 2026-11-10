@@ -79,7 +79,7 @@ public class FeedCityActivity extends BaseFragment {
             root.addView(allow);
         }
         EditText search = new EditText(context);
-        search.setHint(getString(R.string.Search));
+        search.setHint(LocaleController.getString("Moments_SearchTab", R.string.Moments_SearchTab));
         search.setBackground(null);
         search.setPadding(dp(16), dp(8), dp(16), dp(8));
         search.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -229,6 +229,6 @@ public class FeedCityActivity extends BaseFragment {
     @SuppressWarnings("unused")
     private void explainDenied() {
         if (getParentActivity() == null) return;
-        new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_LocationDenied", R.string.Moments_LocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
+        new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_LocationDenied", R.string.Moments_LocationDenied)).setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null).show();
     }
 }

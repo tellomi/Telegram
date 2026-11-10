@@ -149,7 +149,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         reply.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         row.addView(reply, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
         TextView send = new TextView(context);
-        send.setText(getString(R.string.Send));
+        send.setText(LocaleController.getString("Moments_Send", R.string.Moments_Send));
         send.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         send.setTypeface(AndroidUtilities.bold());
         send.setPadding(dp(12), dp(12), dp(12), dp(12));
@@ -448,15 +448,15 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     private void commentMenu(FeedModels.Comment comment, View anchor) {
         ItemOptions options = ItemOptions.makeOptions(this, anchor);
-        options.add(R.drawable.input_reply, getString(R.string.Reply), () -> {
+        options.add(R.drawable.input_reply, LocaleController.getString("Moments_Reply", R.string.Moments_Reply), () -> {
             replyTo = comment.id;
-            reply.setHint(getString(R.string.Reply) + " " + FeedUi.displayName(comment.author, currentAccount));
+            reply.setHint(LocaleController.getString("Moments_Reply", R.string.Moments_Reply) + " " + FeedUi.displayName(comment.author, currentAccount));
         });
-        options.add(R.drawable.msg_copy, getString(R.string.Copy), () -> AndroidUtilities.addToClipboard(comment.text));
-        options.add(R.drawable.msg_forward, getString(R.string.Forward), () -> showDialog(ShareAlert.createShareAlert(getContext(), null, comment.text + "\n" + FeedUi.linkFor(postId), false, FeedUi.linkFor(postId), false)));
-        options.add(R.drawable.msg_report, getString(R.string.ReportChat), () -> FeedReportSheet.open(this, "comment", comment.id));
+        options.add(R.drawable.msg_copy, LocaleController.getString("Moments_Copy", R.string.Moments_Copy), () -> AndroidUtilities.addToClipboard(comment.text));
+        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Forward", R.string.Moments_Forward), () -> showDialog(ShareAlert.createShareAlert(getContext(), null, comment.text + "\n" + FeedUi.linkFor(postId), false, FeedUi.linkFor(postId), false)));
+        options.add(R.drawable.msg_report, LocaleController.getString("Moments_Report", R.string.Moments_Report), () -> FeedReportSheet.open(this, "comment", comment.id));
         if (FeedUi.isSelf(currentAccount, comment.author) || (post != null && FeedUi.isSelf(currentAccount, post.author))) {
-            options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> confirmDelete(comment));
+            options.add(R.drawable.msg_delete, LocaleController.getString("Moments_Delete", R.string.Moments_Delete), () -> confirmDelete(comment));
         }
         if (FeedConfig.COMMENT_LIKES) {
             options.add(R.drawable.media_like, LocaleController.getString("Moments_Like", R.string.Moments_Like), () -> controller().api.sendJson(comment.liked ? "DELETE" : "PUT", "/v1/feed/comments/" + comment.id + "/like", null, (json, error) -> load()));
@@ -466,9 +466,9 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     private void confirmDelete(FeedModels.Comment comment) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setMessage(comment.replyCount > 0 ? LocaleController.getString("Moments_DeleteThread", R.string.Moments_DeleteThread) : getString(R.string.Delete));
-        builder.setPositiveButton(getString(R.string.Delete), (d, w) -> controller().deleteComment(postId, comment.id, error -> load()));
-        builder.setNegativeButton(getString(R.string.Cancel), null);
+        builder.setMessage(comment.replyCount > 0 ? LocaleController.getString("Moments_DeleteThread", R.string.Moments_DeleteThread) : LocaleController.getString("Moments_Delete", R.string.Moments_Delete));
+        builder.setPositiveButton(LocaleController.getString("Moments_Delete", R.string.Moments_Delete), (d, w) -> controller().deleteComment(postId, comment.id, error -> load()));
+        builder.setNegativeButton(LocaleController.getString("Moments_Cancel", R.string.Moments_Cancel), null);
         showDialog(builder.create());
     }
 
@@ -516,7 +516,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         name.setTextColor(text);
         name.setText(FeedUi.displayName(comment.author, currentAccount));
         meta.setTextColor(gray);
-        String reply = comment.parentId != null && comment.parentId.length() > 0 ? getString(R.string.Reply) + " " + comment.replyToName : "";
+        String reply = comment.parentId != null && comment.parentId.length() > 0 ? LocaleController.getString("Moments_Reply", R.string.Moments_Reply) + " " + comment.replyToName : "";
         meta.setText(reply.length() == 0 ? FeedUi.timeAgo(comment.createdAt) : FeedUi.timeAgo(comment.createdAt) + " · " + reply);
         body.setTextColor(text);
         body.setTextSize(org.telegram.messenger.SharedConfig.fontSize);

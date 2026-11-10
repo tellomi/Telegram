@@ -142,14 +142,14 @@ public class FeedNotificationsActivity extends BaseFragment {
     }
 
     private void open(FeedModels.NotificationItem item) {
-        if (item.postId != null && item.postId.length() > 0 && FeedContract.opensCommentSheet(FeedContract.ENTRY_NOTIFICATION)) {
-            FeedCommentSheet.open(this, item.postId, false);
+        if (item.postId != null && item.postId.length() > 0 && FeedContract.opensStandaloneDetail(FeedContract.ENTRY_NOTIFICATION)) {
+            FeedUi.openEntry(this, item.postId, FeedContract.ENTRY_NOTIFICATION, false);
         } else if (item.actor != null && item.actor.userId != 0) {
             FeedUi.openProfile(this, item.actor);
         } else if (getParentActivity() != null) {
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
                     .setMessage(LocaleController.getString("Moments_Unavailable", R.string.Moments_Unavailable))
-                    .setPositiveButton(getString(R.string.OK), null)
+                    .setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null)
                     .show();
         }
     }

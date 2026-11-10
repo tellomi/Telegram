@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.Theme;
@@ -178,7 +179,7 @@ public class FeedSearchPage extends LinearLayout {
             TextView text = (TextView) holder.itemView;
             text.setText(row.label);
             text.setOnClickListener(v -> {
-                if (row.post != null && !row.post.unavailable) FeedCommentSheet.open(parent, row.post.id, false);
+                if (row.post != null && !row.post.unavailable) FeedUi.openEntry(parent, row.post, FeedContract.ENTRY_SEARCH, false);
                 else if (row.topic != null) parent.presentFragment(new FeedTopicActivity(row.topic));
                 else if (row.author != null) FeedUi.openProfile(parent, row.author);
                 else if (row.history != null) search(row.history);

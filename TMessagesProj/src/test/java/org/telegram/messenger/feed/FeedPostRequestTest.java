@@ -330,13 +330,16 @@ public class FeedPostRequestTest {
 
     @Test
     public void listTapsUseTheSheetAndDeepLinksUseDetail() {
-        assertTrue(FeedContract.opensCommentSheet(FeedContract.ENTRY_BODY));
+        assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_BODY));
         assertTrue(FeedContract.opensCommentSheet(FeedContract.ENTRY_COMMENT));
-        assertTrue(FeedContract.opensCommentSheet(FeedContract.ENTRY_TOPIC));
-        assertTrue(FeedContract.opensCommentSheet(FeedContract.ENTRY_NOTIFICATION));
-        assertFalse(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_BODY));
+        assertFalse(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_COMMENT));
+        assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_TOPIC));
+        assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_NOTIFICATION));
+        assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_PROFILE));
+        assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_SEARCH));
         assertTrue(FeedContract.opensStandaloneDetail(FeedContract.ENTRY_DEEP_LINK));
         assertFalse(FeedContract.opensCommentSheet(FeedContract.ENTRY_DEEP_LINK));
+        assertFalse(FeedContract.opensCommentSheet(FeedContract.ENTRY_BODY));
     }
 
     @Test
@@ -427,8 +430,10 @@ public class FeedPostRequestTest {
         assertFalse(read("ui/Feed/FeedDetailActivity.java").contains("void onResume"));
         String topic = read("ui/Feed/FeedTopicActivity.java");
         assertTrue(topic.contains("ENTRY_TOPIC"));
-        assertTrue(topic.contains("FeedCommentSheet.open"));
-        assertFalse(topic.contains("FeedDetailActivity"));
+        assertTrue(topic.contains("ENTRY_COMMENT"));
+        assertTrue(topic.contains("FeedUi.openEntry"));
+        assertTrue(read("ui/Feed/FeedSearchPage.java").contains("ENTRY_SEARCH"));
+        assertTrue(read("ui/Feed/FeedCollectionActivity.java").contains("ENTRY_PROFILE"));
         String notifications = read("ui/Feed/FeedNotificationsActivity.java");
         assertTrue(notifications.contains("ENTRY_NOTIFICATION"));
         assertTrue(notifications.contains("Moments_Notif_Other"));
