@@ -33,6 +33,14 @@ public final class FeedModels {
             if (o == null) {
                 return a;
             }
+            try {
+                return parseFields(a, o);
+            } catch (RuntimeException ignore) {
+                return a;
+            }
+        }
+
+        private static Author parseFields(Author a, JSONObject o) {
             a.userId = longField(o, "user_id", "telegram_user_id", "telegram_id", "uid");
             a.accessHash = o.optLong("access_hash", 0);
             JSONObject nativeUser = o.optJSONObject("native");
