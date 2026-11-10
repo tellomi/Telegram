@@ -1084,4 +1084,14 @@
     <string name="RemindDayAt">\'Herinner op\' d MMM \'om\' HH:mm</string>
     <string name="RemindDayYearAt">\'Herinner op\' d MMM yyyy \'om\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+
+    <string name="Moments_Comment_SendFailed">Reactie niet verzonden. Je tekst staat er nog.</string>
+    <string name="Moments_Audience_Kept">Kon niet wijzigen wie dit mag zien. Je keuze blijft staan.</string>
+    <string name="Moments_Notif_Other">Activiteit</string>
+    <string name="Moments_City_Beijing">Peking</string>
+    <string name="Moments_City_Shanghai">Shanghai</string>
+    <string name="Moments_City_Guangzhou">Kanton</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdu</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
 </resources>

@@ -340,6 +340,78 @@ public class FeedPostRequestTest {
     }
 
     @Test
+    public void serverCityNamesWinAndTheSixCitiesAreOnlyAFallback() {
+        String[][] fallback = new String[][]{
+                {"cn:beijing", "Beijing"},
+                {"cn:shanghai", "Shanghai"},
+                {"cn:guangzhou", "Guangzhou"}
+        };
+        ArrayList<String> codes = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
+        codes.add("cn:tokyo");
+        names.add(FeedContract.serverCityName("東京", "Tokyo", "Tokio"));
+        codes.add("cn:beijing");
+        names.add(FeedContract.serverCityName("北京", "Beijing", "Peking"));
+        ArrayList<String[]> rows = FeedContract.resolveCities(codes, names, fallback, "shanghai");
+        assertEquals(2, rows.size());
+        assertEquals("cn:tokyo", rows.get(0)[0]);
+        assertEquals("東京", rows.get(0)[1]);
+        assertEquals("北京", rows.get(1)[1]);
+
+        codes.clear();
+        names.clear();
+        codes.add("cn:beijing");
+        names.add(FeedContract.serverCityName("", "Peking", ""));
+        rows = FeedContract.resolveCities(codes, names, fallback, "");
+        assertEquals(1, rows.size());
+        assertEquals("Peking", rows.get(0)[1]);
+
+        codes.clear();
+        names.clear();
+        codes.add("cn:beijing");
+        names.add("");
+        rows = FeedContract.resolveCities(codes, names, fallback, "");
+        assertEquals("Beijing", rows.get(0)[1]);
+
+        rows = FeedContract.resolveCities(new ArrayList<String>(), new ArrayList<String>(), fallback, "shang");
+        assertEquals(1, rows.size());
+        assertEquals("cn:shanghai", rows.get(0)[0]);
+        assertEquals("Shanghai", rows.get(0)[1]);
+        assertTrue(readCityActivity().contains("resolveCities"));
+        assertTrue(readCityActivity().contains("fallbackCities"));
+    }
+
+    @Test
+    public void newMomentsStringsExistInEveryBuiltInLanguage() throws Exception {
+        String[] keys = new String[]{
+                "Moments_Comment_SendFailed",
+                "Moments_Audience_Kept",
+                "Moments_Notif_Other",
+                "Moments_City_Beijing",
+                "Moments_City_Shanghai",
+                "Moments_City_Guangzhou",
+                "Moments_City_Shenzhen",
+                "Moments_City_Chengdu",
+                "Moments_City_Hangzhou"
+        };
+        String[] folders = new String[]{
+                "values", "values-ar", "values-de", "values-es", "values-it", "values-ko",
+                "values-nl", "values-pt-rBR", "values-ru", "values-uk", "values-zh-rCN", "values-zh-rTW"
+        };
+        String english = readRes("values/strings.xml");
+        for (String folder : folders) {
+            String xml = readRes(folder + "/strings.xml");
+            for (String key : keys) {
+                String value = stringValue(xml, key);
+                assertTrue(folder + " missing " + key, value != null && value.trim().length() > 0);
+                if (!"values".equals(folder) && !key.startsWith("Moments_City_")) {
+                    assertFalse(folder + " " + key + " repeats English", value.equals(stringValue(english, key)));
+                }
+            }
+        }
+    }
+
+    @Test
     public void routingAndCopySourcesMatchTheContract() throws Exception {
         String activity = read("ui/Feed/FeedActivity.java");
         int open = activity.indexOf("void onOpen");
@@ -502,6 +574,41 @@ public class FeedPostRequestTest {
         request.visibility = "public";
         request.clientNonce = FeedContract.newClientNonce();
         return request;
+    }
+
+    private static String readCityActivity() {
+        try {
+            return read("ui/Feed/FeedCityActivity.java");
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static String readRes(String relative) throws Exception {
+        Path[] roots = new Path[]{
+                Paths.get("src/main/res", relative),
+                Paths.get("TMessagesProj/src/main/res", relative)
+        };
+        for (int i = 0; i < roots.length; i++) {
+            if (Files.isRegularFile(roots[i])) {
+                return new String(Files.readAllBytes(roots[i]), "UTF-8");
+            }
+        }
+        throw new IllegalStateException("missing " + relative);
+    }
+
+    private static String stringValue(String xml, String name) {
+        String token = "name=\"" + name + "\">";
+        int start = xml.indexOf(token);
+        if (start < 0) {
+            return null;
+        }
+        start += token.length();
+        int end = xml.indexOf("</string>", start);
+        if (end < 0) {
+            return null;
+        }
+        return xml.substring(start, end);
     }
 
     private static String read(String relative) throws Exception {

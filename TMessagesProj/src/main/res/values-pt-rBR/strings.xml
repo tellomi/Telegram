@@ -1249,4 +1249,14 @@
     <string name="RemindDayAt">\'Lembrar em\' d \'de\' MMM \'às\' HH:mm</string>
     <string name="RemindDayYearAt">\'Lembrar em\' d \'de\' MMM \'de\' yyyy \'às\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+
+    <string name="Moments_Comment_SendFailed">Não foi possível enviar o comentário. Seu texto continua aqui.</string>
+    <string name="Moments_Audience_Kept">Não foi possível atualizar quem pode ver. Sua seleção foi mantida.</string>
+    <string name="Moments_Notif_Other">Atividade</string>
+    <string name="Moments_City_Beijing">Pequim</string>
+    <string name="Moments_City_Shanghai">Xangai</string>
+    <string name="Moments_City_Guangzhou">Cantão</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdu</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
 </resources>

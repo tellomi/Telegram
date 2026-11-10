@@ -25,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -149,27 +150,35 @@ public class FeedCityActivity extends BaseFragment {
     private void query(String q) {
         cities.clear();
         FeedController.getInstance(currentAccount).api.getJson("/v1/feed/cities?q=" + FeedApi.enc(q), (json, error) -> {
+            ArrayList<String> codes = new ArrayList<>();
+            ArrayList<String> names = new ArrayList<>();
             if (json != null) {
                 JSONArray items = json.optJSONArray("items");
-                if (items == null) items = json.optJSONArray("cities");
+                if (items == null) {
+                    items = json.optJSONArray("cities");
+                }
                 if (items != null) {
                     for (int i = 0; i < items.length(); i++) {
                         JSONObject item = items.optJSONObject(i);
-                        if (item != null) {
-                            cities.add(new String[]{item.optString("code", item.optString("id", "")), item.optString("name", "")});
+                        if (item == null) {
+                            continue;
                         }
+                        codes.add(item.optString("code", item.optString("id", "")));
+                        names.add(FeedContract.serverCityName(item.optString("name", ""), item.optString("local_name", ""), item.optString("label", "")));
                     }
                 }
             }
-            if (cities.isEmpty()) {
-                fallback(q);
+            cities.clear();
+            cities.addAll(FeedContract.resolveCities(codes, names, fallbackCities(), q));
+            if (listView.getAdapter() != null) {
+                listView.getAdapter().notifyDataSetChanged();
             }
-            if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
         });
     }
 
-    private void fallback(String q) {
-        String[][] seed = new String[][]{
+    /** Used only when the cities request returns nothing usable. */
+    private String[][] fallbackCities() {
+        return new String[][]{
                 {"cn:beijing", LocaleController.getString("Moments_City_Beijing", R.string.Moments_City_Beijing)},
                 {"cn:shanghai", LocaleController.getString("Moments_City_Shanghai", R.string.Moments_City_Shanghai)},
                 {"cn:guangzhou", LocaleController.getString("Moments_City_Guangzhou", R.string.Moments_City_Guangzhou)},
@@ -177,14 +186,6 @@ public class FeedCityActivity extends BaseFragment {
                 {"cn:chengdu", LocaleController.getString("Moments_City_Chengdu", R.string.Moments_City_Chengdu)},
                 {"cn:hangzhou", LocaleController.getString("Moments_City_Hangzhou", R.string.Moments_City_Hangzhou)}
         };
-        String query = q == null ? "" : q.trim();
-        String lower = query.toLowerCase(Locale.US);
-        for (int i = 0; i < seed.length; i++) {
-            String name = seed[i][1] == null ? "" : seed[i][1];
-            if (query.length() == 0 || name.toLowerCase(Locale.ROOT).contains(lower) || seed[i][0].contains(lower)) {
-                cities.add(seed[i]);
-            }
-        }
     }
 
     private void choose(String code, String name) {

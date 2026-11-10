@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -1432,5 +1433,76 @@ public final class FeedContract {
         public String body() {
             return commentBody(text, parentId, attachmentType, attachmentKey, nonce);
         }
+    }
+
+    /** First non-empty server label. {@code name} is the display string the engine already localized. */
+    public static String serverCityName(String name, String localName, String label) {
+        if (name != null && name.length() > 0) {
+            return name;
+        }
+        if (localName != null && localName.length() > 0) {
+            return localName;
+        }
+        if (label != null && label.length() > 0) {
+            return label;
+        }
+        return "";
+    }
+
+    /**
+     * Server rows are shown as returned. A blank server name is filled from the
+     * localized fallback only for a code in that list. The fallback list is used
+     * on its own only when the server returned no usable row.
+     */
+    public static ArrayList<String[]> resolveCities(List<String> serverCodes, List<String> serverNames, String[][] fallback, String query) {
+        ArrayList<String[]> out = new ArrayList<>();
+        if (serverCodes != null) {
+            for (int i = 0; i < serverCodes.size(); i++) {
+                String code = serverCodes.get(i) == null ? "" : serverCodes.get(i).trim();
+                String name = serverNames != null && i < serverNames.size() && serverNames.get(i) != null ? serverNames.get(i).trim() : "";
+                if (name.length() == 0) {
+                    name = fallbackName(fallback, code);
+                }
+                if (code.length() > 0 && name.length() > 0) {
+                    out.add(new String[]{code, name});
+                }
+            }
+        }
+        if (!out.isEmpty()) {
+            return out;
+        }
+        return filterFallback(fallback, query);
+    }
+
+    private static String fallbackName(String[][] fallback, String code) {
+        if (fallback == null || code == null) {
+            return "";
+        }
+        for (int i = 0; i < fallback.length; i++) {
+            if (fallback[i] != null && fallback[i].length >= 2 && code.equals(fallback[i][0]) && fallback[i][1] != null) {
+                return fallback[i][1];
+            }
+        }
+        return "";
+    }
+
+    private static ArrayList<String[]> filterFallback(String[][] fallback, String query) {
+        ArrayList<String[]> out = new ArrayList<>();
+        if (fallback == null) {
+            return out;
+        }
+        String text = query == null ? "" : query.trim();
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (int i = 0; i < fallback.length; i++) {
+            if (fallback[i] == null || fallback[i].length < 2 || fallback[i][0] == null || fallback[i][1] == null) {
+                continue;
+            }
+            String code = fallback[i][0];
+            String name = fallback[i][1];
+            if (text.length() == 0 || name.toLowerCase(Locale.ROOT).contains(lower) || code.toLowerCase(Locale.ROOT).contains(lower)) {
+                out.add(new String[]{code, name});
+            }
+        }
+        return out;
     }
 }
