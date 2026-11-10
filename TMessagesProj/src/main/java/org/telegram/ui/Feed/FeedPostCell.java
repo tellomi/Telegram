@@ -434,7 +434,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         follow.setVisibility(showFollow && !FeedUi.isSelf(account, post.author) && !post.following && post.author.profileId.length() > 0 ? VISIBLE : GONE);
         threadLine.setVisibility(post.quote != null ? VISIBLE : GONE);
         pin.setVisibility(post.pinned ? VISIBLE : GONE);
-        if (post.repostedByName != null && post.repostedByName.length() > 0) {
+        if (post.repostedByName != null && post.repostedByName.length() > 0 && FeedContract.showRepostHeader(post.feedReason)) {
             repostLine.setVisibility(VISIBLE);
             repostLine.setText(LocaleSafe(post.repostedByName));
         } else {

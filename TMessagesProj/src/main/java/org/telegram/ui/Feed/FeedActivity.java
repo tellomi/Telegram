@@ -309,6 +309,9 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
             return LocaleController.getString("Moments_Segment_Following", R.string.Moments_Segment_Following);
         }
+        if (FeedModels.STREAM_FRIENDS.equals(stream)) {
+            return LocaleController.getString("Moments_Friends", R.string.Moments_Friends);
+        }
         if (FeedModels.STREAM_NEARBY.equals(stream)) {
             return LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby);
         }
@@ -434,20 +437,21 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     private String emptyMessage(String stream) {
         if (FeedModels.STREAM_FOLLOWING.equals(stream)) return LocaleController.getString("Moments_Empty_Following", R.string.Moments_Empty_Following);
+        if (FeedModels.STREAM_FRIENDS.equals(stream)) return LocaleController.getString("Moments_EmptyFriends", R.string.Moments_EmptyFriends);
         if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_Empty_Nearby", R.string.Moments_Empty_Nearby);
         return LocaleController.getString("Moments_Empty_Recommend", R.string.Moments_Empty_Recommend);
     }
 
     private String emptyActionFor(String stream) {
         if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_SwitchCity", R.string.Moments_SwitchCity);
-        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return LocaleController.getString("Moments_FindPeople", R.string.Moments_FindPeople);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream) || FeedModels.STREAM_FRIENDS.equals(stream)) return LocaleController.getString("Moments_FindPeople", R.string.Moments_FindPeople);
         return null;
     }
 
     private void onEmpty(String stream) {
         if (FeedModels.STREAM_NEARBY.equals(stream)) {
             presentFragment(new FeedCityActivity(false));
-        } else if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
+        } else if (FeedModels.STREAM_FOLLOWING.equals(stream) || FeedModels.STREAM_FRIENDS.equals(stream)) {
             if (pager != null) {
                 pager.scrollToPosition(0);
             }
@@ -609,7 +613,10 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void onRepost(FeedModels.Post post) {
         if (!post.isPublic() && FeedConfig.ONLY_PUBLIC_CAN_REPOST) {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("Moments_RepostBlocked", R.string.Moments_RepostBlocked)).show();
+            String message = post.isMutual()
+                    ? LocaleController.getString("Moments_RepostBlocked_Mutual", R.string.Moments_RepostBlocked_Mutual)
+                    : LocaleController.getString("Moments_RepostBlocked", R.string.Moments_RepostBlocked);
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, message).show();
             return;
         }
         ItemOptions options = ItemOptions.makeOptions(this, fragmentView);

@@ -49,6 +49,8 @@ The action bar title stays `Moments_Title`. While Telegram is waiting, connectin
 
 Nearby shows `Moments_Sort_Latest` or `Moments_Nearby_Mixed` under the segments. Latest is the default. Mixed is the recommended order (`sort=mixed`).
 
+Friends is `GET /v1/feed/friends?cursor=`, same cursor as Following. An empty Friends list uses `Moments_EmptyFriends` and `Moments_FindPeople`. A following row shows a repost line only when `reason` is `repost`. `topic` and `source` are not shown. `mutual_followers` cannot be reposted or quoted (`Moments_RepostBlocked_Mutual`). Share to chat stays available. `state=unavailable` is `Moments_Unavailable`.
+
 A row that is still waiting for its card is a 220 dp grey block, 280 dp tall, not an empty gap. Photos and video posters bind to the post id. A video poster is the cover image, never the video file. Tapping a photo or video opens `PhotoViewer`. Tapping the row opens the post detail screen and the comment sheet. A like updates that row only. Switching segments cancels the previous list read.
 
 ## Actions
@@ -83,7 +85,7 @@ Touch target 32 dp. 14 dp after each count. Save stays in the more menu (`msg_sa
 
 | Token | Value |
 | --- | --- |
-| Tab row | 40 dp, 14 sp bold |
+| Tab row | 40 dp, 14 sp bold. Always 推荐, 关注, 好友, 同城. Friends stays up if `/v1/feed/friends` fails |
 | Selected tab | `windowBackgroundWhiteBlackText` |
 | Other tabs | `windowBackgroundWhiteGrayText` |
 | Compose control | round `FragmentFloatingButton` |

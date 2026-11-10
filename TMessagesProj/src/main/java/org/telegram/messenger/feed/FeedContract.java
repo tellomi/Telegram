@@ -30,6 +30,7 @@ public final class FeedContract {
 
     public static final String STREAM_RECOMMEND = "recommend";
     public static final String STREAM_FOLLOWING = "following";
+    public static final String STREAM_FRIENDS = "friends";
     public static final String STREAM_NEARBY = "nearby";
 
     public static final String CARDS_PATH = "/v1/feed/cards";
@@ -120,15 +121,30 @@ public final class FeedContract {
         ArrayList<String> tabs = new ArrayList<>();
         tabs.add(STREAM_RECOMMEND);
         tabs.add(STREAM_FOLLOWING);
+        tabs.add(STREAM_FRIENDS);
         tabs.add(STREAM_NEARBY);
         return tabs;
     }
 
     public static boolean isEngineStream(String stream) {
-        return STREAM_RECOMMEND.equals(stream) || STREAM_FOLLOWING.equals(stream) || STREAM_NEARBY.equals(stream);
+        return STREAM_RECOMMEND.equals(stream) || STREAM_FOLLOWING.equals(stream) || STREAM_FRIENDS.equals(stream) || STREAM_NEARBY.equals(stream);
     }
 
-    /** Null when the stream is not a real engine route (friends, places, new-count). */
+    /** The repost line is only for reason=repost. topic and source are not shown. */
+    public static boolean showRepostHeader(String reason) {
+        return reason == null || reason.length() == 0 || "repost".equals(reason);
+    }
+
+    public static boolean isMutualAudience(String audience) {
+        return "mutual_followers".equals(audience);
+    }
+
+    /** state=unavailable, deleted, or the boolean flag. Non-mutual cards use this. */
+    public static boolean cardUnavailable(boolean flag, String state) {
+        return flag || "unavailable".equals(state) || "deleted".equals(state);
+    }
+
+    /** Null when the stream is not a real engine route (places, new-count). */
     public static String streamPath(String stream, String cursor, String city, String sort) {
         if (!isEngineStream(stream)) {
             return null;
@@ -167,49 +183,12 @@ public final class FeedContract {
     }
 
     /**
-     * Top tabs come from capabilities `tabs` (or config.tabs). Unknown ids,
-     * including friends, are dropped because those routes do not exist.
-     * A missing field falls back to recommend / following / nearby.
+     * Home segments are always recommend, following, friends, nearby.
+     * capabilities.friends_feed and a missing or partial tab list do not hide Friends.
+     * Unknown ids such as places are ignored.
      */
     public static ArrayList<String> tabsFromCapabilities(String json) {
-        JsonObject root = object(json);
-        JsonArray raw = null;
-        boolean present = false;
-        if (root != null) {
-            if (root.has("tabs")) {
-                present = true;
-                raw = array(root.get("tabs"));
-            } else if (root.has("config") && root.get("config").isJsonObject()) {
-                JsonObject config = root.getAsJsonObject("config");
-                if (config.has("tabs")) {
-                    present = true;
-                    raw = array(config.get("tabs"));
-                }
-            } else if (root.has("feed") && root.get("feed").isJsonObject()) {
-                JsonObject feed = root.getAsJsonObject("feed");
-                if (feed.has("tabs")) {
-                    present = true;
-                    raw = array(feed.get("tabs"));
-                }
-            }
-        }
-        if (!present) {
-            return defaultTabs();
-        }
-        ArrayList<String> tabs = new ArrayList<>();
-        if (raw != null) {
-            for (int i = 0; i < raw.size(); i++) {
-                JsonElement element = raw.get(i);
-                if (element == null || !element.isJsonPrimitive()) {
-                    continue;
-                }
-                String id = element.getAsString();
-                if (isEngineStream(id) && !tabs.contains(id)) {
-                    tabs.add(id);
-                }
-            }
-        }
-        return tabs;
+        return defaultTabs();
     }
 
     public static String joinTabs(List<String> tabs) {

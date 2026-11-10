@@ -61,15 +61,33 @@ public class FeedContractTest {
 
     @Test
     public void topTabsComeFromCapabilitiesAndDropMissingRoutes() {
-        ArrayList<String> tabs = FeedContract.tabsFromCapabilities("{\"config\":{\"tabs\":[\"following\",\"friends\",\"nearby\",\"recommend\",\"places\"]}}");
-        assertEquals(Arrays.asList("following", "nearby", "recommend"), tabs);
-        assertEquals(FeedContract.defaultTabs(), FeedContract.tabsFromCapabilities("{}"));
-        assertTrue(FeedContract.tabsFromCapabilities("{\"tabs\":[]}").isEmpty());
-        assertNull(FeedContract.streamPath("friends", "", "", ""));
+        java.util.List<String> home = Arrays.asList("recommend", "following", "friends", "nearby");
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"config\":{\"tabs\":[\"following\",\"friends\",\"nearby\",\"recommend\",\"places\"]}}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"friends_feed\":false}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"tabs\":[]}"));
+        assertEquals("/v1/feed/friends?cursor=", FeedContract.streamPath("friends", "", "", ""));
+        assertEquals("/v1/feed/friends?cursor=c2", FeedContract.streamPath("friends", "c2", "cn:chengdu", "latest"));
+        assertFalse(FeedContract.streamPath("friends", "c2", "", "").contains("city="));
         assertNull(FeedContract.streamPath("places", "", "", ""));
         assertEquals("/v1/feed/recommend?cursor=", FeedContract.streamPath("recommend", "", "cn:chengdu", "latest"));
         assertTrue(FeedContract.streamPath("nearby", "c", "cn:chengdu", "mixed").contains("city="));
         assertFalse(FeedContract.streamPath("nearby", "", "", "").contains("new-count"));
+        String page = "{\"items\":[{\"id\":\"p1\",\"reason\":\"friend\"},{\"id\":\"p2\",\"reason\":\"topic\"},{\"id\":\"p3\",\"reason\":\"repost\"}],\"cursor\":\"c\"}";
+        FeedContract.FeedList list = FeedContract.parseFeedList(page);
+        assertEquals("friend", list.refs.get(0).reason);
+        assertEquals("topic", list.refs.get(1).reason);
+        assertFalse(FeedContract.showRepostHeader("topic"));
+        assertFalse(FeedContract.showRepostHeader("source"));
+        assertFalse(FeedContract.showRepostHeader("friend"));
+        assertFalse(FeedContract.showRepostHeader("following"));
+        assertTrue(FeedContract.showRepostHeader("repost"));
+        assertTrue(FeedContract.showRepostHeader(""));
+        assertTrue(FeedContract.isMutualAudience("mutual_followers"));
+        assertFalse(FeedContract.isMutualAudience("public"));
+        assertTrue(FeedContract.cardUnavailable(false, "unavailable"));
+        assertTrue(FeedContract.cardUnavailable(true, "published"));
+        assertFalse(FeedContract.cardUnavailable(false, "published"));
     }
 
     @Test
@@ -343,7 +361,6 @@ public class FeedContractTest {
                 + read("ui/Feed/FeedNotificationsActivity.java")
                 + read("ui/Feed/FeedCityActivity.java")
                 + read("ui/Feed/FeedComposerActivity.java");
-        assertFalse(feed.contains("/v1/feed/friends"));
         assertFalse(feed.contains("/new-count"));
         assertFalse(feed.contains("/v1/feed/places"));
         assertFalse(feed.contains("notifications?kind="));

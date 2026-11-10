@@ -12,11 +12,12 @@ public final class FeedModels {
 
     public static final String STREAM_RECOMMEND = FeedContract.STREAM_RECOMMEND;
     public static final String STREAM_FOLLOWING = FeedContract.STREAM_FOLLOWING;
+    public static final String STREAM_FRIENDS = FeedContract.STREAM_FRIENDS;
     public static final String STREAM_NEARBY = FeedContract.STREAM_NEARBY;
 
-    /** Engine streams. friends is not a route. */
+    /** Engine streams, in home order. */
     public static final String[] STREAMS = new String[]{
-            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_NEARBY
+            STREAM_RECOMMEND, STREAM_FOLLOWING, STREAM_FRIENDS, STREAM_NEARBY
     };
 
     public static class Author {
@@ -343,6 +344,10 @@ public final class FeedModels {
             return "public".equals(audienceKind);
         }
 
+        public boolean isMutual() {
+            return FeedContract.isMutualAudience(audienceKind);
+        }
+
         public boolean hasImages() {
             for (int i = 0; i < media.size(); i++) {
                 if (media.get(i).isImage()) {
@@ -385,7 +390,7 @@ public final class FeedModels {
             p.version = o.optInt("version", 0);
             String state = o.optString("state", "published");
             p.state = state;
-            p.unavailable = o.optBoolean("unavailable", false) || "unavailable".equals(state) || "deleted".equals(state);
+            p.unavailable = FeedContract.cardUnavailable(o.optBoolean("unavailable", false), state);
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
             }
