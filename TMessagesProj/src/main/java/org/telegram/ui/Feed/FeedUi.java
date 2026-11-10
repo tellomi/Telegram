@@ -70,14 +70,27 @@ public final class FeedUi {
         return language != null && language.toLowerCase(Locale.US).startsWith("zh");
     }
 
+    /**
+     * Called while MainTabsActivity builds the first screen. On a Chinese
+     * locale this runs for the Moments and Search titles. Creating a
+     * configuration context throws on some devices (Resources.NotFoundException,
+     * or a null dereference inside AssetManager). That must not kill launch.
+     */
     private static String resourceString(Locale locale, int res) {
         Context context = ApplicationLoader.applicationContext;
-        if (context == null || res == 0) {
+        if (context == null || res == 0 || locale == null) {
             return null;
         }
-        Configuration config = new Configuration(context.getResources().getConfiguration());
-        config.setLocale(locale);
-        return context.createConfigurationContext(config).getResources().getString(res);
+        try {
+            Configuration config = new Configuration(context.getResources().getConfiguration());
+            config.setLocale(locale);
+            if (Build.VERSION.SDK_INT >= 24) {
+                config.setLocales(new android.os.LocaleList(locale));
+            }
+            return context.createConfigurationContext(config).getResources().getString(res);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static boolean reduceMotion() {
