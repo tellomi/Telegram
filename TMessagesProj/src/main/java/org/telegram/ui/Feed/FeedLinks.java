@@ -5,6 +5,7 @@ import android.net.Uri;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.ui.LaunchActivity;
 
 /**
@@ -26,7 +27,12 @@ public final class FeedLinks {
         }
         AndroidUtilities.runOnUIThread(() -> {
             org.telegram.ui.ActionBar.BaseFragment fragment = LaunchActivity.getLastFragment();
-            if (fragment != null) {
+            if (fragment == null) {
+                return;
+            }
+            if (FeedContract.opensStandaloneDetail(FeedContract.ENTRY_DEEP_LINK)) {
+                fragment.presentFragment(FeedDetailActivity.forPost(id));
+            } else {
                 FeedCommentSheet.open(fragment, id, false);
             }
         });

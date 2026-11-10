@@ -263,4 +263,14 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+
+    <string name="Moments_Comment_SendFailed">Не удалось отправить комментарий. Текст на месте.</string>
+    <string name="Moments_Audience_Kept">Не удалось обновить, кто может видеть. Ваш выбор сохранён.</string>
+    <string name="Moments_Notif_Other">Активность</string>
+    <string name="Moments_City_Beijing">Пекин</string>
+    <string name="Moments_City_Shanghai">Шанхай</string>
+    <string name="Moments_City_Guangzhou">Гуанчжоу</string>
+    <string name="Moments_City_Shenzhen">Шэньчжэнь</string>
+    <string name="Moments_City_Chengdu">Чэнду</string>
+    <string name="Moments_City_Hangzhou">Ханчжоу</string>
 </resources>

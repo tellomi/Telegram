@@ -1375,4 +1375,14 @@
     <string name="RemindTodayAt">\'Heute um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayAt">\'Am\' d MMM \'um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayYearAt">\'Am\' d\'.\' MMM yyyy \'um\' HH:mm \'erinnern\'</string>
+
+    <string name="Moments_Comment_SendFailed">Der Kommentar wurde nicht gesendet. Dein Text ist noch da.</string>
+    <string name="Moments_Audience_Kept">Wer das sehen kann, wurde nicht geändert. Deine Auswahl bleibt.</string>
+    <string name="Moments_Notif_Other">Aktivität</string>
+    <string name="Moments_City_Beijing">Peking</string>
+    <string name="Moments_City_Shanghai">Shanghai</string>
+    <string name="Moments_City_Guangzhou">Kanton</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdu</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
 </resources>

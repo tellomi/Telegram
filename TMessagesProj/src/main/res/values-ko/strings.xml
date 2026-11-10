@@ -1136,4 +1136,14 @@
     <string name="RemindDayAt">MMM d HH:mm\'에 알리기\'</string>
     <string name="RemindDayYearAt">yyyy\'년\' M\'월\' d\'일\' HH:mm\'에 알림\'</string>
     <string name="BotsMenuTitle">메뉴</string>
+
+    <string name="Moments_Comment_SendFailed">댓글을 보내지 못했습니다. 내용은 그대로입니다.</string>
+    <string name="Moments_Audience_Kept">공개 대상을 바꾸지 못했습니다. 선택한 사람은 그대로입니다.</string>
+    <string name="Moments_Notif_Other">활동</string>
+    <string name="Moments_City_Beijing">베이징</string>
+    <string name="Moments_City_Shanghai">상하이</string>
+    <string name="Moments_City_Guangzhou">광저우</string>
+    <string name="Moments_City_Shenzhen">선전</string>
+    <string name="Moments_City_Chengdu">청두</string>
+    <string name="Moments_City_Hangzhou">항저우</string>
 </resources>

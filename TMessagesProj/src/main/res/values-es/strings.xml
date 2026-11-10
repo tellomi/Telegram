@@ -1316,4 +1316,14 @@
     <string name="RemindDayYearAt">\'Recordar el\' d \'de\' MMM \'de\' yyyy \'a las\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
     <string name="Understood">👍 Entendido</string>
+
+    <string name="Moments_Comment_SendFailed">No se pudo enviar el comentario. Tu texto sigue aquí.</string>
+    <string name="Moments_Audience_Kept">No se pudo cambiar quién puede ver esto. Tu selección se mantiene.</string>
+    <string name="Moments_Notif_Other">Actividad</string>
+    <string name="Moments_City_Beijing">Pekín</string>
+    <string name="Moments_City_Shanghai">Shanghái</string>
+    <string name="Moments_City_Guangzhou">Cantón</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdú</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
 </resources>

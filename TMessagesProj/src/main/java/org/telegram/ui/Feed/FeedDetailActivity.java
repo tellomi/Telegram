@@ -44,7 +44,6 @@ import static org.telegram.messenger.LocaleController.getString;
 public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Delegate {
 
     public boolean focusReply;
-    private boolean commentsOpened;
     private final String postId;
     private FeedModels.Post post;
     private final ArrayList<FeedModels.Comment> comments = new ArrayList<>();
@@ -66,24 +65,11 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         postId = args.getString("post_id");
     }
 
+    /** Deep-link route. Taps inside the feed open {@link FeedCommentSheet} over the list instead. */
     public static FeedDetailActivity forPost(String id) {
         Bundle args = new Bundle();
         args.putString("post_id", id);
         return new FeedDetailActivity(args);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (!commentsOpened && postId != null && postId.length() > 0) {
-            commentsOpened = true;
-            FeedModels.Post known = post != null ? post : controller().find(postId);
-            if (known != null && !known.unavailable) {
-                FeedCommentSheet.open(this, known, focusReply);
-            } else {
-                FeedCommentSheet.open(this, postId, focusReply);
-            }
-        }
     }
 
     private FeedController controller() {

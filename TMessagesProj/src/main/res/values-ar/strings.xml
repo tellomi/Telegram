@@ -1243,4 +1243,14 @@
     <string name="RemindTodayAt">\'ذكّرني اليوم عند\' HH:mm</string>
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
+
+    <string name="Moments_Comment_SendFailed">تعذّر إرسال التعليق. نصك ما زال هنا.</string>
+    <string name="Moments_Audience_Kept">تعذّر تحديث من يمكنه المشاهدة. اختيارك ما زال محفوظًا.</string>
+    <string name="Moments_Notif_Other">نشاط</string>
+    <string name="Moments_City_Beijing">بكين</string>
+    <string name="Moments_City_Shanghai">شنغهاي</string>
+    <string name="Moments_City_Guangzhou">قوانغتشو</string>
+    <string name="Moments_City_Shenzhen">شنتشن</string>
+    <string name="Moments_City_Chengdu">تشنغدو</string>
+    <string name="Moments_City_Hangzhou">هانغتشو</string>
 </resources>

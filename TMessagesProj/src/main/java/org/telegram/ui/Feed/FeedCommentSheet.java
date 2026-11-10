@@ -61,6 +61,9 @@ public class FeedCommentSheet extends Dialog {
     private final ArrayList<FeedModels.Comment> roots = new ArrayList<>();
     private String replyTo = "";
     private String replyName = "";
+    private final FeedContract.CommentDraft commentDraft = new FeedContract.CommentDraft();
+    private boolean sending;
+    private TextView sendError;
     private String threadCursor = "";
     private String pendingKey = "";
     private String pendingKind = "";
@@ -168,6 +171,13 @@ public class FeedCommentSheet extends Dialog {
             }
         });
         panel.addView(list, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
+
+        sendError = new TextView(getContext());
+        sendError.setTextSize(13);
+        sendError.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+        sendError.setPadding(dp(16), dp(4), dp(16), 0);
+        sendError.setVisibility(View.GONE);
+        panel.addView(sendError, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         LinearLayout bar = new LinearLayout(getContext());
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -406,14 +416,14 @@ public class FeedCommentSheet extends Dialog {
     }
 
     private void send() {
-        if (!input.isEnabled()) {
+        if (!input.isEnabled() || sending) {
             return;
         }
         String text = input.getText() == null ? "" : input.getText().toString().trim();
         if (text.length() == 0 && pendingKey.length() == 0) {
             return;
         }
-        String parent = replyTo;
+        commentDraft.prepare(text, replyTo, pendingKind, pendingKey);
         org.json.JSONObject attachment = null;
         if (pendingKey.length() > 0) {
             attachment = new org.json.JSONObject();
@@ -423,14 +433,30 @@ public class FeedCommentSheet extends Dialog {
             } catch (Exception ignore) {
             }
         }
-        input.setText("");
-        replyTo = "";
-        replyName = "";
-        clearPending();
-        input.setHint(LocaleController.getString("Moments_CommentHint", R.string.Moments_CommentHint));
-        FeedController.getInstance(fragment.getCurrentAccount()).sendComment(postId, text, parent, attachment, error -> AndroidUtilities.runOnUIThread(() -> {
+        sending = true;
+        if (sendError != null) {
+            sendError.setVisibility(View.GONE);
+        }
+        final String parent = replyTo;
+        FeedController.getInstance(fragment.getCurrentAccount()).sendComment(postId, text, parent, attachment, commentDraft.nonce, error -> AndroidUtilities.runOnUIThread(() -> {
+            sending = false;
             if (error == null) {
+                commentDraft.onSuccess();
+                input.setText("");
+                replyTo = "";
+                replyName = "";
+                clearPending();
+                input.setHint(LocaleController.getString("Moments_CommentHint", R.string.Moments_CommentHint));
+                if (sendError != null) {
+                    sendError.setVisibility(View.GONE);
+                }
                 load();
+            } else {
+                commentDraft.onFailure();
+                if (sendError != null) {
+                    sendError.setText(LocaleController.getString("Moments_Comment_SendFailed", R.string.Moments_Comment_SendFailed));
+                    sendError.setVisibility(View.VISIBLE);
+                }
             }
         }));
     }

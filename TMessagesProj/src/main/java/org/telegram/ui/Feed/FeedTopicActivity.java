@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -118,9 +119,9 @@ public class FeedTopicActivity extends BaseFragment {
 
     private FeedPostCell.Delegate simple() {
         return new FeedPostCell.Delegate() {
-            @Override public void onOpen(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, false); }
+            @Override public void onOpen(FeedModels.Post post) { if (FeedContract.opensCommentSheet(FeedContract.ENTRY_TOPIC)) FeedCommentSheet.open(FeedTopicActivity.this, post, false); }
             @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-            @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, true); }
+            @Override public void onComment(FeedModels.Post post) { if (FeedContract.opensCommentSheet(FeedContract.ENTRY_TOPIC)) FeedCommentSheet.open(FeedTopicActivity.this, post, true); }
             @Override public void onRepost(FeedModels.Post post) {}
             @Override public void onShare(FeedModels.Post post) {}
             @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }

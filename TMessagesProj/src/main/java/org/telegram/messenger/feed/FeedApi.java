@@ -167,17 +167,31 @@ public class FeedApi {
         }));
     }
 
-    public void audienceToken(String kind, ArrayList<Long> userIds, final Callback<String> callback) {
+    public interface AudienceCallback {
+        void run(String token, int expires, String error);
+    }
+
+    /** discover.getAudienceToken. kind is include or exclude. expires is the unix second the token dies. */
+    public void audienceToken(String kind, ArrayList<Long> userIds, final AudienceCallback callback) {
         TL_discover.TL_discover_getAudienceToken req = new TL_discover.TL_discover_getAudienceToken();
         req.kind = kind;
         if (userIds != null) {
             req.user_ids.addAll(userIds);
         }
         ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (callback == null) {
+                return;
+            }
             if (response instanceof TL_discover.TL_discover_audienceToken) {
-                callback.run(((TL_discover.TL_discover_audienceToken) response).token, null);
+                TL_discover.TL_discover_audienceToken token = (TL_discover.TL_discover_audienceToken) response;
+                String value = token.token == null ? "" : token.token;
+                if (value.length() == 0) {
+                    callback.run(null, 0, "audience_token");
+                } else {
+                    callback.run(value, token.expires, null);
+                }
             } else {
-                callback.run(null, error == null ? "auth" : error.text);
+                callback.run(null, 0, error == null ? "audience_token" : error.text);
             }
         }));
     }

@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -148,9 +149,9 @@ public class FeedCollectionActivity extends BaseFragment {
                 return new RecyclerListView.Holder(text);
             }
             FeedPostCell cell = new FeedPostCell(parent.getContext(), currentAccount, false, false, new FeedPostCell.Delegate() {
-                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable) FeedCommentSheet.open(FeedCollectionActivity.this, post.id, false); }
+                @Override public void onOpen(FeedModels.Post post) { if (!post.unavailable && FeedContract.opensCommentSheet(FeedContract.ENTRY_BODY)) FeedCommentSheet.open(FeedCollectionActivity.this, post, false); }
                 @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-                @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedCollectionActivity.this, post.id, true); }
+                @Override public void onComment(FeedModels.Post post) { if (FeedContract.opensCommentSheet(FeedContract.ENTRY_COMMENT)) FeedCommentSheet.open(FeedCollectionActivity.this, post, true); }
                 @Override public void onRepost(FeedModels.Post post) {}
                 @Override public void onShare(FeedModels.Post post) {}
                 @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }

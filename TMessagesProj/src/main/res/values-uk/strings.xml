@@ -276,4 +276,14 @@
     <string name="RemindTodayAt">\'Нагадати сьогодні,\' HH:mm</string>
     <string name="RemindDayAt">\'Нагадати\' d MMM\',\' HH:mm</string>
     <string name="RemindDayYearAt">\'Нагадати\' d MMM yyyy\',\' HH:mm</string>
+
+    <string name="Moments_Comment_SendFailed">Не вдалося надіслати коментар. Текст залишився.</string>
+    <string name="Moments_Audience_Kept">Не вдалося оновити, хто може бачити. Ваш вибір збережено.</string>
+    <string name="Moments_Notif_Other">Активність</string>
+    <string name="Moments_City_Beijing">Пекін</string>
+    <string name="Moments_City_Shanghai">Шанхай</string>
+    <string name="Moments_City_Guangzhou">Гуанчжоу</string>
+    <string name="Moments_City_Shenzhen">Шеньчжень</string>
+    <string name="Moments_City_Chengdu">Ченду</string>
+    <string name="Moments_City_Hangzhou">Ханчжоу</string>
 </resources>

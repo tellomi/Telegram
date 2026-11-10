@@ -1,5 +1,5 @@
 {
-  "resolution": "Release resources.arsc discards @string values. LocaleController.getString(name, R.string.name) reads localization_en.bin or localization_zh_cn.bin by the Java hash of the resource name. The server langpack should use these same Moments_* keys for en and zh-Hans.",
+  "resolution": "Release resources.arsc discards @string values. LocaleController.getString(name, R.string.name) reads the matching localization bin by the Java hash of the resource name. en and zh-Hans are on every Moments key. A key that ships in any other built-in language must ship in all of them, with that language's own wording.",
   "keys": [
     {
       "key": "Moments_AllowNearby",
@@ -37,6 +37,21 @@
       "zh-Hans": "粉丝"
     },
     {
+      "key": "Moments_Audience_Kept",
+      "en": "Couldn\\'t update who can see this. Your selection was kept.",
+      "zh-Hans": "没能更新谁可以看。你的选择还在。",
+      "zh-Hant": "沒能更新誰可以看。你的選擇還在。",
+      "ar": "تعذّر تحديث من يمكنه المشاهدة. اختيارك ما زال محفوظًا.",
+      "de": "Wer das sehen kann, wurde nicht geändert. Deine Auswahl bleibt.",
+      "es": "No se pudo cambiar quién puede ver esto. Tu selección se mantiene.",
+      "it": "Impossibile aggiornare chi può vedere. La scelta è rimasta.",
+      "ko": "공개 대상을 바꾸지 못했습니다. 선택한 사람은 그대로입니다.",
+      "nl": "Kon niet wijzigen wie dit mag zien. Je keuze blijft staan.",
+      "pt-BR": "Não foi possível atualizar quem pode ver. Sua seleção foi mantida.",
+      "ru": "Не удалось обновить, кто может видеть. Ваш выбор сохранён.",
+      "uk": "Не вдалося оновити, хто може бачити. Ваш вибір збережено."
+    },
+    {
       "key": "Moments_Audience_Mutual",
       "en": "Mutual followers",
       "zh-Hans": "互关好友"
@@ -55,6 +70,96 @@
       "key": "Moments_ChangeAudience",
       "en": "Who can view",
       "zh-Hans": "修改谁可以看"
+    },
+    {
+      "key": "Moments_City_Beijing",
+      "en": "Beijing",
+      "zh-Hans": "北京",
+      "zh-Hant": "北京",
+      "ar": "بكين",
+      "de": "Peking",
+      "es": "Pekín",
+      "it": "Pechino",
+      "ko": "베이징",
+      "nl": "Peking",
+      "pt-BR": "Pequim",
+      "ru": "Пекин",
+      "uk": "Пекін"
+    },
+    {
+      "key": "Moments_City_Chengdu",
+      "en": "Chengdu",
+      "zh-Hans": "成都",
+      "zh-Hant": "成都",
+      "ar": "تشنغدو",
+      "de": "Chengdu",
+      "es": "Chengdú",
+      "it": "Chengdu",
+      "ko": "청두",
+      "nl": "Chengdu",
+      "pt-BR": "Chengdu",
+      "ru": "Чэнду",
+      "uk": "Ченду"
+    },
+    {
+      "key": "Moments_City_Guangzhou",
+      "en": "Guangzhou",
+      "zh-Hans": "广州",
+      "zh-Hant": "廣州",
+      "ar": "قوانغتشو",
+      "de": "Kanton",
+      "es": "Cantón",
+      "it": "Canton",
+      "ko": "광저우",
+      "nl": "Kanton",
+      "pt-BR": "Cantão",
+      "ru": "Гуанчжоу",
+      "uk": "Гуанчжоу"
+    },
+    {
+      "key": "Moments_City_Hangzhou",
+      "en": "Hangzhou",
+      "zh-Hans": "杭州",
+      "zh-Hant": "杭州",
+      "ar": "هانغتشو",
+      "de": "Hangzhou",
+      "es": "Hangzhou",
+      "it": "Hangzhou",
+      "ko": "항저우",
+      "nl": "Hangzhou",
+      "pt-BR": "Hangzhou",
+      "ru": "Ханчжоу",
+      "uk": "Ханчжоу"
+    },
+    {
+      "key": "Moments_City_Shanghai",
+      "en": "Shanghai",
+      "zh-Hans": "上海",
+      "zh-Hant": "上海",
+      "ar": "شنغهاي",
+      "de": "Shanghai",
+      "es": "Shanghái",
+      "it": "Shanghai",
+      "ko": "상하이",
+      "nl": "Shanghai",
+      "pt-BR": "Xangai",
+      "ru": "Шанхай",
+      "uk": "Шанхай"
+    },
+    {
+      "key": "Moments_City_Shenzhen",
+      "en": "Shenzhen",
+      "zh-Hans": "深圳",
+      "zh-Hant": "深圳",
+      "ar": "شنتشن",
+      "de": "Shenzhen",
+      "es": "Shenzhen",
+      "it": "Shenzhen",
+      "ko": "선전",
+      "nl": "Shenzhen",
+      "pt-BR": "Shenzhen",
+      "ru": "Шэньчжэнь",
+      "uk": "Шеньчжень"
     },
     {
       "key": "Moments_Comment",
@@ -95,6 +200,21 @@
       "key": "Moments_Comment_Placeholder",
       "en": "Reply",
       "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Comment_SendFailed",
+      "en": "Couldn\\'t send this comment. Your text is still here.",
+      "zh-Hans": "评论没有发出去，内容还在。",
+      "zh-Hant": "留言沒有送出，內容還在。",
+      "ar": "تعذّر إرسال التعليق. نصك ما زال هنا.",
+      "de": "Der Kommentar wurde nicht gesendet. Dein Text ist noch da.",
+      "es": "No se pudo enviar el comentario. Tu texto sigue aquí.",
+      "it": "Impossibile inviare il commento. Il testo è ancora qui.",
+      "ko": "댓글을 보내지 못했습니다. 내용은 그대로입니다.",
+      "nl": "Reactie niet verzonden. Je tekst staat er nog.",
+      "pt-BR": "Não foi possível enviar o comentário. Seu texto continua aqui.",
+      "ru": "Не удалось отправить комментарий. Текст на месте.",
+      "uk": "Не вдалося надіслати коментар. Текст залишився."
     },
     {
       "key": "Moments_Composer_Hint",
@@ -330,6 +450,21 @@
       "key": "Moments_Notif_Interactions",
       "en": "Interactions",
       "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_Notif_Other",
+      "en": "Activity",
+      "zh-Hans": "动态通知",
+      "zh-Hant": "動態通知",
+      "ar": "نشاط",
+      "de": "Aktivität",
+      "es": "Actividad",
+      "it": "Attività",
+      "ko": "활동",
+      "nl": "Activiteit",
+      "pt-BR": "Atividade",
+      "ru": "Активность",
+      "uk": "Активність"
     },
     {
       "key": "Moments_Notif_System",
