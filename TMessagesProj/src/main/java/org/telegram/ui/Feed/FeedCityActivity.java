@@ -170,15 +170,18 @@ public class FeedCityActivity extends BaseFragment {
 
     private void fallback(String q) {
         String[][] seed = new String[][]{
-                {"cn:beijing", "北京"},
-                {"cn:shanghai", "上海"},
-                {"cn:guangzhou", "广州"},
-                {"cn:shenzhen", "深圳"},
-                {"cn:chengdu", "成都"},
-                {"cn:hangzhou", "杭州"}
+                {"cn:beijing", LocaleController.getString("Moments_City_Beijing", R.string.Moments_City_Beijing)},
+                {"cn:shanghai", LocaleController.getString("Moments_City_Shanghai", R.string.Moments_City_Shanghai)},
+                {"cn:guangzhou", LocaleController.getString("Moments_City_Guangzhou", R.string.Moments_City_Guangzhou)},
+                {"cn:shenzhen", LocaleController.getString("Moments_City_Shenzhen", R.string.Moments_City_Shenzhen)},
+                {"cn:chengdu", LocaleController.getString("Moments_City_Chengdu", R.string.Moments_City_Chengdu)},
+                {"cn:hangzhou", LocaleController.getString("Moments_City_Hangzhou", R.string.Moments_City_Hangzhou)}
         };
+        String query = q == null ? "" : q.trim();
+        String lower = query.toLowerCase(Locale.US);
         for (int i = 0; i < seed.length; i++) {
-            if (q == null || q.length() == 0 || seed[i][1].contains(q) || seed[i][0].contains(q.toLowerCase(Locale.US))) {
+            String name = seed[i][1] == null ? "" : seed[i][1];
+            if (query.length() == 0 || name.toLowerCase(Locale.ROOT).contains(lower) || seed[i][0].contains(lower)) {
                 cities.add(seed[i]);
             }
         }

@@ -26,7 +26,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.feed.FeedConfig;
 import org.telegram.messenger.feed.FeedContract;
@@ -59,12 +58,15 @@ public class FeedComposerActivity extends BaseFragment {
 
     private static final int REQ_AUDIO = 41;
 
-    private final String quoteId;
     private final String editId;
     private String draftId;
+    private String quoteOf = "";
 
     private EditText field;
     private TextView audienceView;
+    private TextView nearbyView;
+    private String audienceVisibility = "";
+    private final ArrayList<Long> audienceUserIds = new ArrayList<>();
     private TextView counter;
     private TextView attachments;
     private FeedRecordWave recordWave;
@@ -73,6 +75,7 @@ public class FeedComposerActivity extends BaseFragment {
     private boolean allowNearby;
     private String cityCode = "";
     private String cityName = "";
+    private String placeId = "";
     private String placeName = "";
     private boolean original;
     private final ArrayList<String> paths = new ArrayList<>();
@@ -89,7 +92,7 @@ public class FeedComposerActivity extends BaseFragment {
 
     public FeedComposerActivity(Bundle args) {
         super(args);
-        quoteId = args == null ? null : args.getString("quote");
+        quoteOf = args == null || args.getString("quote") == null ? "" : args.getString("quote");
         editId = args == null ? null : args.getString("edit");
         draftId = args == null ? null : args.getString("draft");
     }
@@ -142,8 +145,15 @@ public class FeedComposerActivity extends BaseFragment {
         audienceView.setTextSize(15);
         audienceView.setOnClickListener(v -> FeedAudiencePicker.open(this, privacy, picked -> {
             privacy = picked;
+            audienceUserIds.clear();
+            audienceUserIds.addAll(FeedAudiencePicker.memberIds(picked));
+            audienceVisibility = FeedContract.visibilityOf(FeedAudiencePicker.kind(picked.type), !audienceUserIds.isEmpty());
+            if (!FeedContract.VIS_PUBLIC.equals(audienceVisibility)) {
+                allowNearby = false;
+            }
             dirty = true;
             audienceView.setText(FeedAudiencePicker.label(picked));
+            paintNearby();
             refreshPublish();
         }));
         column.addView(audienceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
@@ -212,18 +222,18 @@ public class FeedComposerActivity extends BaseFragment {
         addTool(tools, LocaleController.getString("Moments_Tool_Place", R.string.Moments_Tool_Place), () -> presentFragment(new FeedCityActivity(false)));
         column.addView(tools, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        TextView nearby = new TextView(context);
-        nearby.setText(LocaleController.getString("Moments_AllowNearby", R.string.Moments_AllowNearby));
-        nearby.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        nearby.setOnClickListener(v -> {
-            if (privacy == null || privacy.type != StoryPrivacyBottomSheet.TYPE_EVERYONE) {
+        nearbyView = new TextView(context);
+        nearbyView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        nearbyView.setOnClickListener(v -> {
+            if (!FeedContract.VIS_PUBLIC.equals(audienceVisibility)) {
                 return;
             }
             allowNearby = !allowNearby;
-            nearby.setText(LocaleController.getString("Moments_AllowNearby", R.string.Moments_AllowNearby) + (allowNearby ? " ✓" : ""));
+            paintNearby();
             dirty = true;
         });
-        column.addView(nearby, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
+        paintNearby();
+        column.addView(nearbyView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
         TextView originalView = new TextView(context);
         originalView.setText(LocaleController.getString("Moments_SendOriginal", R.string.Moments_SendOriginal));
@@ -237,12 +247,12 @@ public class FeedComposerActivity extends BaseFragment {
         FrameLayout root = new FrameLayout(context);
         root.addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fragmentView = root;
-        if (quoteId != null) {
+        if (quoteOf.length() > 0) {
             field.setHint(LocaleController.getString("Moments_QuoteHint", R.string.Moments_QuoteHint));
         }
         if (draftId != null) {
             applyDraft(controller().storage.draftJson(draftId));
-        } else if (editId == null && quoteId == null) {
+        } else if (editId == null && quoteOf.length() == 0) {
             java.util.ArrayList<String[]> saved = controller().storage.listDrafts();
             if (!saved.isEmpty() && saved.get(0) != null && saved.get(0).length >= 3) {
                 TextView resume = new TextView(context);
@@ -268,27 +278,69 @@ public class FeedComposerActivity extends BaseFragment {
         if (json == null || json.length() == 0 || field == null) {
             return;
         }
-        try {
-            org.json.JSONObject o = new org.json.JSONObject(json);
-            field.setText(o.optString("text", ""));
-            paths.clear();
-            types.clear();
-            org.json.JSONArray pathArr = o.optJSONArray("paths");
-            org.json.JSONArray typeArr = o.optJSONArray("types");
-            if (pathArr != null) {
-                for (int i = 0; i < pathArr.length(); i++) {
-                    paths.add(pathArr.optString(i));
-                }
-            }
-            if (typeArr != null) {
-                for (int i = 0; i < typeArr.length(); i++) {
-                    types.add(typeArr.optString(i));
-                }
-            }
-            dirty = true;
-            refreshPublish();
-        } catch (Exception ignore) {
+        FeedContract.PostRequest request = FeedContract.parseDraft(json, paths, types);
+        if (request == null) {
+            return;
         }
+        field.setText(request.text);
+        if (request.quoteOf.length() > 0) {
+            quoteOf = request.quoteOf;
+            field.setHint(LocaleController.getString("Moments_QuoteHint", R.string.Moments_QuoteHint));
+        }
+        audienceVisibility = request.visibility;
+        audienceUserIds.clear();
+        audienceUserIds.addAll(request.userIds);
+        allowNearby = request.allowNearby && FeedContract.VIS_PUBLIC.equals(audienceVisibility);
+        cityCode = request.city;
+        cityName = request.cityName;
+        placeId = request.placeId;
+        placeName = request.placeName;
+        privacy = privacyFor(audienceVisibility, audienceUserIds);
+        if (request.pollJson.length() > 0) {
+            try {
+                poll = new JSONObject(request.pollJson);
+            } catch (Exception ignore) {
+            }
+        }
+        dirty = true;
+        if (privacy != null) {
+            audienceView.setText(FeedAudiencePicker.label(privacy));
+        }
+        paintNearby();
+        refreshPublish();
+    }
+
+    private void paintNearby() {
+        if (nearbyView == null) {
+            return;
+        }
+        boolean on = allowNearby && FeedContract.VIS_PUBLIC.equals(audienceVisibility);
+        nearbyView.setText(LocaleController.getString("Moments_AllowNearby", R.string.Moments_AllowNearby) + (on ? " ✓" : ""));
+    }
+
+    private StoryPrivacyBottomSheet.StoryPrivacy privacyFor(String visibility, ArrayList<Long> ids) {
+        ArrayList<Long> users = ids == null ? new ArrayList<>() : new ArrayList<>(ids);
+        int type;
+        if (FeedContract.VIS_INCLUDE.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_SELECTED_CONTACTS;
+        } else if (FeedContract.VIS_EXCLUDE.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_EVERYONE;
+        } else if (FeedContract.VIS_CONTACTS.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_CONTACTS;
+            users.clear();
+        } else if (FeedContract.VIS_CLOSE_FRIENDS.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_CLOSE_FRIENDS;
+            users.clear();
+        } else if (FeedContract.VIS_FRIENDS.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_MUTUAL_FOLLOWERS;
+            users.clear();
+        } else if (FeedContract.VIS_PUBLIC.equals(visibility)) {
+            type = StoryPrivacyBottomSheet.TYPE_EVERYONE;
+            users.clear();
+        } else {
+            return null;
+        }
+        return new StoryPrivacyBottomSheet.StoryPrivacy(type, currentAccount, users);
     }
 
     private static String labelForType(String type) {
@@ -495,7 +547,7 @@ public class FeedComposerActivity extends BaseFragment {
         if (field.getText().length() == 0 && paths.isEmpty() && poll == null) {
             return;
         }
-        if (privacy == null || privacy.type == 0) {
+        if (audienceVisibility.length() == 0 || privacy == null || privacy.type == 0) {
             audienceView.performClick();
             return;
         }
@@ -522,35 +574,28 @@ public class FeedComposerActivity extends BaseFragment {
             controller().api.sendJson("PATCH", "/v1/feed/posts/" + editId, body, (json, error) -> finishFragment());
             return;
         }
-        FeedController.UploadTask task = new FeedController.UploadTask();
-        task.text = field.getText().toString();
-        task.audienceKind = FeedAudiencePicker.kind(privacy.type);
-        task.allowNearby = allowNearby;
-        task.cityCode = cityCode.length() > 0 ? cityCode : controller().cityCode();
-        task.cityName = cityName.length() > 0 ? cityName : controller().cityName();
-        task.placeName = placeName;
-        task.original = original;
         prepareImages();
+        FeedContract.PostRequest request = currentRequest();
+        FeedController.UploadTask task = new FeedController.UploadTask();
+        task.text = request.text;
+        task.audienceKind = request.visibility;
+        task.userIds.addAll(request.userIds);
+        task.allowNearby = request.allowNearby;
+        task.cityCode = request.city.length() > 0 ? request.city : controller().cityCode();
+        task.cityName = request.cityName.length() > 0 ? request.cityName : controller().cityName();
+        task.placeId = request.placeId;
+        task.placeName = request.placeName;
+        task.quoteOf = request.quoteOf;
+        task.original = original;
         task.paths.addAll(paths);
         task.types.addAll(types);
-        try {
-            JSONObject extra = new JSONObject();
-            if (poll != null) {
-                extra.put("poll", poll);
+        if (request.pollJson.length() > 0) {
+            try {
+                JSONObject extra = new JSONObject();
+                extra.put("poll", new JSONObject(request.pollJson));
+                task.extraJson = extra.toString();
+            } catch (Exception ignore) {
             }
-            if (foundPage != null && !has("image") && !has("video") && poll == null) {
-                JSONObject link = new JSONObject();
-                link.put("url", foundPage.url);
-                link.put("title", foundPage.title);
-                link.put("description", foundPage.description);
-                extra.put("link_preview", link);
-            }
-            task.extraJson = extra.toString();
-        } catch (Exception ignore) {
-        }
-        task.nonce = Utilities.random.nextLong() + "-" + System.currentTimeMillis();
-        if (poll != null) {
-            task.text = task.text;
         }
         controller().enqueue(task);
         if (draftId != null) {
@@ -580,17 +625,27 @@ public class FeedComposerActivity extends BaseFragment {
         showDialog(builder.create());
     }
 
+    private FeedContract.PostRequest currentRequest() {
+        FeedContract.PostRequest request = new FeedContract.PostRequest();
+        request.text = field.getText() == null ? "" : field.getText().toString();
+        request.visibility = audienceVisibility;
+        request.userIds.addAll(audienceUserIds);
+        request.allowNearby = allowNearby;
+        request.city = cityCode;
+        request.cityName = cityName;
+        request.placeId = placeId;
+        request.placeName = placeName;
+        request.quoteOf = quoteOf == null ? "" : quoteOf;
+        if (poll != null) {
+            request.pollJson = poll.toString();
+        }
+        return request;
+    }
+
     private void saveDraft() {
         try {
-            JSONObject o = new JSONObject();
-            o.put("text", field.getText().toString());
-            o.put("paths", new JSONArray(paths));
-            o.put("types", new JSONArray(types));
-            if (privacy != null) {
-                o.put("audience", FeedAudiencePicker.kind(privacy.type));
-            }
             String id = draftId != null ? draftId : String.valueOf(System.currentTimeMillis());
-            controller().storage.saveDraft(id, System.currentTimeMillis(), o.toString());
+            controller().storage.saveDraft(id, System.currentTimeMillis(), FeedContract.draftJson(currentRequest(), paths, types));
         } catch (Exception ignore) {
         }
     }

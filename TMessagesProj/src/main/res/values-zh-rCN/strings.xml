@@ -128,6 +128,15 @@
     <string name="Moments_Story">故事</string>
     
     <string name="Moments_RefreshKept">刷新没有新内容，仍显示这些动态。</string>
+    <string name="Moments_Comment_SendFailed">评论没有发出去，内容还在。</string>
+    <string name="Moments_Audience_Kept">没能更新谁可以看。你的选择还在。</string>
+    <string name="Moments_Notif_Other">动态通知</string>
+    <string name="Moments_City_Beijing">北京</string>
+    <string name="Moments_City_Shanghai">上海</string>
+    <string name="Moments_City_Guangzhou">广州</string>
+    <string name="Moments_City_Shenzhen">深圳</string>
+    <string name="Moments_City_Chengdu">成都</string>
+    <string name="Moments_City_Hangzhou">杭州</string>
 
     <string name="NewConversationShortcut">新对话</string>
     <string name="ContactShortcutMessage">发消息给 %1$s</string>

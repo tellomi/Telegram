@@ -37,6 +37,11 @@
       "zh-Hans": "粉丝"
     },
     {
+      "key": "Moments_Audience_Kept",
+      "en": "Couldn\\'t update who can see this. Your selection was kept.",
+      "zh-Hans": "没能更新谁可以看。你的选择还在。"
+    },
+    {
       "key": "Moments_Audience_Mutual",
       "en": "Mutual followers",
       "zh-Hans": "互关好友"
@@ -55,6 +60,36 @@
       "key": "Moments_ChangeAudience",
       "en": "Who can view",
       "zh-Hans": "修改谁可以看"
+    },
+    {
+      "key": "Moments_City_Beijing",
+      "en": "Beijing",
+      "zh-Hans": "北京"
+    },
+    {
+      "key": "Moments_City_Chengdu",
+      "en": "Chengdu",
+      "zh-Hans": "成都"
+    },
+    {
+      "key": "Moments_City_Guangzhou",
+      "en": "Guangzhou",
+      "zh-Hans": "广州"
+    },
+    {
+      "key": "Moments_City_Hangzhou",
+      "en": "Hangzhou",
+      "zh-Hans": "杭州"
+    },
+    {
+      "key": "Moments_City_Shanghai",
+      "en": "Shanghai",
+      "zh-Hans": "上海"
+    },
+    {
+      "key": "Moments_City_Shenzhen",
+      "en": "Shenzhen",
+      "zh-Hans": "深圳"
     },
     {
       "key": "Moments_Comment",
@@ -95,6 +130,11 @@
       "key": "Moments_Comment_Placeholder",
       "en": "Reply",
       "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Comment_SendFailed",
+      "en": "Couldn\\'t send this comment. Your text is still here.",
+      "zh-Hans": "评论没有发出去，内容还在。"
     },
     {
       "key": "Moments_Composer_Hint",
@@ -330,6 +370,11 @@
       "key": "Moments_Notif_Interactions",
       "en": "Interactions",
       "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_Notif_Other",
+      "en": "Activity",
+      "zh-Hans": "动态通知"
     },
     {
       "key": "Moments_Notif_System",

@@ -583,12 +583,18 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onOpen(FeedModels.Post post) {
+        openInFeed(FeedContract.ENTRY_BODY, post, false);
+    }
+
+    private void openInFeed(String entry, FeedModels.Post post, boolean focus) {
         if (post == null || post.pending) {
             return;
         }
-        FeedDetailActivity detail = FeedDetailActivity.forPost(post.id);
-        detail.focusReply = false;
-        presentFragment(detail);
+        if (FeedContract.opensStandaloneDetail(entry)) {
+            presentFragment(FeedDetailActivity.forPost(post.id));
+            return;
+        }
+        FeedCommentSheet.open(this, post, focus);
     }
 
     @Override
@@ -607,7 +613,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onComment(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post, true);
+        openInFeed(FeedContract.ENTRY_COMMENT, post, true);
     }
 
     @Override
@@ -655,14 +661,11 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         ItemOptions options = ItemOptions.makeOptions(this, anchor);
         if (FeedUi.isSelf(currentAccount, post.author)) {
             options.add(R.drawable.msg_edit, getString(R.string.Edit), () -> presentFragment(FeedComposerActivity.edit(post.id)));
-            options.add(R.drawable.msg_openin, LocaleController.getString("Moments_ChangeAudience", R.string.Moments_ChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> {
-                org.json.JSONObject body = new org.json.JSONObject();
-                try {
-                    body.put("kind", FeedAudiencePicker.kind(privacy.type));
-                } catch (Exception ignore) {
+            options.add(R.drawable.msg_openin, LocaleController.getString("Moments_ChangeAudience", R.string.Moments_ChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> controller().updateAudience(post.id, FeedAudiencePicker.kind(privacy.type), FeedAudiencePicker.memberIds(privacy), error -> {
+                if (error != null) {
+                    BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("Moments_Audience_Kept", R.string.Moments_Audience_Kept)).show();
                 }
-                controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/audience", body, (json, error) -> { });
-            }));
+            })));
             options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> controller().deletePost(post.id));
         } else {
             options.add(R.drawable.msg_block, LocaleController.getString("Moments_NotInterested", R.string.Moments_NotInterested), () -> controller().notInterested(post));

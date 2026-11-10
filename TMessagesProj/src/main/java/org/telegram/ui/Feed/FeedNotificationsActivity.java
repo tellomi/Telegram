@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -137,11 +138,11 @@ public class FeedNotificationsActivity extends BaseFragment {
         if ("follow".equals(kind) || "mutual".equals(kind)) return LocaleController.getString("Moments_Notif_Follows", R.string.Moments_Notif_Follows);
         if ("repost".equals(kind) || "quote".equals(kind)) return LocaleController.getString("Moments_Filter_Reposts", R.string.Moments_Filter_Reposts);
         if ("new_post".equals(kind)) return LocaleController.getString("Moments_Filter_Posts", R.string.Moments_Filter_Posts);
-        return kind == null ? "" : kind;
+        return LocaleController.getString("Moments_Notif_Other", R.string.Moments_Notif_Other);
     }
 
     private void open(FeedModels.NotificationItem item) {
-        if (item.postId != null && item.postId.length() > 0) {
+        if (item.postId != null && item.postId.length() > 0 && FeedContract.opensCommentSheet(FeedContract.ENTRY_NOTIFICATION)) {
             FeedCommentSheet.open(this, item.postId, false);
         } else if (item.actor != null && item.actor.userId != 0) {
             FeedUi.openProfile(this, item.actor);

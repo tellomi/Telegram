@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,12 +27,18 @@ public class FeedController {
     public static class UploadTask {
         public String nonce;
         public String text = "";
+        /** Engine visibility: public, friends, contacts, close_friends, include, exclude, only_me. */
         public String audienceKind = "";
+        public final ArrayList<Long> userIds = new ArrayList<>();
+        public String audienceToken = "";
+        public int audienceTokenExpires;
         public String commentPolicy = "everyone_who_can_view";
         public boolean allowNearby;
         public String cityCode = "";
         public String cityName = "";
+        public String placeId = "";
         public String placeName = "";
+        public String quoteOf = "";
         public ArrayList<String> paths = new ArrayList<>();
         public ArrayList<String> types = new ArrayList<>();
         public boolean original;
@@ -646,12 +652,16 @@ public class FeedController {
     }
 
     public void sendComment(String postId, String text, String parentId, JSONObject attachment, Utilities.Callback<String> done) {
+        sendComment(postId, text, parentId, attachment, null, done);
+    }
+
+    public void sendComment(String postId, String text, String parentId, JSONObject attachment, String clientNonce, Utilities.Callback<String> done) {
         JSONObject body = new JSONObject();
         try {
             String type = attachment == null ? "" : attachment.optString("type", "");
             String key = attachment == null ? "" : attachment.optString("key", "");
             if (key.length() > 0 && (FeedContract.isVoice(type) || "image".equals(type) || "photo".equals(type) || "sticker".equals(type))) {
-                body = new JSONObject(FeedContract.commentBody(text, parentId, type, key));
+                body = new JSONObject(FeedContract.commentBody(text, parentId, type, key, clientNonce));
             } else {
                 String value = text == null ? "" : text;
                 if (value.length() > FeedContract.MAX_COMMENT) {
@@ -660,6 +670,9 @@ public class FeedController {
                 body.put("text", value);
                 if (parentId != null && parentId.length() > 0) {
                     body.put("parent_id", parentId);
+                }
+                if (FeedContract.isClientNonce(clientNonce)) {
+                    body.put("client_nonce", clientNonce);
                 }
                 if (attachment != null) {
                     body.put("attachment", attachment);
@@ -814,7 +827,13 @@ public class FeedController {
             try {
                 JSONObject o = new JSONObject(rows.get(i)[1]);
                 UploadTask task = taskFromJson(o);
-                task.nonce = rows.get(i)[0];
+                String storedNonce = rows.get(i)[0];
+                task.nonce = storedNonce;
+                if (!FeedContract.isClientNonce(task.nonce)) {
+                    storage.deleteUpload(storedNonce);
+                    task.nonce = FeedContract.newClientNonce();
+                    persist(task);
+                }
                 task.state = "failed";
                 uploads.add(task);
             } catch (Exception ignore) {
@@ -826,8 +845,8 @@ public class FeedController {
     }
 
     public void enqueue(UploadTask task) {
-        if (task.nonce == null || task.nonce.length() == 0) {
-            task.nonce = Utilities.random.nextLong() + "-" + System.currentTimeMillis();
+        if (!FeedContract.isClientNonce(task.nonce)) {
+            task.nonce = FeedContract.newClientNonce();
         }
         task.state = "uploading";
         uploads.add(0, task);
@@ -903,34 +922,49 @@ public class FeedController {
     }
 
     private void publishUploaded(final UploadTask task, JSONArray keys) {
-        try {
-            JSONObject body = new JSONObject();
-            body.put("text", FeedContract.clampText(task.text));
-            body.put("client_nonce", task.nonce);
-            JSONObject audience = new JSONObject();
-            audience.put("kind", task.audienceKind);
-            body.put("audience", audience);
-            body.put("comment_policy", task.commentPolicy);
-            body.put("media", limitImages(keys));
-            JSONObject location = new JSONObject();
-            if (task.cityCode != null && task.cityCode.length() > 0) {
-                location.put("city", task.cityCode);
-                location.put("city_name", task.cityName);
+        final FeedContract.PostRequest request = requestFrom(task, keys);
+        String visibility = FeedContract.visibilityOf(request.visibility, !request.userIds.isEmpty());
+        if (FeedContract.needsAudienceToken(visibility)) {
+            if (tokenFresh(task) && visibility.equals(FeedContract.visibilityOf(task.audienceKind, !task.userIds.isEmpty()))) {
+                finishPublish(task, request, task.audienceToken, null);
+                return;
             }
-            if (task.placeName != null && task.placeName.length() > 0) {
-                location.put("place", new JSONObject().put("name", task.placeName));
-            }
-            location.put("allow_nearby", task.allowNearby && "public".equals(task.audienceKind));
-            body.put("location", location);
-            if (task.extraJson != null && task.extraJson.length() > 0) {
-                JSONObject extra = new JSONObject(task.extraJson);
-                java.util.Iterator<String> keysIter = extra.keys();
-                while (keysIter.hasNext()) {
-                    String key = keysIter.next();
-                    body.put(key, extra.get(key));
+            api.audienceToken(visibility, task.userIds, (token, expires, error) -> {
+                if ("cancelled".equals(task.state)) {
+                    return;
                 }
+                if (token != null && token.length() > 0) {
+                    task.audienceToken = token;
+                    task.audienceTokenExpires = expires;
+                    persist(task);
+                }
+                finishPublish(task, request, token, error);
+            });
+            return;
+        }
+        finishPublish(task, request, null, null);
+    }
+
+    private void finishPublish(final UploadTask task, FeedContract.PostRequest request, String token, String tokenError) {
+        if ("cancelled".equals(task.state)) {
+            return;
+        }
+        try {
+            FeedContract.PostBuild built = FeedContract.buildPost(request, token, tokenError);
+            if (built.visibility.length() > 0 && !isPublicDowngrade(task.audienceKind, built.visibility)) {
+                task.audienceKind = built.visibility;
             }
-            api.sendJson("POST", "/v1/feed/posts", body, (json, error) -> {
+            if (!built.send || built.body == null) {
+                task.state = "failed";
+                task.error = built.error.length() == 0 ? "invalid_audience" : built.error;
+                persist(task);
+                notifyListeners();
+                return;
+            }
+            api.sendJson("POST", "/v1/feed/posts", new JSONObject(built.body), (json, error) -> {
+                if ("cancelled".equals(task.state)) {
+                    return;
+                }
                 if (error != null) {
                     task.state = "failed";
                     task.error = error;
@@ -951,26 +985,101 @@ public class FeedController {
         }
     }
 
-    private static JSONArray limitImages(JSONArray keys) {
-        JSONArray limited = new JSONArray();
-        int images = 0;
-        if (keys == null) {
-            return limited;
+    /** A failed token must not be stored as a public post. */
+    private static boolean isPublicDowngrade(String previous, String next) {
+        if (!FeedContract.VIS_PUBLIC.equals(next)) {
+            return false;
         }
-        for (int i = 0; i < keys.length(); i++) {
-            JSONObject media = keys.optJSONObject(i);
-            if (media == null) {
-                continue;
-            }
-            if ("image".equals(media.optString("type", ""))) {
-                if (images >= FeedContract.MAX_IMAGES) {
-                    continue;
+        return previous != null && previous.length() > 0 && !FeedContract.VIS_PUBLIC.equals(previous);
+    }
+
+    private boolean tokenFresh(UploadTask task) {
+        if (task.audienceToken == null || task.audienceToken.length() == 0 || task.audienceTokenExpires <= 0) {
+            return false;
+        }
+        int now = ConnectionsManager.getInstance(account).getCurrentTime();
+        return task.audienceTokenExpires > now + 30;
+    }
+
+    private static FeedContract.PostRequest requestFrom(UploadTask task, JSONArray keys) {
+        FeedContract.PostRequest request = new FeedContract.PostRequest();
+        request.kind = "post";
+        request.text = task.text == null ? "" : task.text;
+        request.visibility = task.audienceKind == null ? "" : task.audienceKind;
+        request.userIds.addAll(task.userIds);
+        request.allowNearby = task.allowNearby;
+        request.city = task.cityCode == null ? "" : task.cityCode;
+        request.cityName = task.cityName == null ? "" : task.cityName;
+        request.placeId = task.placeId == null ? "" : task.placeId;
+        request.placeName = task.placeName == null ? "" : task.placeName;
+        request.quoteOf = task.quoteOf == null ? "" : task.quoteOf;
+        request.clientNonce = task.nonce == null ? "" : task.nonce;
+        if (keys != null) {
+            for (int i = 0; i < keys.length(); i++) {
+                JSONObject media = keys.optJSONObject(i);
+                if (media != null) {
+                    String key = media.optString("key", "");
+                    if (key.length() == 0) {
+                        continue;
+                    }
+                    request.mediaKeys.add(key);
+                    request.mediaTypes.add(media.optString("type", "image"));
+                } else {
+                    String key = keys.optString(i, "");
+                    if (key.length() > 0) {
+                        request.mediaKeys.add(key);
+                        request.mediaTypes.add("image");
+                    }
                 }
-                images++;
             }
-            limited.put(media);
         }
-        return limited;
+        if (task.extraJson != null && task.extraJson.length() > 0) {
+            try {
+                JSONObject extra = new JSONObject(task.extraJson);
+                if (extra.has("poll") && !extra.isNull("poll")) {
+                    request.pollJson = extra.get("poll").toString();
+                }
+            } catch (Exception ignore) {
+            }
+        }
+        return request;
+    }
+
+    public void updateAudience(String postId, String pickerKind, ArrayList<Long> userIds, Utilities.Callback<String> done) {
+        final ArrayList<Long> ids = userIds == null ? new ArrayList<>() : userIds;
+        final String visibility = FeedContract.visibilityOf(pickerKind, !ids.isEmpty());
+        if (FeedContract.needsAudienceToken(visibility)) {
+            if (ids.isEmpty()) {
+                if (done != null) {
+                    done.run("invalid_audience");
+                }
+                return;
+            }
+            api.audienceToken(visibility, ids, (token, expires, error) -> sendAudience(postId, visibility, ids, token, error, done));
+            return;
+        }
+        sendAudience(postId, visibility, ids, null, null, done);
+    }
+
+    private void sendAudience(String postId, String visibility, ArrayList<Long> ids, String token, String tokenError, Utilities.Callback<String> done) {
+        FeedContract.PostBuild built = FeedContract.buildAudience(visibility, ids, token, tokenError);
+        if (!built.send || built.body == null) {
+            if (done != null) {
+                done.run(built.error.length() == 0 ? "invalid_audience" : built.error);
+            }
+            return;
+        }
+        try {
+            api.sendJson("PUT", "/v1/feed/posts/" + FeedApi.enc(postId) + "/audience", new JSONObject(built.body), (json, error) -> {
+                if (done != null) {
+                    done.run(error);
+                }
+            });
+        } catch (Exception e) {
+            if (done != null) {
+                done.run("invalid_audience");
+            }
+        }
     }
 
     private static String mime(String type) {
@@ -988,11 +1097,23 @@ public class FeedController {
         o.put("nonce", task.nonce);
         o.put("text", task.text);
         o.put("audience", task.audienceKind);
+        JSONArray ids = new JSONArray();
+        for (int i = 0; i < task.userIds.size(); i++) {
+            Long id = task.userIds.get(i);
+            if (id != null) {
+                ids.put(id);
+            }
+        }
+        o.put("user_ids", ids);
+        o.put("audience_token", task.audienceToken == null ? "" : task.audienceToken);
+        o.put("audience_expires", task.audienceTokenExpires);
         o.put("comment_policy", task.commentPolicy);
         o.put("allow_nearby", task.allowNearby);
         o.put("city", task.cityCode);
         o.put("city_name", task.cityName);
+        o.put("place_id", task.placeId == null ? "" : task.placeId);
         o.put("place", task.placeName);
+        o.put("quote_of", task.quoteOf == null ? "" : task.quoteOf);
         o.put("original", task.original);
         o.put("extra", task.extraJson == null ? "" : task.extraJson);
         o.put("paths", new JSONArray(task.paths));
@@ -1005,11 +1126,24 @@ public class FeedController {
         task.nonce = o.optString("nonce", "");
         task.text = o.optString("text", "");
         task.audienceKind = o.optString("audience", "");
+        JSONArray ids = o.optJSONArray("user_ids");
+        if (ids != null) {
+            for (int i = 0; i < ids.length(); i++) {
+                long id = ids.optLong(i, 0L);
+                if (id != 0L) {
+                    task.userIds.add(id);
+                }
+            }
+        }
+        task.audienceToken = o.optString("audience_token", "");
+        task.audienceTokenExpires = o.optInt("audience_expires", 0);
         task.commentPolicy = o.optString("comment_policy", "everyone_who_can_view");
         task.allowNearby = o.optBoolean("allow_nearby", false);
         task.cityCode = o.optString("city", "");
         task.cityName = o.optString("city_name", "");
+        task.placeId = o.optString("place_id", "");
         task.placeName = o.optString("place", "");
+        task.quoteOf = o.optString("quote_of", "");
         task.original = o.optBoolean("original", false);
         task.extraJson = o.optString("extra", "");
         JSONArray paths = o.optJSONArray("paths");
