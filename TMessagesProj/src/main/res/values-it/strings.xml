@@ -1585,8 +1585,8 @@
     <string name="Moments_Report_Detail">Dettagli</string>
     <string name="Moments_Report_Sent">Segnalazione inviata</string>
 
-    <string name="TellomiTools">Strumenti</string>
-    <string name="TellomiMenuSettings">Impostazioni menu</string>
-    <string name="TellomiHideTabLabels">Nascondi il testo dei pulsanti</string>
-    <string name="TellomiNavBarButtons">Pulsanti della barra di navigazione</string>
+    <string name="SettingsTools">Strumenti</string>
+    <string name="MainTabsMenuSettings">Impostazioni menu</string>
+    <string name="MainTabsHideLabels">Nascondi il testo dei pulsanti</string>
+    <string name="MainTabsButtons">Pulsanti della barra di navigazione</string>
 </resources>

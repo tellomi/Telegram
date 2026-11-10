@@ -477,7 +477,7 @@ public class FeedCommentSheet extends Dialog {
             }
             pendingKey = key;
             pendingKind = kind;
-            pending.setText(LocaleController.getString("sticker".equals(kind) ? "Moments_Tool_Sticker" : "Moments_Photo", "sticker".equals(kind) ? R.string.Moments_Tool_Sticker : R.string.Moments_Photo));
+            pending.setText(FeedUi.mediaKindLabel(kind));
             pending.setVisibility(View.VISIBLE);
         }));
     }

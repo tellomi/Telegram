@@ -1291,8 +1291,8 @@
     <string name="Moments_Report_Detail">التفاصيل</string>
     <string name="Moments_Report_Sent">تم إرسال البلاغ</string>
 
-    <string name="TellomiTools">الأدوات</string>
-    <string name="TellomiMenuSettings">إعدادات القائمة</string>
-    <string name="TellomiHideTabLabels">إخفاء نص الأزرار</string>
-    <string name="TellomiNavBarButtons">أزرار شريط التنقل</string>
+    <string name="SettingsTools">الأدوات</string>
+    <string name="MainTabsMenuSettings">إعدادات القائمة</string>
+    <string name="MainTabsHideLabels">إخفاء نص الأزرار</string>
+    <string name="MainTabsButtons">أزرار شريط التنقل</string>
 </resources>

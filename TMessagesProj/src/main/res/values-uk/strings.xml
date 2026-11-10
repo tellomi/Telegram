@@ -324,8 +324,8 @@
     <string name="Moments_Report_Detail">Подробиці</string>
     <string name="Moments_Report_Sent">Скаргу надіслано</string>
 
-    <string name="TellomiTools">Інструменти</string>
-    <string name="TellomiMenuSettings">Налаштування меню</string>
-    <string name="TellomiHideTabLabels">Сховати підписи кнопок</string>
-    <string name="TellomiNavBarButtons">Кнопки панелі навігації</string>
+    <string name="SettingsTools">Інструменти</string>
+    <string name="MainTabsMenuSettings">Налаштування меню</string>
+    <string name="MainTabsHideLabels">Сховати підписи кнопок</string>
+    <string name="MainTabsButtons">Кнопки панелі навігації</string>
 </resources>

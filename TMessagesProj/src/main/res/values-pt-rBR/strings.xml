@@ -1297,8 +1297,8 @@
     <string name="Moments_Report_Detail">Detalhes</string>
     <string name="Moments_Report_Sent">Denúncia enviada</string>
 
-    <string name="TellomiTools">Ferramentas</string>
-    <string name="TellomiMenuSettings">Ajustes do menu</string>
-    <string name="TellomiHideTabLabels">Ocultar texto dos botões</string>
-    <string name="TellomiNavBarButtons">Botões da barra de navegação</string>
+    <string name="SettingsTools">Ferramentas</string>
+    <string name="MainTabsMenuSettings">Ajustes do menu</string>
+    <string name="MainTabsHideLabels">Ocultar texto dos botões</string>
+    <string name="MainTabsButtons">Botões da barra de navegação</string>
 </resources>

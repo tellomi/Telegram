@@ -1184,8 +1184,8 @@
     <string name="Moments_Report_Detail">설명</string>
     <string name="Moments_Report_Sent">신고를 보냈습니다</string>
 
-    <string name="TellomiTools">도구</string>
-    <string name="TellomiMenuSettings">메뉴 설정</string>
-    <string name="TellomiHideTabLabels">버튼 글자 숨기기</string>
-    <string name="TellomiNavBarButtons">탐색 막대 버튼</string>
+    <string name="SettingsTools">도구</string>
+    <string name="MainTabsMenuSettings">메뉴 설정</string>
+    <string name="MainTabsHideLabels">버튼 글자 숨기기</string>
+    <string name="MainTabsButtons">탐색 막대 버튼</string>
 </resources>

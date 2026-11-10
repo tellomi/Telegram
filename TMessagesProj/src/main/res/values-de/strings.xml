@@ -1423,8 +1423,8 @@
     <string name="Moments_Report_Detail">Erläuterung</string>
     <string name="Moments_Report_Sent">Meldung gesendet</string>
 
-    <string name="TellomiTools">Werkzeuge</string>
-    <string name="TellomiMenuSettings">Menüeinstellungen</string>
-    <string name="TellomiHideTabLabels">Beschriftungen ausblenden</string>
-    <string name="TellomiNavBarButtons">Schaltflächen der Navigationsleiste</string>
+    <string name="SettingsTools">Werkzeuge</string>
+    <string name="MainTabsMenuSettings">Menüeinstellungen</string>
+    <string name="MainTabsHideLabels">Beschriftungen ausblenden</string>
+    <string name="MainTabsButtons">Schaltflächen der Navigationsleiste</string>
 </resources>

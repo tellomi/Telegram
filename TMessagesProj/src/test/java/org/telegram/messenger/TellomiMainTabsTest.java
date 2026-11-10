@@ -92,34 +92,89 @@ public class TellomiMainTabsTest {
     }
 
     @Test
-    public void menuStringsExistInEveryBuiltInLanguage() throws Exception {
-        Map<String, String> expected = new HashMap<>();
-        expected.put("values", "Tools");
-        expected.put("values-zh-rCN", "选单设定");
-        expected.put("values-zh-rTW", "選單設定");
-        expected.put("values-ru", "Настройки меню");
-        expected.put("values-uk", "Налаштування меню");
-        expected.put("values-de", "Menüeinstellungen");
-        expected.put("values-es", "Ajustes del menú");
-        expected.put("values-it", "Impostazioni menu");
-        expected.put("values-ko", "메뉴 설정");
-        expected.put("values-nl", "Menu-instellingen");
-        expected.put("values-pt-rBR", "Ajustes do menu");
-        expected.put("values-ar", "إعدادات القائمة");
+    public void legacyPreferenceKeysAreCopiedForward() {
+        MemoryStore store = new MemoryStore();
+        store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.FEED), false);
+        store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS), true);
+        store.putBoolean("tellomi_main_tab_hide_labels", true);
+
+        assertFalse(TellomiMainTabs.isVisible(store, TellomiMainTabs.FEED));
+        assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.SETTINGS));
+        assertTrue(TellomiMainTabs.hideLabels(store));
+        assertFalse(store.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.FEED), true));
+        assertTrue(store.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), false));
+        assertTrue(store.getBoolean(TellomiMainTabs.HIDE_LABELS_KEY, false));
+
+        store.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.FEED), true);
+        store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.FEED), false);
+        assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.FEED));
+    }
+
+    @Test
+    public void menuStringsMatchLanguagePackKeys() throws Exception {
         String[] keys = {
-                "TellomiTools",
-                "TellomiMenuSettings",
-                "TellomiHideTabLabels",
-                "TellomiNavBarButtons"
+                "SettingsTools",
+                "MainTabsMenuSettings",
+                "MainTabsHideLabels",
+                "MainTabsButtons"
         };
-        for (Map.Entry<String, String> entry : expected.entrySet()) {
+        Map<String, String[]> exact = new HashMap<>();
+        exact.put("values", new String[]{"Tools", "Menu settings", "Hide button labels", "Navigation bar buttons"});
+        exact.put("values-zh-rCN", new String[]{"工具", "选单设定", "隐藏按钮文字", "导航栏按钮"});
+        exact.put("values-zh-rTW", new String[]{"工具", "選單設定", "隱藏按鈕文字", "導覽列按鈕"});
+        for (Map.Entry<String, String[]> entry : exact.entrySet()) {
+            String xml = read(repoRoot().resolve("TMessagesProj/src/main/res/" + entry.getKey() + "/strings.xml"));
+            for (int i = 0; i < keys.length; i++) {
+                assertTrue(entry.getKey() + " " + keys[i],
+                        xml.contains("<string name=\"" + keys[i] + "\">" + entry.getValue()[i] + "</string>"));
+            }
+            assertFalse(xml.contains("TellomiMenuSettings"));
+            assertFalse(xml.contains("TellomiTools"));
+            assertFalse(xml.contains("TellomiHideTabLabels"));
+            assertFalse(xml.contains("TellomiNavBarButtons"));
+        }
+        Map<String, String> menuTitle = new HashMap<>();
+        menuTitle.put("values-ru", "Настройки меню");
+        menuTitle.put("values-uk", "Налаштування меню");
+        menuTitle.put("values-de", "Menüeinstellungen");
+        menuTitle.put("values-es", "Ajustes del menú");
+        menuTitle.put("values-it", "Impostazioni menu");
+        menuTitle.put("values-ko", "메뉴 설정");
+        menuTitle.put("values-nl", "Menu-instellingen");
+        menuTitle.put("values-pt-rBR", "Ajustes do menu");
+        menuTitle.put("values-ar", "إعدادات القائمة");
+        for (Map.Entry<String, String> entry : menuTitle.entrySet()) {
             String xml = read(repoRoot().resolve("TMessagesProj/src/main/res/" + entry.getKey() + "/strings.xml"));
             for (String key : keys) {
                 assertTrue(entry.getKey() + " missing " + key, xml.contains("name=\"" + key + "\""));
             }
-            assertTrue(entry.getKey() + " missing menu title", xml.contains(">" + entry.getValue() + "<"));
-            assertFalse(xml.contains("name=\"TellomiMenuSettings\">Menu settings<") && !"values".equals(entry.getKey()));
+            assertTrue(xml.contains("<string name=\"MainTabsMenuSettings\">" + entry.getValue() + "</string>"));
+            assertFalse(xml.contains("<string name=\"MainTabsMenuSettings\">Menu settings</string>"));
         }
+    }
+
+    @Test
+    public void menuScreenUsesResourceGetStringAndGlobalNotification() throws Exception {
+        String activity = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiMenuSettingsActivity.java"));
+        String settings = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java"));
+        String tabs = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java"));
+        String center = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java"));
+        assertFalse(activity.contains("getString(\""));
+        assertTrue(activity.contains("getString(R.string.MainTabsMenuSettings)"));
+        assertTrue(activity.contains("getString(R.string.MainTabsHideLabels)"));
+        assertTrue(activity.contains("getString(R.string.MainTabsButtons)"));
+        assertTrue(activity.contains("NotificationCenter.mainTabsSettingsUpdated"));
+        assertFalse(activity.contains("TellomiMainTabs.Listener"));
+        assertTrue(settings.contains("getString(R.string.SettingsTools)"));
+        assertTrue(settings.contains("getString(R.string.MainTabsMenuSettings)"));
+        assertFalse(settings.contains("\"TellomiMenuSettings\""));
+        assertFalse(settings.contains("\"TellomiTools\""));
+        assertFalse(settings.contains("R.string.TellomiMenuSettings"));
+        assertFalse(settings.contains("R.string.TellomiTools"));
+        assertTrue(tabs.contains("NotificationCenter.mainTabsSettingsUpdated"));
+        assertFalse(tabs.contains("tellomiTabsListener"));
+        assertFalse(tabs.contains("getString(\"Moments_Title\""));
+        assertTrue(center.contains("mainTabsSettingsUpdated = totalEvents++"));
     }
 
     @Test

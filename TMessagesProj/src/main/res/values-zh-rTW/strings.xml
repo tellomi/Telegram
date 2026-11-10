@@ -52,8 +52,8 @@
     <string name="Moments_Report_Detail">補充說明</string>
     <string name="Moments_Report_Sent">已送出檢舉</string>
 
-    <string name="TellomiTools">工具</string>
-    <string name="TellomiMenuSettings">選單設定</string>
-    <string name="TellomiHideTabLabels">隱藏按鈕文字</string>
-    <string name="TellomiNavBarButtons">導覽列按鈕</string>
+    <string name="SettingsTools">工具</string>
+    <string name="MainTabsMenuSettings">選單設定</string>
+    <string name="MainTabsHideLabels">隱藏按鈕文字</string>
+    <string name="MainTabsButtons">導覽列按鈕</string>
 </resources>

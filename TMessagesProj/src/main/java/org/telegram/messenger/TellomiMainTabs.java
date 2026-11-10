@@ -1,6 +1,5 @@
 package org.telegram.messenger;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -9,6 +8,10 @@ import java.util.Arrays;
  * Indexes match the order {@code MainTabsActivity} adds tab views, so hiding
  * a tab does not rebuild the pager. Chats and Profile stay visible: Settings
  * is opened from the profile actions when its tab is hidden.
+ *
+ * Values live in {@link MessagesController#getGlobalMainSettings()}, the same
+ * {@code mainconfig} file {@link SharedConfig} uses, and are not synced.
+ * Live updates use {@link NotificationCenter#mainTabsSettingsUpdated}.
  *
  * <p>Studied, not copied: iMe's public Android tree (GPL-2.0,
  * https://github.com/imemessenger/iMe-Android, branch master, no tags, last
@@ -40,7 +43,8 @@ public final class TellomiMainTabs {
             FEED, CHATS, SETTINGS, PROFILE, CONTACTS, CALLS
     };
 
-    public static final String HIDE_LABELS_KEY = "tellomi_main_tab_hide_labels";
+    public static final String HIDE_LABELS_KEY = "mainTabsHideLabels";
+    private static final String LEGACY_HIDE_LABELS_KEY = "tellomi_main_tab_hide_labels";
 
     public interface Store {
         boolean contains(String key);
@@ -50,16 +54,30 @@ public final class TellomiMainTabs {
         void putBoolean(String key, boolean value);
     }
 
-    public interface Listener {
-        void onTellomiMainTabsChanged();
-    }
-
-    private static final ArrayList<Listener> LISTENERS = new ArrayList<>();
-
     private TellomiMainTabs() {
     }
 
+    /** Stable {@code mainconfig} name. Chats and Profile are locked and never written. */
     public static String visibleKey(int tab) {
+        switch (tab) {
+            case CONTACTS:
+                return "mainTabsContacts";
+            case CALLS:
+                return "mainTabsCalls";
+            case FEED:
+                return "mainTabsFeed";
+            case CHATS:
+                return "mainTabsChats";
+            case SETTINGS:
+                return "mainTabsSettings";
+            case PROFILE:
+                return "mainTabsProfile";
+            default:
+                return "mainTabs" + tab;
+        }
+    }
+
+    static String legacyVisibleKey(int tab) {
         return "tellomi_main_tab_visible_" + tab;
     }
 
@@ -79,7 +97,7 @@ public final class TellomiMainTabs {
         if (isLocked(tab)) {
             return true;
         }
-        return store.getBoolean(visibleKey(tab), defaultVisible(tab));
+        return readBoolean(store, visibleKey(tab), legacyVisibleKey(tab), defaultVisible(tab));
     }
 
     /**
@@ -94,7 +112,7 @@ public final class TellomiMainTabs {
     }
 
     public static boolean hideLabels(Store store) {
-        return store.getBoolean(HIDE_LABELS_KEY, false);
+        return readBoolean(store, HIDE_LABELS_KEY, LEGACY_HIDE_LABELS_KEY, false);
     }
 
     public static void setHideLabels(Store store, boolean hide) {
@@ -113,20 +131,13 @@ public final class TellomiMainTabs {
         return Arrays.copyOf(found, count);
     }
 
-    public static void addListener(Listener listener) {
-        if (listener != null && !LISTENERS.contains(listener)) {
-            LISTENERS.add(listener);
+    /** Copies a pre-rename value the first time the new key is read. */
+    private static boolean readBoolean(Store store, String key, String legacyKey, boolean defaultValue) {
+        if (!store.contains(key) && legacyKey != null && store.contains(legacyKey)) {
+            boolean value = store.getBoolean(legacyKey, defaultValue);
+            store.putBoolean(key, value);
+            return value;
         }
-    }
-
-    public static void removeListener(Listener listener) {
-        LISTENERS.remove(listener);
-    }
-
-    public static void notifyChanged() {
-        Listener[] copy = LISTENERS.toArray(new Listener[0]);
-        for (Listener listener : copy) {
-            listener.onTellomiMainTabsChanged();
-        }
+        return store.getBoolean(key, defaultValue);
     }
 }

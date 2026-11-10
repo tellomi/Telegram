@@ -11808,8 +11808,8 @@
     <string name="Moments_Report_Detail">Description</string>
     <string name="Moments_Report_Sent">Report sent</string>
 
-    <string name="TellomiTools">Tools</string>
-    <string name="TellomiMenuSettings">Menu settings</string>
-    <string name="TellomiHideTabLabels">Hide button labels</string>
-    <string name="TellomiNavBarButtons">Navigation bar buttons</string>
+    <string name="SettingsTools">Tools</string>
+    <string name="MainTabsMenuSettings">Menu settings</string>
+    <string name="MainTabsHideLabels">Hide button labels</string>
+    <string name="MainTabsButtons">Navigation bar buttons</string>
 </resources>

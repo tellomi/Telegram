@@ -260,7 +260,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         readyAttachment = null;
         attachmentPath = path;
         attachmentKind = kind;
-        attachmentLabel.setText(kind + " · " + LocaleController.getString("Moments_Remove", R.string.Moments_Remove));
+        attachmentLabel.setText(FeedUi.mediaKindLabel(kind) + " · " + LocaleController.getString(R.string.Moments_Remove));
         attachmentLabel.setVisibility(View.VISIBLE);
         if (emojiView != null) {
             emojiView.setVisibility(View.GONE);
@@ -283,7 +283,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             }
         } catch (Exception ignore) {
         }
-        attachmentLabel.setText(kind + " · " + LocaleController.getString("Moments_Remove", R.string.Moments_Remove));
+        attachmentLabel.setText(FeedUi.mediaKindLabel(kind) + " · " + LocaleController.getString(R.string.Moments_Remove));
         attachmentLabel.setVisibility(View.VISIBLE);
         emojiView.setVisibility(View.GONE);
     }

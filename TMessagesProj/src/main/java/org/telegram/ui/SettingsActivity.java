@@ -727,8 +727,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
 
         items.add(UItem.asShadow(null));
-        items.add(UItem.asHeader(getString("TellomiTools", R.string.TellomiTools)));
-        items.add(SettingCell.Factory.of(40, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_folders, getString("TellomiMenuSettings", R.string.TellomiMenuSettings)));
+        items.add(UItem.asHeader(getString(R.string.SettingsTools)));
+        items.add(SettingCell.Factory.of(40, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_folders, getString(R.string.MainTabsMenuSettings)));
         items.add(UItem.asShadow(null));
         if (!walletAbove && getMessagesController().config.walletAvailable.get()) {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
