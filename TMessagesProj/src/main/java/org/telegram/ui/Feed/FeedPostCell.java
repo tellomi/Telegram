@@ -221,7 +221,7 @@ public class FeedPostCell extends LinearLayout {
         actions.setPadding(dp(40), 0, 0, 0);
         like = FeedUi.icon(context, R.drawable.media_like, FeedUi.s("Moments.Like", R.string.FeedLike));
         likeCount = label(context, false);
-        comment = FeedUi.icon(context, R.drawable.input_reply, FeedUi.s("Moments.Comment", R.string.FeedComment));
+        comment = FeedUi.icon(context, R.drawable.msg_discussion, FeedUi.s("Moments.Comment", R.string.FeedComment));
         commentCount = label(context, false);
         repost = FeedUi.icon(context, R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost));
         share = FeedUi.icon(context, R.drawable.msg_share, FeedUi.s("Moments.Share", R.string.FeedShare));

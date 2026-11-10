@@ -45,6 +45,23 @@ Link, quote, poll, and file cards use `graySection`, 8 dp corners, padding 10 dp
 
 There are no text labels on the icons. The content description uses the `Moments.*` string.
 
+## Icons
+
+These are Telegram Android drawables, the same assets used in chats and the chat list. Tint them with the theme (`dialogIcon` on a row, `chats_actionIcon` on the compose button). Do not draw a one-off glyph.
+
+| Use | Drawable | Notes |
+| --- | --- | --- |
+| Moments tab | `msg_list` | Same list mark as Show as list. Static tab, same slot as `outline_header_search` |
+| Notifications | `media_like` | Action-bar heart, top end |
+| Like | `media_like` | Outline heart |
+| Liked | `media_like_active` | Filled heart, `#FF2E38` |
+| Comment | `msg_discussion` | Speech bubble, same family as forward and share |
+| Repost | `msg_forward` | Forward arrow |
+| Share | `msg_share` | Share arrow |
+| Save | `msg_saved` | Bookmark. Accent `featuredStickers_addButton` when saved |
+| More | `ic_ab_other` | Overflow, same as other action bars |
+| Compose | `filled_fab_compose_32` | White mark on the blue circle. Same drawable as the chat-list compose button |
+
 ## Tabs and compose
 
 | Token | Value |
@@ -53,7 +70,13 @@ There are no text labels on the icons. The content description uses the `Moments
 | Selected tab | `windowBackgroundWhiteBlackText` |
 | Other tabs | `windowBackgroundWhiteGrayText` |
 | Tab background | `windowBackgroundWhite` |
-| Compose button | 56 dp circle, 20 dp from the trailing edge, 16 dp above the main tab bar |
+| Compose control | `FragmentFloatingButton`, the chat-list compose button |
+| Compose fill | circle, `featuredStickers_addButton`, pressed `featuredStickers_addButtonPressed` |
+| Compose circle | 48 dp |
+| Compose frame | 56 dp, bottom trailing (leading when RTL) |
+| Compose margins | 20 dp from the trailing edge, 16 dp above the main tab bar |
+
+The round blue compose button at the bottom trailing corner is the reference. iOS should copy that button, not a square or a second style.
 
 ## Post detail
 

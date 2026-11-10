@@ -223,6 +223,10 @@ public class FeedContractTest {
         assertTrue(design.contains("36 dp"));
         assertTrue(design.contains("5 lines"));
         assertTrue(design.contains("#FF2E38"));
+        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("msg_discussion"));
+        assertTrue(design.contains("filled_fab_compose_32"));
+        assertTrue(design.contains("media_like_active"));
     }
 
     @Test

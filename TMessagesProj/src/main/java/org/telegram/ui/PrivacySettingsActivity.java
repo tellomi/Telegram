@@ -1396,7 +1396,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         }
                         textCell2.setTextAndValueAndIcon(getString("BlockedUsers", R.string.BlockedUsers), value, true, R.drawable.msg2_block2, true);
                     } else if (position == feedRow) {
-                        textCell2.setTextAndValueAndIcon(FeedUi.s("Moments.Title", R.string.FeedTitle), "", true, R.drawable.feed_tab_posts, true);
+                        textCell2.setTextAndValueAndIcon(FeedUi.s("Moments.Title", R.string.FeedTitle), "", true, R.drawable.msg_list, true);
                     }
                     textCell2.setDrawLoading(showLoading, loadingLen, animated);
                     break;
