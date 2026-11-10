@@ -33,6 +33,8 @@ import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsActivity;
 
+import org.json.JSONArray;
+
 import java.util.ArrayList;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -50,10 +52,18 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private long[] loadedAt = new long[0];
     private TextView[] tabs = new TextView[0];
     private TextView uploadBanner;
+    private TextView newPosts;
     private int index;
     private boolean resetOnShow;
     private String appliedEngineBase = "";
     private String mountedTabs = "";
+    private final Runnable probeNewPosts = new Runnable() {
+        @Override
+        public void run() {
+            probeVisibleHead();
+            AndroidUtilities.runOnUIThread(this, FeedConfig.NEW_POSTS_POLL_MS);
+        }
+    };
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -83,6 +93,19 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         uploadBanner.setPadding(dp(16), dp(10), dp(16), dp(10));
         uploadBanner.setVisibility(View.GONE);
         content.addView(uploadBanner, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 40, 0, 0));
+
+        newPosts = new TextView(context);
+        newPosts.setText(LocaleController.getString("Moments_NewPosts", R.string.Moments_NewPosts));
+        newPosts.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        newPosts.setTextSize(14);
+        newPosts.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        newPosts.setPadding(dp(14), dp(6), dp(14), dp(6));
+        newPosts.setVisibility(View.GONE);
+        newPosts.setOnClickListener(v -> {
+            newPosts.setVisibility(View.GONE);
+            ensure(index, true);
+        });
+        content.addView(newPosts, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
 
         FragmentFloatingButton fab = new FragmentFloatingButton(context, resourceProvider);
         fab.setImageResource(R.drawable.filled_fab_compose_32);
@@ -361,6 +384,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void onResume() {
         super.onResume();
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
+        AndroidUtilities.runOnUIThread(probeNewPosts, FeedConfig.NEW_POSTS_POLL_MS);
         if (resetOnShow) {
             resetOnShow = false;
             index = 0;
@@ -376,7 +401,30 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     }
 
     @Override
+    public void onPause() {
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
+        super.onPause();
+    }
+
+    private void probeVisibleHead() {
+        if (newPosts == null || streams.length == 0 || index < 0 || index >= streams.length) {
+            return;
+        }
+        String stream = streams[index];
+        if (FeedModels.STREAM_RECOMMEND.equals(stream) || controller().posts(stream).isEmpty()) {
+            return;
+        }
+        controller().probeHead(stream, newer -> AndroidUtilities.runOnUIThread(() -> {
+            if (newPosts == null || index < 0 || index >= streams.length || !stream.equals(streams[index])) {
+                return;
+            }
+            newPosts.setVisibility(Boolean.TRUE.equals(newer) ? View.VISIBLE : View.GONE);
+        }));
+    }
+
+    @Override
     public void onFragmentDestroy() {
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
         controller().removeListener(this);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
         super.onFragmentDestroy();
@@ -448,7 +496,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onOpen(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post.id, false);
+        FeedCommentSheet.open(this, post, false);
     }
 
     @Override
@@ -458,7 +506,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onComment(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post.id, true);
+        FeedCommentSheet.open(this, post, true);
     }
 
     @Override
@@ -539,7 +587,34 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onVote(FeedModels.Post post, int option) {
-        FeedCommentSheet.open(this, post.id, false);
+        if (post == null || post.poll == null || post.poll.closed() || option < 0 || option >= post.poll.options.size()) {
+            return;
+        }
+        FeedModels.PollOption chosen = post.poll.options.get(option);
+        JSONArray options = new JSONArray();
+        options.put(chosen.id);
+        boolean clear = chosen.chosen && !post.poll.multiple;
+        controller().vote(post.id, options, clear, error -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                BulletinFactory.of(FeedActivity.this).createErrorBulletin(error).show();
+                return;
+            }
+            if (clear) {
+                chosen.chosen = false;
+                post.poll.voted = false;
+            } else if (!post.poll.multiple) {
+                for (int i = 0; i < post.poll.options.size(); i++) {
+                    post.poll.options.get(i).chosen = i == option;
+                }
+                post.poll.voted = true;
+                post.poll.canSeeResults = true;
+            } else {
+                chosen.chosen = true;
+                post.poll.voted = true;
+                post.poll.canSeeResults = true;
+            }
+            onChanged();
+        }));
     }
 
     @Override

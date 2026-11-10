@@ -20,8 +20,17 @@ import java.util.List;
 
 /**
  * Hidden ImageReceivers for the posts just outside the viewport.
- * Same setup as PeerStoriesView's preload receivers. At most
+ * Same setup as PeerStoriesView's preload receivers: low priority, and the
+ * visible cell adopts the bitmap when the url and filter match
+ * ({@code ImageLoader} keys are {@code url@filter}). At most
  * {@link FeedContract#PREFETCH_MAX_INFLIGHT} downloads run at once.
+ *
+ * The window follows Glide's RecyclerViewPreloader (a few items ahead in the
+ * scroll direction, same decode size as the cell) and Fresco's cancel-when-unused
+ * prefetch. A fast fling does not start new work, matching Glide's pause-while-scrolling.
+ * https://bumptech.github.io/glide/int/recyclerview.html
+ * https://frescolib.org/docs/prefetching.html
+ * https://developer.android.com/topic/performance/graphics/load-bitmap
  */
 public final class FeedPreloader {
 
@@ -221,16 +230,10 @@ public final class FeedPreloader {
                 if (media == null) {
                     continue;
                 }
-                if (media.isVideo()) {
+                if (media.isVideo() || media.isImage()) {
                     String cover = media.thumbUrl(account);
                     if (cover.length() > 0) {
                         described.images.add(cover);
-                    }
-                    visuals++;
-                } else if (media.isImage()) {
-                    String url = media.displayUrl(account);
-                    if (url.length() > 0) {
-                        described.images.add(url);
                     }
                     visuals++;
                 }

@@ -80,6 +80,15 @@ public class FeedContractTest {
         assertTrue(FeedContract.showMomentsTab(true, true));
         assertEquals(1, FeedContract.imageSampleSize(4032, 3024, "800_800", 3f));
         assertTrue(FeedContract.imageSampleSize(4032, 3024, FeedContract.imageFilter(864, 864, 3f), 3f) >= 4);
+        long full = FeedContract.decodedArgbBytes(4032, 3024, 1);
+        assertEquals(4032L * 3024L * 4L, full);
+        assertTrue(full > 45L * 1024 * 1024);
+        String cell = FeedContract.imageFilter(900, 900, 3f);
+        int shrunk = FeedContract.imageSampleSize(4032, 3024, cell, 3f);
+        long small = FeedContract.decodedArgbBytes(4032, 3024, shrunk);
+        assertTrue(small < 8L * 1024 * 1024);
+        assertTrue(full * 6 > 256L * 1024 * 1024);
+        assertTrue(small * 6 < 48L * 1024 * 1024);
         assertTrue(FeedContract.statusVisible("{\"visible\":true}"));
         assertFalse(FeedContract.statusVisible("{\"visible\":false}"));
         assertTrue(FeedContract.statusVisible("{\"status\":{\"visible\":true}}"));
@@ -115,6 +124,12 @@ public class FeedContractTest {
         assertTrue(sticker.contains("\"sticker\":true"));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", ""));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1&cursor=c2", FeedContract.commentsPath("p1", "c2"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=latest&thread=1", FeedContract.commentsPath("p1", "", "latest"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", "", "nope"));
+        assertFalse(FeedContract.hasNewerHead("", "p2"));
+        assertFalse(FeedContract.hasNewerHead("p1", ""));
+        assertFalse(FeedContract.hasNewerHead("p1", "p1"));
+        assertTrue(FeedContract.hasNewerHead("p1", "p2"));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
@@ -276,6 +291,20 @@ public class FeedContractTest {
         assertTrue(design.contains("msg_discussion"));
         assertTrue(design.contains("filled_fab_compose_32"));
         assertTrue(design.contains("media_like_active"));
+        assertTrue(design.contains("360 dp"));
+        assertTrue(design.contains("RecyclerViewPreloader"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("canScrollHorizontally"));
+        assertTrue(cell.contains("setLockPager"));
+        String activity = read("ui/Feed/FeedActivity.java");
+        assertTrue(activity.contains("Moments_NewPosts"));
+        assertTrue(activity.contains("probeHead"));
+        int vote = activity.indexOf("void onVote");
+        int media = activity.indexOf("void onMedia");
+        assertTrue(vote >= 0 && media > vote);
+        String voteMethod = activity.substring(vote, media);
+        assertTrue(voteMethod.contains("controller().vote"));
+        assertFalse(voteMethod.contains("FeedCommentSheet"));
     }
 
     @Test

@@ -547,9 +547,37 @@ public class FeedController {
     }
 
     public void loadCommentThread(String postId, String cursor, Utilities.Callback<FeedModels.CommentPage> done) {
-        api.getJson(FeedContract.commentsPath(postId, cursor), (json, error) -> {
+        loadCommentThread(postId, cursor, "hot", done);
+    }
+
+    public void loadCommentThread(String postId, String cursor, String sort, Utilities.Callback<FeedModels.CommentPage> done) {
+        api.getJson(FeedContract.commentsPath(postId, cursor, sort), (json, error) -> {
             if (done != null) {
                 done.run(error == null ? FeedModels.CommentPage.parse(json) : null);
+            }
+        });
+    }
+
+    /** Fetches the first page and reports whether its head id differs. Does not insert rows. */
+    public void probeHead(String stream, Utilities.Callback<Boolean> done) {
+        String path = FeedContract.streamPath(stream, "", cityCode(), nearbySort());
+        if (path == null) {
+            if (done != null) {
+                done.run(false);
+            }
+            return;
+        }
+        api.getJson(path, (json, error) -> {
+            boolean newer = false;
+            if (json != null) {
+                FeedContract.FeedList refs = FeedContract.parseFeedList(json.toString());
+                String head = refs.refs.isEmpty() || refs.refs.get(0) == null ? "" : refs.refs.get(0).id;
+                ArrayList<FeedModels.Post> current = posts(stream);
+                String top = current.isEmpty() || current.get(0) == null ? "" : current.get(0).id;
+                newer = FeedContract.hasNewerHead(top, head);
+            }
+            if (done != null) {
+                done.run(newer);
             }
         });
     }

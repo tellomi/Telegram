@@ -383,6 +383,30 @@ public final class FeedContract {
         return Math.max(1, (int) factor);
     }
 
+    /**
+     * ARGB_8888 bytes after ImageLoader's power-of-two sample. A 4032×3024
+     * photo at sample size 1 is about 48 MB. Several of those while flinging
+     * are enough for the system to kill the process with no Java exception,
+     * which is what "scrolling returns to the launcher" looks like.
+     */
+    public static long decodedArgbBytes(int photoW, int photoH, int sample) {
+        int step = Math.max(1, sample);
+        long width = Math.max(1, photoW / step);
+        long height = Math.max(1, photoH / step);
+        return width * height * 4L;
+    }
+
+    /** True when a freshly fetched first row is not the row already on top. An empty list is not "new posts". */
+    public static boolean hasNewerHead(String currentTopId, String incomingHeadId) {
+        if (incomingHeadId == null || incomingHeadId.length() == 0) {
+            return false;
+        }
+        if (currentTopId == null || currentTopId.length() == 0) {
+            return false;
+        }
+        return !currentTopId.equals(incomingHeadId);
+    }
+
     public static boolean statusVisible(String json) {
         JsonObject root = object(json);
         if (root == null) {
@@ -567,7 +591,13 @@ public final class FeedContract {
 
     /** Hot thread. An empty cursor is omitted. Hot cursors are not time cursors. */
     public static String commentsPath(String postId, String cursor) {
-        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=hot&thread=1";
+        return commentsPath(postId, cursor, "hot");
+    }
+
+    /** {@code latest} is the time order. Anything else stays on the hot thread. */
+    public static String commentsPath(String postId, String cursor, String sort) {
+        String which = "latest".equals(sort) ? "latest" : "hot";
+        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=" + which + "&thread=1";
         if (cursor != null && cursor.length() > 0 && !"null".equals(cursor)) {
             path += "&cursor=" + enc(cursor);
         }

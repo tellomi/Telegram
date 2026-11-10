@@ -31,7 +31,17 @@ Media sits in the text column, 8 dp below the text. Corners are 12 dp.
 | --- | --- |
 | 1 photo | full column width, height from the aspect ratio, clamped to 120–360 dp |
 | 1 video | full column width, height `max(180 dp, width * 9 / 16)` |
-| 2 or more | horizontal carousel. Each cell is 78% of the column and square, 8 dp gap, so the next image peeks. Swipe, do not use a grid |
+| 2 or more | horizontal carousel. Each cell is 78% of the column and square, 8 dp gap, so the next image peeks. Swipe, do not use a grid. A swipe on the carousel, including the first and last photo, does not change the feed tab |
+
+The list decodes each photo at the cell size, capped at 360 dp. `ImageLoader` reads a `W_H` filter as dp and multiplies by density. `800_800` on a 3x screen asks for 2400 px and leaves a 4032×3024 photo at sample size 1 (about 48 MB, ARGB_8888). Several of those during a fling get the process killed with no crash dialog. The cell filter is `imageFilter(cellPx, density)`.
+
+List images are prefetched with Telegram `ImageReceiver`s, the same way `PeerStoriesView` preloads the next story: low file priority, and the visible cell reuses the bitmap when the url and filter match. The window is 3 posts ahead and 1 behind (1 ahead on a low-end device or while roaming), the avatar plus the first two images or a video cover, at most 2 downloads, cancelled when they leave the window. A fling faster than 4 screen heights per second starts nothing new. This follows Glide's `RecyclerViewPreloader` (same decode size, direction-aware, a few items ahead), Fresco's cancel-on-close prefetch, and Android's subsample-to-the-view guidance.
+
+- https://bumptech.github.io/glide/int/recyclerview.html
+- https://frescolib.org/docs/prefetching.html
+- https://developer.android.com/topic/performance/graphics/load-bitmap
+
+Following and Nearby show a `Moments_NewPosts` pill when a later fetch has a different first id. The pill does not insert rows. Tapping it, or pulling to refresh, loads them. Recommend does not poll.
 
 Link, quote, poll, and file cards use `graySection`, 12 dp corners, padding 10 dp horizontal and 8 dp vertical.
 
@@ -88,6 +98,8 @@ Tapping a post or the comment icon opens this sheet over the list. It does not p
 | Expanded height | full screen below the status bar |
 | Scrim | `#66000000` |
 | Title | centred, 15 sp bold, `Moments_CommentCount`. The number is `total` from `GET /v1/feed/posts/{id}/comments?sort=hot&thread=1` |
+| Sort | under the title, `Moments_Sort_Hot` / `Moments_Sort_Latest`. Latest uses `sort=latest&thread=1` |
+| Long press | reply, copy, forward, report. Delete is shown to the commenter and the post author. Deleting a root comment warns with `Moments_DeleteThread` |
 | Comment avatar | 32 dp |
 | Nickname | 13 sp, `windowBackgroundWhiteGrayText` |
 | Author tag | `Moments_Author` (`Author` / `作者`), `#FF2E38`, when `is_author` is true. `me.author` means the viewer wrote it and is not this tag |

@@ -61,7 +61,7 @@ public class FeedComposerActivity extends BaseFragment {
 
     private final String quoteId;
     private final String editId;
-    private final String draftId;
+    private String draftId;
 
     private EditText field;
     private TextView audienceView;
@@ -240,8 +240,65 @@ public class FeedComposerActivity extends BaseFragment {
         if (quoteId != null) {
             field.setHint(LocaleController.getString("Moments_QuoteHint", R.string.Moments_QuoteHint));
         }
+        if (draftId != null) {
+            applyDraft(controller().storage.draftJson(draftId));
+        } else if (editId == null && quoteId == null) {
+            java.util.ArrayList<String[]> saved = controller().storage.listDrafts();
+            if (!saved.isEmpty() && saved.get(0) != null && saved.get(0).length >= 3) {
+                TextView resume = new TextView(context);
+                resume.setText(LocaleController.getString("Moments_Draft_Continue", R.string.Moments_Draft_Continue));
+                resume.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                resume.setTextSize(15);
+                resume.setPadding(0, 0, 0, dp(8));
+                String id = saved.get(0)[0];
+                String json = saved.get(0)[2];
+                resume.setOnClickListener(v -> {
+                    draftId = id;
+                    applyDraft(json);
+                    resume.setVisibility(View.GONE);
+                });
+                column.addView(resume, 0);
+            }
+        }
         refreshPublish();
         return fragmentView;
+    }
+
+    private void applyDraft(String json) {
+        if (json == null || json.length() == 0 || field == null) {
+            return;
+        }
+        try {
+            org.json.JSONObject o = new org.json.JSONObject(json);
+            field.setText(o.optString("text", ""));
+            paths.clear();
+            types.clear();
+            org.json.JSONArray pathArr = o.optJSONArray("paths");
+            org.json.JSONArray typeArr = o.optJSONArray("types");
+            if (pathArr != null) {
+                for (int i = 0; i < pathArr.length(); i++) {
+                    paths.add(pathArr.optString(i));
+                }
+            }
+            if (typeArr != null) {
+                for (int i = 0; i < typeArr.length(); i++) {
+                    types.add(typeArr.optString(i));
+                }
+            }
+            dirty = true;
+            refreshPublish();
+        } catch (Exception ignore) {
+        }
+    }
+
+    private static String labelForType(String type) {
+        if ("video".equals(type)) {
+            return LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video);
+        }
+        if ("audio".equals(type) || "voice".equals(type)) {
+            return LocaleController.getString("Moments_Voice", R.string.Moments_Voice);
+        }
+        return LocaleController.getString("Moments_Tool_Photo", R.string.Moments_Tool_Photo);
     }
 
     private void addTool(LinearLayout tools, String title, Runnable click) {
@@ -265,7 +322,7 @@ public class FeedComposerActivity extends BaseFragment {
                 if (i > 0) {
                     builder.append(", ");
                 }
-                builder.append(types.get(i));
+                builder.append(labelForType(types.get(i)));
             }
             if (poll != null) {
                 builder.append(builder.length() == 0 ? "" : ", ").append(LocaleController.getString("Moments_Tool_Poll", R.string.Moments_Tool_Poll));

@@ -110,7 +110,7 @@ public class FeedPostCell extends LinearLayout {
     private final TextView titleView;
     private final TextView body;
     private final TextView full;
-    private final HorizontalScrollView albumScroll;
+    private final AlbumScroll albumScroll;
     private final MediaGrid album;
     private final LinearLayout files;
     private final TextView linkCard;
@@ -210,9 +210,7 @@ public class FeedPostCell extends LinearLayout {
         full.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         column.addView(full, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        albumScroll = new HorizontalScrollView(context);
-        albumScroll.setHorizontalScrollBarEnabled(false);
-        albumScroll.setOverScrollMode(OVER_SCROLL_NEVER);
+        albumScroll = new AlbumScroll(context);
         album = new MediaGrid(context);
         album.setTag(FeedContract.ACTION_TAG);
         albumScroll.addView(album, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -440,6 +438,16 @@ public class FeedPostCell extends LinearLayout {
             });
         }
         album.bind(post, delegate);
+        int visuals = 0;
+        if (post != null && post.media != null) {
+            for (int i = 0; i < post.media.size(); i++) {
+                FeedModels.Media media = post.media.get(i);
+                if (media != null && (media.isImage() || media.isVideo())) {
+                    visuals++;
+                }
+            }
+        }
+        albumScroll.setLockPager(visuals > 1);
         albumScroll.setVisibility(album.getVisibility());
         bindFiles(post);
         if (post.linkPreview != null && post.poll == null) {
@@ -644,6 +652,7 @@ public class FeedPostCell extends LinearLayout {
         private int cellWidth;
         private int cellHeight;
         private int gap;
+        private int pendingPage = -1;
 
         MediaGrid(Context context) {
             super(context);
@@ -667,9 +676,11 @@ public class FeedPostCell extends LinearLayout {
             }
             if (items.isEmpty()) {
                 setVisibility(GONE);
+                pendingPage = -1;
                 return;
             }
             setVisibility(VISIBLE);
+            pendingPage = post.albumPage;
             int count = items.size();
             for (int position = 0; position < count; position++) {
                 FeedModels.Media media = items.get(position);
@@ -769,12 +780,53 @@ public class FeedPostCell extends LinearLayout {
         }
 
         @Override
+        public boolean dispatchTouchEvent(MotionEvent ev) {
+            if (items.size() > 1 && ev.getAction() == MotionEvent.ACTION_DOWN && getParent() != null) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+            }
+            return super.dispatchTouchEvent(ev);
+        }
+
+        @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             int x = 0;
             for (int i = 0; i < getChildCount(); i++) {
                 getChildAt(i).layout(x, 0, x + cellWidth, cellHeight);
                 x += cellWidth + gap;
             }
+            if (pendingPage > 0 && getParent() instanceof HorizontalScrollView) {
+                int page = Math.min(pendingPage, Math.max(0, getChildCount() - 1));
+                ((HorizontalScrollView) getParent()).scrollTo(page * (cellWidth + gap), 0);
+                pendingPage = -1;
+            }
+        }
+    }
+
+    /**
+     * Multi-image rows report that they can still scroll at either edge.
+     * ViewPagerFixed only yields the gesture when a child returns true from
+     * {@link View#canScrollHorizontally(int)} for -1, so the first photo would
+     * otherwise change the feed tab.
+     */
+    private static final class AlbumScroll extends HorizontalScrollView {
+        private boolean lockPager;
+
+        AlbumScroll(Context context) {
+            super(context);
+            setHorizontalScrollBarEnabled(false);
+            setOverScrollMode(OVER_SCROLL_NEVER);
+        }
+
+        void setLockPager(boolean lock) {
+            lockPager = lock;
+        }
+
+        @Override
+        public boolean canScrollHorizontally(int direction) {
+            if (lockPager) {
+                return true;
+            }
+            return super.canScrollHorizontally(direction);
         }
     }
 
