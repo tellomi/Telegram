@@ -34,7 +34,11 @@ public:
     // custom backend, a family is replaced only when at least one inet_pton
     // address remains; hostnames are dropped and an empty result keeps the
     // previous list (the build-config seed, until a good config is saved).
+    // After a replace, 10443 and 443 are paired on each host, so a config
+    // that lists only 10443 does not remove the fallback.
     static void applyConfigAddresses(Datacenter *datacenter, std::vector<TcpAddress> &ipv4, std::vector<TcpAddress> &ipv6, std::vector<TcpAddress> &ipv4Download, std::vector<TcpAddress> &ipv6Download, bool cdn);
 };
+
+bool tellomiEnsureTcpAddresses(std::vector<TcpAddress> &addresses);
 
 #endif

@@ -128,7 +128,9 @@ def tellomiPublicKeyPem = {
 }
 def TELLOMI_PRODUCTION_HOST = '8.137.39.82'
 def TELLOMI_PRODUCTION_PORT = '10443'
-def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT}"
+def TELLOMI_FALLBACK_PORT = '443'
+// 10443 first. 443 is the same host, used when 10443 is dropped.
+def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT}"
 def tellomiServerProfiles = [
     dev  : TELLOMI_PRODUCTION_ADDRESSES,
     local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
@@ -146,20 +148,7 @@ def tellomiServerSelection = { String fallbackName ->
     return [name: name, addresses: tellomiServerProfiles[name]]
 }
 def tellomiAddressesAreProduction = { String addresses ->
-    if (addresses == null) {
-        return false
-    }
-    def parts = addresses.split(',')
-    if (parts.length < 1) {
-        return false
-    }
-    for (raw in parts) {
-        def bits = raw.trim().split(':')
-        if (bits.length < 3 || bits[1] != TELLOMI_PRODUCTION_HOST || bits[2] != TELLOMI_PRODUCTION_PORT) {
-            return false
-        }
-    }
-    return true
+    return addresses != null && addresses == TELLOMI_PRODUCTION_ADDRESSES
 }
 def tellomiShippableSelectionOk = { selection ->
     return selection != null && selection.name != 'local' && tellomiAddressesAreProduction(selection.addresses?.toString())
@@ -398,7 +387,7 @@ gradle.taskGraph.whenReady { graph ->
 
 task tellomiVerifyShippableDc {
     group = 'tellomi'
-    description = 'Fail unless a shippable build embeds 8.137.39.82:10443.'
+    description = 'Fail unless a shippable build embeds 8.137.39.82:10443 and :443.'
     doLast {
         def shipServer = tellomiEmbeddedShippableServer()
         println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"
