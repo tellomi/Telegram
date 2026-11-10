@@ -58,7 +58,7 @@ public class FeedApi {
     }
 
     public void getPage(final String pathAndQuery, final Callback<FeedModels.Page> callback) {
-        request("GET", pathAndQuery, null, new Callback<JSONObject>() {
+        request("GET", pathAndQuery, null, true, new Callback<JSONObject>() {
             @Override
             public void run(JSONObject value, String error) {
                 if (value == null) {

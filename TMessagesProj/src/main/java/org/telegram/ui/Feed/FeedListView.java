@@ -247,7 +247,8 @@ public class FeedListView extends FrameLayout {
         }
 
         @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull java.util.List<Object> payloads) {
+        @SuppressWarnings("rawtypes")
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull java.util.List payloads) {
             if (holder.getItemViewType() == 1) {
                 holder.itemView.setOnClickListener(v -> host.onLoadMore());
                 return;
