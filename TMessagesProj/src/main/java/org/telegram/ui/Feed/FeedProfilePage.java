@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.content.Context;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -27,20 +28,20 @@ public class FeedProfilePage extends FrameLayout {
         column.setOrientation(LinearLayout.VERTICAL);
         boolean self = dialogId == UserConfig.getInstance(fragment.getCurrentAccount()).getClientUserId();
         TextView counts = new TextView(context);
-        counts.setText(FeedUi.s("Moments.Segment.Following", R.string.FeedFollowing) + " · " + FeedUi.s("Moments.Followers", R.string.FeedFollowers));
+        counts.setText(LocaleController.getString("Moments_Segment_Following", R.string.Moments_Segment_Following) + " · " + LocaleController.getString("Moments_Followers", R.string.Moments_Followers));
         counts.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         counts.setPadding(dp(16), dp(12), dp(16), dp(8));
         counts.setOnClickListener(v -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.FOLLOWING, String.valueOf(dialogId))));
         column.addView(counts);
         if (self) {
-            addLink(column, fragment, FeedUi.s("Moments.Profile.Saved", R.string.FeedSavedTitle), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.SAVED)));
-            addLink(column, fragment, FeedUi.s("Moments.Profile.Liked", R.string.FeedLikedTitle), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.LIKED)));
+            addLink(column, fragment, LocaleController.getString("Moments_Profile_Saved", R.string.Moments_Profile_Saved), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.SAVED)));
+            addLink(column, fragment, LocaleController.getString("Moments_Profile_Liked", R.string.Moments_Profile_Liked), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.LIKED)));
         } else {
-            addLink(column, fragment, FeedUi.s("Moments.Follow", R.string.FeedFollow), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).follow(String.valueOf(dialogId), true));
-            addLink(column, fragment, FeedUi.s("Moments.Mute", R.string.FeedMute), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).mute(String.valueOf(dialogId), true));
+            addLink(column, fragment, LocaleController.getString("Moments_Follow", R.string.Moments_Follow), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).follow(String.valueOf(dialogId), true));
+            addLink(column, fragment, LocaleController.getString("Moments_Mute", R.string.Moments_Mute), () -> org.telegram.messenger.feed.FeedController.getInstance(fragment.getCurrentAccount()).mute(String.valueOf(dialogId), true));
             addLink(column, fragment, getString(R.string.ReportChat), () -> FeedReportSheet.open(fragment, "user", String.valueOf(dialogId)));
         }
-        addLink(column, fragment, FeedUi.s("Moments.Profile.Posts", R.string.FeedProfileTab), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, String.valueOf(dialogId))));
+        addLink(column, fragment, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, String.valueOf(dialogId))));
         addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
 

@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.text.InputType;
 import android.widget.EditText;
 

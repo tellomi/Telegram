@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -77,12 +78,12 @@ public class FeedCollectionActivity extends BaseFragment {
     }
 
     private String title() {
-        if (mode == SAVED) return FeedUi.s("Moments.Profile.Saved", R.string.FeedSavedTitle);
-        if (mode == LIKED) return FeedUi.s("Moments.Profile.Liked", R.string.FeedLikedTitle);
-        if (mode == FOLLOWING) return FeedUi.s("Moments.Segment.Following", R.string.FeedFollowing);
-        if (mode == FOLLOWERS) return FeedUi.s("Moments.Followers", R.string.FeedFollowers);
-        if (mode == MUTES) return FeedUi.s("Moments.Mutes", R.string.FeedMutes);
-        return FeedUi.s("Moments.Profile.Posts", R.string.FeedProfileTab);
+        if (mode == SAVED) return LocaleController.getString("Moments_Profile_Saved", R.string.Moments_Profile_Saved);
+        if (mode == LIKED) return LocaleController.getString("Moments_Profile_Liked", R.string.Moments_Profile_Liked);
+        if (mode == FOLLOWING) return LocaleController.getString("Moments_Segment_Following", R.string.Moments_Segment_Following);
+        if (mode == FOLLOWERS) return LocaleController.getString("Moments_Followers", R.string.Moments_Followers);
+        if (mode == MUTES) return LocaleController.getString("Moments_Mutes", R.string.Moments_Mutes);
+        return LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts);
     }
 
     private void load() {
@@ -128,7 +129,7 @@ public class FeedCollectionActivity extends BaseFragment {
 
     private FeedModels.Author privateRow() {
         FeedModels.Author author = new FeedModels.Author();
-        author.name = FeedUi.s("Moments.ListPrivate", R.string.FeedListPrivate);
+        author.name = LocaleController.getString("Moments_ListPrivate", R.string.Moments_ListPrivate);
         return author;
     }
 
@@ -167,7 +168,7 @@ public class FeedCollectionActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == 0) {
                 if (mode == PROFILE && position == 0) {
-                    ((TextView) holder.itemView).setText(FeedUi.s("Moments.Profile.Posts", R.string.FeedFilterPosts) + " / " + FeedUi.s("Moments.Filter.Reposts", R.string.FeedFilterReposts));
+                    ((TextView) holder.itemView).setText(LocaleController.getString("Moments_Filter_Posts", R.string.Moments_Filter_Posts) + " / " + LocaleController.getString("Moments_Filter_Reposts", R.string.Moments_Filter_Reposts));
                     holder.itemView.setOnClickListener(v -> {
                         filter = "posts".equals(filter) ? "reposts" : "posts";
                         load();
@@ -176,7 +177,7 @@ public class FeedCollectionActivity extends BaseFragment {
                 }
                 FeedModels.Author author = people.get(mode == PROFILE ? position : position);
                 TextView text = (TextView) holder.itemView;
-                text.setText(author.name.length() == 0 ? FeedUi.s("Moments.ListPrivate", R.string.FeedListPrivate) : FeedUi.displayName(author, currentAccount));
+                text.setText(author.name.length() == 0 ? LocaleController.getString("Moments_ListPrivate", R.string.Moments_ListPrivate) : FeedUi.displayName(author, currentAccount));
                 text.setOnClickListener(v -> {
                     if (mode == MUTES && author.profileId.length() > 0) {
                         FeedController.getInstance(currentAccount).mute(author.profileId, false);

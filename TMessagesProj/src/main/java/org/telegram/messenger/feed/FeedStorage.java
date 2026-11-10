@@ -246,6 +246,20 @@ public class FeedStorage {
         }
     }
 
+    public String draftJson(String id) {
+        if (id == null || id.length() == 0) {
+            return null;
+        }
+        ArrayList<String[]> rows = listDrafts();
+        for (int i = 0; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row != null && row.length >= 3 && id.equals(row[0])) {
+                return row[2];
+            }
+        }
+        return null;
+    }
+
     public void deleteDraft(String id) {
         if (db == null) {
             return;

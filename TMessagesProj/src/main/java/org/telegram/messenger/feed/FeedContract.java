@@ -244,9 +244,167 @@ public final class FeedContract {
         return tabs;
     }
 
-    /** The 动态 tab is shown only when both gates pass. */
+    /** The Moments tab is part of the client. App-config and engine status do not hide it. */
     public static boolean showMomentsTab(boolean configKeyPresent, boolean statusVisible) {
-        return configKeyPresent && statusVisible;
+        return true;
+    }
+
+    public static final int LOAD_MORE_REMAINING = 10;
+    public static final int PREFETCH_AHEAD_POSTS = 3;
+    public static final int PREFETCH_BEHIND_POSTS = 1;
+    public static final int PREFETCH_IMAGES_PER_POST = 2;
+    public static final int PREFETCH_MAX_INFLIGHT = 2;
+    public static final float FLING_PAUSE_SPEED = 4f;
+    public static final String AVATAR_FILTER = "40_40";
+
+    public static final class PrefetchPost {
+        public String avatar = "";
+        public final ArrayList<String> images = new ArrayList<String>();
+        public String linkImage = "";
+        public String imageFilter = "";
+    }
+
+    public static final class PrefetchHit {
+        public final String url;
+        public final String filter;
+        public final String key;
+
+        public PrefetchHit(String url, String filter) {
+            this.url = url == null ? "" : url;
+            this.filter = filter == null ? "" : filter;
+            this.key = this.url + "\n" + this.filter;
+        }
+    }
+
+    public static ArrayList<PrefetchHit> prefetchPlan(List<PrefetchPost> posts, int firstVisible, int lastVisible, int direction, boolean allowed, boolean lowTier) {
+        ArrayList<PrefetchHit> hits = new ArrayList<PrefetchHit>();
+        if (!allowed || posts == null || posts.isEmpty() || lastVisible < 0 || firstVisible < 0) {
+            return hits;
+        }
+        int ahead = lowTier ? 1 : PREFETCH_AHEAD_POSTS;
+        int perPost = lowTier ? 1 : PREFETCH_IMAGES_PER_POST;
+        int size = posts.size();
+        ArrayList<Integer> indexes = new ArrayList<Integer>();
+        if (direction >= 0) {
+            for (int step = 1; step <= ahead; step++) {
+                int index = lastVisible + step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = firstVisible - 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        } else {
+            for (int step = 1; step <= ahead; step++) {
+                int index = firstVisible - step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = lastVisible + 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        }
+        for (int i = 0; i < indexes.size(); i++) {
+            PrefetchPost post = posts.get(indexes.get(i));
+            if (post == null) {
+                continue;
+            }
+            if (post.avatar != null && post.avatar.length() > 0) {
+                hits.add(new PrefetchHit(post.avatar, AVATAR_FILTER));
+            }
+            int images = Math.min(perPost, post.images.size());
+            for (int image = 0; image < images; image++) {
+                String url = post.images.get(image);
+                if (url != null && url.length() > 0) {
+                    hits.add(new PrefetchHit(url, post.imageFilter));
+                }
+            }
+            if (post.linkImage != null && post.linkImage.length() > 0) {
+                hits.add(new PrefetchHit(post.linkImage, post.imageFilter));
+            }
+        }
+        return hits;
+    }
+
+    public static boolean shouldLoadMore(int remaining, boolean hasCursor, boolean loading) {
+        return hasCursor && !loading && remaining <= LOAD_MORE_REMAINING;
+    }
+
+    public static int[] mediaCellPx(int count, int screenWidthPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int column = Math.max(Math.round(200f * scale), screenWidthPx - Math.round(72f * scale));
+        if (count <= 1) {
+            int height = Math.min(Math.round(360f * scale), Math.max(Math.round(120f * scale), column));
+            return new int[]{column, height};
+        }
+        int width = (int) (column * 0.78f);
+        return new int[]{width, width};
+    }
+
+    /**
+     * ImageLoader reads "W_H" as dp and multiplies by density. 800_800 on a
+     * 3x phone asks for 2400 px and leaves a 12 MP photo at sample size 1.
+     */
+    public static String imageFilter(int cellWidthPx, int cellHeightPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int width = Math.max(1, Math.min(360, Math.round(cellWidthPx / scale)));
+        int height = Math.max(1, Math.min(360, Math.round(cellHeightPx / scale)));
+        return width + "_" + height;
+    }
+
+    public static int imageSampleSize(int photoW, int photoH, String filter, float density) {
+        String[] args = filter == null ? new String[0] : filter.split("_");
+        if (args.length < 2 || photoW <= 0 || photoH <= 0) {
+            return 1;
+        }
+        float scale = density <= 0f ? 1f : density;
+        float wFilter = Float.parseFloat(args[0]) * scale;
+        float hFilter = Float.parseFloat(args[1]) * scale;
+        float factor;
+        if (wFilter >= hFilter && photoW > photoH) {
+            factor = Math.max(photoW / wFilter, photoH / hFilter);
+        } else {
+            factor = Math.min(photoW / wFilter, photoH / hFilter);
+        }
+        if (factor < 1.2f) {
+            factor = 1f;
+        }
+        if (factor > 1f && (photoW > wFilter || photoH > hFilter)) {
+            int sample = 1;
+            while (sample * 2 < factor) {
+                sample *= 2;
+            }
+            return sample;
+        }
+        return Math.max(1, (int) factor);
+    }
+
+    /**
+     * ARGB_8888 bytes after ImageLoader's power-of-two sample. A 4032×3024
+     * photo at sample size 1 is about 48 MB. Several of those while flinging
+     * are enough for the system to kill the process with no Java exception,
+     * which is what "scrolling returns to the launcher" looks like.
+     */
+    public static long decodedArgbBytes(int photoW, int photoH, int sample) {
+        int step = Math.max(1, sample);
+        long width = Math.max(1, photoW / step);
+        long height = Math.max(1, photoH / step);
+        return width * height * 4L;
+    }
+
+    /** True when a freshly fetched first row is not the row already on top. An empty list is not "new posts". */
+    public static boolean hasNewerHead(String currentTopId, String incomingHeadId) {
+        if (incomingHeadId == null || incomingHeadId.length() == 0) {
+            return false;
+        }
+        if (currentTopId == null || currentTopId.length() == 0) {
+            return false;
+        }
+        return !currentTopId.equals(incomingHeadId);
     }
 
     public static boolean statusVisible(String json) {
@@ -433,7 +591,13 @@ public final class FeedContract {
 
     /** Hot thread. An empty cursor is omitted. Hot cursors are not time cursors. */
     public static String commentsPath(String postId, String cursor) {
-        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=hot&thread=1";
+        return commentsPath(postId, cursor, "hot");
+    }
+
+    /** {@code latest} is the time order. Anything else stays on the hot thread. */
+    public static String commentsPath(String postId, String cursor, String sort) {
+        String which = "latest".equals(sort) ? "latest" : "hot";
+        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=" + which + "&thread=1";
         if (cursor != null && cursor.length() > 0 && !"null".equals(cursor)) {
             path += "&cursor=" + enc(cursor);
         }

@@ -117,7 +117,7 @@ public class TellomiDefaultStringsTest {
             assertTrue(simplified.contains("name=\"" + key + "\""));
             assertTrue(traditional.contains("name=\"" + key + "\""));
         }
-        assertTrue(simplified.contains("name=\"FeedTab\">动态<"));
+        assertTrue(simplified.contains("name=\"Moments_Title\">动态<"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.app.Dialog;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
@@ -27,8 +28,11 @@ import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ItemOptions;
+import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
@@ -50,6 +54,8 @@ public class FeedCommentSheet extends Dialog {
 
     private final BaseFragment fragment;
     private final String postId;
+    private final String commentPolicy;
+    private final FeedModels.Author postAuthor;
     private final HashSet<String> expanded = new HashSet<>();
     private final ArrayList<Row> rows = new ArrayList<>();
     private final ArrayList<FeedModels.Comment> roots = new ArrayList<>();
@@ -65,27 +71,42 @@ public class FeedCommentSheet extends Dialog {
     private TextView pending;
     private EmojiView emojiView;
     private TextView title;
+    private TextView sortView;
+    private String sort = "hot";
     private EditText input;
     private LinearLayout panel;
     private RecyclerListView list;
     private CommentAdapter adapter;
 
     public static void open(BaseFragment fragment, String postId, boolean focusInput) {
+        open(fragment, postId, focusInput, "", null);
+    }
+
+    public static void open(BaseFragment fragment, FeedModels.Post post, boolean focusInput) {
+        if (post == null) {
+            return;
+        }
+        open(fragment, post.id, focusInput, post.commentPolicy, post.author);
+    }
+
+    public static void open(BaseFragment fragment, String postId, boolean focusInput, String commentPolicy, FeedModels.Author postAuthor) {
         if (fragment == null || fragment.getParentActivity() == null || postId == null || postId.length() == 0) {
             return;
         }
-        FeedCommentSheet sheet = new FeedCommentSheet(fragment, postId);
+        FeedCommentSheet sheet = new FeedCommentSheet(fragment, postId, commentPolicy, postAuthor);
         fragment.showDialog(sheet);
-        if (focusInput) {
+        if (focusInput && sheet.input.isEnabled()) {
             sheet.input.requestFocus();
             AndroidUtilities.showKeyboard(sheet.input);
         }
     }
 
-    private FeedCommentSheet(BaseFragment fragment, String postId) {
+    private FeedCommentSheet(BaseFragment fragment, String postId, String commentPolicy, FeedModels.Author postAuthor) {
         super(fragment.getParentActivity(), R.style.TransparentDialog);
         this.fragment = fragment;
         this.postId = postId;
+        this.commentPolicy = commentPolicy == null ? "" : commentPolicy;
+        this.postAuthor = postAuthor;
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         FrameLayout root = new FrameLayout(getContext());
         root.setOnClickListener(v -> dismiss());
@@ -100,7 +121,7 @@ public class FeedCommentSheet extends Dialog {
         LinearLayout header = new LinearLayout(getContext());
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(8), dp(8), dp(8), dp(4));
-        ImageView expand = icon(R.drawable.msg_zoomin, FeedUi.s("Moments.FullText", R.string.FeedFullText));
+        ImageView expand = icon(R.drawable.msg_zoomin, LocaleController.getString("Moments_FullText", R.string.Moments_FullText));
         expand.setOnClickListener(v -> {
             full = !full;
             expand.setImageResource(full ? R.drawable.msg_zoomout : R.drawable.msg_zoomin);
@@ -118,6 +139,17 @@ public class FeedCommentSheet extends Dialog {
         header.addView(title, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
         header.addView(close, LayoutHelper.createLinear(40, 40));
         panel.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        sortView = new TextView(getContext());
+        sortView.setTextSize(13);
+        sortView.setTypeface(AndroidUtilities.bold());
+        sortView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        sortView.setPadding(dp(16), dp(2), dp(16), dp(6));
+        sortView.setOnClickListener(v -> {
+            sort = "hot".equals(sort) ? "latest" : "hot";
+            load();
+        });
+        panel.addView(sortView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        paintSort();
 
         list = new RecyclerListView(getContext());
         list.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -130,7 +162,7 @@ public class FeedCommentSheet extends Dialog {
                     return;
                 }
                 LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (manager != null && manager.findLastVisibleItemPosition() >= rows.size() - 3) {
+                if (manager != null && org.telegram.messenger.feed.FeedContract.shouldLoadMore(rows.size() - 1 - manager.findLastVisibleItemPosition(), threadCursor.length() > 0, loadingMore)) {
                     loadMore();
                 }
             }
@@ -146,7 +178,7 @@ public class FeedCommentSheet extends Dialog {
         input.setTextSize(15);
         input.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         input.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        input.setHint(FeedUi.s("Moments.CommentHint", R.string.FeedCommentHint));
+        input.setHint(LocaleController.getString("Moments_CommentHint", R.string.Moments_CommentHint));
         input.setSingleLine(true);
         pending = new TextView(getContext());
         pending.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
@@ -163,11 +195,11 @@ public class FeedCommentSheet extends Dialog {
             return false;
         });
         bar.addView(input, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
-        ImageView photo = icon(R.drawable.msg_gallery, FeedUi.s("Moments.Photo", R.string.FeedPhoto));
+        ImageView photo = icon(R.drawable.msg_gallery, LocaleController.getString("Moments_Photo", R.string.Moments_Photo));
         photo.setOnClickListener(v -> pickPhoto());
         ImageView mention = icon(R.drawable.msg_mention, "@");
         mention.setOnClickListener(v -> input.getText().insert(input.getSelectionStart() < 0 ? input.length() : input.getSelectionStart(), "@"));
-        ImageView emoji = icon(R.drawable.input_smile, FeedUi.s("Moments.Comment", R.string.FeedComment));
+        ImageView emoji = icon(R.drawable.input_smile, LocaleController.getString("Moments_Comment", R.string.Moments_Comment));
         emoji.setOnClickListener(v -> toggleEmoji());
         bar.addView(photo, LayoutHelper.createLinear(36, 36));
         bar.addView(mention, LayoutHelper.createLinear(36, 36));
@@ -182,8 +214,29 @@ public class FeedCommentSheet extends Dialog {
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
             window.setGravity(Gravity.BOTTOM);
         }
+        applyPolicy();
         applyHeight();
         load();
+    }
+
+    private void paintSort() {
+        String label = "hot".equals(sort)
+                ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot)
+                : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest);
+        sortView.setText(label);
+    }
+
+    private void applyPolicy() {
+        if ("closed".equals(commentPolicy) || "off".equals(commentPolicy)) {
+            input.setEnabled(false);
+            input.setHint(LocaleController.getString("Moments_Comment_Closed", R.string.Moments_Comment_Closed));
+        } else if ("mutual_followers".equals(commentPolicy) || "friends".equals(commentPolicy)) {
+            input.setHint(LocaleController.getString("Moments_Comment_Mutual", R.string.Moments_Comment_Mutual));
+        } else if ("author_following".equals(commentPolicy) || "following".equals(commentPolicy)) {
+            input.setHint(LocaleController.getString("Moments_Comment_Following", R.string.Moments_Comment_Following));
+        } else if ("mentioned_only".equals(commentPolicy) || "mentioned".equals(commentPolicy)) {
+            input.setHint(LocaleController.getString("Moments_Comment_Mentioned", R.string.Moments_Comment_Mentioned));
+        }
     }
 
     private void applyHeight() {
@@ -193,7 +246,8 @@ public class FeedCommentSheet extends Dialog {
 
     private void load() {
         threadCursor = "";
-        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, "", page -> AndroidUtilities.runOnUIThread(() -> {
+        paintSort();
+        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, "", sort, page -> AndroidUtilities.runOnUIThread(() -> {
             roots.clear();
             if (page != null) {
                 roots.addAll(page.comments);
@@ -210,7 +264,7 @@ public class FeedCommentSheet extends Dialog {
         }
         loadingMore = true;
         String cursor = threadCursor;
-        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, cursor, page -> AndroidUtilities.runOnUIThread(() -> {
+        FeedController.getInstance(fragment.getCurrentAccount()).loadCommentThread(postId, cursor, sort, page -> AndroidUtilities.runOnUIThread(() -> {
             loadingMore = false;
             if (page == null) {
                 return;
@@ -315,7 +369,46 @@ public class FeedCommentSheet extends Dialog {
         }
     }
 
+    private void commentMenu(FeedModels.Comment comment, View anchor) {
+        if (comment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        ItemOptions options = ItemOptions.makeOptions(fragment, anchor);
+        options.add(R.drawable.input_reply, getString(R.string.Reply), () -> {
+            replyTo = comment.id;
+            replyName = FeedUi.displayName(comment.author, fragment.getCurrentAccount());
+            input.setHint(LocaleController.formatString("Moments_ReplyTo", R.string.Moments_ReplyTo, replyName));
+            if (input.isEnabled()) {
+                input.requestFocus();
+                AndroidUtilities.showKeyboard(input);
+            }
+        });
+        if (comment.text != null && comment.text.length() > 0) {
+            options.add(R.drawable.msg_copy, getString(R.string.Copy), () -> AndroidUtilities.addToClipboard(comment.text));
+        }
+        options.add(R.drawable.msg_forward, getString(R.string.Forward), () -> fragment.showDialog(ShareAlert.createShareAlert(getContext(), null, comment.text + "\n" + FeedUi.linkFor(postId), false, FeedUi.linkFor(postId), false)));
+        options.add(R.drawable.msg_report, getString(R.string.ReportChat), () -> FeedReportSheet.open(fragment, "comment", comment.id));
+        int account = fragment.getCurrentAccount();
+        if (FeedUi.isSelf(account, comment.author) || FeedUi.isSelf(account, postAuthor)) {
+        options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+            builder.setMessage(comment.replyCount > 0 ? LocaleController.getString("Moments_DeleteThread", R.string.Moments_DeleteThread) : getString(R.string.Delete));
+            builder.setPositiveButton(getString(R.string.Delete), (d, w) -> FeedController.getInstance(fragment.getCurrentAccount()).deleteComment(postId, comment.id, error -> AndroidUtilities.runOnUIThread(() -> {
+                if (error == null) {
+                    removeComment(comment.id);
+                }
+            })));
+            builder.setNegativeButton(getString(R.string.Cancel), null);
+            fragment.showDialog(builder.create());
+        });
+        }
+        options.show();
+    }
+
     private void send() {
+        if (!input.isEnabled()) {
+            return;
+        }
         String text = input.getText() == null ? "" : input.getText().toString().trim();
         if (text.length() == 0 && pendingKey.length() == 0) {
             return;
@@ -334,7 +427,7 @@ public class FeedCommentSheet extends Dialog {
         replyTo = "";
         replyName = "";
         clearPending();
-        input.setHint(FeedUi.s("Moments.CommentHint", R.string.FeedCommentHint));
+        input.setHint(LocaleController.getString("Moments_CommentHint", R.string.Moments_CommentHint));
         FeedController.getInstance(fragment.getCurrentAccount()).sendComment(postId, text, parent, attachment, error -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 load();
@@ -358,7 +451,7 @@ public class FeedCommentSheet extends Dialog {
             }
             pendingKey = key;
             pendingKind = kind;
-            pending.setText(FeedUi.s("sticker".equals(kind) ? "Moments.Tool.Sticker" : "Moments.Photo", "sticker".equals(kind) ? R.string.FeedToolSticker : R.string.FeedPhoto));
+            pending.setText(LocaleController.getString("sticker".equals(kind) ? "Moments_Tool_Sticker" : "Moments_Photo", "sticker".equals(kind) ? R.string.Moments_Tool_Sticker : R.string.Moments_Photo));
             pending.setVisibility(View.VISIBLE);
         }));
     }
@@ -430,7 +523,7 @@ public class FeedCommentSheet extends Dialog {
     }
 
     private String countTitle(int count) {
-        return FeedUi.s("Moments.CommentCount", R.string.FeedCommentCount).replace("%d", String.valueOf(count));
+        return LocaleController.formatString("Moments_CommentCount", R.string.Moments_CommentCount, count);
     }
 
     private ImageView icon(int res, String description) {
@@ -516,7 +609,7 @@ public class FeedCommentSheet extends Dialog {
             if (row.kind == Row.EXPAND) {
                 TextView view = (TextView) holder.itemView;
                 int count = Math.max(row.comment.replyCount, row.comment.replies.size());
-                String label = FeedUi.s("Moments.ShowReplies", R.string.FeedShowReplies).replace("%d", String.valueOf(count));
+                String label = LocaleController.formatString("Moments_ShowReplies", R.string.Moments_ShowReplies, count);
                 view.setText("—— " + label);
                 view.setOnClickListener(v -> {
                     boolean open = expanded.contains(row.comment.id);
@@ -571,7 +664,7 @@ public class FeedCommentSheet extends Dialog {
             author = new TextView(context);
             author.setTextSize(11);
             author.setTextColor(0xFFFF2E38);
-            author.setText(FeedUi.s("Moments.Author", R.string.FeedAuthor));
+            author.setText(LocaleController.getString("Moments_Author", R.string.Moments_Author));
             author.setPadding(dp(4), 0, 0, 0);
             nameRow.addView(name, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             nameRow.addView(author, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -613,7 +706,7 @@ public class FeedCommentSheet extends Dialog {
             author.setVisibility(comment.isAuthor ? VISIBLE : GONE);
             String body = comment.text == null ? "" : comment.text;
             if (reply && comment.replyToName != null && comment.replyToName.length() > 0) {
-                body = FeedUi.s("Moments.ReplyTo", R.string.FeedReplyTo).replace("%s", comment.replyToName) + " " + body;
+                body = LocaleController.formatString("Moments_ReplyTo", R.string.Moments_ReplyTo, comment.replyToName) + " " + body;
             }
             text.setText(body);
             text.setVisibility(body.length() == 0 ? GONE : VISIBLE);
@@ -628,12 +721,12 @@ public class FeedCommentSheet extends Dialog {
             if (comment.province != null && comment.province.length() > 0) {
                 metaText.append(" · ").append(comment.province);
             }
-            metaText.append(" · ").append(FeedUi.s("Moments.Reply", R.string.FeedReply));
+            metaText.append(" · ").append(LocaleController.getString("Moments_Reply", R.string.Moments_Reply));
             meta.setText(metaText);
             meta.setOnClickListener(v -> {
                 replyTo = comment.id;
                 replyName = FeedUi.displayName(comment.author, fragment.getCurrentAccount());
-                input.setHint(FeedUi.s("Moments.ReplyTo", R.string.FeedReplyTo).replace("%s", replyName));
+                input.setHint(LocaleController.formatString("Moments_ReplyTo", R.string.Moments_ReplyTo, replyName));
                 input.requestFocus();
                 AndroidUtilities.showKeyboard(input);
             });
@@ -657,6 +750,10 @@ public class FeedCommentSheet extends Dialog {
                     removeComment(comment.id);
                 }
             })));
+            setOnLongClickListener(v -> {
+                commentMenu(comment, v);
+                return true;
+            });
         }
     }
 }

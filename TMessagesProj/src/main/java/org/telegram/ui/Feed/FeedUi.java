@@ -1,7 +1,6 @@
 package org.telegram.ui.Feed;
 
 import android.content.Context;
-import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
@@ -15,7 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
@@ -31,8 +29,6 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ProfileActivity;
 
-import java.util.Locale;
-
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -40,57 +36,6 @@ import static org.telegram.messenger.LocaleController.getString;
 public final class FeedUi {
 
     private FeedUi() {
-    }
-
-    /**
-     * Langpack key shared with iOS ({@code Moments.*}), then the Android
-     * resource for the active language. A Chinese UI does not stay on an
-     * English langpack value.
-     */
-    public static String s(String key, int res) {
-        String value = LocaleController.getString(key, res);
-        if (value == null || value.startsWith("LOC_ERR")) {
-            value = LocaleController.getString(res);
-        }
-        if (prefersChinese() && value != null && value.equals(resourceString(Locale.ENGLISH, res))) {
-            String zh = resourceString(Locale.SIMPLIFIED_CHINESE, res);
-            if (zh != null && zh.length() > 0) {
-                return zh;
-            }
-        }
-        return value == null ? "" : value;
-    }
-
-    private static boolean prefersChinese() {
-        Locale locale = LocaleController.getInstance().getCurrentLocale();
-        if (locale == null) {
-            locale = Locale.getDefault();
-        }
-        String language = locale.getLanguage();
-        return language != null && language.toLowerCase(Locale.US).startsWith("zh");
-    }
-
-    /**
-     * Called while MainTabsActivity builds the first screen. On a Chinese
-     * locale this runs for the Moments and Search titles. Creating a
-     * configuration context throws on some devices (Resources.NotFoundException,
-     * or a null dereference inside AssetManager). That must not kill launch.
-     */
-    private static String resourceString(Locale locale, int res) {
-        Context context = ApplicationLoader.applicationContext;
-        if (context == null || res == 0 || locale == null) {
-            return null;
-        }
-        try {
-            Configuration config = new Configuration(context.getResources().getConfiguration());
-            config.setLocale(locale);
-            if (Build.VERSION.SDK_INT >= 24) {
-                config.setLocales(new android.os.LocaleList(locale));
-            }
-            return context.createConfigurationContext(config).getResources().getString(res);
-        } catch (Throwable ignored) {
-            return null;
-        }
     }
 
     public static boolean reduceMotion() {
@@ -122,7 +67,7 @@ public final class FeedUi {
             return "";
         }
         if ("mutual_followers".equals(kind) || "friends".equals(kind)) {
-            return FeedUi.s("Moments.Audience.Mutual", R.string.FeedAudienceMutual);
+            return LocaleController.getString("Moments_Audience_Mutual", R.string.Moments_Audience_Mutual);
         }
         if ("contacts".equals(kind)) {
             return getString(R.string.StoryPrivacyOptionContacts);
@@ -134,12 +79,12 @@ public final class FeedUi {
             return getString(R.string.StoryPrivacyOptionSelectedContacts);
         }
         if ("private".equals(kind) || "only_me".equals(kind) || "self".equals(kind)) {
-            return FeedUi.s("Moments.Settings.OnlyMe", R.string.FeedAudiencePrivate);
+            return LocaleController.getString("Moments_Settings_OnlyMe", R.string.Moments_Settings_OnlyMe);
         }
         if ("followers".equals(kind) || "followers_only".equals(kind)) {
-            return FeedUi.s("Moments.Audience.Followers", R.string.FeedAudienceFollowers);
+            return LocaleController.getString("Moments_Audience_Followers", R.string.Moments_Audience_Followers);
         }
-        return FeedUi.s("Moments.Audience.Custom", R.string.FeedAudienceCustom);
+        return LocaleController.getString("Moments_Audience_Custom", R.string.Moments_Audience_Custom);
     }
 
     public static void openProfile(BaseFragment fragment, FeedModels.Author author) {

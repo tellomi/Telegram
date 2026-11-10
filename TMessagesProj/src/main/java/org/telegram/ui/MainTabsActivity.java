@@ -111,9 +111,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private boolean searchTabActive;
     private boolean feedLeftMainTab;
-    private boolean feedTabShown;
+    private boolean feedTabShown = true;
     private FeedActivity feedActivity;
-    private FeedController.Listener feedTabListener;
     private Runnable searchCloseListener;
 
     private static int indexToPosition(int index) {
@@ -294,7 +293,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         checkUnreadCount(true);
 
         showAccountChangeHint();
-        FeedController.getInstance(currentAccount).refreshGate();
     }
 
     private void checkContactsTabBadge() {
@@ -332,13 +330,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabs = new GlassTabView[7];
         tabs[INDEX_CONTACTS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.MainTabsContacts);
         tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
-        tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.FeedTab);
-        tabs[INDEX_FEED].setText(org.telegram.ui.Feed.FeedUi.s("Moments.Title", R.string.FeedTab));
+        tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.Moments_Title);
+        tabs[INDEX_FEED].setText(LocaleController.getString("Moments_Title", R.string.Moments_Title));
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
         tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
         tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.MainTabsProfile);
-        tabs[INDEX_SEARCH] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SEARCH, R.string.FeedSearchTab);
-        tabs[INDEX_SEARCH].setText(org.telegram.ui.Feed.FeedUi.s("Moments.SearchTab", R.string.FeedSearchTab));
+        tabs[INDEX_SEARCH] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SEARCH, R.string.Moments_SearchTab);
+        tabs[INDEX_SEARCH].setText(LocaleController.getString("Moments_SearchTab", R.string.Moments_SearchTab));
         tabs[INDEX_CHATS].setOnLongClickListener(this::openFoldersSelector);
         tabs[INDEX_CONTACTS].setOnLongClickListener(this::openContactsSelector);
         tabs[INDEX_CALLS].setOnLongClickListener(this::openCallsSelector);
@@ -382,17 +380,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabsView.setViewVisible(view, true, false);
         }
         checkUi_callTabVisible(getUserConfig().showCallsTab, false);
-        checkUi_feedTabVisible(FeedController.getInstance(currentAccount).momentsTabVisible(), false);
-        if (feedTabListener == null) {
-            feedTabListener = () -> {
-                if (tabsView == null) {
-                    return;
-                }
-                checkUi_feedTabVisible(FeedController.getInstance(currentAccount).momentsTabVisible(), true);
-            };
-        }
-        FeedController.getInstance(currentAccount).addListener(feedTabListener);
-        FeedController.getInstance(currentAccount).refreshGate();
+        checkUi_feedTabVisible(true, false);
 
         selectTab(viewPager.getCurrentPosition(), false);
 
@@ -1105,8 +1093,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         } else if (id == NotificationCenter.contactsPermissionBadgeCheck) {
             checkContactsTabBadge();
-        } else if (id == NotificationCenter.appConfigUpdated) {
-            FeedController.getInstance(currentAccount).refreshGate();
         }
     }
 
@@ -1124,7 +1110,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .add(NotificationCenter.callTabsVisibleToggled)
             .add(NotificationCenter.mainUserInfoChanged)
             .add(NotificationCenter.contactsPermissionBadgeCheck)
-            .add(NotificationCenter.appConfigUpdated)
             .addGlobal(NotificationCenter.appUpdateAvailable)
             .addGlobal(NotificationCenter.appUpdateLoading)
             .addGlobal(NotificationCenter.needSetDayNightTheme);
@@ -1137,9 +1122,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
 
-        if (feedTabListener != null) {
-            FeedController.getInstance(currentAccount).removeListener(feedTabListener);
-        }
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
@@ -1191,13 +1173,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkUi_feedTabVisible(boolean visible, boolean animated) {
-        feedTabShown = visible;
+        feedTabShown = true;
         if (tabsView != null && tabs != null && tabs[INDEX_FEED] != null) {
-            tabsView.setViewVisible(tabs[INDEX_FEED], visible, animated);
-        }
-        if (!visible && viewPager != null && viewPager.getCurrentPosition() == POSITION_FEED) {
-            viewPager.scrollToPosition(POSITION_CHATS);
-            selectTab(POSITION_CHATS, true);
+            tabsView.setViewVisible(tabs[INDEX_FEED], true, false);
         }
     }
 

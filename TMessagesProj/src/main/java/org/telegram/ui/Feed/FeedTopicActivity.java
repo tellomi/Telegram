@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -98,7 +99,7 @@ public class FeedTopicActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
                 TextView text = (TextView) holder.itemView;
-                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? FeedUi.s("Moments.Sort.Hot", R.string.FeedSortHot) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew)));
+                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)));
                 text.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
                     load();

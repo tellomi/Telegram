@@ -74,10 +74,21 @@ public class FeedContractTest {
 
     @Test
     public void momentsTabNeedsConfigKeyAndVisibleStatus() {
-        assertFalse(FeedContract.showMomentsTab(false, true));
-        assertFalse(FeedContract.showMomentsTab(true, false));
-        assertFalse(FeedContract.showMomentsTab(false, false));
+        assertTrue(FeedContract.showMomentsTab(false, true));
+        assertTrue(FeedContract.showMomentsTab(true, false));
+        assertTrue(FeedContract.showMomentsTab(false, false));
         assertTrue(FeedContract.showMomentsTab(true, true));
+        assertEquals(1, FeedContract.imageSampleSize(4032, 3024, "800_800", 3f));
+        assertTrue(FeedContract.imageSampleSize(4032, 3024, FeedContract.imageFilter(864, 864, 3f), 3f) >= 4);
+        long full = FeedContract.decodedArgbBytes(4032, 3024, 1);
+        assertEquals(4032L * 3024L * 4L, full);
+        assertTrue(full > 45L * 1024 * 1024);
+        String cell = FeedContract.imageFilter(900, 900, 3f);
+        int shrunk = FeedContract.imageSampleSize(4032, 3024, cell, 3f);
+        long small = FeedContract.decodedArgbBytes(4032, 3024, shrunk);
+        assertTrue(small < 8L * 1024 * 1024);
+        assertTrue(full * 6 > 256L * 1024 * 1024);
+        assertTrue(small * 6 < 48L * 1024 * 1024);
         assertTrue(FeedContract.statusVisible("{\"visible\":true}"));
         assertFalse(FeedContract.statusVisible("{\"visible\":false}"));
         assertTrue(FeedContract.statusVisible("{\"status\":{\"visible\":true}}"));
@@ -113,6 +124,12 @@ public class FeedContractTest {
         assertTrue(sticker.contains("\"sticker\":true"));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", ""));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1&cursor=c2", FeedContract.commentsPath("p1", "c2"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=latest&thread=1", FeedContract.commentsPath("p1", "", "latest"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", "", "nope"));
+        assertFalse(FeedContract.hasNewerHead("", "p2"));
+        assertFalse(FeedContract.hasNewerHead("p1", ""));
+        assertFalse(FeedContract.hasNewerHead("p1", "p1"));
+        assertTrue(FeedContract.hasNewerHead("p1", "p2"));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
         String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
@@ -207,23 +224,10 @@ public class FeedContractTest {
     }
 
     @Test
-    public void momentsTitleLookupCannotCrashLaunch() throws Exception {
-        String tabs = read("ui/MainTabsActivity.java");
-        assertTrue(tabs.contains("FeedUi.s(\"Moments.Title\""));
-        assertTrue(tabs.contains("FeedUi.s(\"Moments.SearchTab\""));
-        String ui = read("ui/Feed/FeedUi.java");
-        int method = ui.indexOf("String resourceString");
-        assertTrue(method > 0);
-        String body = ui.substring(method, ui.indexOf("public static boolean reduceMotion"));
-        assertTrue(body.contains("createConfigurationContext"));
-        assertTrue(body.contains("catch (Throwable"));
-    }
-
-    @Test
-    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+    public void momentsKeysMatchResourcesAndSurviveReleaseShrinking() throws Exception {
         String english = read("../../../res/values/strings.xml");
         String chinese = read("../../../res/values-zh-rCN/strings.xml");
-        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Feed[A-Za-z0-9]+)\"")
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
                 .matcher(english);
         int count = 0;
         while (names.find()) {
@@ -232,24 +236,75 @@ public class FeedContractTest {
             count++;
         }
         assertTrue(count >= 40);
-        String ui = read("ui/Feed/FeedUi.java")
-                + read("ui/Feed/FeedActivity.java")
-                + read("ui/Feed/FeedPostCell.java");
-        assertTrue(ui.contains("Moments.Title"));
-        assertTrue(ui.contains("Moments.Segment.Recommend"));
-        assertTrue(ui.contains("Moments.Like"));
-        assertTrue(ui.contains("Moments.Empty.Recommend"));
-        assertTrue(ui.contains("LocaleController.getString(key, res)"));
+        assertFalse(english.contains("name=\"Feed"));
+        String sources = "";
+        String[] files = new String[]{
+                "ui/MainTabsActivity.java",
+                "ui/Feed/FeedUi.java",
+                "ui/Feed/FeedActivity.java",
+                "ui/Feed/FeedPostCell.java",
+                "ui/Feed/FeedCommentSheet.java"
+        };
+        for (int i = 0; i < files.length; i++) {
+            sources += read(files[i]);
+        }
+        assertTrue(sources.contains("LocaleController.getString(\"Moments_Title\", R.string.Moments_Title)"));
+        assertFalse(sources.contains("createConfigurationContext"));
+        assertFalse(sources.contains("FeedUi.s("));
+        java.util.regex.Matcher calls = java.util.regex.Pattern.compile(
+                "LocaleController\\.(?:getString|formatString)\\(\"([^\"]+)\", R\\.string\\.([A-Za-z0-9_]+)")
+                .matcher(sources);
+        int callsFound = 0;
+        while (calls.find()) {
+            assertEquals(calls.group(1), calls.group(2));
+            assertTrue(english.contains("name=\"" + calls.group(1) + "\""));
+            callsFound++;
+        }
+        assertTrue(callsFound >= 10);
+    }
+
+    @Test
+    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+        String english = read("../../../res/values/strings.xml");
+        String chinese = read("../../../res/values-zh-rCN/strings.xml");
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
+                .matcher(english);
+        int count = 0;
+        while (names.find()) {
+            assertTrue(names.group(1), chinese.contains("name=\"" + names.group(1) + "\""));
+            count++;
+        }
+        assertTrue(count >= 40);
+        String ui = read("ui/Feed/FeedActivity.java") + read("ui/Feed/FeedPostCell.java");
+        assertTrue(ui.contains("Moments_Title"));
+        assertTrue(ui.contains("Moments_Segment_Recommend"));
+        assertTrue(ui.contains("Moments_Like"));
+        assertTrue(ui.contains("Moments_Empty_Recommend"));
+        assertFalse(ui.contains("Moments.Title"));
         String design = readDesign();
         assertTrue(design.contains("40 dp"));
         assertTrue(design.contains("5 lines"));
         assertTrue(design.contains("78%"));
         assertTrue(design.contains("msg_send"));
         assertTrue(design.contains("#FF2E38"));
-        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("tab_article"));
         assertTrue(design.contains("msg_discussion"));
         assertTrue(design.contains("filled_fab_compose_32"));
         assertTrue(design.contains("media_like_active"));
+        assertTrue(design.contains("360 dp"));
+        assertTrue(design.contains("RecyclerViewPreloader"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("canScrollHorizontally"));
+        assertTrue(cell.contains("setLockPager"));
+        String activity = read("ui/Feed/FeedActivity.java");
+        assertTrue(activity.contains("Moments_NewPosts"));
+        assertTrue(activity.contains("probeHead"));
+        int vote = activity.indexOf("void onVote");
+        int media = activity.indexOf("void onMedia");
+        assertTrue(vote >= 0 && media > vote);
+        String voteMethod = activity.substring(vote, media);
+        assertTrue(voteMethod.contains("controller().vote"));
+        assertFalse(voteMethod.contains("FeedCommentSheet"));
     }
 
     @Test

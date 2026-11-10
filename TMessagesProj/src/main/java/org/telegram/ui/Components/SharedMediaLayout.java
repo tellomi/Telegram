@@ -7081,7 +7081,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             }
             if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
-                tabs.add(0, new Pair<>(TAB_MOMENTS, FeedUi.s("Moments.Profile.Posts", R.string.FeedProfileTab)));
+                tabs.add(0, new Pair<>(TAB_MOMENTS, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts)));
             }
             if (!tabs.isEmpty()) {
                 firstTab = tabs.get(0).first;

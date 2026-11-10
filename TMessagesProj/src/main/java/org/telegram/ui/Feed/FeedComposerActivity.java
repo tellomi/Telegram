@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -60,7 +61,7 @@ public class FeedComposerActivity extends BaseFragment {
 
     private final String quoteId;
     private final String editId;
-    private final String draftId;
+    private String draftId;
 
     private EditText field;
     private TextView audienceView;
@@ -111,7 +112,7 @@ public class FeedComposerActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.Composer.Title", R.string.FeedComposerTitle));
+        actionBar.setTitle(LocaleController.getString("Moments_Composer_Title", R.string.Moments_Composer_Title));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -123,7 +124,7 @@ public class FeedComposerActivity extends BaseFragment {
         });
         ActionBarMenu menu = actionBar.createMenu();
         publish = new TextView(context);
-        publish.setText(FeedUi.s("Moments.Publish", R.string.FeedPublish));
+        publish.setText(LocaleController.getString("Moments_Publish", R.string.Moments_Publish));
         publish.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         publish.setTypeface(AndroidUtilities.bold());
         publish.setPadding(dp(12), dp(8), dp(12), dp(8));
@@ -136,7 +137,7 @@ public class FeedComposerActivity extends BaseFragment {
         column.setPadding(dp(16), dp(12), dp(16), dp(12));
 
         audienceView = new TextView(context);
-        audienceView.setText(FeedUi.s("Moments.Audience.Choose", R.string.FeedAudiencePleaseChoose));
+        audienceView.setText(LocaleController.getString("Moments_Audience_Choose", R.string.Moments_Audience_Choose));
         audienceView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         audienceView.setTextSize(15);
         audienceView.setOnClickListener(v -> FeedAudiencePicker.open(this, privacy, picked -> {
@@ -148,7 +149,7 @@ public class FeedComposerActivity extends BaseFragment {
         column.addView(audienceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
         field = new EditText(context);
-        field.setHint(FeedUi.s("Moments.Composer.Hint", R.string.FeedComposerHint));
+        field.setHint(LocaleController.getString("Moments_Composer_Hint", R.string.Moments_Composer_Hint));
         field.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         field.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         field.setBackground(null);
@@ -204,32 +205,32 @@ public class FeedComposerActivity extends BaseFragment {
 
         LinearLayout tools = new LinearLayout(context);
         tools.setOrientation(LinearLayout.HORIZONTAL);
-        addTool(tools, FeedUi.s("Moments.Tool.Photo", R.string.FeedToolPhoto), () -> pickMedia(false));
-        addTool(tools, FeedUi.s("Moments.Tool.Video", R.string.FeedToolVideo), () -> pickMedia(true));
-        addTool(tools, FeedUi.s("Moments.Voice", R.string.FeedToolVoice), this::toggleVoice);
-        addTool(tools, FeedUi.s("Moments.Tool.Poll", R.string.FeedToolPoll), this::openPoll);
-        addTool(tools, FeedUi.s("Moments.Tool.Place", R.string.FeedToolPlace), () -> presentFragment(new FeedCityActivity(false)));
+        addTool(tools, LocaleController.getString("Moments_Tool_Photo", R.string.Moments_Tool_Photo), () -> pickMedia(false));
+        addTool(tools, LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video), () -> pickMedia(true));
+        addTool(tools, LocaleController.getString("Moments_Voice", R.string.Moments_Voice), this::toggleVoice);
+        addTool(tools, LocaleController.getString("Moments_Tool_Poll", R.string.Moments_Tool_Poll), this::openPoll);
+        addTool(tools, LocaleController.getString("Moments_Tool_Place", R.string.Moments_Tool_Place), () -> presentFragment(new FeedCityActivity(false)));
         column.addView(tools, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView nearby = new TextView(context);
-        nearby.setText(FeedUi.s("Moments.AllowNearby", R.string.FeedAllowNearby));
+        nearby.setText(LocaleController.getString("Moments_AllowNearby", R.string.Moments_AllowNearby));
         nearby.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         nearby.setOnClickListener(v -> {
             if (privacy == null || privacy.type != StoryPrivacyBottomSheet.TYPE_EVERYONE) {
                 return;
             }
             allowNearby = !allowNearby;
-            nearby.setText(FeedUi.s("Moments.AllowNearby", R.string.FeedAllowNearby) + (allowNearby ? " ✓" : ""));
+            nearby.setText(LocaleController.getString("Moments_AllowNearby", R.string.Moments_AllowNearby) + (allowNearby ? " ✓" : ""));
             dirty = true;
         });
         column.addView(nearby, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
 
         TextView originalView = new TextView(context);
-        originalView.setText(FeedUi.s("Moments.SendOriginal", R.string.FeedSendOriginal));
+        originalView.setText(LocaleController.getString("Moments_SendOriginal", R.string.Moments_SendOriginal));
         originalView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         originalView.setOnClickListener(v -> {
             original = !original;
-            originalView.setText(FeedUi.s("Moments.SendOriginal", R.string.FeedSendOriginal) + (original ? " ✓" : ""));
+            originalView.setText(LocaleController.getString("Moments_SendOriginal", R.string.Moments_SendOriginal) + (original ? " ✓" : ""));
         });
         column.addView(originalView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 
@@ -237,10 +238,67 @@ public class FeedComposerActivity extends BaseFragment {
         root.addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fragmentView = root;
         if (quoteId != null) {
-            field.setHint(FeedUi.s("Moments.QuoteHint", R.string.FeedQuoteHint));
+            field.setHint(LocaleController.getString("Moments_QuoteHint", R.string.Moments_QuoteHint));
+        }
+        if (draftId != null) {
+            applyDraft(controller().storage.draftJson(draftId));
+        } else if (editId == null && quoteId == null) {
+            java.util.ArrayList<String[]> saved = controller().storage.listDrafts();
+            if (!saved.isEmpty() && saved.get(0) != null && saved.get(0).length >= 3) {
+                TextView resume = new TextView(context);
+                resume.setText(LocaleController.getString("Moments_Draft_Continue", R.string.Moments_Draft_Continue));
+                resume.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                resume.setTextSize(15);
+                resume.setPadding(0, 0, 0, dp(8));
+                String id = saved.get(0)[0];
+                String json = saved.get(0)[2];
+                resume.setOnClickListener(v -> {
+                    draftId = id;
+                    applyDraft(json);
+                    resume.setVisibility(View.GONE);
+                });
+                column.addView(resume, 0);
+            }
         }
         refreshPublish();
         return fragmentView;
+    }
+
+    private void applyDraft(String json) {
+        if (json == null || json.length() == 0 || field == null) {
+            return;
+        }
+        try {
+            org.json.JSONObject o = new org.json.JSONObject(json);
+            field.setText(o.optString("text", ""));
+            paths.clear();
+            types.clear();
+            org.json.JSONArray pathArr = o.optJSONArray("paths");
+            org.json.JSONArray typeArr = o.optJSONArray("types");
+            if (pathArr != null) {
+                for (int i = 0; i < pathArr.length(); i++) {
+                    paths.add(pathArr.optString(i));
+                }
+            }
+            if (typeArr != null) {
+                for (int i = 0; i < typeArr.length(); i++) {
+                    types.add(typeArr.optString(i));
+                }
+            }
+            dirty = true;
+            refreshPublish();
+        } catch (Exception ignore) {
+        }
+    }
+
+    private static String labelForType(String type) {
+        if ("video".equals(type)) {
+            return LocaleController.getString("Moments_Tool_Video", R.string.Moments_Tool_Video);
+        }
+        if ("audio".equals(type) || "voice".equals(type)) {
+            return LocaleController.getString("Moments_Voice", R.string.Moments_Voice);
+        }
+        return LocaleController.getString("Moments_Tool_Photo", R.string.Moments_Tool_Photo);
     }
 
     private void addTool(LinearLayout tools, String title, Runnable click) {
@@ -264,10 +322,10 @@ public class FeedComposerActivity extends BaseFragment {
                 if (i > 0) {
                     builder.append(", ");
                 }
-                builder.append(types.get(i));
+                builder.append(labelForType(types.get(i)));
             }
             if (poll != null) {
-                builder.append(builder.length() == 0 ? "" : ", ").append(FeedUi.s("Moments.Tool.Poll", R.string.FeedToolPoll));
+                builder.append(builder.length() == 0 ? "" : ", ").append(LocaleController.getString("Moments_Tool_Poll", R.string.Moments_Tool_Poll));
             }
             attachments.setText(builder.toString());
         }
@@ -328,7 +386,7 @@ public class FeedComposerActivity extends BaseFragment {
                 continue;
             }
             if (photo.isVideo && photo.duration > FeedConfig.MAX_VIDEO_SEC && !trimmed(photo)) {
-                new AlertDialog.Builder(getParentActivity()).setMessage(FeedUi.s("Moments.VideoTooLong", R.string.FeedVideoTooLong)).setPositiveButton(getString(R.string.OK), null).show();
+                new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_VideoTooLong", R.string.Moments_VideoTooLong)).setPositiveButton(getString(R.string.OK), null).show();
                 continue;
             }
             if (photo.path == null) {
@@ -395,7 +453,7 @@ public class FeedComposerActivity extends BaseFragment {
         voice.start();
         recordWave.updateColors();
         recordWave.setVisibility(View.VISIBLE);
-        attachments.setText(FeedUi.s("Moments.Recording", R.string.FeedRecording));
+        attachments.setText(LocaleController.getString("Moments_Recording", R.string.Moments_Recording));
     }
 
     private void openPoll() {
@@ -444,9 +502,9 @@ public class FeedComposerActivity extends BaseFragment {
         ArrayList<String> blocked = mentionsWithoutAccess();
         if (!blocked.isEmpty()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(FeedUi.s("Moments.MentionTitle", R.string.FeedMentionTitle));
-            builder.setMessage(FeedUi.s("Moments.MentionWarning", R.string.FeedMentionWarning) + "\n" + TextUtils.join(", ", blocked));
-            builder.setPositiveButton(FeedUi.s("Moments.Publish", R.string.FeedPublish), (d, w) -> publishNow());
+            builder.setTitle(LocaleController.getString("Moments_MentionTitle", R.string.Moments_MentionTitle));
+            builder.setMessage(LocaleController.getString("Moments_MentionWarning", R.string.Moments_MentionWarning) + "\n" + TextUtils.join(", ", blocked));
+            builder.setPositiveButton(LocaleController.getString("Moments_Publish", R.string.Moments_Publish), (d, w) -> publishNow());
             builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
             return;
@@ -508,17 +566,17 @@ public class FeedComposerActivity extends BaseFragment {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(FeedUi.s("Moments.Draft.Title", R.string.FeedDraftTitle));
-        builder.setMessage(FeedUi.s("Moments.Draft.Message", R.string.FeedDraftMessage));
-        builder.setPositiveButton(FeedUi.s("Moments.Draft.Save", R.string.FeedDraftSave), (d, w) -> {
+        builder.setTitle(LocaleController.getString("Moments_Draft_Title", R.string.Moments_Draft_Title));
+        builder.setMessage(LocaleController.getString("Moments_Draft_Message", R.string.Moments_Draft_Message));
+        builder.setPositiveButton(LocaleController.getString("Moments_Draft_Save", R.string.Moments_Draft_Save), (d, w) -> {
             saveDraft();
             finishFragment();
         });
-        builder.setNegativeButton(FeedUi.s("Moments.Draft.Discard", R.string.FeedDraftDiscard), (d, w) -> {
+        builder.setNegativeButton(LocaleController.getString("Moments_Draft_Discard", R.string.Moments_Draft_Discard), (d, w) -> {
             dirty = false;
             finishFragment();
         });
-        builder.setNeutralButton(FeedUi.s("Moments.Draft.Continue", R.string.FeedDraftKeep), null);
+        builder.setNeutralButton(LocaleController.getString("Moments_Draft_Continue", R.string.Moments_Draft_Continue), null);
         showDialog(builder.create());
     }
 
@@ -587,7 +645,7 @@ public class FeedComposerActivity extends BaseFragment {
                 return;
             }
             String title = page.title != null && page.title.length() > 0 ? page.title : page.site_name;
-            previewView.setText((title == null ? url : title) + "\n" + FeedUi.s("Moments.Remove", R.string.FeedRemovePreview));
+            previewView.setText((title == null ? url : title) + "\n" + LocaleController.getString("Moments_Remove", R.string.Moments_Remove));
             previewView.setVisibility(View.VISIBLE);
         }));
     }
