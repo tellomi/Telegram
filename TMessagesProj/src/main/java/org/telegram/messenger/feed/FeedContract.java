@@ -418,17 +418,42 @@ public final class FeedContract {
         if (parentId != null && parentId.length() > 0) {
             body.addProperty("parent_id", parentId);
         }
-        if (isVoice(attachmentType) && attachmentKey != null && attachmentKey.length() > 0) {
+        boolean sticker = "sticker".equals(attachmentType);
+        boolean upload = isVoice(attachmentType) || "image".equals(attachmentType) || "photo".equals(attachmentType) || sticker;
+        if (upload && attachmentKey != null && attachmentKey.length() > 0) {
             JsonArray keys = new JsonArray();
             keys.add(attachmentKey);
             body.add("media_keys", keys);
-        } else if (attachmentKey != null && attachmentKey.length() > 0) {
-            JsonObject attachment = new JsonObject();
-            attachment.addProperty("type", attachmentType == null ? "" : attachmentType);
-            attachment.addProperty("key", attachmentKey);
-            body.add("attachment", attachment);
+        }
+        if (sticker) {
+            body.addProperty("sticker", true);
         }
         return body.toString();
+    }
+
+    /** Hot thread. An empty cursor is omitted. Hot cursors are not time cursors. */
+    public static String commentsPath(String postId, String cursor) {
+        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=hot&thread=1";
+        if (cursor != null && cursor.length() > 0 && !"null".equals(cursor)) {
+            path += "&cursor=" + enc(cursor);
+        }
+        return path;
+    }
+
+    public static String repliesPath(String commentId, String cursor) {
+        String path = "/v1/feed/comments/" + enc(commentId) + "/replies";
+        if (cursor != null && cursor.length() > 0 && !"null".equals(cursor)) {
+            path += "?cursor=" + enc(cursor);
+        }
+        return path;
+    }
+
+    public static String commentLikePath(String commentId) {
+        return "/v1/feed/comments/" + enc(commentId) + "/like";
+    }
+
+    public static String commentDislikePath(String commentId) {
+        return "/v1/feed/comments/" + enc(commentId) + "/dislike";
     }
 
     public static String clampText(String text) {

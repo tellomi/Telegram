@@ -547,7 +547,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         CALLS(R.raw.tab_calls),
         CHATS(R.raw.tab_chats),
         SETTINGS(R.raw.tab_settings),
-        FEED(TabAnimationType.STATIC, R.drawable.feed_tab_posts),
+        FEED(TabAnimationType.STATIC, R.drawable.msg_list),
         SEARCH(TabAnimationType.STATIC, R.drawable.outline_header_search),
 
         CHECKLIST(R.raw.tab_checklist, R.raw.tab_checklist_reverse),

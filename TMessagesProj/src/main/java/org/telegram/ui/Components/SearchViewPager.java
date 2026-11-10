@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.ui.Feed.FeedUi;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
 
@@ -1596,7 +1597,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             if (items.get(position).type == DIALOGS_TYPE) {
                 return getString(R.string.SearchAllChatsShort);
             } else if (items.get(position).type == MOMENTS_TYPE) {
-                return getString(R.string.FeedSearchMoments);
+                return FeedUi.s("Moments.Search", R.string.FeedSearchMoments);
             } else if (items.get(position).type == CHANNELS_TYPE) {
                 return getString(R.string.ChannelsTab);
             } else if (items.get(position).type == BOTS_TYPE) {

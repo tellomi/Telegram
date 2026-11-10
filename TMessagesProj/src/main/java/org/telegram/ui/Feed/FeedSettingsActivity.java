@@ -42,7 +42,7 @@ public class FeedSettingsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(getString(R.string.FeedTitle));
+        actionBar.setTitle(FeedUi.s("Moments.Title", R.string.FeedTitle));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -167,19 +167,20 @@ public class FeedSettingsActivity extends BaseFragment {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
-                ((HeaderCell) holder.itemView).setText(getString(R.string.FeedListsHeader));
+                ((HeaderCell) holder.itemView).setText(FeedUi.s("Moments.Lists", R.string.FeedListsHeader));
             } else if (position == 1) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.FeedFollowingPublic), followingPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s("Moments.Settings.FollowingList", R.string.FeedFollowingPublic), followingPublic, true);
             } else if (position == 2) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.FeedFollowersPublic), followersPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s("Moments.Settings.FollowersList", R.string.FeedFollowersPublic), followersPublic, true);
             } else if (position == 3) {
-                ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.FeedMutes), "", true);
+                ((TextSettingsCell) holder.itemView).setTextAndValue(FeedUi.s("Moments.Mutes", R.string.FeedMutes), "", true);
             } else if (position == 4) {
-                ((HeaderCell) holder.itemView).setText(getString(R.string.FeedPushHeader));
+                ((HeaderCell) holder.itemView).setText(FeedUi.s("Moments.Push", R.string.FeedPushHeader));
             } else {
                 int index = position - 5;
                 int[] titles = new int[]{R.string.FeedPushComment, R.string.FeedPushReply, R.string.FeedPushMention, R.string.FeedPushFollow, R.string.FeedPushLike, R.string.FeedPushRepost, R.string.FeedPushNewPost};
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(titles[index]), values[index], index != titles.length - 1);
+                String[] titleKeys = new String[]{"Moments.Push.Comments", "Moments.Push.Replies", "Moments.Push.Mentions", "Moments.Push.Follows", "Moments.Push.Likes", "Moments.Push.Reposts", "Moments.Push.NewPosts"};
+                ((TextCheckCell) holder.itemView).setTextAndCheck(FeedUi.s(titleKeys[index], titles[index]), values[index], index != titles.length - 1);
             }
         }
 

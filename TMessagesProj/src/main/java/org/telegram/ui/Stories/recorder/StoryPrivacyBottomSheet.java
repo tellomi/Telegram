@@ -1,5 +1,6 @@
 package org.telegram.ui.Stories.recorder;
 
+import org.telegram.ui.Feed.FeedUi;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.translitSafe;
@@ -1085,7 +1086,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 ItemInner pad = ItemInner.asPad(24);
                 items.add(pad);
                 if (feedMode) {
-                    items.add(ItemInner.asHeader2(getString(R.string.FeedAudienceTitle), getString(R.string.FeedAudienceSubtitle)));
+                    items.add(ItemInner.asHeader2(FeedUi.s("Moments.WhoCanSee", R.string.FeedAudienceTitle), FeedUi.s("Moments.Audience.Subtitle", R.string.FeedAudienceSubtitle)));
                     pad.subtractHeight += dp(72);
                 } else if (liveSettings) {
                     items.add(ItemInner.asHeader3(getString(R.string.LiveStorySettingsHeader)));
@@ -1637,11 +1638,11 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 button.setShowZero(false);
                 button.setEnabled(!feedMode || selectedType != 0);
                 if (feedMode) {
-                    button.setText(getString(R.string.FeedAudienceDone), animated);
+                    button.setText(FeedUi.s("Moments.Audience.Done", R.string.FeedAudienceDone), animated);
                 }
                 button.setCount(0, animated);
                 if (feedMode) {
-                    button.setText(getString(R.string.FeedAudienceDone), animated);
+                    button.setText(FeedUi.s("Moments.Audience.Done", R.string.FeedAudienceDone), animated);
                 } else if (liveSettings) {
                     button.setText(getString(R.string.StoryPrivacyButtonSave), animated);
                 } else if (isEdit) {
@@ -3298,8 +3299,8 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_CLOSE_FRIENDS);
                 avatarDrawable.setColor(0xFF88D93A, 0xFF2DB63B);
             } else if (type == TYPE_MUTUAL_FOLLOWERS) {
-                titleTextView.setText(getString(R.string.FeedAudienceMutual));
-                setSubtitle(getString(R.string.FeedAudienceSubtitle));
+                titleTextView.setText(FeedUi.s("Moments.Audience.Mutual", R.string.FeedAudienceMutual));
+                setSubtitle(FeedUi.s("Moments.Audience.Subtitle", R.string.FeedAudienceSubtitle));
                 subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
                 avatarDrawable.setColor(0xFF7C6CFF, 0xFF4B6CFF);
@@ -4285,7 +4286,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         @Override
         public String toString() {
             if (type == TYPE_MUTUAL_FOLLOWERS) {
-                return getString(R.string.FeedAudienceMutual);
+                return FeedUi.s("Moments.Audience.Mutual", R.string.FeedAudienceMutual);
             }
             if (!sendToUsers.isEmpty()) {
                 return LocaleController.formatPluralString("StoryPrivacyRecipients", sendToUsers.size());

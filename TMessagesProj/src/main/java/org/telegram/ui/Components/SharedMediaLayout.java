@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.ui.Feed.FeedUi;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -7080,7 +7081,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             }
             if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
-                tabs.add(0, new Pair<>(TAB_MOMENTS, getString(R.string.FeedProfileTab)));
+                tabs.add(0, new Pair<>(TAB_MOMENTS, FeedUi.s("Moments.Profile.Posts", R.string.FeedProfileTab)));
             }
             if (!tabs.isEmpty()) {
                 firstTab = tabs.get(0).first;

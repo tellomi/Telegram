@@ -1,7 +1,6 @@
 package org.telegram.ui.Feed;
 
 import android.net.Uri;
-import android.os.Bundle;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.UserConfig;
@@ -26,9 +25,10 @@ public final class FeedLinks {
             return false;
         }
         AndroidUtilities.runOnUIThread(() -> {
-            Bundle args = new Bundle();
-            args.putString("post_id", id);
-            activity.presentFragment(new FeedDetailActivity(args));
+            org.telegram.ui.ActionBar.BaseFragment fragment = LaunchActivity.getLastFragment();
+            if (fragment != null) {
+                FeedCommentSheet.open(fragment, id, false);
+            }
         });
         return true;
     }
