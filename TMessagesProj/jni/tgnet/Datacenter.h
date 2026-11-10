@@ -33,8 +33,9 @@ public:
     uint32_t getDatacenterId();
     TcpAddress *getCurrentAddress(uint32_t flags);
     int32_t getCurrentPort(uint32_t flags);
-    void addAddressAndPort(std::string address, uint32_t port, uint32_t flags, std::string secret);
+    bool addAddressAndPort(std::string address, uint32_t port, uint32_t flags, std::string secret);
     void nextAddressOrPort(uint32_t flags);
+    bool ensureTellomiFallback();
     bool isCustomPort(uint32_t flags);
     void storeCurrentAddressAndPortNum();
     void replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags);

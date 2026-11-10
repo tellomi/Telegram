@@ -19,6 +19,8 @@
 #include "Datacenter.h"
 #include "NativeByteBuffer.h"
 #include "ByteArray.h"
+#include "TellomiDcFallback.h"
+#include "TellomiNetConfig.h"
 
 thread_local static uint32_t lastConnectionToken = 1;
 
@@ -367,6 +369,8 @@ void Connection::connect() {
     openConnection(hostAddress, hostPort, secret, ipv6 != 0, ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentNetworkType);
     if (connectionType == ConnectionTypeProxy) {
         setTimeout(5);
+    } else if (TellomiNetConfig::customBackend()) {
+        setTimeout(TELLOMI_CONNECT_TIMEOUT_SEC);
     } else if (connectionType == ConnectionTypePush) {
         if (isTryingNextPort) {
             setTimeout(20);
@@ -657,7 +661,9 @@ inline void Connection::encryptKeyWithSecret(uint8_t *bytes, uint8_t secretType)
 void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
     reconnectTimer->stop();
     if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, reason);
-    bool switchToNextPort = reason == 2 && wasConnected && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort;
+    bool connectedBeforeDrop = wasConnected;
+    bool switchToNextPort = reason == 2 && connectedBeforeDrop && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort;
+    bool tellomiConnectTimeout = TellomiNetConfig::customBackend() && reason == 2 && !connectedBeforeDrop;
     if (connectionType == ConnectionTypeGeneric || connectionType == ConnectionTypeTemp || connectionType == ConnectionTypeGenericMedia) {
         if (wasConnected && reason == 2 && currentTimeout < 16) {
             currentTimeout += 2;
@@ -689,10 +695,12 @@ void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
                 willRetryConnectCount = 1;
             }
         }
+        bool rotatedAfterConnectTimeout = false;
         if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).isNetworkAvailable() && connectionType != ConnectionTypeProxy) {
             isTryingNextPort = true;
-            if (failedConnectionCount > willRetryConnectCount || switchToNextPort) {
+            if (tellomiRotateOnDisconnect(TellomiNetConfig::customBackend(), reason, connectedBeforeDrop, failedConnectionCount, willRetryConnectCount, switchToNextPort)) {
                 currentDatacenter->nextAddressOrPort(currentAddressFlags);
+                rotatedAfterConnectTimeout = tellomiConnectTimeout;
                 if (currentDatacenter->isRepeatCheckingAddresses() && (ConnectionsManager::getInstance(currentDatacenter->instanceNum).getIpStratagy() == USE_IPV4_ONLY || ConnectionsManager::getInstance(currentDatacenter->instanceNum).getIpStratagy() == USE_IPV6_ONLY)) {
                     if (LOGS_ENABLED) DEBUG_D("started retrying connection, set ipv4 ipv6 random strategy");
                     ConnectionsManager::getInstance(currentDatacenter->instanceNum).setIpStrategy(USE_IPV4_IPV6_RANDOM);
@@ -714,7 +722,7 @@ void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
             waitForReconnectTimer = false;
             if (connectionType == ConnectionTypeGenericMedia && currentDatacenter->isHandshaking(true) || connectionType == ConnectionTypeGeneric && (currentDatacenter->isHandshaking(false) || datacenterId == ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentDatacenterId || datacenterId == ConnectionsManager::getInstance(currentDatacenter->instanceNum).movingToDatacenterId)) {
                 if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) reconnect %s:%hu", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
-                reconnectTimer->setTimeout(1000, false);
+                reconnectTimer->setTimeout(tellomiReconnectDelayMs(TellomiNetConfig::customBackend(), rotatedAfterConnectTimeout), false);
                 reconnectTimer->start();
             }
         }

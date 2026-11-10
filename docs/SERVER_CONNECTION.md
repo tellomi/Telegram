@@ -5,7 +5,7 @@ The source tree at `8a606f5b0` matches DrKLO `3de37c8cfb039452be7398909461da6288
 This layer is the only intentional difference from that tree:
 
 - `applicationId` stays `app.tellomi.chat`, the id of the installed 14.0.7 package. Private files stay in that package's directory. The release signature is still the existing CI keystore. `14.0.8` / `APP_VERSION_CODE` `180467` makes the universal afat package `1804679` (`* 10 + 9`). `bundleAfat` is `1804671`. This project has no abi digit 0, so it does not emit `1804670`.
-- Datacenters, the server RSA key (`TMessagesProj/config/tellomi-server-public.pem`, bytes from `origin/master` `8cb628f29`), and `api_id` `1` are build config. `TELLOMI_CUSTOM_BACKEND` skips Telegram production DCs and `apv3.stel.com`. A shippable build refuses anything other than `8.137.39.82:10443`. Debug may use `10.0.2.2` only with `-PTELLOMI_SERVER_PROFILE=local`.
+- Datacenters, the server RSA key (`TMessagesProj/config/tellomi-server-public.pem`, bytes from `origin/master` `8cb628f29`), and `api_id` `1` are build config. `TELLOMI_CUSTOM_BACKEND` skips Telegram production DCs and `apv3.stel.com`. A shippable build refuses anything other than `8.137.39.82:10443` and `8.137.39.82:443` (10443 first). Debug may use `10.0.2.2` only with `-PTELLOMI_SERVER_PROFILE=local`.
 - Cloud langpack is on. `langpack.*` goes over MTProto to our server, not translations.telegram.org. Downloaded strings override the bundled strings for keys the server has. SafetyNet and the Google OAuth client are empty so this package does not present Telegram's keys.
 - Launcher, splash (`tg_splash_320`), notification, about `book_logo`, and the chat-list wordmark (`telegram_logo` / `telegram_logo_2`) are the bytes from `8cb628f29` `TMessagesProj/tellomi/res`, written onto the resource names the official manifest and screens already load. `AppName` is Tellomi. Functional icons are the official ones. GPL headers and protocol class names are unchanged.
 
@@ -17,7 +17,7 @@ A release build logs a response that cannot be decoded and returns without calli
 
 ## Isolated acceptance, not run
 
-The signed `14.0.8` package embeds `8.137.39.82:10443` and the release certificate. It will not speak to `127.0.0.1` or `10.0.2.2`. A debug local build can, and its signature cannot replace `1804669`. Loopback login therefore needs an emulator on a host that can open `/dev/kvm`, plus the unchanged `teamgram-server` compose bound to loopback only. This machine has the image and the AVD, and the current user cannot open `/dev/kvm`. Do not point the release candidate at the local address.
+The signed `14.0.8` package embeds `8.137.39.82:10443` and `8.137.39.82:443`, and the release certificate. It will not speak to `127.0.0.1` or `10.0.2.2`. A debug local build can, and its signature cannot replace `1804669`. Loopback login therefore needs an emulator on a host that can open `/dev/kvm`, plus the unchanged `teamgram-server` compose bound to loopback only. This machine has the image and the AVD, and the current user cannot open `/dev/kvm`. Do not point the release candidate at the local address.
 
 Not claimed:
 

@@ -27,6 +27,8 @@
 #include "ConnectionsManager.h"
 #include "Config.h"
 #include "Handshake.h"
+#include "TellomiDcFallback.h"
+#include "TellomiNetConfig.h"
 
 thread_local static SHA256_CTX sha256Ctx;
 
@@ -335,7 +337,9 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
     }
     TcpAddress *address = &((*addresses) [currentAddressNum]);
     int32_t port;
-    if (!address->secret.empty()) {
+    // The custom backend keeps 443 as its own address. The 443/5222 port
+    // override would dial 5222 and repeat 10443 before that address.
+    if (!address->secret.empty() || TellomiNetConfig::customBackend()) {
         port = -1;
     } else {
         port = defaultPorts[currentPortNum];
@@ -346,7 +350,7 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
     return port;
 }
 
-void Datacenter::addAddressAndPort(std::string address, uint32_t port, uint32_t flags, std::string secret) {
+bool Datacenter::addAddressAndPort(std::string address, uint32_t port, uint32_t flags, std::string secret) {
     std::vector<TcpAddress> *addresses;
     if ((flags & TcpAddressFlagTemp) != 0) {
         addresses = &addressesIpv4Temp;
@@ -365,10 +369,34 @@ void Datacenter::addAddressAndPort(std::string address, uint32_t port, uint32_t 
     }
     for (auto & addresse : *addresses) {
         if (addresse.address == address && addresse.port == port) {
-            return;
+            return false;
         }
     }
     addresses->push_back(TcpAddress(address, port, flags, secret));
+    return true;
+}
+
+bool Datacenter::ensureTellomiFallback() {
+    if (!TellomiNetConfig::customBackend()) {
+        return false;
+    }
+    bool changed = false;
+    changed |= tellomiEnsureTcpAddresses(addressesIpv4);
+    changed |= tellomiEnsureTcpAddresses(addressesIpv6);
+    changed |= tellomiEnsureTcpAddresses(addressesIpv4Download);
+    changed |= tellomiEnsureTcpAddresses(addressesIpv6Download);
+    changed |= tellomiEnsureTcpAddresses(addressesIpv4Temp);
+    // A saved port index of 1 or 2 is the old 443/5222 override. Dial the
+    // address port instead, so the first attempt stays on 10443.
+    if (currentPortNumIpv4 != 0 || currentPortNumIpv6 != 0 || currentPortNumIpv4Temp != 0 || currentPortNumIpv4Download != 0 || currentPortNumIpv6Download != 0) {
+        currentPortNumIpv4 = 0;
+        currentPortNumIpv6 = 0;
+        currentPortNumIpv4Temp = 0;
+        currentPortNumIpv4Download = 0;
+        currentPortNumIpv6Download = 0;
+        storeCurrentAddressAndPortNum();
+    }
+    return changed;
 }
 
 void Datacenter::nextAddressOrPort(uint32_t flags) {
@@ -409,7 +437,13 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         TcpAddress *currentAddress = &((*addresses)[currentAddressNum]);
         tryNextPort = (currentAddress->flags & TcpAddressFlagStatic) == 0;
     }
-    if (tryNextPort && currentPortNum + 1 < 4) {
+    if (TellomiNetConfig::customBackend()) {
+        if (addresses->empty() || currentAddressNum + 1 >= addresses->size()) {
+            repeatCheckingAddresses = true;
+        }
+        currentAddressNum = tellomiNextAddressIndex(currentAddressNum, (uint32_t) addresses->size());
+        currentPortNum = 0;
+    } else if (tryNextPort && currentPortNum + 1 < 4) {
         currentPortNum++;
     } else {
         if (currentAddressNum + 1 < addresses->size()) {
@@ -443,6 +477,9 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
 }
 
 bool Datacenter::isCustomPort(uint32_t flags) {
+    if (TellomiNetConfig::customBackend()) {
+        return false;
+    }
     uint32_t currentPortNum;
     if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
@@ -513,6 +550,17 @@ void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_
         } else {
             addressesIpv4 = newAddresses;
         }
+    }
+    if (TellomiNetConfig::customBackend()) {
+        std::vector<TcpAddress> *replaced;
+        if ((flags & TcpAddressFlagTemp) != 0) {
+            replaced = &addressesIpv4Temp;
+        } else if ((flags & TcpAddressFlagDownload) != 0) {
+            replaced = (flags & TcpAddressFlagIpv6) != 0 ? &addressesIpv6Download : &addressesIpv4Download;
+        } else {
+            replaced = (flags & TcpAddressFlagIpv6) != 0 ? &addressesIpv6 : &addressesIpv4;
+        }
+        tellomiEnsureTcpAddresses(*replaced);
     }
     TcpAddress *newTcpAddress = getCurrentAddress(flags);
     std::string newAddress = newTcpAddress != nullptr ? newTcpAddress->address : "";
