@@ -1363,4 +1363,9 @@
     <string name="Moments_Report_Other">Otro motivo</string>
     <string name="Moments_Report_Detail">Detalles</string>
     <string name="Moments_Report_Sent">Denuncia enviada</string>
+
+    <string name="TellomiTools">Herramientas</string>
+    <string name="TellomiMenuSettings">Ajustes del menú</string>
+    <string name="TellomiHideTabLabels">Ocultar texto de los botones</string>
+    <string name="TellomiNavBarButtons">Botones de la barra de navegación</string>
 </resources>

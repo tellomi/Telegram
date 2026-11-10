@@ -1584,4 +1584,9 @@
     <string name="Moments_Report_Other">Altro motivo</string>
     <string name="Moments_Report_Detail">Dettagli</string>
     <string name="Moments_Report_Sent">Segnalazione inviata</string>
+
+    <string name="TellomiTools">Strumenti</string>
+    <string name="TellomiMenuSettings">Impostazioni menu</string>
+    <string name="TellomiHideTabLabels">Nascondi il testo dei pulsanti</string>
+    <string name="TellomiNavBarButtons">Pulsanti della barra di navigazione</string>
 </resources>

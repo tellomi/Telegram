@@ -514,6 +514,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth() {
+        if (textView.getVisibility() != VISIBLE) {
+            return 0;
+        }
         return defaultTextPaint.measureText(textView.getText().toString());
     }
 
@@ -521,11 +524,40 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth(float textSizeDp) {
+        if (textView.getVisibility() != VISIBLE) {
+            return 0;
+        }
         if (scaledTextPaint == null) {
             scaledTextPaint = new TextPaint(defaultTextPaint);
         }
         scaledTextPaint.setTextSize(dp(textSizeDp));
         return scaledTextPaint.measureText(textView.getText().toString());
+    }
+
+    /**
+     * Tellomi: show or hide the caption under a main-tab icon and center the icon
+     * when the caption is hidden. Adapted from NagramX
+     * {@code GlassTabView.setMainTabsCompact} (GPL-2.0,
+     * https://github.com/risin42/NagramX/commit/f32ff4e47f3d11e8358c9a30e7bcfd37570633d0).
+     * The bar keeps its upstream height; only the label changes.
+     */
+    public void setShowsLabel(boolean show) {
+        if ((textView.getVisibility() == VISIBLE) == show) {
+            return;
+        }
+        textView.setVisibility(show ? VISIBLE : GONE);
+        setContentDescription(show ? null : textView.getText());
+        if (backupImageView != null) {
+            backupImageView.setLayoutParams(show
+                    ? LayoutHelper.createFrame(22, 22, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0)
+                    : LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+        } else {
+            imageView.setLayoutParams(show
+                    ? LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 4, 0, 0)
+                    : LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+        }
+        requestLayout();
+        invalidate();
     }
 
     @Override
@@ -548,7 +580,6 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         CHATS(R.raw.tab_chats),
         SETTINGS(R.raw.tab_settings),
         FEED(R.raw.tab_article),
-        SEARCH(TabAnimationType.STATIC, R.drawable.outline_header_search),
 
         CHECKLIST(R.raw.tab_checklist, R.raw.tab_checklist_reverse),
         COLORS(R.raw.tab_colors, R.raw.tab_colors_reverse),
