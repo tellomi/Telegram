@@ -1427,4 +1427,14 @@
     <string name="TellomiMenuSettings">Menüeinstellungen</string>
     <string name="TellomiHideTabLabels">Beschriftungen ausblenden</string>
     <string name="TellomiNavBarButtons">Schaltflächen der Navigationsleiste</string>
+
+    <string name="Moments_FollowingEntry">Folge ich</string>
+    <string name="Moments_FollowersEntry">Follower</string>
+    <string name="Moments_FollowingWithCount">Folge ich · %d</string>
+    <string name="Moments_FollowersWithCount">Follower · %d</string>
+    <string name="Moments_ListPrivate">Diese Liste ist privat</string>
+    <string name="Moments_ListLoadFailed">Diese Liste konnte nicht geladen werden</string>
+    <string name="Moments_PostGone">Dieser Beitrag ist nicht mehr da</string>
+    <string name="Moments_CommentGone">Dieser Kommentar ist nicht mehr da</string>
+    <string name="Moments_Unavailable">Inhalt nicht verfügbar</string>
 </resources>

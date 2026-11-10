@@ -395,7 +395,16 @@ public class FeedPostRequestTest {
                 "Moments_City_Guangzhou",
                 "Moments_City_Shenzhen",
                 "Moments_City_Chengdu",
-                "Moments_City_Hangzhou"
+                "Moments_City_Hangzhou",
+                "Moments_FollowingEntry",
+                "Moments_FollowersEntry",
+                "Moments_FollowingWithCount",
+                "Moments_FollowersWithCount",
+                "Moments_ListPrivate",
+                "Moments_ListLoadFailed",
+                "Moments_PostGone",
+                "Moments_CommentGone",
+                "Moments_Unavailable"
         };
         String[] folders = new String[]{
                 "values", "values-ar", "values-de", "values-es", "values-it", "values-ko",
@@ -432,13 +441,37 @@ public class FeedPostRequestTest {
         assertTrue(topic.contains("ENTRY_TOPIC"));
         assertTrue(topic.contains("ENTRY_COMMENT"));
         assertTrue(topic.contains("FeedUi.openEntry"));
-        assertTrue(read("ui/Feed/FeedSearchPage.java").contains("ENTRY_SEARCH"));
-        assertTrue(read("ui/Feed/FeedCollectionActivity.java").contains("ENTRY_PROFILE"));
+        assertTrue(topic.contains("restoreTopic"));
+        assertTrue(topic.contains("topicPlace"));
+        String search = read("ui/Feed/FeedSearchPage.java");
+        assertTrue(search.contains("ENTRY_SEARCH"));
+        assertTrue(search.contains("QueryGeneration"));
+        assertTrue(search.contains("generation.accept"));
+        String collection = read("ui/Feed/FeedCollectionActivity.java");
+        assertTrue(collection.contains("ENTRY_PROFILE"));
+        assertTrue(collection.contains("relationPath"));
+        assertTrue(collection.contains("applyRelationPage"));
+        assertTrue(collection.contains("FOLLOWING"));
+        assertTrue(collection.contains("FOLLOWERS"));
+        String profile = read("ui/Feed/FeedProfilePage.java");
+        int followingEntry = profile.indexOf("FeedCollectionActivity.FOLLOWING");
+        int followersEntry = profile.indexOf("FeedCollectionActivity.FOLLOWERS");
+        assertTrue(followingEntry >= 0 && followersEntry > followingEntry);
+        assertTrue(profile.contains("relationPath"));
+        assertTrue(profile.contains("Moments_FollowingWithCount"));
+        assertTrue(profile.contains("Moments_FollowersWithCount"));
         String notifications = read("ui/Feed/FeedNotificationsActivity.java");
         assertTrue(notifications.contains("ENTRY_NOTIFICATION"));
         assertTrue(notifications.contains("Moments_Notif_Other"));
+        assertTrue(notifications.contains("notificationOpen"));
+        assertTrue(notifications.contains("notificationCommentId"));
+        assertTrue(notifications.contains("restoreNotifications"));
+        assertTrue(notifications.contains("Moments_PostGone"));
+        assertTrue(notifications.contains("markNotificationsRead"));
         assertFalse(notifications.contains("return kind"));
         String city = read("ui/Feed/FeedCityActivity.java");
+        assertTrue(city.contains("QueryGeneration"));
+        assertTrue(city.contains("generation.accept"));
         assertTrue(city.contains("Moments_City_Beijing"));
         assertTrue(city.contains("Moments_City_Hangzhou"));
         assertFalse(city.contains("北京"));
@@ -454,6 +487,18 @@ public class FeedPostRequestTest {
         assertTrue(composer.contains("audienceUserIds"));
         assertFalse(composer.contains("random.nextLong"));
         assertFalse(composer.contains("link_preview"));
+        int slide = composer.indexOf("boolean canBeginSlide");
+        int back = composer.indexOf("boolean onBackPressed");
+        assertTrue(slide >= 0 && back > slide);
+        String slideMethod = composer.substring(slide, back);
+        assertTrue(slideMethod.contains("tryLeave"));
+        assertTrue(slideMethod.contains("composerGestureLeaves"));
+        int menu = composer.indexOf("public void onItemClick");
+        int menuEnd = composer.indexOf("actionBar.createMenu", menu);
+        assertTrue(menu >= 0 && menuEnd > menu);
+        assertTrue(composer.substring(menu, menuEnd).contains("tryLeave"));
+        String backMethod = composer.substring(back, composer.indexOf("void setCity", back));
+        assertTrue(backMethod.contains("tryLeave"));
         String sheet = read("ui/Feed/FeedCommentSheet.java");
         assertTrue(sheet.contains("commentDraft.onSuccess"));
         assertTrue(sheet.contains("commentDraft.onFailure"));

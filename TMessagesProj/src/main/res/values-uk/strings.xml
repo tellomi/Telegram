@@ -328,4 +328,14 @@
     <string name="TellomiMenuSettings">Налаштування меню</string>
     <string name="TellomiHideTabLabels">Сховати підписи кнопок</string>
     <string name="TellomiNavBarButtons">Кнопки панелі навігації</string>
+
+    <string name="Moments_FollowingEntry">Підписки</string>
+    <string name="Moments_FollowersEntry">Підписники</string>
+    <string name="Moments_FollowingWithCount">Підписки · %d</string>
+    <string name="Moments_FollowersWithCount">Підписники · %d</string>
+    <string name="Moments_ListPrivate">Цей список прихований</string>
+    <string name="Moments_ListLoadFailed">Не вдалося завантажити цей список</string>
+    <string name="Moments_PostGone">Цього допису вже немає</string>
+    <string name="Moments_CommentGone">Цього коментаря вже немає</string>
+    <string name="Moments_Unavailable">Вміст недоступний</string>
 </resources>

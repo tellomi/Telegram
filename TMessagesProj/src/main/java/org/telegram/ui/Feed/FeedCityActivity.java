@@ -46,6 +46,7 @@ public class FeedCityActivity extends BaseFragment {
     private static final int REQ = 77;
     private final boolean explain;
     private final ArrayList<String[]> cities = new ArrayList<>();
+    private final FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
     private RecyclerListView listView;
 
     public FeedCityActivity(boolean explain) {
@@ -148,8 +149,12 @@ public class FeedCityActivity extends BaseFragment {
     }
 
     private void query(String q) {
-        cities.clear();
-        FeedController.getInstance(currentAccount).api.getJson("/v1/feed/cities?q=" + FeedApi.enc(q), (json, error) -> {
+        final int token = generation.next();
+        final String text = q == null ? "" : q;
+        FeedController.getInstance(currentAccount).api.getJson("/v1/feed/cities?q=" + FeedApi.enc(text), (json, error) -> {
+            if (!generation.accept(token)) {
+                return;
+            }
             ArrayList<String> codes = new ArrayList<>();
             ArrayList<String> names = new ArrayList<>();
             if (json != null) {
@@ -169,7 +174,7 @@ public class FeedCityActivity extends BaseFragment {
                 }
             }
             cities.clear();
-            cities.addAll(FeedContract.resolveCities(codes, names, fallbackCities(), q));
+            cities.addAll(FeedContract.resolveCities(codes, names, fallbackCities(), text));
             if (listView.getAdapter() != null) {
                 listView.getAdapter().notifyDataSetChanged();
             }

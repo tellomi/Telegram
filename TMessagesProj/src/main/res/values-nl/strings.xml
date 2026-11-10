@@ -1136,4 +1136,14 @@
     <string name="TellomiMenuSettings">Menu-instellingen</string>
     <string name="TellomiHideTabLabels">Knoplabels verbergen</string>
     <string name="TellomiNavBarButtons">Knoppen van de navigatiebalk</string>
+
+    <string name="Moments_FollowingEntry">Volgend</string>
+    <string name="Moments_FollowersEntry">Volgers</string>
+    <string name="Moments_FollowingWithCount">Volgend · %d</string>
+    <string name="Moments_FollowersWithCount">Volgers · %d</string>
+    <string name="Moments_ListPrivate">Deze lijst is privé</string>
+    <string name="Moments_ListLoadFailed">Deze lijst kon niet worden geladen</string>
+    <string name="Moments_PostGone">Die post is er niet meer</string>
+    <string name="Moments_CommentGone">Die reactie is er niet meer</string>
+    <string name="Moments_Unavailable">Inhoud niet beschikbaar</string>
 </resources>

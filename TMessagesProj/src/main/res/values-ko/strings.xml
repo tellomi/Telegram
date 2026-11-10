@@ -1188,4 +1188,14 @@
     <string name="TellomiMenuSettings">메뉴 설정</string>
     <string name="TellomiHideTabLabels">버튼 글자 숨기기</string>
     <string name="TellomiNavBarButtons">탐색 막대 버튼</string>
+
+    <string name="Moments_FollowingEntry">팔로잉</string>
+    <string name="Moments_FollowersEntry">팔로워</string>
+    <string name="Moments_FollowingWithCount">팔로잉 · %d</string>
+    <string name="Moments_FollowersWithCount">팔로워 · %d</string>
+    <string name="Moments_ListPrivate">이 목록은 비공개입니다</string>
+    <string name="Moments_ListLoadFailed">이 목록을 불러오지 못했습니다</string>
+    <string name="Moments_PostGone">이 게시물은 없어졌습니다</string>
+    <string name="Moments_CommentGone">이 댓글은 없어졌습니다</string>
+    <string name="Moments_Unavailable">내용을 볼 수 없습니다</string>
 </resources>

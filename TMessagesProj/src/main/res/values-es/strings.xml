@@ -1368,4 +1368,14 @@
     <string name="TellomiMenuSettings">Ajustes del menú</string>
     <string name="TellomiHideTabLabels">Ocultar texto de los botones</string>
     <string name="TellomiNavBarButtons">Botones de la barra de navegación</string>
+
+    <string name="Moments_FollowingEntry">Siguiendo</string>
+    <string name="Moments_FollowersEntry">Seguidores</string>
+    <string name="Moments_FollowingWithCount">Siguiendo · %d</string>
+    <string name="Moments_FollowersWithCount">Seguidores · %d</string>
+    <string name="Moments_ListPrivate">Esta lista es privada</string>
+    <string name="Moments_ListLoadFailed">No se pudo cargar esta lista</string>
+    <string name="Moments_PostGone">Esa publicación ya no está</string>
+    <string name="Moments_CommentGone">Ese comentario ya no está</string>
+    <string name="Moments_Unavailable">Contenido no disponible</string>
 </resources>

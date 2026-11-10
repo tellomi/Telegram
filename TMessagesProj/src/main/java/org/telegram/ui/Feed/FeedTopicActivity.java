@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
 import org.telegram.messenger.feed.FeedContract;
@@ -31,9 +32,12 @@ public class FeedTopicActivity extends BaseFragment {
     private int visibleCount;
     private final ArrayList<FeedModels.Post> posts = new ArrayList<>();
     private RecyclerListView listView;
+    private FeedContract.TopicPlace place;
+    private boolean pendingRestore;
 
     public FeedTopicActivity(String name) {
         this.name = name == null ? "" : name;
+        this.place = FeedContract.topicPlace(this.name, sort, 0, 0);
     }
 
     @Override
@@ -56,6 +60,44 @@ public class FeedTopicActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @Override
+    public void onPause() {
+        rememberTopic();
+        pendingRestore = true;
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        restoreTopic();
+    }
+
+    private void rememberTopic() {
+        int position = 0;
+        int offset = 0;
+        if (listView != null && listView.getLayoutManager() instanceof LinearLayoutManager) {
+            LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
+            position = manager.findFirstVisibleItemPosition();
+            View child = manager.findViewByPosition(position);
+            offset = child == null ? 0 : child.getTop();
+        }
+        place = FeedContract.topicPlace(name, sort, position, offset);
+    }
+
+    private void restoreTopic() {
+        place = FeedContract.restoreTopic(place);
+        sort = place.sort;
+        if (!pendingRestore || listView == null || listView.getAdapter() == null || listView.getAdapter().getItemCount() == 0) {
+            return;
+        }
+        if (!(listView.getLayoutManager() instanceof LinearLayoutManager)) {
+            return;
+        }
+        pendingRestore = false;
+        ((LinearLayoutManager) listView.getLayoutManager()).scrollToPositionWithOffset(place.position, place.offset);
+    }
+
     private BaseFragment thisFragment() {
         return this;
     }
@@ -74,6 +116,7 @@ public class FeedTopicActivity extends BaseFragment {
                 }
                 if (visibleCount == 0) visibleCount = posts.size();
                 if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                AndroidUtilities.runOnUIThread(this::restoreTopic);
             });
         });
     }
@@ -103,6 +146,8 @@ public class FeedTopicActivity extends BaseFragment {
                 text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)));
                 text.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
+                    place = FeedContract.topicPlace(name, sort, 0, 0);
+                    pendingRestore = true;
                     load();
                 });
                 return;

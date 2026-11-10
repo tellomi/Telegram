@@ -1295,4 +1295,14 @@
     <string name="TellomiMenuSettings">إعدادات القائمة</string>
     <string name="TellomiHideTabLabels">إخفاء نص الأزرار</string>
     <string name="TellomiNavBarButtons">أزرار شريط التنقل</string>
+
+    <string name="Moments_FollowingEntry">أتابع</string>
+    <string name="Moments_FollowersEntry">المتابعون</string>
+    <string name="Moments_FollowingWithCount">أتابع · %d</string>
+    <string name="Moments_FollowersWithCount">المتابعون · %d</string>
+    <string name="Moments_ListPrivate">هذه القائمة خاصة</string>
+    <string name="Moments_ListLoadFailed">تعذّر تحميل هذه القائمة</string>
+    <string name="Moments_PostGone">هذا المنشور لم يعد موجودًا</string>
+    <string name="Moments_CommentGone">هذا التعليق لم يعد موجودًا</string>
+    <string name="Moments_Unavailable">المحتوى غير متاح</string>
 </resources>

@@ -1589,4 +1589,14 @@
     <string name="TellomiMenuSettings">Impostazioni menu</string>
     <string name="TellomiHideTabLabels">Nascondi il testo dei pulsanti</string>
     <string name="TellomiNavBarButtons">Pulsanti della barra di navigazione</string>
+
+    <string name="Moments_FollowingEntry">Seguiti</string>
+    <string name="Moments_FollowersEntry">Follower</string>
+    <string name="Moments_FollowingWithCount">Seguiti · %d</string>
+    <string name="Moments_FollowersWithCount">Follower · %d</string>
+    <string name="Moments_ListPrivate">Questo elenco è privato</string>
+    <string name="Moments_ListLoadFailed">Impossibile caricare questo elenco</string>
+    <string name="Moments_PostGone">Quel post non c’è più</string>
+    <string name="Moments_CommentGone">Quel commento non c’è più</string>
+    <string name="Moments_Unavailable">Contenuto non disponibile</string>
 </resources>

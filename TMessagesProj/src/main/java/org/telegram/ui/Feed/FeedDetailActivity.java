@@ -25,6 +25,7 @@ import org.telegram.ui.Components.EmojiView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -45,6 +46,8 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     public boolean focusReply;
     private final String postId;
+    private final String commentId;
+    private boolean commentMissing;
     private FeedModels.Post post;
     private final ArrayList<FeedModels.Comment> comments = new ArrayList<>();
     private String sort = "hot";
@@ -63,12 +66,21 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
     public FeedDetailActivity(Bundle args) {
         super(args);
         postId = args.getString("post_id");
+        String comment = args.getString("comment_id");
+        commentId = comment == null ? "" : comment;
     }
 
     /** Deep-link route. Taps inside the feed open {@link FeedCommentSheet} over the list instead. */
     public static FeedDetailActivity forPost(String id) {
+        return forPost(id, "");
+    }
+
+    public static FeedDetailActivity forPost(String id, String commentId) {
         Bundle args = new Bundle();
         args.putString("post_id", id);
+        if (commentId != null && commentId.length() > 0) {
+            args.putString("comment_id", commentId);
+        }
         return new FeedDetailActivity(args);
     }
 
@@ -184,6 +196,12 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
                     post = parsed;
                 }
             }
+            if (post != null && post.unavailable) {
+                commentMissing = false;
+                if (actionBar != null) {
+                    actionBar.setTitle(LocaleController.getString("Moments_PostGone", R.string.Moments_PostGone));
+                }
+            }
             if (listView.getAdapter() != null) {
                 listView.getAdapter().notifyDataSetChanged();
             }
@@ -194,10 +212,42 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             if (list != null) {
                 comments.addAll(list);
             }
+            revealComment();
             if (listView.getAdapter() != null) {
                 listView.getAdapter().notifyDataSetChanged();
             }
         });
+    }
+
+    private void revealComment() {
+        commentMissing = false;
+        if (commentId.length() == 0 || (post != null && post.unavailable)) {
+            return;
+        }
+        ArrayList<String> roots = new ArrayList<>();
+        ArrayList<java.util.List<String>> replies = new ArrayList<>();
+        for (int i = 0; i < comments.size(); i++) {
+            FeedModels.Comment comment = comments.get(i);
+            roots.add(comment.id);
+            ArrayList<String> ids = new ArrayList<>();
+            for (int r = 0; r < comment.replies.size(); r++) {
+                ids.add(comment.replies.get(r).id);
+            }
+            replies.add(ids);
+        }
+        int row = FeedContract.locateComment(roots, replies, FeedConfig.COMMENT_PREVIEW_REPLIES, commentId);
+        if (row < 0) {
+            commentMissing = true;
+            return;
+        }
+        if (listView != null) {
+            final int position = row + 2;
+            listView.post(() -> {
+                if (listView.getLayoutManager() instanceof LinearLayoutManager) {
+                    ((LinearLayoutManager) listView.getLayoutManager()).scrollToPositionWithOffset(position, dp(48));
+                }
+            });
+        }
     }
 
     private JSONObject unwrapPost(JSONObject json) {
@@ -569,7 +619,11 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
             }
             if (position == 1) {
                 TextView sortView = (TextView) holder.itemView;
-                sortView.setText(("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)) + " · " + comments.size());
+                String sortLabel = ("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)) + " · " + comments.size();
+                if (commentMissing) {
+                    sortLabel = sortLabel + "\n" + LocaleController.getString("Moments_CommentGone", R.string.Moments_CommentGone);
+                }
+                sortView.setText(sortLabel);
                 sortView.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
                     load();

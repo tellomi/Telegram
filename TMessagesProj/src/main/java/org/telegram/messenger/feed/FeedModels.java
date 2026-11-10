@@ -774,6 +774,7 @@ public final class FeedModels {
         public String text = "";
         public long createdAt;
         public boolean read;
+        public boolean unavailable;
         public ArrayList<Author> actors = new ArrayList<>();
         public int extraCount;
 
@@ -790,6 +791,9 @@ public final class FeedModels {
             n.text = o.optString("text", o.optString("summary", ""));
             n.createdAt = o.optLong("created_at", 0);
             n.read = o.optBoolean("read", false);
+            String state = o.optString("state", "");
+            n.unavailable = o.optBoolean("unavailable", false) || o.optBoolean("gone", false)
+                    || "unavailable".equals(state) || "deleted".equals(state) || "gone".equals(state);
             n.extraCount = o.optInt("extra_count", 0);
             JSONArray actors = o.optJSONArray("actors");
             if (actors != null) {
