@@ -56,4 +56,17 @@
     <string name="TellomiMenuSettings">選單設定</string>
     <string name="TellomiHideTabLabels">隱藏按鈕文字</string>
     <string name="TellomiNavBarButtons">導覽列按鈕</string>
+
+    <string name="Moments_FollowingEntry">關注</string>
+    <string name="Moments_FollowersEntry">粉絲</string>
+    <string name="Moments_FollowingWithCount">關注 · %d</string>
+    <string name="Moments_FollowersWithCount">粉絲 · %d</string>
+    <string name="Moments_ListPrivate">對方未公開</string>
+    <string name="Moments_ListLoadFailed">名單沒有載入</string>
+    <string name="Moments_PostGone">這則動態已經不存在</string>
+    <string name="Moments_CommentGone">這則留言已經不存在</string>
+    <string name="Moments_Unavailable">內容無法查看</string>
+
+    <string name="Moments_FollowingPrivate">關注 · 對方未公開</string>
+    <string name="Moments_FollowersPrivate">粉絲 · 對方未公開</string>
 </resources>

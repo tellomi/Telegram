@@ -315,4 +315,17 @@
     <string name="TellomiMenuSettings">Настройки меню</string>
     <string name="TellomiHideTabLabels">Скрыть подписи кнопок</string>
     <string name="TellomiNavBarButtons">Кнопки панели навигации</string>
+
+    <string name="Moments_FollowingEntry">Подписки</string>
+    <string name="Moments_FollowersEntry">Подписчики</string>
+    <string name="Moments_FollowingWithCount">Подписки · %d</string>
+    <string name="Moments_FollowersWithCount">Подписчики · %d</string>
+    <string name="Moments_ListPrivate">Этот список скрыт</string>
+    <string name="Moments_ListLoadFailed">Не удалось загрузить этот список</string>
+    <string name="Moments_PostGone">Этой записи уже нет</string>
+    <string name="Moments_CommentGone">Этого комментария уже нет</string>
+    <string name="Moments_Unavailable">Материал недоступен</string>
+
+    <string name="Moments_FollowingPrivate">Подписки · Этот список скрыт</string>
+    <string name="Moments_FollowersPrivate">Подписчики · Этот список скрыт</string>
 </resources>

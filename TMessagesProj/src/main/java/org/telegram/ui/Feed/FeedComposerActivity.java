@@ -651,12 +651,30 @@ public class FeedComposerActivity extends BaseFragment {
     }
 
     @Override
+    public boolean canBeginSlide() {
+        if (FeedContract.composerGestureLeaves(dirty)) {
+            return true;
+        }
+        tryLeave();
+        return false;
+    }
+
+    @Override
     public boolean onBackPressed(boolean invoked) {
+        if (hasShownSheet()) {
+            return super.onBackPressed(invoked);
+        }
+        if (!FeedContract.composerGestureLeaves(dirty)) {
+            if (invoked) {
+                tryLeave();
+            }
+            return false;
+        }
         if (invoked) {
             tryLeave();
             return false;
         }
-        return false;
+        return true;
     }
 
     public void setCity(String code, String name) {

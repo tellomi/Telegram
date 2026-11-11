@@ -184,4 +184,15 @@
     <string name="TellomiMenuSettings">选单设定</string>
     <string name="TellomiHideTabLabels">隐藏按钮文字</string>
     <string name="TellomiNavBarButtons">导航栏按钮</string>
+
+    <string name="Moments_FollowingEntry">关注</string>
+    <string name="Moments_FollowersEntry">粉丝</string>
+    <string name="Moments_FollowingWithCount">关注 · %d</string>
+    <string name="Moments_FollowersWithCount">粉丝 · %d</string>
+    <string name="Moments_ListLoadFailed">名单没有加载出来</string>
+    <string name="Moments_PostGone">这条动态已经不存在</string>
+    <string name="Moments_CommentGone">这条评论已经不存在</string>
+
+    <string name="Moments_FollowingPrivate">关注 · 对方未公开</string>
+    <string name="Moments_FollowersPrivate">粉丝 · 对方未公开</string>
 </resources>

@@ -786,15 +786,33 @@ public class FeedController {
         });
     }
 
-    public void markNotificationsRead() {
-        setUnread(0);
-        api.sendJson("POST", "/v1/feed/me/notifications/read", new JSONObject(), (json, error) -> {
+    /** Marks the tab on screen. An empty body would clear every tab. */
+    public void markNotificationsRead(String tab) {
+        JSONObject body;
+        try {
+            body = new JSONObject(FeedContract.notificationReadBody(tab));
+        } catch (Exception e) {
+            return;
+        }
+        api.sendJson("POST", "/v1/feed/me/notifications/read", body, (json, error) -> {
+            if (error == null) {
+                refreshUnread();
+            }
         });
     }
 
     public void loadNotifications(String tab, Utilities.Callback2<ArrayList<FeedModels.NotificationItem>, String> done) {
-        api.getJson(FeedContract.notificationsPath(tab), (json, error) -> {
+        loadNotifications(tab, "", (list, cursor, error) -> {
+            if (done != null) {
+                done.run(list, error);
+            }
+        });
+    }
+
+    public void loadNotifications(String tab, String cursor, Utilities.Callback3<ArrayList<FeedModels.NotificationItem>, String, String> done) {
+        api.getJson(FeedContract.notificationsPath(tab, cursor), (json, error) -> {
             ArrayList<FeedModels.NotificationItem> list = new ArrayList<>();
+            String next = "";
             if (json != null) {
                 JSONArray items = json.optJSONArray("items");
                 if (items != null) {
@@ -805,12 +823,13 @@ public class FeedController {
                         }
                     }
                 }
+                next = FeedContract.normalizeCursor(json.optString("next_cursor", json.optString("cursor", "")));
                 if (json.has("unread")) {
                     setUnread(json.optInt("unread", 0));
                 }
             }
             if (done != null) {
-                done.run(list, error);
+                done.run(list, next, error);
             }
         });
     }

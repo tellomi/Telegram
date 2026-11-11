@@ -11812,4 +11812,15 @@
     <string name="TellomiMenuSettings">Menu settings</string>
     <string name="TellomiHideTabLabels">Hide button labels</string>
     <string name="TellomiNavBarButtons">Navigation bar buttons</string>
+
+    <string name="Moments_FollowingEntry">Following</string>
+    <string name="Moments_FollowersEntry">Followers</string>
+    <string name="Moments_FollowingWithCount">Following · %d</string>
+    <string name="Moments_FollowersWithCount">Followers · %d</string>
+    <string name="Moments_ListLoadFailed">Could not load this list</string>
+    <string name="Moments_PostGone">That post is no longer available</string>
+    <string name="Moments_CommentGone">That comment is no longer available</string>
+
+    <string name="Moments_FollowingPrivate">Following · This list is private</string>
+    <string name="Moments_FollowersPrivate">Followers · This list is private</string>
 </resources>

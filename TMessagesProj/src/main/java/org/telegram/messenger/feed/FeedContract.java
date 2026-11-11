@@ -1645,4 +1645,280 @@ public final class FeedContract {
         }
         return out;
     }
+
+    /**
+     * Search and city lookups. This is not {@link LoadEpoch}: that counter
+     * only covers the home streams. A response is painted only while its
+     * token is still the latest query.
+     */
+    public static final class QueryGeneration {
+        private int current;
+
+        public int next() {
+            current++;
+            return current;
+        }
+
+        public int current() {
+            return current;
+        }
+
+        public boolean accept(int token) {
+            return acceptQuery(token, current);
+        }
+    }
+
+    /** True only for the latest non-zero search or city token. */
+    public static boolean acceptQuery(int token, int current) {
+        return token == current && token != 0;
+    }
+
+    public static final String LIST_PRIVATE = "list_private";
+
+    /** {@code following_list} / {@code followers_list} are public or self. */
+    public static boolean knownListVisibility(String value) {
+        return "public".equals(value) || "self".equals(value);
+    }
+
+    /** The list-visibility error. A network failure is not private. */
+    public static boolean listPrivate(String error, String bodyError) {
+        return LIST_PRIVATE.equals(error) || LIST_PRIVATE.equals(bodyError);
+    }
+
+    /**
+     * GET /v1/feed/profiles/{id}/following or /followers.
+     * An empty cursor is the first page. Null when the profile id is missing.
+     */
+    public static String relationPath(String profileId, boolean followers, String cursor) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        String path = "/v1/feed/profiles/" + enc(profileId) + (followers ? "/followers" : "/following");
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "?cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    public static final class RelationPage {
+        /** -1 when the server did not give a count and a cursor says the page is partial. */
+        public int total = -1;
+        public String cursor = "";
+        public boolean hidden;
+        public boolean failed;
+    }
+
+    public static RelationPage parseRelationPage(String json, String error, boolean followers) {
+        RelationPage page = new RelationPage();
+        JsonObject root = object(json);
+        String bodyError = root == null ? "" : string(root, "error");
+        if (listPrivate(error, bodyError)) {
+            page.hidden = true;
+            return page;
+        }
+        if (error != null && error.length() > 0) {
+            page.failed = true;
+            return page;
+        }
+        if (root == null) {
+            page.failed = true;
+            return page;
+        }
+        page.cursor = normalizeCursor(string(root, "cursor"));
+        if (page.cursor.length() == 0) {
+            page.cursor = normalizeCursor(string(root, "next_cursor"));
+        }
+        JsonArray items = array(root.get("items"));
+        if (items == null) {
+            items = array(root.get("users"));
+        }
+        int count = items == null ? 0 : items.size();
+        page.total = relationTotal(root, followers, count, page.cursor);
+        return page;
+    }
+
+    /**
+     * A superseded token never paints. A private or failed first page may
+     * replace the screen with that state. A private or failed later page
+     * leaves the rows already shown.
+     */
+    public static boolean applyRelationPage(boolean generationCurrent, boolean firstPage, boolean failed, boolean hidden) {
+        if (!generationCurrent) {
+            return false;
+        }
+        if (failed || hidden) {
+            return firstPage;
+        }
+        return true;
+    }
+
+    private static int relationTotal(JsonObject root, boolean followers, int items, String cursor) {
+        int direct = firstInt(root, "total", "count");
+        if (direct < 0) {
+            direct = firstInt(root, followers ? "followers_count" : "following_count");
+        }
+        if (direct < 0 && root.has("counts") && root.get("counts").isJsonObject()) {
+            direct = firstInt(root.getAsJsonObject("counts"), "total", followers ? "followers" : "following");
+        }
+        if (direct >= 0) {
+            return direct;
+        }
+        if (cursor == null || cursor.length() == 0) {
+            return Math.max(0, items);
+        }
+        return -1;
+    }
+
+    private static int firstInt(JsonObject object, String... keys) {
+        if (object == null || keys == null) {
+            return -1;
+        }
+        for (int i = 0; i < keys.length; i++) {
+            if (!object.has(keys[i]) || object.get(keys[i]).isJsonNull() || !object.get(keys[i]).isJsonPrimitive()) {
+                continue;
+            }
+            try {
+                return object.get(keys[i]).getAsInt();
+            } catch (Exception ignore) {
+            }
+        }
+        return -1;
+    }
+
+    public static String notificationsPath(String tab, String cursor) {
+        String path = notificationsPath(tab);
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "&cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    /** Marks one tab. An empty body would mark every tab read. */
+    public static String notificationReadBody(String tab) {
+        JsonObject body = new JsonObject();
+        body.addProperty("tab", notificationTab(tab));
+        return body.toString();
+    }
+
+    public static final int OPEN_POST = 1;
+    public static final int OPEN_PROFILE = 2;
+    public static final int OPEN_GONE = 3;
+
+    /**
+     * Follow and mutual open the profile. A post id opens that post.
+     * Unavailable, or a notice with neither post nor user, is the gone state.
+     */
+    public static int notificationOpen(String kind, String postId, String commentId, long userId, boolean unavailable) {
+        if (unavailable) {
+            return OPEN_GONE;
+        }
+        if ("follow".equals(kind) || "mutual".equals(kind)) {
+            return userId != 0 ? OPEN_PROFILE : OPEN_GONE;
+        }
+        if (postId != null && postId.length() > 0) {
+            return OPEN_POST;
+        }
+        if (userId != 0) {
+            return OPEN_PROFILE;
+        }
+        return OPEN_GONE;
+    }
+
+    /** Comment id is kept only when the notice opens a post. */
+    public static String notificationCommentId(int open, String commentId) {
+        if (open != OPEN_POST || commentId == null) {
+            return "";
+        }
+        return commentId;
+    }
+
+    /**
+     * Index in the flattened comment rows, or the root row when the id is a
+     * reply past the preview. -1 when this page does not contain the id.
+     */
+    public static int locateComment(List<String> rootIds, List<List<String>> replyIds, int preview, String target) {
+        if (target == null || target.length() == 0 || rootIds == null) {
+            return -1;
+        }
+        int row = 0;
+        int shownCap = Math.max(0, preview);
+        for (int i = 0; i < rootIds.size(); i++) {
+            int rootRow = row;
+            if (target.equals(rootIds.get(i))) {
+                return rootRow;
+            }
+            row++;
+            List<String> replies = replyIds == null || i >= replyIds.size() || replyIds.get(i) == null ? null : replyIds.get(i);
+            int size = replies == null ? 0 : replies.size();
+            int shown = Math.min(shownCap, size);
+            for (int r = 0; r < size; r++) {
+                if (target.equals(replies.get(r))) {
+                    return r < shown ? row + r : rootRow;
+                }
+            }
+            row += shown;
+        }
+        return -1;
+    }
+
+    /** Topic list position. Back from a post, media, or author restores it. */
+    public static final class TopicPlace {
+        public final String topic;
+        public final String sort;
+        public final int position;
+        public final int offset;
+
+        private TopicPlace(String topic, String sort, int position, int offset) {
+            this.topic = topic == null ? "" : topic;
+            this.sort = "latest".equals(sort) ? "latest" : "hot";
+            if (position < 0) {
+                this.position = 0;
+                this.offset = 0;
+            } else {
+                this.position = position;
+                this.offset = offset;
+            }
+        }
+    }
+
+    public static TopicPlace topicPlace(String topic, String sort, int position, int offset) {
+        return new TopicPlace(topic, sort, position, offset);
+    }
+
+    public static TopicPlace restoreTopic(TopicPlace saved) {
+        return saved == null ? topicPlace("", "hot", 0, 0) : saved;
+    }
+
+    /** Notification filter and scroll. Back returns this place. */
+    public static final class NotificationPlace {
+        public final String tab;
+        public final int position;
+        public final int offset;
+
+        private NotificationPlace(String tab, int position, int offset) {
+            this.tab = notificationTab(tab);
+            if (position < 0) {
+                this.position = 0;
+                this.offset = 0;
+            } else {
+                this.position = position;
+                this.offset = offset;
+            }
+        }
+    }
+
+    public static NotificationPlace notificationPlace(String tab, int position, int offset) {
+        return new NotificationPlace(tab, position, offset);
+    }
+
+    public static NotificationPlace restoreNotifications(NotificationPlace saved) {
+        return saved == null ? notificationPlace(NOTIFICATION_INTERACTIONS, 0, 0) : saved;
+    }
+
+    /** A dirty composer confirms. A clean one may follow the back gesture. */
+    public static boolean composerGestureLeaves(boolean dirty) {
+        return !dirty;
+    }
 }
