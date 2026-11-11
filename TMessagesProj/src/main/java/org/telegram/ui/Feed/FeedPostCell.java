@@ -545,7 +545,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         if (post == null) {
             return false;
         }
-        return FeedActionPolicy.decide(post.audienceKind, post.state, post.unavailable, false, action, post.actionFlags).allowed;
+        return FeedActionPolicy.decide(post.actionInput(false), action).allowed;
     }
 
     private String LocaleSafe(String name) {

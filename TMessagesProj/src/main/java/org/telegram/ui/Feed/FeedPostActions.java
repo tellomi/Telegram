@@ -121,7 +121,7 @@ public final class FeedPostActions {
             if (error == null) {
                 return;
             }
-            String key = FeedActionPolicy.reasonKeyForError(error);
+            String key = FeedActionPolicy.reasonKeyForRepostError(error);
             if (key.length() > 0) {
                 bulletin(fragment, key);
             } else {
@@ -181,7 +181,7 @@ public final class FeedPostActions {
         if (post == null) {
             return new FeedActionPolicy.Decision(false, FeedActionPolicy.REASON_UNAVAILABLE);
         }
-        return FeedActionPolicy.decide(post.audienceKind, post.state, post.unavailable, own, action, post.actionFlags);
+        return FeedActionPolicy.decide(post.actionInput(own), action);
     }
 
     private static FeedController controller(BaseFragment fragment) {
