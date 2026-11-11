@@ -26,6 +26,10 @@
     <string name="Moments_Share">分享</string>
     <string name="Moments_ShareChat">分享到聊天</string>
     <string name="Moments_CopyLink">复制链接</string>
+    <string name="Moments_ExternalShare">其他应用</string>
+    <string name="Moments_ShareBlocked">这条动态不能这样分享</string>
+    <string name="Moments_QuoteUnavailable">这条动态不能引用</string>
+    <string name="Moments_QuoteInvalid">引用无效</string>
     <string name="Moments_Like">点赞</string>
     <string name="Moments_Comment">评论</string>
     <string name="Moments_CommentCount">%d条评论</string>

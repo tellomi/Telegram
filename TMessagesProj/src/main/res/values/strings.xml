@@ -11659,6 +11659,10 @@
     <string name="Moments_Share">Share</string>
     <string name="Moments_ShareChat">Share to chat</string>
     <string name="Moments_CopyLink">Copy link</string>
+    <string name="Moments_ExternalShare">Other apps</string>
+    <string name="Moments_ShareBlocked">This post can\'t be shared that way.</string>
+    <string name="Moments_QuoteUnavailable">This post can\'t be quoted.</string>
+    <string name="Moments_QuoteInvalid">That quote isn\'t valid.</string>
     <string name="Moments_Like">Like</string>
     <string name="Moments_Comment">Comment</string>
     <string name="Moments_CommentCount">%d comments</string>

@@ -349,6 +349,8 @@ public final class FeedModels {
         public String quoteId = "";
         public Post quote;
         public String audienceKind = "public";
+        /** Per-post engine flags. Absent flags leave {@link FeedActionPolicy} on the visibility mirror. */
+        public FeedActionPolicy.Flags actionFlags = FeedActionPolicy.Flags.NONE;
         public String commentPolicy = "everyone_who_can_view";
         public String cityCode = "";
         public String cityName = "";
@@ -422,6 +424,7 @@ public final class FeedModels {
             String state = o.optString("state", "published");
             p.state = state;
             p.unavailable = FeedContract.cardUnavailable(o.optBoolean("unavailable", false), state);
+            p.actionFlags = FeedActionPolicy.readFlags(o);
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
             }

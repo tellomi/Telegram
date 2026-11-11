@@ -405,11 +405,12 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     @Override
     public void onRepost(FeedModels.Post post) {
+        FeedPostActions.showRepostMenu(this, post, fragmentView);
     }
 
     @Override
     public void onShare(FeedModels.Post post) {
-        showDialog(ShareAlert.createShareAlert(getContext(), null, FeedUi.linkFor(post.id), false, FeedUi.linkFor(post.id), false));
+        FeedPostActions.showShareMenu(this, post, fragmentView);
     }
 
     @Override
@@ -419,6 +420,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
 
     @Override
     public void onMore(FeedModels.Post post, View anchor) {
+        FeedPostActions.showMoreMenu(this, post, anchor);
     }
 
     @Override
