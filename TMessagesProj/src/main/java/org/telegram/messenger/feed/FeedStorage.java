@@ -131,6 +131,12 @@ public class FeedStorage {
         }
         o.put("media", media);
         o.put("audience", new JSONObject().put("kind", p.audienceKind));
+        if (p.shareable != null) {
+            o.put("shareable", p.shareable.booleanValue());
+        }
+        if (p.authorOnlyPending) {
+            o.put("author_only_pending", true);
+        }
         o.put("comment_policy", p.commentPolicy);
         JSONObject location = new JSONObject();
         location.put("city", p.cityCode);
@@ -244,6 +250,20 @@ public class FeedStorage {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    public String draftJson(String id) {
+        if (id == null || id.length() == 0) {
+            return null;
+        }
+        ArrayList<String[]> rows = listDrafts();
+        for (int i = 0; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row != null && row.length >= 3 && id.equals(row[0])) {
+                return row[2];
+            }
+        }
+        return null;
     }
 
     public void deleteDraft(String id) {

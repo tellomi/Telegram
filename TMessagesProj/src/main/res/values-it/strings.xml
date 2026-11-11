@@ -1537,4 +1537,73 @@
     <string name="RemindDayAt">\'Ricorda il\' d MMM \'alle\' HH:mm</string>
     <string name="RemindDayYearAt">\'Ricorda il\' d MMM yyyy \'alle\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+
+    <string name="Moments_Comment_SendFailed">Impossibile inviare il commento. Il testo è ancora qui.</string>
+    <string name="Moments_Audience_Kept">Impossibile aggiornare chi può vedere. La scelta è rimasta.</string>
+    <string name="Moments_Notif_Other">Attività</string>
+    <string name="Moments_City_Beijing">Pechino</string>
+    <string name="Moments_City_Shanghai">Shanghai</string>
+    <string name="Moments_City_Guangzhou">Canton</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdu</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
+
+    <string name="Moments_Time_Now">Proprio ora</string>
+    <string name="Moments_Recommendations">Consigli</string>
+    <string name="Moments_Personalized">Consigli personalizzati</string>
+    <string name="Moments_PersonalizedInfo">Se lo disattivi, Per te non è più ordinato in base ai tuoi interessi.</string>
+    <string name="Moments_VideoTooLongN">Taglia il video a %1$d secondi o meno.</string>
+    <string name="Moments_Time_Minutes">%d minuti fa</string>
+    <string name="Moments_Time_Hours">%d ore fa</string>
+    <string name="Moments_Time_Days">%d giorni fa</string>
+    <string name="Moments_Time_Weeks">%d settimane fa</string>
+    <string name="Moments_Time_Months">%d mesi fa</string>
+    <string name="Moments_Time_Years">%d anni fa</string>
+    <string name="Moments_Audience_Contacts">I miei contatti</string>
+    <string name="Moments_Audience_CloseFriends">Amici stretti</string>
+    <string name="Moments_Audience_Selected">Persone scelte</string>
+    <string name="Moments_Loading">Caricamento…</string>
+    <string name="Moments_HiddenName">Nascosto</string>
+    <string name="Moments_Edit">Modificare</string>
+    <string name="Moments_Delete">Elimina</string>
+    <string name="Moments_Report">Segnala</string>
+    <string name="Moments_Forward">Inoltra</string>
+    <string name="Moments_Copy">Copiare</string>
+    <string name="Moments_Close">Chiudere</string>
+    <string name="Moments_Cancel">Annulla</string>
+    <string name="Moments_OK">Va bene</string>
+    <string name="Moments_Send">Inviare</string>
+    <string name="Moments_More">Altre opzioni</string>
+    <string name="Moments_Conn_Waiting">In attesa della rete…</string>
+    <string name="Moments_Conn_Connecting">Connessione…</string>
+    <string name="Moments_Conn_Updating">Aggiornamento…</string>
+    <string name="Moments_Conn_Proxy">Connessione al proxy…</string>
+    <string name="Moments_Report_Spam">Messaggi indesiderati</string>
+    <string name="Moments_Report_Violence">Contenuto violento</string>
+    <string name="Moments_Report_Child">Abusi sui minori</string>
+    <string name="Moments_Report_Drugs">Droghe illegali</string>
+    <string name="Moments_Report_Personal">Dati personali</string>
+    <string name="Moments_Report_Pornography">Contenuto pornografico</string>
+    <string name="Moments_Report_Fake">Contenuto falso</string>
+    <string name="Moments_Report_Other">Altro motivo</string>
+    <string name="Moments_Report_Detail">Dettagli</string>
+    <string name="Moments_Report_Sent">Segnalazione inviata</string>
+
+    <string name="SettingsTools">Strumenti</string>
+    <string name="MainTabsMenuSettings">Impostazioni menu</string>
+    <string name="MainTabsHideLabels">Nascondi il testo dei pulsanti</string>
+    <string name="MainTabsButtons">Pulsanti della barra di navigazione</string>
+
+    <string name="Moments_FollowingEntry">Seguiti</string>
+    <string name="Moments_FollowersEntry">Follower</string>
+    <string name="Moments_FollowingWithCount">Seguiti · %d</string>
+    <string name="Moments_FollowersWithCount">Follower · %d</string>
+    <string name="Moments_ListPrivate">Questo elenco è privato</string>
+    <string name="Moments_ListLoadFailed">Impossibile caricare questo elenco</string>
+    <string name="Moments_PostGone">Quel post non c’è più</string>
+    <string name="Moments_CommentGone">Quel commento non c’è più</string>
+    <string name="Moments_Unavailable">Contenuto non disponibile</string>
+
+    <string name="Moments_FollowingPrivate">Seguiti · Questo elenco è privato</string>
+    <string name="Moments_FollowersPrivate">Follower · Questo elenco è privato</string>
 </resources>

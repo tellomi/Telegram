@@ -57,7 +57,11 @@ jobs:
       - name: Check package conditions
         run: |
           python3 Tools/check-android-apk-workflow.py
+          python3 Tools/check-moments-langpack.py
           python3 Tools/tellomi-android-version.py --self-test
+          g++ -std=c++17 -Wall -Werror -o /tmp/tellomi-dc-fallback-test \
+            TMessagesProj/jni/tgnet/TellomiDcFallbackTest.cpp
+          /tmp/tellomi-dc-fallback-test
 
   native:
     name: Native ${{ matrix.abi }}
@@ -411,6 +415,7 @@ jobs:
       - name: Check workflow package conditions
         run: |
           python3 Tools/check-android-apk-workflow.py
+          python3 Tools/check-moments-langpack.py
           python3 Tools/tellomi-android-version.py --self-test
 
       - name: Download native libraries
@@ -513,11 +518,13 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # 14.0.11. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # 14.0.12. afat versionCode = APP_VERSION_CODE * 10 + 9.
           # publish=release (and a push to release/android) reads
           # android/latest.json and uses the next decade above that versionCode.
-          # Live 14.0.10 afat is 1804709, so configured APP_VERSION_CODE 180471
-          # produces afat 1804719 until the feed moves past it. Digit 0 is unused.
+          # Live 14.0.11 afat is 1804719, so configured APP_VERSION_CODE 180472
+          # produces afat 1804729 until the feed moves past it. Digit 0 is unused.
+          # This step does not pass -PTELLOMI_USE_CLOUD_STRINGS. The value stays
+          # the one in gradle.properties (true). BuildConfig is checked below.
           PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
           TELLOMI_VERSION_CODE_FLOOR: "1804679"
         run: |
@@ -541,14 +548,14 @@ jobs:
             esac
           done < <(python3 Tools/tellomi-android-version.py \
             --gradle gradle.properties \
-            --expect-version-name 14.0.11 \
+            --expect-version-name 14.0.12 \
             --floor "${TELLOMI_VERSION_CODE_FLOOR:?}" \
             "${release_args[@]+"${release_args[@]}"}")
           case "$app_version_code" in
             ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          if [ "$version_name" != "14.0.11" ]; then
-            echo "expected APP_VERSION_NAME 14.0.11, found ${version_name:-missing}" >&2
+          if [ "$version_name" != "14.0.12" ]; then
+            echo "expected APP_VERSION_NAME 14.0.12, found ${version_name:-missing}" >&2
             exit 1
           fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"
@@ -574,8 +581,9 @@ jobs:
           org.gradle.daemon=true
           EOF
           # Shippable APKs (release and 测包 debug) must embed production DC
-          # profile dev (8.137.39.82:10443). Release also fails closed in Gradle
-          # if this is omitted or overridden to local (10.0.2.2).
+          # profile dev (8.156.40.105:10443 and :443, then api.tellomi.cn).
+          # Release also fails closed in Gradle if this is omitted or overridden
+          # to local (10.0.2.2).
           ./gradlew ":TMessagesProj_App:${GRADLE_TASK}" \
             -PAPP_VERSION_CODE="$app_version_code" \
             -PTELLOMI_SERVER_PROFILE=dev \
@@ -605,11 +613,24 @@ jobs:
               *) echo "expected TELLOMI_SERVER_PROFILE=dev in $config: ${profile_line:-missing}" >&2; exit 1 ;;
             esac
             case "$addresses_line" in
-              *'1:8.137.39.82:10443,2:8.137.39.82:10443'*) ;;
-              *) echo "expected production DC 8.137.39.82:10443 in $config: ${addresses_line:-missing}" >&2; exit 1 ;;
+              *'1:8.156.40.105:10443,1:8.156.40.105:443,1:api.tellomi.cn:10443,1:api.tellomi.cn:443,2:8.156.40.105:10443,2:8.156.40.105:443,2:api.tellomi.cn:10443,2:api.tellomi.cn:443'*) ;;
+              *) echo "expected production DC 8.156.40.105:10443 and :443 and api.tellomi.cn in $config: ${addresses_line:-missing}" >&2; exit 1 ;;
             esac
+            if grep -q '8.137.39.82' "$config"; then
+              echo "retired DC 8.137.39.82 leaked into $config" >&2
+              exit 1
+            fi
             if grep -q '10.0.2.2' "$config"; then
               echo "emulator DC 10.0.2.2 leaked into $config" >&2
+              exit 1
+            fi
+            cloud_line=$(grep -F 'TELLOMI_USE_CLOUD_STRINGS' "$config" || true)
+            case "$cloud_line" in
+              *'true'*) ;;
+              *) echo "expected TELLOMI_USE_CLOUD_STRINGS=true in $config: ${cloud_line:-missing}" >&2; exit 1 ;;
+            esac
+            if grep -q 'TELLOMI_USE_CLOUD_STRINGS = false' "$config"; then
+              echo "release build turned cloud strings off in $config" >&2
               exit 1
             fi
             echo "BuildConfig DC: $config" | tee -a "$GITHUB_STEP_SUMMARY"

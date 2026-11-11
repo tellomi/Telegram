@@ -4,7 +4,10 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.TextView;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.BackupImageView;
@@ -30,7 +33,12 @@ public final class FeedPlayback implements NotificationCenter.NotificationCenter
 
     private final ArrayList<Slot> slots = new ArrayList<>();
     private final WeakHashMap<View, Boolean> hooked = new WeakHashMap<>();
+    private static final int PLAYER_ENDED = 4;
+
     private VideoPlayer player;
+    private VideoPlayer voicePlayer;
+    private String voiceUrl;
+    private final ArrayList<WeakReference<TextView>> voiceRows = new ArrayList<>();
     private String playingUrl;
     private WeakReference<View> playingView;
     private boolean listening;
@@ -164,7 +172,99 @@ public final class FeedPlayback implements NotificationCenter.NotificationCenter
         }
     }
 
+    public static void watchVoice(TextView row) {
+        if (row == null) {
+            return;
+        }
+        for (int i = INSTANCE.voiceRows.size() - 1; i >= 0; i--) {
+            TextView existing = INSTANCE.voiceRows.get(i).get();
+            if (existing == null || existing == row) {
+                INSTANCE.voiceRows.remove(i);
+            }
+        }
+        INSTANCE.voiceRows.add(new WeakReference<>(row));
+        notifyVoice();
+    }
+
+    public static String voiceUrl() {
+        return INSTANCE.voiceUrl == null ? "" : INSTANCE.voiceUrl;
+    }
+
+    public static void toggleVoice(String url) {
+        if (url == null || url.length() == 0) {
+            return;
+        }
+        INSTANCE.ensureListening();
+        if (url.equals(INSTANCE.voiceUrl)) {
+            stopVoice();
+            return;
+        }
+        MessageObject chatAudio = MediaController.getInstance().getPlayingMessageObject();
+        if (chatAudio != null && MediaController.getInstance().isPlayingMessage(chatAudio)) {
+            MediaController.getInstance().pauseMessage(chatAudio);
+        }
+        stop();
+        stopVoice();
+        VideoPlayer voice = new VideoPlayer();
+        voice.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+            @Override
+            public void onStateChanged(boolean playWhenReady, int playbackState) {
+                if (playbackState == PLAYER_ENDED) {
+                    AndroidUtilities.runOnUIThread(FeedPlayback::stopVoice);
+                }
+            }
+
+            @Override
+            public void onError(VideoPlayer player, Exception e) {
+                AndroidUtilities.runOnUIThread(FeedPlayback::stopVoice);
+            }
+
+            @Override
+            public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+            }
+
+            @Override
+            public void onRenderedFirstFrame() {
+            }
+        });
+        voice.preparePlayer(Uri.parse(url), "other");
+        voice.setMute(false);
+        voice.setLooping(false);
+        voice.setPlayWhenReady(true);
+        INSTANCE.voicePlayer = voice;
+        INSTANCE.voiceUrl = url;
+        notifyVoice();
+    }
+
+    public static void stopVoice() {
+        if (INSTANCE.voicePlayer != null) {
+            INSTANCE.voicePlayer.releasePlayer(true);
+            INSTANCE.voicePlayer = null;
+        }
+        INSTANCE.voiceUrl = null;
+        notifyVoice();
+    }
+
+    private static void notifyVoice() {
+        String url = INSTANCE.voiceUrl == null ? "" : INSTANCE.voiceUrl;
+        for (int i = INSTANCE.voiceRows.size() - 1; i >= 0; i--) {
+            TextView row = INSTANCE.voiceRows.get(i).get();
+            if (row == null) {
+                INSTANCE.voiceRows.remove(i);
+                continue;
+            }
+            Object tag = row.getTag();
+            boolean playing = tag instanceof String && url.equals(tag);
+            row.setTextColor(playing
+                    ? org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_featuredStickers_addButton)
+                    : org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteBlackText));
+        }
+    }
+
     private static boolean voicePlaying() {
+        if (INSTANCE.voicePlayer != null) {
+            return true;
+        }
         MediaController controller = MediaController.getInstance();
         return controller.getPlayingMessageObject() != null && controller.isPlayingMessage(controller.getPlayingMessageObject());
     }
@@ -180,6 +280,10 @@ public final class FeedPlayback implements NotificationCenter.NotificationCenter
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagePlayingPlayStateChanged) {
+            MessageObject chatAudio = MediaController.getInstance().getPlayingMessageObject();
+            if (chatAudio != null && MediaController.getInstance().isPlayingMessage(chatAudio)) {
+                stopVoice();
+            }
             choose();
         }
     }

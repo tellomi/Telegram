@@ -1265,7 +1265,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == newChatsSectionRow) {
                         privacyCell.setText(getString("ArchiveAndMuteInfo", R.string.ArchiveAndMuteInfo));
                     } else if (position == feedDetailRow) {
-                        privacyCell.setText(FeedUi.s("Moments.Push", R.string.FeedPushHeader));
+                        privacyCell.setText(LocaleController.getString("Moments_Push", R.string.Moments_Push));
                     }
                     break;
                 case 2:
@@ -1285,7 +1285,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     } else if (position == newChatsHeaderRow) {
                         headerCell.setText(getString("NewChatsFromNonContacts", R.string.NewChatsFromNonContacts));
                     } else if (position == feedSectionRow) {
-                        headerCell.setText(FeedUi.s("Moments.Title", R.string.FeedTitle));
+                        headerCell.setText(LocaleController.getString("Moments_Title", R.string.Moments_Title));
                     }
                     break;
                 case 3:
@@ -1396,7 +1396,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         }
                         textCell2.setTextAndValueAndIcon(getString("BlockedUsers", R.string.BlockedUsers), value, true, R.drawable.msg2_block2, true);
                     } else if (position == feedRow) {
-                        textCell2.setTextAndValueAndIcon(FeedUi.s("Moments.Title", R.string.FeedTitle), "", true, R.drawable.msg_list, true);
+                        textCell2.setTextAndValueAndIcon(LocaleController.getString("Moments_Title", R.string.Moments_Title), "", true, R.drawable.msg_list, true);
                     }
                     textCell2.setDrawLoading(showLoading, loadingLen, animated);
                     break;

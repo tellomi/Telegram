@@ -1249,4 +1249,73 @@
     <string name="RemindDayAt">\'Lembrar em\' d \'de\' MMM \'às\' HH:mm</string>
     <string name="RemindDayYearAt">\'Lembrar em\' d \'de\' MMM \'de\' yyyy \'às\' HH:mm</string>
     <string name="BotsMenuTitle">Menu</string>
+
+    <string name="Moments_Comment_SendFailed">Não foi possível enviar o comentário. Seu texto continua aqui.</string>
+    <string name="Moments_Audience_Kept">Não foi possível atualizar quem pode ver. Sua seleção foi mantida.</string>
+    <string name="Moments_Notif_Other">Atividade</string>
+    <string name="Moments_City_Beijing">Pequim</string>
+    <string name="Moments_City_Shanghai">Xangai</string>
+    <string name="Moments_City_Guangzhou">Cantão</string>
+    <string name="Moments_City_Shenzhen">Shenzhen</string>
+    <string name="Moments_City_Chengdu">Chengdu</string>
+    <string name="Moments_City_Hangzhou">Hangzhou</string>
+
+    <string name="Moments_Time_Now">Agora mesmo</string>
+    <string name="Moments_Recommendations">Recomendações</string>
+    <string name="Moments_Personalized">Recomendações personalizadas</string>
+    <string name="Moments_PersonalizedInfo">Com isto desligado, Para você deixa de ser ordenado pelos seus interesses.</string>
+    <string name="Moments_VideoTooLongN">Corte o vídeo para %1$d segundos ou menos.</string>
+    <string name="Moments_Time_Minutes">há %d minutos</string>
+    <string name="Moments_Time_Hours">há %d horas</string>
+    <string name="Moments_Time_Days">há %d dias</string>
+    <string name="Moments_Time_Weeks">há %d semanas</string>
+    <string name="Moments_Time_Months">há %d meses</string>
+    <string name="Moments_Time_Years">há %d anos</string>
+    <string name="Moments_Audience_Contacts">Meus contatos</string>
+    <string name="Moments_Audience_CloseFriends">Amigos próximos</string>
+    <string name="Moments_Audience_Selected">Pessoas escolhidas</string>
+    <string name="Moments_Loading">Carregando…</string>
+    <string name="Moments_HiddenName">Oculto</string>
+    <string name="Moments_Edit">Editar agora</string>
+    <string name="Moments_Delete">Apagar</string>
+    <string name="Moments_Report">Denunciar</string>
+    <string name="Moments_Forward">Encaminhar</string>
+    <string name="Moments_Copy">Copiar texto</string>
+    <string name="Moments_Close">Fechar</string>
+    <string name="Moments_Cancel">Cancelar</string>
+    <string name="Moments_OK">Certo</string>
+    <string name="Moments_Send">Enviar agora</string>
+    <string name="Moments_More">Mais opções</string>
+    <string name="Moments_Conn_Waiting">Aguardando a rede…</string>
+    <string name="Moments_Conn_Connecting">Conectando agora…</string>
+    <string name="Moments_Conn_Updating">Atualizando agora…</string>
+    <string name="Moments_Conn_Proxy">Conectando ao proxy…</string>
+    <string name="Moments_Report_Spam">Mensagens indesejadas</string>
+    <string name="Moments_Report_Violence">Conteúdo violento</string>
+    <string name="Moments_Report_Child">Abuso infantil</string>
+    <string name="Moments_Report_Drugs">Substâncias ilegais</string>
+    <string name="Moments_Report_Personal">Dados pessoais</string>
+    <string name="Moments_Report_Pornography">Conteúdo pornográfico</string>
+    <string name="Moments_Report_Fake">Conteúdo falso</string>
+    <string name="Moments_Report_Other">Outro motivo</string>
+    <string name="Moments_Report_Detail">Detalhes</string>
+    <string name="Moments_Report_Sent">Denúncia enviada</string>
+
+    <string name="SettingsTools">Ferramentas</string>
+    <string name="MainTabsMenuSettings">Ajustes do menu</string>
+    <string name="MainTabsHideLabels">Ocultar texto dos botões</string>
+    <string name="MainTabsButtons">Botões da barra de navegação</string>
+
+    <string name="Moments_FollowingEntry">Seguindo</string>
+    <string name="Moments_FollowersEntry">Seguidores</string>
+    <string name="Moments_FollowingWithCount">Seguindo · %d</string>
+    <string name="Moments_FollowersWithCount">Seguidores · %d</string>
+    <string name="Moments_ListPrivate">Esta lista é privada</string>
+    <string name="Moments_ListLoadFailed">Não foi possível carregar esta lista</string>
+    <string name="Moments_PostGone">Essa publicação não existe mais</string>
+    <string name="Moments_CommentGone">Esse comentário não existe mais</string>
+    <string name="Moments_Unavailable">Conteúdo indisponível</string>
+
+    <string name="Moments_FollowingPrivate">Seguindo · Esta lista é privada</string>
+    <string name="Moments_FollowersPrivate">Seguidores · Esta lista é privada</string>
 </resources>

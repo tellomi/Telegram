@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -24,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -44,6 +46,7 @@ public class FeedCityActivity extends BaseFragment {
     private static final int REQ = 77;
     private final boolean explain;
     private final ArrayList<String[]> cities = new ArrayList<>();
+    private final FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
     private RecyclerListView listView;
 
     public FeedCityActivity(boolean explain) {
@@ -53,7 +56,7 @@ public class FeedCityActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.SwitchCity", R.string.FeedChangeCity));
+        actionBar.setTitle(LocaleController.getString("Moments_SwitchCity", R.string.Moments_SwitchCity));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -65,19 +68,19 @@ public class FeedCityActivity extends BaseFragment {
         root.setOrientation(LinearLayout.VERTICAL);
         if (explain) {
             TextView note = new TextView(context);
-            note.setText(FeedUi.s("Moments.Nearby.Permission", R.string.FeedLocationExplain));
+            note.setText(LocaleController.getString("Moments_Nearby_Permission", R.string.Moments_Nearby_Permission));
             note.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             note.setPadding(dp(16), dp(12), dp(16), dp(8));
             root.addView(note);
             TextView allow = new TextView(context);
-            allow.setText(FeedUi.s("Moments.UseLocation", R.string.FeedUseLocation));
+            allow.setText(LocaleController.getString("Moments_UseLocation", R.string.Moments_UseLocation));
             allow.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
             allow.setPadding(dp(16), dp(8), dp(16), dp(8));
             allow.setOnClickListener(v -> requestLocation());
             root.addView(allow);
         }
         EditText search = new EditText(context);
-        search.setHint(getString(R.string.Search));
+        search.setHint(LocaleController.getString("Moments_SearchTab", R.string.Moments_SearchTab));
         search.setBackground(null);
         search.setPadding(dp(16), dp(8), dp(16), dp(8));
         search.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -146,41 +149,48 @@ public class FeedCityActivity extends BaseFragment {
     }
 
     private void query(String q) {
-        cities.clear();
-        FeedController.getInstance(currentAccount).api.getJson("/v1/feed/cities?q=" + FeedApi.enc(q), (json, error) -> {
+        final int token = generation.next();
+        final String text = q == null ? "" : q;
+        FeedController.getInstance(currentAccount).api.getJson("/v1/feed/cities?q=" + FeedApi.enc(text), (json, error) -> {
+            if (!generation.accept(token)) {
+                return;
+            }
+            ArrayList<String> codes = new ArrayList<>();
+            ArrayList<String> names = new ArrayList<>();
             if (json != null) {
                 JSONArray items = json.optJSONArray("items");
-                if (items == null) items = json.optJSONArray("cities");
+                if (items == null) {
+                    items = json.optJSONArray("cities");
+                }
                 if (items != null) {
                     for (int i = 0; i < items.length(); i++) {
                         JSONObject item = items.optJSONObject(i);
-                        if (item != null) {
-                            cities.add(new String[]{item.optString("code", item.optString("id", "")), item.optString("name", "")});
+                        if (item == null) {
+                            continue;
                         }
+                        codes.add(item.optString("code", item.optString("id", "")));
+                        names.add(FeedContract.serverCityName(item.optString("name", ""), item.optString("local_name", ""), item.optString("label", "")));
                     }
                 }
             }
-            if (cities.isEmpty()) {
-                fallback(q);
+            cities.clear();
+            cities.addAll(FeedContract.resolveCities(codes, names, fallbackCities(), text));
+            if (listView.getAdapter() != null) {
+                listView.getAdapter().notifyDataSetChanged();
             }
-            if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
         });
     }
 
-    private void fallback(String q) {
-        String[][] seed = new String[][]{
-                {"cn:beijing", "北京"},
-                {"cn:shanghai", "上海"},
-                {"cn:guangzhou", "广州"},
-                {"cn:shenzhen", "深圳"},
-                {"cn:chengdu", "成都"},
-                {"cn:hangzhou", "杭州"}
+    /** Used only when the cities request returns nothing usable. */
+    private String[][] fallbackCities() {
+        return new String[][]{
+                {"cn:beijing", LocaleController.getString("Moments_City_Beijing", R.string.Moments_City_Beijing)},
+                {"cn:shanghai", LocaleController.getString("Moments_City_Shanghai", R.string.Moments_City_Shanghai)},
+                {"cn:guangzhou", LocaleController.getString("Moments_City_Guangzhou", R.string.Moments_City_Guangzhou)},
+                {"cn:shenzhen", LocaleController.getString("Moments_City_Shenzhen", R.string.Moments_City_Shenzhen)},
+                {"cn:chengdu", LocaleController.getString("Moments_City_Chengdu", R.string.Moments_City_Chengdu)},
+                {"cn:hangzhou", LocaleController.getString("Moments_City_Hangzhou", R.string.Moments_City_Hangzhou)}
         };
-        for (int i = 0; i < seed.length; i++) {
-            if (q == null || q.length() == 0 || seed[i][1].contains(q) || seed[i][0].contains(q.toLowerCase(Locale.US))) {
-                cities.add(seed[i]);
-            }
-        }
     }
 
     private void choose(String code, String name) {
@@ -224,6 +234,6 @@ public class FeedCityActivity extends BaseFragment {
     @SuppressWarnings("unused")
     private void explainDenied() {
         if (getParentActivity() == null) return;
-        new AlertDialog.Builder(getParentActivity()).setMessage(FeedUi.s("Moments.LocationDenied", R.string.FeedLocationDenied)).setPositiveButton(getString(R.string.OK), null).show();
+        new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_LocationDenied", R.string.Moments_LocationDenied)).setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null).show();
     }
 }

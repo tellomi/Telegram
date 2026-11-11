@@ -114,15 +114,4 @@ cat "$work/latest.json"
 run rclone copyto "$work/latest.json" "r2:$BUCKET/$manifest_key" --s3-no-check-bucket \
   --header-upload "Cache-Control: no-cache" --header-upload "Content-Type: application/json"
 
-# 3. retention on R2 (the server's weekly prune does the same)
-if [ "$channel" = release ]; then
-  mapfile -t rels < <(rclone lsf --dirs-only "r2:$BUCKET/$platform/" | sed 's#/$##' | grep -vx test | sort -V)
-  drop=$(( ${#rels[@]} - KEEP ))
-  for ((i=0; i<drop; i++)); do
-    [ "${rels[$i]}" = "$release" ] && continue
-    echo "prune r2:$BUCKET/$platform/${rels[$i]}"
-    run rclone purge "r2:$BUCKET/$platform/${rels[$i]}"
-  done
-fi
-run rclone delete "r2:$BUCKET/$platform/test" --min-age "${TEST_DAYS}d" --rmdirs 2>/dev/null || true
 echo "published $platform $release ($channel). Primary $PRIMARY/$prefix/ is live on the server within ~10 minutes."

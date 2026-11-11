@@ -3,8 +3,9 @@
 
 /*
  * Android datacenter addresses are connected with inet_pton (ConnectionSocket).
- * A hostname is closed as "bad ipv4" / "bad ipv6" and must not replace a
- * working IP. See docs/TELLOMI.md (D-33).
+ * A hostname from help.getConfig is dropped and must not replace a working IP.
+ * A seed hostname is not a literal: ConnectionSocket resolves it with the same
+ * getHostByName path as a proxy host, then dials that IP. See docs/TELLOMI.md (D-33).
  */
 
 #include <arpa/inet.h>
@@ -19,6 +20,15 @@ inline bool tellomiAcceptDcAddress(const std::string &address, bool ipv6, int32_
     unsigned char buf[sizeof(struct in6_addr)];
     int family = ipv6 ? AF_INET6 : AF_INET;
     return inet_pton(family, address.c_str(), buf) == 1;
+}
+
+// True when ConnectionSocket cannot inet_pton the host and must resolve it.
+// Empty strings and IP literals are dialed directly or rejected as bad addresses.
+inline bool tellomiDcHostNeedsResolve(const std::string &address) {
+    if (address.empty()) {
+        return false;
+    }
+    return !tellomiAcceptDcAddress(address, false, 1) && !tellomiAcceptDcAddress(address, true, 1);
 }
 
 #endif

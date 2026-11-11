@@ -16,14 +16,14 @@ import static org.junit.Assert.assertTrue;
 public class FeedContractTest {
 
     @Test
-    public void engineLimitsAreFiveHundredCharsAndTenImages() {
-        assertEquals(500, FeedContract.MAX_TEXT);
-        assertEquals(500, FeedContract.MAX_COMMENT);
-        assertEquals(10, FeedContract.MAX_IMAGES);
-        assertEquals(450, FeedContract.TEXT_COUNTER_FROM);
-        assertEquals(500, FeedContract.clampText(repeat('a', 800)).length());
-        assertEquals(0, FeedContract.imageSlotsLeft(10));
-        assertEquals(3, FeedContract.imageSlotsLeft(7));
+    public void engineLimitsMatchTheServerConstants() {
+        assertEquals(2000, FeedContract.MAX_TEXT);
+        assertEquals(1000, FeedContract.MAX_COMMENT);
+        assertEquals(12, FeedContract.MAX_IMAGES);
+        assertEquals(1950, FeedContract.TEXT_COUNTER_FROM);
+        assertEquals(2000, FeedContract.clampText(repeat('a', 2500)).length());
+        assertEquals(0, FeedContract.imageSlotsLeft(12));
+        assertEquals(5, FeedContract.imageSlotsLeft(7));
     }
 
     @Test
@@ -61,23 +61,71 @@ public class FeedContractTest {
 
     @Test
     public void topTabsComeFromCapabilitiesAndDropMissingRoutes() {
-        ArrayList<String> tabs = FeedContract.tabsFromCapabilities("{\"config\":{\"tabs\":[\"following\",\"friends\",\"nearby\",\"recommend\",\"places\"]}}");
-        assertEquals(Arrays.asList("following", "nearby", "recommend"), tabs);
-        assertEquals(FeedContract.defaultTabs(), FeedContract.tabsFromCapabilities("{}"));
-        assertTrue(FeedContract.tabsFromCapabilities("{\"tabs\":[]}").isEmpty());
-        assertNull(FeedContract.streamPath("friends", "", "", ""));
+        java.util.List<String> home = Arrays.asList("recommend", "following", "friends", "nearby");
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"config\":{\"tabs\":[\"following\",\"friends\",\"nearby\",\"recommend\",\"places\"]}}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"friends_feed\":false}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{}"));
+        assertEquals(home, FeedContract.tabsFromCapabilities("{\"tabs\":[]}"));
+        assertEquals("/v1/feed/friends?cursor=", FeedContract.streamPath("friends", "", "", ""));
+        assertEquals("/v1/feed/friends?cursor=c2", FeedContract.streamPath("friends", "c2", "cn:chengdu", "latest"));
+        assertFalse(FeedContract.streamPath("friends", "c2", "", "").contains("city="));
         assertNull(FeedContract.streamPath("places", "", "", ""));
         assertEquals("/v1/feed/recommend?cursor=", FeedContract.streamPath("recommend", "", "cn:chengdu", "latest"));
         assertTrue(FeedContract.streamPath("nearby", "c", "cn:chengdu", "mixed").contains("city="));
         assertFalse(FeedContract.streamPath("nearby", "", "", "").contains("new-count"));
+        String page = "{\"items\":[{\"id\":\"p1\",\"reason\":\"friend\"},{\"id\":\"p2\",\"reason\":\"topic\"},{\"id\":\"p3\",\"reason\":\"repost\"}],\"cursor\":\"c\"}";
+        FeedContract.FeedList list = FeedContract.parseFeedList(page);
+        assertEquals("friend", list.refs.get(0).reason);
+        assertEquals("topic", list.refs.get(1).reason);
+        assertFalse(FeedContract.showRepostHeader("topic"));
+        assertFalse(FeedContract.showRepostHeader("source"));
+        assertFalse(FeedContract.showRepostHeader("friend"));
+        assertFalse(FeedContract.showRepostHeader("following"));
+        assertTrue(FeedContract.showRepostHeader("repost"));
+        assertTrue(FeedContract.showRepostHeader(""));
+        assertTrue(FeedContract.isMutualAudience("mutual_followers"));
+        assertFalse(FeedContract.isMutualAudience("public"));
+        assertTrue(FeedContract.cardUnavailable(false, "unavailable"));
+        assertTrue(FeedContract.cardUnavailable(true, "published"));
+        assertFalse(FeedContract.cardUnavailable(false, "published"));
+        assertEquals(1080, FeedContract.renditionTargetPx(1));
+        assertEquals(360, FeedContract.renditionTargetPx(2));
+        ArrayList<FeedContract.Tier> tiers = new ArrayList<>();
+        tiers.add(new FeedContract.Tier("big", "", 1080, 720));
+        tiers.add(new FeedContract.Tier("small", "https://cdn.example/s.jpg", 360, 240));
+        assertEquals(1, FeedContract.chooseRendition(tiers, 360));
+        assertEquals(0, FeedContract.chooseRendition(tiers, 1080));
+        assertEquals(-1, FeedContract.chooseRendition(tiers, 2000));
+        assertEquals("https://cdn.example/s.jpg", FeedContract.resolveMediaUrl("small", "https://cdn.example/s.jpg", "https://media.example"));
+        assertEquals("https://media.example/big.jpg", FeedContract.resolveMediaUrl("big.jpg", "", "https://media.example/"));
+        ArrayList<FeedContract.Tier> parsed = FeedContract.parseRenditions("{\"renditions\":[{\"key\":\"a\",\"w\":1080,\"h\":1080},{\"key\":\"b\",\"url\":\"https://cdn.example/b.jpg\",\"w\":360,\"h\":360}]}");
+        assertEquals(2, parsed.size());
+        assertEquals("a", parsed.get(0).key);
+        assertEquals(360, parsed.get(1).longEdge());
+        assertEquals("https://cdn.example/b.jpg", parsed.get(1).url);
+        FeedContract.Tier poster = FeedContract.parsePoster("{\"poster\":{\"key\":\"p\",\"url\":\"https://cdn.example/p.jpg\",\"w\":640,\"h\":360}}");
+        assertEquals("p", poster.key);
+        assertEquals("https://cdn.example/p.jpg", poster.url);
+        assertNull(FeedContract.parsePoster("{\"cover_key\":\"legacy\"}"));
     }
 
     @Test
     public void momentsTabNeedsConfigKeyAndVisibleStatus() {
-        assertFalse(FeedContract.showMomentsTab(false, true));
-        assertFalse(FeedContract.showMomentsTab(true, false));
-        assertFalse(FeedContract.showMomentsTab(false, false));
+        assertTrue(FeedContract.showMomentsTab(false, true));
+        assertTrue(FeedContract.showMomentsTab(true, false));
+        assertTrue(FeedContract.showMomentsTab(false, false));
         assertTrue(FeedContract.showMomentsTab(true, true));
+        assertEquals(1, FeedContract.imageSampleSize(4032, 3024, "800_800", 3f));
+        assertTrue(FeedContract.imageSampleSize(4032, 3024, FeedContract.imageFilter(864, 864, 3f), 3f) >= 4);
+        long full = FeedContract.decodedArgbBytes(4032, 3024, 1);
+        assertEquals(4032L * 3024L * 4L, full);
+        assertTrue(full > 45L * 1024 * 1024);
+        String cell = FeedContract.imageFilter(900, 900, 3f);
+        int shrunk = FeedContract.imageSampleSize(4032, 3024, cell, 3f);
+        long small = FeedContract.decodedArgbBytes(4032, 3024, shrunk);
+        assertTrue(small < 8L * 1024 * 1024);
+        assertTrue(full * 6 > 256L * 1024 * 1024);
+        assertTrue(small * 6 < 48L * 1024 * 1024);
         assertTrue(FeedContract.statusVisible("{\"visible\":true}"));
         assertFalse(FeedContract.statusVisible("{\"visible\":false}"));
         assertTrue(FeedContract.statusVisible("{\"status\":{\"visible\":true}}"));
@@ -113,10 +161,31 @@ public class FeedContractTest {
         assertTrue(sticker.contains("\"sticker\":true"));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", ""));
         assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1&cursor=c2", FeedContract.commentsPath("p1", "c2"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=latest&thread=1", FeedContract.commentsPath("p1", "", "latest"));
+        assertEquals("/v1/feed/posts/p1/comments?sort=hot&thread=1", FeedContract.commentsPath("p1", "", "nope"));
+        assertFalse(FeedContract.hasNewerHead("", "p2"));
+        assertFalse(FeedContract.hasNewerHead("p1", ""));
+        assertFalse(FeedContract.hasNewerHead("p1", "p1"));
+        assertTrue(FeedContract.hasNewerHead("p1", "p2"));
+        assertEquals("WaitingForNetwork", FeedContract.connectionTitleKey(2));
+        assertEquals("Connecting", FeedContract.connectionTitleKey(1));
+        assertEquals("ConnectingToProxyWithDots", FeedContract.connectionTitleKey(4));
+        assertEquals("Updating", FeedContract.connectionTitleKey(5));
+        assertNull(FeedContract.connectionTitleKey(3));
+        assertEquals("mixed", FeedContract.nextNearbySort("latest"));
+        assertEquals("latest", FeedContract.nextNearbySort("mixed"));
+        assertEquals("mixed", FeedContract.nextNearbySort(null));
+        FeedContract.LoadEpoch epoch = new FeedContract.LoadEpoch();
+        int first = epoch.begin();
+        assertTrue(epoch.isCurrent(first));
+        int second = epoch.begin();
+        assertFalse(epoch.isCurrent(first));
+        assertTrue(epoch.isCurrent(second));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
-        String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
-        assertFalse(longText.contains(repeat('b', 501)));
+        String longText = FeedContract.commentBody(repeat('b', 1200), null, "voice", "v");
+        assertFalse(longText.contains(repeat('b', 1001)));
+        assertTrue(longText.contains(repeat('b', 1000)));
         assertTrue(longText.contains("\"media_keys\""));
     }
 
@@ -207,10 +276,10 @@ public class FeedContractTest {
     }
 
     @Test
-    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+    public void momentsKeysMatchResourcesAndSurviveReleaseShrinking() throws Exception {
         String english = read("../../../res/values/strings.xml");
         String chinese = read("../../../res/values-zh-rCN/strings.xml");
-        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Feed[A-Za-z0-9]+)\"")
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
                 .matcher(english);
         int count = 0;
         while (names.find()) {
@@ -219,24 +288,88 @@ public class FeedContractTest {
             count++;
         }
         assertTrue(count >= 40);
-        String ui = read("ui/Feed/FeedUi.java")
-                + read("ui/Feed/FeedActivity.java")
-                + read("ui/Feed/FeedPostCell.java");
-        assertTrue(ui.contains("Moments.Title"));
-        assertTrue(ui.contains("Moments.Segment.Recommend"));
-        assertTrue(ui.contains("Moments.Like"));
-        assertTrue(ui.contains("Moments.Empty.Recommend"));
-        assertTrue(ui.contains("LocaleController.getString(key, res)"));
+        assertFalse(english.contains("name=\"Feed"));
+        String sources = "";
+        String[] files = new String[]{
+                "ui/MainTabsActivity.java",
+                "ui/Feed/FeedUi.java",
+                "ui/Feed/FeedActivity.java",
+                "ui/Feed/FeedPostCell.java",
+                "ui/Feed/FeedCommentSheet.java"
+        };
+        for (int i = 0; i < files.length; i++) {
+            sources += read(files[i]);
+        }
+        assertTrue(sources.contains("LocaleController.getString(\"Moments_Title\", R.string.Moments_Title)"));
+        assertFalse(sources.contains("createConfigurationContext"));
+        assertFalse(sources.contains("FeedUi.s("));
+        java.util.regex.Matcher calls = java.util.regex.Pattern.compile(
+                "LocaleController\\.(?:getString|formatString)\\(\"([^\"]+)\", R\\.string\\.([A-Za-z0-9_]+)")
+                .matcher(sources);
+        int callsFound = 0;
+        while (calls.find()) {
+            assertEquals(calls.group(1), calls.group(2));
+            assertTrue(english.contains("name=\"" + calls.group(1) + "\""));
+            callsFound++;
+        }
+        assertTrue(callsFound >= 10);
+    }
+
+    @Test
+    public void feedStringsShareMomentsKeysAndChineseCopy() throws Exception {
+        String english = read("../../../res/values/strings.xml");
+        String chinese = read("../../../res/values-zh-rCN/strings.xml");
+        java.util.regex.Matcher names = java.util.regex.Pattern.compile("name=\"(Moments_[A-Za-z0-9_]+)\"")
+                .matcher(english);
+        int count = 0;
+        while (names.find()) {
+            assertTrue(names.group(1), chinese.contains("name=\"" + names.group(1) + "\""));
+            count++;
+        }
+        assertTrue(count >= 40);
+        String ui = read("ui/Feed/FeedActivity.java") + read("ui/Feed/FeedPostCell.java");
+        assertTrue(ui.contains("Moments_Title"));
+        assertTrue(ui.contains("Moments_Segment_Recommend"));
+        assertTrue(ui.contains("Moments_Like"));
+        assertTrue(ui.contains("Moments_Empty_Recommend"));
+        assertFalse(ui.contains("Moments.Title"));
         String design = readDesign();
         assertTrue(design.contains("40 dp"));
         assertTrue(design.contains("5 lines"));
         assertTrue(design.contains("78%"));
         assertTrue(design.contains("msg_send"));
         assertTrue(design.contains("#FF2E38"));
-        assertTrue(design.contains("msg_list"));
+        assertTrue(design.contains("tab_article"));
         assertTrue(design.contains("msg_discussion"));
         assertTrue(design.contains("filled_fab_compose_32"));
         assertTrue(design.contains("media_like_active"));
+        assertTrue(design.contains("360 dp"));
+        assertTrue(design.contains("RecyclerViewPreloader"));
+        assertTrue(design.contains("WaitingForNetwork"));
+        assertTrue(design.contains("Moments_Nearby_Mixed"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("canScrollHorizontally"));
+        assertTrue(cell.contains("setLockPager"));
+        String activity = read("ui/Feed/FeedActivity.java");
+        assertTrue(activity.contains("Moments_NewPosts"));
+        assertTrue(activity.contains("probeHead"));
+        int vote = activity.indexOf("void onVote");
+        int media = activity.indexOf("void onMedia");
+        assertTrue(vote >= 0 && media > vote);
+        String voteMethod = activity.substring(vote, media);
+        assertTrue(voteMethod.contains("controller().vote"));
+        assertFalse(voteMethod.contains("FeedCommentSheet"));
+        assertTrue(activity.contains("didUpdateConnectionState"));
+        assertTrue(activity.contains("Moments_Nearby_Mixed"));
+        String playback = read("ui/Feed/FeedPlayback.java");
+        assertTrue(playback.contains("toggleVoice"));
+        assertTrue(playback.contains("pauseMessage"));
+        assertTrue(cell.contains("voiceRow"));
+        assertTrue(cell.contains("bindLike"));
+        assertTrue(cell.contains("listUrl"));
+        assertTrue(activity.contains("FeedDetailActivity"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("PAYLOAD_LIKE"));
+        assertTrue(read("ui/Feed/FeedListView.java").contains("setHasStableIds"));
     }
 
     @Test
@@ -248,7 +381,6 @@ public class FeedContractTest {
                 + read("ui/Feed/FeedNotificationsActivity.java")
                 + read("ui/Feed/FeedCityActivity.java")
                 + read("ui/Feed/FeedComposerActivity.java");
-        assertFalse(feed.contains("/v1/feed/friends"));
         assertFalse(feed.contains("/new-count"));
         assertFalse(feed.contains("/v1/feed/places"));
         assertFalse(feed.contains("notifications?kind="));
@@ -265,6 +397,178 @@ public class FeedContractTest {
         char[] chars = new char[n];
         Arrays.fill(chars, c);
         return new String(chars);
+    }
+
+    @Test
+    public void cancelledLoadsAvatarsClocksAndLikesStayScoped() throws Exception {
+        assertFalse(FeedContract.acceptPage(false, null));
+        assertFalse(FeedContract.acceptPage(true, "cancelled"));
+        assertTrue(FeedContract.acceptPage(true, null));
+        assertFalse(FeedContract.acceptPage(false, "network"));
+
+        FeedContract.StableIds ids = new FeedContract.StableIds();
+        assertTrue(ids.idFor("Aa") != ids.idFor("BB"));
+        assertEquals(ids.idFor("Aa"), ids.idFor("Aa"));
+        assertEquals(0, ids.idFor(""));
+
+        assertEquals("0:00", FeedContract.clock(0));
+        assertEquals("0:09", FeedContract.clock(9_000));
+        assertEquals("1:05", FeedContract.clock(65_000));
+        assertEquals("telegram", FeedContract.avatarSource(true, "https://cdn.example/a"));
+        assertEquals("http", FeedContract.avatarSource(false, "https://cdn.example/a"));
+        assertEquals("letter", FeedContract.avatarSource(false, "avatar-key"));
+
+        String same = FeedContract.mediaBindKey("p1", java.util.Arrays.asList("https://cdn/a"));
+        assertTrue(FeedContract.sameMediaBind(same, FeedContract.mediaBindKey("p1", java.util.Arrays.asList("https://cdn/a"))));
+        assertFalse(FeedContract.sameMediaBind(same, FeedContract.mediaBindKey("p2", java.util.Arrays.asList("https://cdn/a"))));
+
+        FeedContract.RelativeBucket minutes = FeedContract.relativeBucket(180_000L, 1L);
+        assertEquals("minute", minutes.unit);
+        assertEquals(2, minutes.count);
+        assertEquals("2 minutes ago", minutes.english);
+        assertTrue(FeedContract.replaceEnglishTimer("zh_cn", "2 minutes ago", minutes.english));
+        assertFalse(FeedContract.replaceEnglishTimer("zh_cn", "2分钟前", minutes.english));
+        assertFalse(FeedContract.replaceEnglishTimer("en", "2 minutes ago", minutes.english));
+        assertEquals("now", FeedContract.relativeBucket(10_000L, 1L).unit);
+        assertEquals("", FeedContract.relativeBucket(10_000L, 0L).unit);
+        assertEquals("Moments_Conn_Waiting", FeedContract.connectionMomentsKey("WaitingForNetwork"));
+        assertNull(FeedContract.connectionMomentsKey(null));
+
+        String controller = read("messenger/feed/FeedController.java");
+        int begin = controller.indexOf("public int beginLoad");
+        int cancelReads = controller.indexOf("api.cancelReads()", begin);
+        int epochBegin = controller.indexOf(".begin()", begin);
+        assertTrue(begin >= 0 && epochBegin > begin && epochBegin < cancelReads);
+        assertTrue(controller.contains("cancelLoadsExcept"));
+        assertTrue(controller.contains("acceptPage"));
+        assertTrue(controller.contains("dropPending"));
+        String activity = read("ui/Feed/FeedActivity.java");
+        int animation = activity.indexOf("void onTabAnimationUpdate");
+        int scrollEnd = activity.indexOf("void onScrollEnd");
+        assertTrue(animation >= 0 && scrollEnd > animation);
+        String duringSwipe = activity.substring(animation, scrollEnd);
+        assertFalse(duringSwipe.contains("ensure("));
+        assertTrue(activity.contains("cancelLoadsExcept"));
+        String cell = read("ui/Feed/FeedPostCell.java");
+        assertTrue(cell.contains("sameMediaBind"));
+        assertTrue(cell.contains("delegate.onMedia"));
+        assertTrue(cell.contains("FeedContract.clock"));
+        assertFalse(cell.contains("clearImage"));
+        assertFalse(cell.contains("+ \"s\""));
+        String list = read("ui/Feed/FeedListView.java");
+        assertTrue(list.contains("PAYLOAD_LIKE"));
+        assertTrue(list.contains("bindLike"));
+        assertTrue(list.contains("StableIds"));
+        String like = controller.substring(controller.indexOf("void toggleLike"), controller.indexOf("void toggleSave"));
+        assertTrue(like.contains("notifyPost"));
+        assertFalse(like.contains("notifyListeners"));
+        String ui = read("ui/Feed/FeedUi.java");
+        assertTrue(ui.contains("Moments_Time_Now"));
+        assertTrue(ui.contains("avatarSource"));
+        assertFalse(ui.contains("cancelLoadImage"));
+    }
+
+    @Test
+    public void queryGenerationAndRoutesIgnoreStaleWork() {
+        FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
+        int first = generation.next();
+        int second = generation.next();
+        assertFalse(generation.accept(first));
+        assertTrue(generation.accept(second));
+        assertFalse(FeedContract.acceptQuery(first, generation.current()));
+        assertTrue(FeedContract.acceptQuery(second, generation.current()));
+        assertFalse(FeedContract.acceptQuery(0, generation.current()));
+        assertFalse(generation.accept(0));
+
+        assertEquals("/v1/feed/profiles/42/following", FeedContract.relationPath("42", false, ""));
+        assertEquals("/v1/feed/profiles/42/followers?cursor=c2", FeedContract.relationPath("42", true, "c2"));
+        assertNull(FeedContract.relationPath("", true, ""));
+        assertTrue(FeedContract.knownListVisibility("public"));
+        assertTrue(FeedContract.knownListVisibility("self"));
+        assertFalse(FeedContract.knownListVisibility("friends"));
+        assertTrue(FeedContract.listPrivate("list_private", null));
+        assertTrue(FeedContract.listPrivate(null, "list_private"));
+        assertFalse(FeedContract.listPrivate("network", null));
+
+        FeedContract.RelationPage hidden = FeedContract.parseRelationPage("{\"error\":\"list_private\",\"items\":[{}]}", "list_private", false);
+        assertTrue(hidden.hidden);
+        assertFalse(hidden.failed);
+        assertEquals(-1, hidden.total);
+        assertTrue(FeedContract.applyRelationPage(true, true, hidden.failed, hidden.hidden));
+        assertFalse(FeedContract.applyRelationPage(true, false, hidden.failed, hidden.hidden));
+
+        FeedContract.RelationPage failed = FeedContract.parseRelationPage(null, "network", true);
+        assertTrue(failed.failed);
+        assertFalse(failed.hidden);
+        assertFalse(FeedContract.applyRelationPage(true, false, failed.failed, failed.hidden));
+        assertFalse(FeedContract.applyRelationPage(false, true, false, false));
+
+        String both = "{\"items\":[{}],\"cursor\":\"n\",\"following_count\":2,\"followers_count\":8}";
+        FeedContract.RelationPage following = FeedContract.parseRelationPage(both, null, false);
+        FeedContract.RelationPage followers = FeedContract.parseRelationPage(both, null, true);
+        assertEquals(2, following.total);
+        assertEquals(8, followers.total);
+        assertEquals("n", following.cursor);
+        assertTrue(FeedContract.applyRelationPage(true, false, following.failed, following.hidden));
+        assertEquals(2, FeedContract.parseRelationPage("{\"items\":[{},{}]}", null, false).total);
+        assertEquals(-1, FeedContract.parseRelationPage("{\"items\":[{}],\"next_cursor\":\"more\"}", "", false).total);
+        assertEquals(4, FeedContract.parseRelationPage("{\"users\":[{}],\"counts\":{\"followers\":4}}", null, true).total);
+
+        assertEquals("/v1/feed/me/notifications?tab=follows&cursor=c2", FeedContract.notificationsPath("follows", "c2"));
+        assertEquals(FeedContract.notificationsPath("system"), FeedContract.notificationsPath("system", ""));
+        assertEquals("{\"tab\":\"interactions\"}", FeedContract.notificationReadBody("nope"));
+        assertFalse(FeedContract.notificationReadBody("follows").equals("{}"));
+        assertTrue(FeedContract.notificationReadBody("follows").contains("\"tab\":\"follows\""));
+
+        assertEquals(FeedContract.OPEN_PROFILE, FeedContract.notificationOpen("follow", "p", "c", 5, false));
+        assertEquals(FeedContract.OPEN_PROFILE, FeedContract.notificationOpen("mutual", "", "", 9, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("follow", "p", "", 0, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("like", "p", "c", 5, true));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("comment", "p", "c", 5, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("reply", "p", "c", 0, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("mention", "p", "c", 0, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("repost", "p", "", 3, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("system", "", "", 0, false));
+        assertEquals("c", FeedContract.notificationCommentId(FeedContract.OPEN_POST, "c"));
+        assertEquals("", FeedContract.notificationCommentId(FeedContract.OPEN_PROFILE, "c"));
+        assertEquals("", FeedContract.notificationCommentId(FeedContract.OPEN_POST, ""));
+
+        ArrayList<String> roots = new ArrayList<>();
+        roots.add("a");
+        roots.add("b");
+        ArrayList<java.util.List<String>> replies = new ArrayList<>();
+        replies.add(Arrays.asList("c", "d", "e"));
+        replies.add(new ArrayList<String>());
+        assertEquals(0, FeedContract.locateComment(roots, replies, 2, "a"));
+        assertEquals(1, FeedContract.locateComment(roots, replies, 2, "c"));
+        assertEquals(2, FeedContract.locateComment(roots, replies, 2, "d"));
+        assertEquals(0, FeedContract.locateComment(roots, replies, 2, "e"));
+        assertEquals(3, FeedContract.locateComment(roots, replies, 2, "b"));
+        assertEquals(-1, FeedContract.locateComment(roots, replies, 2, "z"));
+        assertEquals(-1, FeedContract.locateComment(roots, replies, 2, ""));
+
+        FeedContract.TopicPlace topic = FeedContract.topicPlace("cats", "latest", 12, -4);
+        FeedContract.TopicPlace topicBack = FeedContract.restoreTopic(topic);
+        assertEquals("cats", topicBack.topic);
+        assertEquals("latest", topicBack.sort);
+        assertEquals(12, topicBack.position);
+        assertEquals(-4, topicBack.offset);
+        assertEquals("hot", FeedContract.topicPlace("cats", "nope", 1, 0).sort);
+        assertEquals(0, FeedContract.topicPlace("cats", "hot", -1, 8).position);
+        assertEquals("", FeedContract.restoreTopic(null).topic);
+        assertEquals("hot", FeedContract.restoreTopic(null).sort);
+
+        FeedContract.NotificationPlace notes = FeedContract.notificationPlace("follows", 8, 2);
+        FeedContract.NotificationPlace notesBack = FeedContract.restoreNotifications(notes);
+        assertEquals("follows", notesBack.tab);
+        assertEquals(8, notesBack.position);
+        assertEquals(2, notesBack.offset);
+        assertEquals("interactions", FeedContract.notificationPlace("nope", 1, 0).tab);
+        assertEquals("interactions", FeedContract.restoreNotifications(null).tab);
+        assertEquals(0, FeedContract.notificationPlace("system", -3, 4).position);
+
+        assertFalse(FeedContract.composerGestureLeaves(true));
+        assertTrue(FeedContract.composerGestureLeaves(false));
     }
 
     private static String readDesign() throws Exception {

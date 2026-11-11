@@ -91,7 +91,7 @@ public:
 private:
     static void *ThreadProc(void *data);
 
-    void initDatacenters();
+    bool initDatacenters();
     void loadConfig();
     void saveConfig();
     void saveConfigInternal(NativeByteBuffer *buffer);

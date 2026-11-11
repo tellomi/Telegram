@@ -1,0 +1,1345 @@
+{
+  "resolution": "Release resources.arsc discards @string values. LocaleController.getString(name, R.string.name) reads the matching localization bin by the Java hash of the resource name. en and zh-Hans are on every Moments key. A key that ships in any other built-in language must ship in all of them, with that language's own wording.",
+  "keys": [
+    {
+      "key": "Moments_AllowNearby",
+      "en": "Show in Nearby",
+      "zh-Hans": "在同城展示"
+    },
+    {
+      "key": "Moments_AndOthers",
+      "en": "and others",
+      "zh-Hans": "和其他人"
+    },
+    {
+      "key": "Moments_Article",
+      "en": "Article",
+      "zh-Hans": "文章"
+    },
+    {
+      "key": "Moments_Audience_Choose",
+      "en": "Who can see this: choose",
+      "zh-Hans": "谁可以看：请选择"
+    },
+    {
+      "key": "Moments_Audience_CloseFriends",
+      "en": "Close friends",
+      "zh-Hans": "密友",
+      "zh-Hant": "密友",
+      "ar": "الأصدقاء المقربون",
+      "de": "Enge Freunde",
+      "es": "Amigos cercanos",
+      "it": "Amici stretti",
+      "ko": "친한 친구",
+      "nl": "Goede vrienden",
+      "pt-BR": "Amigos próximos",
+      "ru": "Близкие друзья",
+      "uk": "Близькі друзі"
+    },
+    {
+      "key": "Moments_Audience_Contacts",
+      "en": "Contacts",
+      "zh-Hans": "联系人",
+      "zh-Hant": "聯絡人",
+      "ar": "جهات الاتصال",
+      "de": "Meine Kontakte",
+      "es": "Mis contactos",
+      "it": "I miei contatti",
+      "ko": "연락처",
+      "nl": "Mijn contacten",
+      "pt-BR": "Meus contatos",
+      "ru": "Мои контакты",
+      "uk": "Мої контакти"
+    },
+    {
+      "key": "Moments_Audience_Custom",
+      "en": "Custom",
+      "zh-Hans": "自定义"
+    },
+    {
+      "key": "Moments_Audience_Done",
+      "en": "Done",
+      "zh-Hans": "完成"
+    },
+    {
+      "key": "Moments_Audience_Followers",
+      "en": "Followers",
+      "zh-Hans": "粉丝"
+    },
+    {
+      "key": "Moments_Audience_Kept",
+      "en": "Couldn\\'t update who can see this. Your selection was kept.",
+      "zh-Hans": "没能更新谁可以看。你的选择还在。",
+      "zh-Hant": "沒能更新誰可以看。你的選擇還在。",
+      "ar": "تعذّر تحديث من يمكنه المشاهدة. اختيارك ما زال محفوظًا.",
+      "de": "Wer das sehen kann, wurde nicht geändert. Deine Auswahl bleibt.",
+      "es": "No se pudo cambiar quién puede ver esto. Tu selección se mantiene.",
+      "it": "Impossibile aggiornare chi può vedere. La scelta è rimasta.",
+      "ko": "공개 대상을 바꾸지 못했습니다. 선택한 사람은 그대로입니다.",
+      "nl": "Kon niet wijzigen wie dit mag zien. Je keuze blijft staan.",
+      "pt-BR": "Não foi possível atualizar quem pode ver. Sua seleção foi mantida.",
+      "ru": "Не удалось обновить, кто может видеть. Ваш выбор сохранён.",
+      "uk": "Не вдалося оновити, хто може бачити. Ваш вибір збережено."
+    },
+    {
+      "key": "Moments_Audience_Mutual",
+      "en": "Mutual followers",
+      "zh-Hans": "互关好友"
+    },
+    {
+      "key": "Moments_Audience_Selected",
+      "en": "Selected people",
+      "zh-Hans": "指定的人",
+      "zh-Hant": "指定的人",
+      "ar": "أشخاص محددون",
+      "de": "Ausgewählte Personen",
+      "es": "Personas elegidas",
+      "it": "Persone scelte",
+      "ko": "선택한 사람",
+      "nl": "Gekozen mensen",
+      "pt-BR": "Pessoas escolhidas",
+      "ru": "Выбранные люди",
+      "uk": "Обрані люди"
+    },
+    {
+      "key": "Moments_Audience_Subtitle",
+      "en": "Nothing is selected until you choose.",
+      "zh-Hans": "需要你自己选择，不会记住上次"
+    },
+    {
+      "key": "Moments_Author",
+      "en": "Author",
+      "zh-Hans": "作者"
+    },
+    {
+      "key": "Moments_Cancel",
+      "en": "Cancel",
+      "zh-Hans": "取消",
+      "zh-Hant": "取消",
+      "ar": "إلغاء",
+      "de": "Abbrechen",
+      "es": "Cancelación",
+      "it": "Annulla",
+      "ko": "취소",
+      "nl": "Annuleren",
+      "pt-BR": "Cancelar",
+      "ru": "Отмена",
+      "uk": "Скасувати"
+    },
+    {
+      "key": "Moments_ChangeAudience",
+      "en": "Who can view",
+      "zh-Hans": "修改谁可以看"
+    },
+    {
+      "key": "Moments_City_Beijing",
+      "en": "Beijing",
+      "zh-Hans": "北京",
+      "zh-Hant": "北京",
+      "ar": "بكين",
+      "de": "Peking",
+      "es": "Pekín",
+      "it": "Pechino",
+      "ko": "베이징",
+      "nl": "Peking",
+      "pt-BR": "Pequim",
+      "ru": "Пекин",
+      "uk": "Пекін"
+    },
+    {
+      "key": "Moments_City_Chengdu",
+      "en": "Chengdu",
+      "zh-Hans": "成都",
+      "zh-Hant": "成都",
+      "ar": "تشنغدو",
+      "de": "Chengdu",
+      "es": "Chengdú",
+      "it": "Chengdu",
+      "ko": "청두",
+      "nl": "Chengdu",
+      "pt-BR": "Chengdu",
+      "ru": "Чэнду",
+      "uk": "Ченду"
+    },
+    {
+      "key": "Moments_City_Guangzhou",
+      "en": "Guangzhou",
+      "zh-Hans": "广州",
+      "zh-Hant": "廣州",
+      "ar": "قوانغتشو",
+      "de": "Kanton",
+      "es": "Cantón",
+      "it": "Canton",
+      "ko": "광저우",
+      "nl": "Kanton",
+      "pt-BR": "Cantão",
+      "ru": "Гуанчжоу",
+      "uk": "Гуанчжоу"
+    },
+    {
+      "key": "Moments_City_Hangzhou",
+      "en": "Hangzhou",
+      "zh-Hans": "杭州",
+      "zh-Hant": "杭州",
+      "ar": "هانغتشو",
+      "de": "Hangzhou",
+      "es": "Hangzhou",
+      "it": "Hangzhou",
+      "ko": "항저우",
+      "nl": "Hangzhou",
+      "pt-BR": "Hangzhou",
+      "ru": "Ханчжоу",
+      "uk": "Ханчжоу"
+    },
+    {
+      "key": "Moments_City_Shanghai",
+      "en": "Shanghai",
+      "zh-Hans": "上海",
+      "zh-Hant": "上海",
+      "ar": "شنغهاي",
+      "de": "Shanghai",
+      "es": "Shanghái",
+      "it": "Shanghai",
+      "ko": "상하이",
+      "nl": "Shanghai",
+      "pt-BR": "Xangai",
+      "ru": "Шанхай",
+      "uk": "Шанхай"
+    },
+    {
+      "key": "Moments_City_Shenzhen",
+      "en": "Shenzhen",
+      "zh-Hans": "深圳",
+      "zh-Hant": "深圳",
+      "ar": "شنتشن",
+      "de": "Shenzhen",
+      "es": "Shenzhen",
+      "it": "Shenzhen",
+      "ko": "선전",
+      "nl": "Shenzhen",
+      "pt-BR": "Shenzhen",
+      "ru": "Шэньчжэнь",
+      "uk": "Шеньчжень"
+    },
+    {
+      "key": "Moments_Close",
+      "en": "Close",
+      "zh-Hans": "关闭",
+      "zh-Hant": "關閉",
+      "ar": "إغلاق",
+      "de": "Schließen",
+      "es": "Cerrar esto",
+      "it": "Chiudere",
+      "ko": "닫기",
+      "nl": "Sluiten",
+      "pt-BR": "Fechar",
+      "ru": "Закрыть",
+      "uk": "Закрити"
+    },
+    {
+      "key": "Moments_Comment",
+      "en": "Comment",
+      "zh-Hans": "评论"
+    },
+    {
+      "key": "Moments_CommentCount",
+      "en": "%d comments",
+      "zh-Hans": "%d条评论"
+    },
+    {
+      "key": "Moments_CommentHint",
+      "en": "Say something",
+      "zh-Hans": "发条评论，说说你的感受"
+    },
+    {
+      "key": "Moments_Comment_Closed",
+      "en": "Comments are turned off",
+      "zh-Hans": "评论已关闭"
+    },
+    {
+      "key": "Moments_Comment_Following",
+      "en": "Only people the author follows can comment.",
+      "zh-Hans": "只有作者关注的人可以评论"
+    },
+    {
+      "key": "Moments_Comment_Mentioned",
+      "en": "Only people mentioned in the post can comment.",
+      "zh-Hans": "只有被提及的人可以评论"
+    },
+    {
+      "key": "Moments_Comment_Mutual",
+      "en": "Only mutual followers can comment.",
+      "zh-Hans": "只有互关好友可以评论"
+    },
+    {
+      "key": "Moments_Comment_Placeholder",
+      "en": "Reply",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Comment_SendFailed",
+      "en": "Couldn\\'t send this comment. Your text is still here.",
+      "zh-Hans": "评论没有发出去，内容还在。",
+      "zh-Hant": "留言沒有送出，內容還在。",
+      "ar": "تعذّر إرسال التعليق. نصك ما زال هنا.",
+      "de": "Der Kommentar wurde nicht gesendet. Dein Text ist noch da.",
+      "es": "No se pudo enviar el comentario. Tu texto sigue aquí.",
+      "it": "Impossibile inviare il commento. Il testo è ancora qui.",
+      "ko": "댓글을 보내지 못했습니다. 내용은 그대로입니다.",
+      "nl": "Reactie niet verzonden. Je tekst staat er nog.",
+      "pt-BR": "Não foi possível enviar o comentário. Seu texto continua aqui.",
+      "ru": "Не удалось отправить комментарий. Текст на месте.",
+      "uk": "Не вдалося надіслати коментар. Текст залишився."
+    },
+    {
+      "key": "Moments_Composer_Hint",
+      "en": "What\\'s new?",
+      "zh-Hans": "写点什么"
+    },
+    {
+      "key": "Moments_Composer_Title",
+      "en": "New post",
+      "zh-Hans": "新动态"
+    },
+    {
+      "key": "Moments_Conn_Connecting",
+      "en": "Connecting...",
+      "zh-Hans": "正在连接…",
+      "zh-Hant": "正在連線…",
+      "ar": "جار الاتصال…",
+      "de": "Verbindung wird hergestellt…",
+      "es": "Conectando ahora…",
+      "it": "Connessione…",
+      "ko": "연결하는 중…",
+      "nl": "Verbinden…",
+      "pt-BR": "Conectando agora…",
+      "ru": "Подключение…",
+      "uk": "Підключення…"
+    },
+    {
+      "key": "Moments_Conn_Proxy",
+      "en": "Connecting to proxy...",
+      "zh-Hans": "正在连接代理…",
+      "zh-Hant": "正在連接代理…",
+      "ar": "جار الاتصال بالوكيل…",
+      "de": "Verbinde mit dem Proxy…",
+      "es": "Conectando con el proxy…",
+      "it": "Connessione al proxy…",
+      "ko": "프록시에 연결하는 중…",
+      "nl": "Verbinden met de proxy…",
+      "pt-BR": "Conectando ao proxy…",
+      "ru": "Подключение к прокси…",
+      "uk": "Підключення до проксі…"
+    },
+    {
+      "key": "Moments_Conn_Updating",
+      "en": "Updating...",
+      "zh-Hans": "正在更新…",
+      "zh-Hant": "正在更新…",
+      "ar": "جار التحديث…",
+      "de": "Wird aktualisiert…",
+      "es": "Actualizando ahora…",
+      "it": "Aggiornamento…",
+      "ko": "업데이트하는 중…",
+      "nl": "Bijwerken…",
+      "pt-BR": "Atualizando agora…",
+      "ru": "Обновление…",
+      "uk": "Оновлення…"
+    },
+    {
+      "key": "Moments_Conn_Waiting",
+      "en": "Waiting for network...",
+      "zh-Hans": "等待网络…",
+      "zh-Hant": "正在等待網路…",
+      "ar": "بانتظار الشبكة…",
+      "de": "Warte auf das Netz…",
+      "es": "Esperando la red…",
+      "it": "In attesa della rete…",
+      "ko": "네트워크를 기다리는 중…",
+      "nl": "Wachten op het netwerk…",
+      "pt-BR": "Aguardando a rede…",
+      "ru": "Ожидание сети…",
+      "uk": "Очікування мережі…"
+    },
+    {
+      "key": "Moments_Copy",
+      "en": "Copy",
+      "zh-Hans": "复制",
+      "zh-Hant": "複製",
+      "ar": "نسخ",
+      "de": "Kopieren",
+      "es": "Copiar texto",
+      "it": "Copiare",
+      "ko": "복사",
+      "nl": "Kopiëren",
+      "pt-BR": "Copiar texto",
+      "ru": "Копировать",
+      "uk": "Копіювати"
+    },
+    {
+      "key": "Moments_CopyLink",
+      "en": "Copy link",
+      "zh-Hans": "复制链接"
+    },
+    {
+      "key": "Moments_Delete",
+      "en": "Delete",
+      "zh-Hans": "删除",
+      "zh-Hant": "刪除",
+      "ar": "حذف",
+      "de": "Löschen",
+      "es": "Eliminar",
+      "it": "Elimina",
+      "ko": "삭제",
+      "nl": "Verwijderen",
+      "pt-BR": "Apagar",
+      "ru": "Удалить",
+      "uk": "Видалити"
+    },
+    {
+      "key": "Moments_DeleteThread",
+      "en": "Replies will be deleted too.",
+      "zh-Hans": "回复也会一起删除"
+    },
+    {
+      "key": "Moments_DetailTitle",
+      "en": "Post",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Draft_Continue",
+      "en": "Keep editing",
+      "zh-Hans": "继续编辑"
+    },
+    {
+      "key": "Moments_Draft_Discard",
+      "en": "Discard",
+      "zh-Hans": "放弃"
+    },
+    {
+      "key": "Moments_Draft_Message",
+      "en": "You have not posted this yet.",
+      "zh-Hans": "这条动态还没有发布"
+    },
+    {
+      "key": "Moments_Draft_Save",
+      "en": "Save draft",
+      "zh-Hans": "保存草稿"
+    },
+    {
+      "key": "Moments_Draft_Title",
+      "en": "Save this draft?",
+      "zh-Hans": "保存这份草稿？"
+    },
+    {
+      "key": "Moments_Edit",
+      "en": "Edit",
+      "zh-Hans": "编辑",
+      "zh-Hant": "編輯",
+      "ar": "تعديل",
+      "de": "Bearbeiten",
+      "es": "Edición",
+      "it": "Modificare",
+      "ko": "편집",
+      "nl": "Bewerken",
+      "pt-BR": "Editar agora",
+      "ru": "Изменить",
+      "uk": "Змінити"
+    },
+    {
+      "key": "Moments_Edited",
+      "en": "Edited",
+      "zh-Hans": "已编辑"
+    },
+    {
+      "key": "Moments_EmptyFriends",
+      "en": "Follow each other and you are friends. Their posts show up here.",
+      "zh-Hans": "互相关注后就是好友，好友的动态会出现在这里"
+    },
+    {
+      "key": "Moments_Empty_Following",
+      "en": "People you follow have not posted yet.",
+      "zh-Hans": "你关注的人还没有发动态"
+    },
+    {
+      "key": "Moments_Empty_Nearby",
+      "en": "No posts in this city yet.",
+      "zh-Hans": "这座城市还没有动态"
+    },
+    {
+      "key": "Moments_Empty_Recommend",
+      "en": "Nothing here yet. Post the first one.",
+      "zh-Hans": "还没有内容，来发第一条吧"
+    },
+    {
+      "key": "Moments_ExternalShare",
+      "en": "Other apps",
+      "zh-Hans": "其他应用"
+    },
+    {
+      "key": "Moments_FailedRetry",
+      "en": "Could not post. Retry",
+      "zh-Hans": "发布失败，点击重试"
+    },
+    {
+      "key": "Moments_File",
+      "en": "File",
+      "zh-Hans": "文件"
+    },
+    {
+      "key": "Moments_FilterAll",
+      "en": "All",
+      "zh-Hans": "全部"
+    },
+    {
+      "key": "Moments_FilterRepostsOnly",
+      "en": "Reposts",
+      "zh-Hans": "转发"
+    },
+    {
+      "key": "Moments_Filter_Comments",
+      "en": "Comments",
+      "zh-Hans": "评论和回复"
+    },
+    {
+      "key": "Moments_Filter_Likes",
+      "en": "Likes",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_Filter_Mentions",
+      "en": "Mentions",
+      "zh-Hans": "提及"
+    },
+    {
+      "key": "Moments_Filter_Posts",
+      "en": "Posts",
+      "zh-Hans": "帖子"
+    },
+    {
+      "key": "Moments_Filter_Reposts",
+      "en": "Reposts",
+      "zh-Hans": "转发和引用"
+    },
+    {
+      "key": "Moments_FindPeople",
+      "en": "Find people",
+      "zh-Hans": "找人关注"
+    },
+    {
+      "key": "Moments_Follow",
+      "en": "Follow",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Followers",
+      "en": "Followers",
+      "zh-Hans": "粉丝"
+    },
+    {
+      "key": "Moments_FollowingState",
+      "en": "Following",
+      "zh-Hans": "已关注"
+    },
+    {
+      "key": "Moments_Forward",
+      "en": "Forward",
+      "zh-Hans": "转发",
+      "zh-Hant": "轉寄",
+      "ar": "إعادة توجيه",
+      "de": "Weiterleiten",
+      "es": "Reenviar",
+      "it": "Inoltra",
+      "ko": "전달",
+      "nl": "Doorsturen",
+      "pt-BR": "Encaminhar",
+      "ru": "Переслать",
+      "uk": "Переслати"
+    },
+    {
+      "key": "Moments_Friends",
+      "en": "Friends",
+      "zh-Hans": "好友"
+    },
+    {
+      "key": "Moments_FullText",
+      "en": "Full text",
+      "zh-Hans": "全文"
+    },
+    {
+      "key": "Moments_HiddenName",
+      "en": "Hidden",
+      "zh-Hans": "隐藏",
+      "zh-Hant": "已隱藏",
+      "ar": "مخفي",
+      "de": "Verborgen",
+      "es": "Oculto",
+      "it": "Nascosto",
+      "ko": "숨김",
+      "nl": "Verborgen",
+      "pt-BR": "Oculto",
+      "ru": "Скрыто",
+      "uk": "Приховано"
+    },
+    {
+      "key": "Moments_HidePost",
+      "en": "Hide this post",
+      "zh-Hans": "隐藏该帖子"
+    },
+    {
+      "key": "Moments_Like",
+      "en": "Like",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_ListPrivate",
+      "en": "This list is private",
+      "zh-Hans": "对方未公开"
+    },
+    {
+      "key": "Moments_Lists",
+      "en": "Lists",
+      "zh-Hans": "列表"
+    },
+    {
+      "key": "Moments_LoadFailed",
+      "en": "Could not load. Tap to retry.",
+      "zh-Hans": "加载失败，点击重试"
+    },
+    {
+      "key": "Moments_Loading",
+      "en": "Loading...",
+      "zh-Hans": "正在加载…",
+      "zh-Hant": "正在載入…",
+      "ar": "جار التحميل…",
+      "de": "Wird geladen…",
+      "es": "Cargando…",
+      "it": "Caricamento…",
+      "ko": "불러오는 중…",
+      "nl": "Laden…",
+      "pt-BR": "Carregando…",
+      "ru": "Загрузка…",
+      "uk": "Завантаження…"
+    },
+    {
+      "key": "Moments_LocationDenied",
+      "en": "Choose a city instead.",
+      "zh-Hans": "改为手动选择城市"
+    },
+    {
+      "key": "Moments_MentionTitle",
+      "en": "They cannot see this",
+      "zh-Hans": "对方看不到"
+    },
+    {
+      "key": "Moments_MentionWarning",
+      "en": "These people cannot see this post and will not be notified.",
+      "zh-Hans": "以下用户看不到这条动态，也不会收到提醒。"
+    },
+    {
+      "key": "Moments_More",
+      "en": "More",
+      "zh-Hans": "更多",
+      "zh-Hant": "更多",
+      "ar": "المزيد",
+      "de": "Mehr",
+      "es": "Más opciones",
+      "it": "Altre opzioni",
+      "ko": "더보기",
+      "nl": "Meer opties",
+      "pt-BR": "Mais opções",
+      "ru": "Ещё",
+      "uk": "Ще"
+    },
+    {
+      "key": "Moments_Mute",
+      "en": "Mute in feed",
+      "zh-Hans": "屏蔽动态"
+    },
+    {
+      "key": "Moments_Mutes",
+      "en": "Muted in feed",
+      "zh-Hans": "已屏蔽的人"
+    },
+    {
+      "key": "Moments_Mutual",
+      "en": "Mutual followers",
+      "zh-Hans": "互关好友"
+    },
+    {
+      "key": "Moments_Nearby_Mixed",
+      "en": "Recommended",
+      "zh-Hans": "综合"
+    },
+    {
+      "key": "Moments_Nearby_Permission",
+      "en": "Location is only used to pick your city. It is not saved.",
+      "zh-Hans": "位置只用来选择城市，不会保存"
+    },
+    {
+      "key": "Moments_NewPosts",
+      "en": "New posts",
+      "zh-Hans": "有新动态"
+    },
+    {
+      "key": "Moments_NotInterested",
+      "en": "Not interested",
+      "zh-Hans": "不感兴趣"
+    },
+    {
+      "key": "Moments_Notif_Follows",
+      "en": "Follows",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Notif_Interactions",
+      "en": "Interactions",
+      "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_Notif_Other",
+      "en": "Activity",
+      "zh-Hans": "动态通知",
+      "zh-Hant": "動態通知",
+      "ar": "نشاط",
+      "de": "Aktivität",
+      "es": "Actividad",
+      "it": "Attività",
+      "ko": "활동",
+      "nl": "Activiteit",
+      "pt-BR": "Atividade",
+      "ru": "Активность",
+      "uk": "Активність"
+    },
+    {
+      "key": "Moments_Notif_System",
+      "en": "System",
+      "zh-Hans": "系统"
+    },
+    {
+      "key": "Moments_Notifications",
+      "en": "Activity",
+      "zh-Hans": "互动"
+    },
+    {
+      "key": "Moments_OK",
+      "en": "OK",
+      "zh-Hans": "好",
+      "zh-Hant": "好",
+      "ar": "حسنًا",
+      "de": "Gut",
+      "es": "Aceptar",
+      "it": "Va bene",
+      "ko": "확인",
+      "nl": "Prima",
+      "pt-BR": "Certo",
+      "ru": "ОК",
+      "uk": "Гаразд"
+    },
+    {
+      "key": "Moments_Pdf",
+      "en": "PDF",
+      "zh-Hans": "PDF"
+    },
+    {
+      "key": "Moments_Photo",
+      "en": "Photo",
+      "zh-Hans": "图片"
+    },
+    {
+      "key": "Moments_Pinned",
+      "en": "Pinned",
+      "zh-Hans": "置顶"
+    },
+    {
+      "key": "Moments_Profile_Liked",
+      "en": "Liked",
+      "zh-Hans": "赞过"
+    },
+    {
+      "key": "Moments_Profile_Posts",
+      "en": "Posts",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Profile_Saved",
+      "en": "Saved posts",
+      "zh-Hans": "动态收藏"
+    },
+    {
+      "key": "Moments_Publish",
+      "en": "Post",
+      "zh-Hans": "发布"
+    },
+    {
+      "key": "Moments_Push",
+      "en": "Push",
+      "zh-Hans": "动态推送"
+    },
+    {
+      "key": "Moments_Push_Comments",
+      "en": "Comments",
+      "zh-Hans": "评论"
+    },
+    {
+      "key": "Moments_Push_Follows",
+      "en": "New followers",
+      "zh-Hans": "新关注"
+    },
+    {
+      "key": "Moments_Push_Likes",
+      "en": "Likes",
+      "zh-Hans": "点赞"
+    },
+    {
+      "key": "Moments_Push_Mentions",
+      "en": "Mentions",
+      "zh-Hans": "提及"
+    },
+    {
+      "key": "Moments_Push_NewPosts",
+      "en": "Posts from people you follow",
+      "zh-Hans": "关注对象的新帖"
+    },
+    {
+      "key": "Moments_Push_Replies",
+      "en": "Replies",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_Push_Reposts",
+      "en": "Reposts and quotes",
+      "zh-Hans": "转发和引用"
+    },
+    {
+      "key": "Moments_Quote",
+      "en": "Quote",
+      "zh-Hans": "引用"
+    },
+    {
+      "key": "Moments_QuoteHint",
+      "en": "Add a comment",
+      "zh-Hans": "说点什么"
+    },
+    {
+      "key": "Moments_QuoteInvalid",
+      "en": "That quote isn\\'t valid.",
+      "zh-Hans": "引用无效"
+    },
+    {
+      "key": "Moments_QuoteUnavailable",
+      "en": "This post can\\'t be quoted.",
+      "zh-Hans": "这条动态不能引用"
+    },
+    {
+      "key": "Moments_Recording",
+      "en": "Recording…",
+      "zh-Hans": "正在录音…"
+    },
+    {
+      "key": "Moments_RefreshKept",
+      "en": "Couldn\\'t refresh. Still showing these posts.",
+      "zh-Hans": "刷新没有新内容，仍显示这些动态。"
+    },
+    {
+      "key": "Moments_Remove",
+      "en": "Remove",
+      "zh-Hans": "移除"
+    },
+    {
+      "key": "Moments_Reply",
+      "en": "Reply",
+      "zh-Hans": "回复"
+    },
+    {
+      "key": "Moments_ReplyTo",
+      "en": "Reply @%s",
+      "zh-Hans": "回复 @%s"
+    },
+    {
+      "key": "Moments_Report",
+      "en": "Report",
+      "zh-Hans": "举报",
+      "zh-Hant": "檢舉",
+      "ar": "إبلاغ",
+      "de": "Melden",
+      "es": "Denunciar",
+      "it": "Segnala",
+      "ko": "신고",
+      "nl": "Melden",
+      "pt-BR": "Denunciar",
+      "ru": "Пожаловаться",
+      "uk": "Поскаржитись"
+    },
+    {
+      "key": "Moments_Report_Child",
+      "en": "Child abuse",
+      "zh-Hans": "虐待儿童",
+      "zh-Hant": "虐待兒童",
+      "ar": "إساءة للأطفال",
+      "de": "Missbrauch von Kindern",
+      "es": "Abuso infantil",
+      "it": "Abusi sui minori",
+      "ko": "아동 학대",
+      "nl": "Kindermisbruik",
+      "pt-BR": "Abuso infantil",
+      "ru": "Жестокое обращение с детьми",
+      "uk": "Жорстоке поводження з дітьми"
+    },
+    {
+      "key": "Moments_Report_Detail",
+      "en": "Description",
+      "zh-Hans": "补充说明",
+      "zh-Hant": "補充說明",
+      "ar": "التفاصيل",
+      "de": "Erläuterung",
+      "es": "Detalles",
+      "it": "Dettagli",
+      "ko": "설명",
+      "nl": "Toelichting",
+      "pt-BR": "Detalhes",
+      "ru": "Подробности",
+      "uk": "Подробиці"
+    },
+    {
+      "key": "Moments_Report_Drugs",
+      "en": "Illegal drugs",
+      "zh-Hans": "毒品",
+      "zh-Hant": "毒品",
+      "ar": "مخدرات",
+      "de": "Illegale Drogen",
+      "es": "Sustancias ilegales",
+      "it": "Droghe illegali",
+      "ko": "불법 약물",
+      "nl": "Illegale drugs",
+      "pt-BR": "Substâncias ilegais",
+      "ru": "Наркотики",
+      "uk": "Наркотики"
+    },
+    {
+      "key": "Moments_Report_Fake",
+      "en": "Fake",
+      "zh-Hans": "虚假",
+      "zh-Hant": "虛假",
+      "ar": "حساب مزيف",
+      "de": "Fälschung",
+      "es": "Contenido falso",
+      "it": "Contenuto falso",
+      "ko": "허위",
+      "nl": "Nepinhoud",
+      "pt-BR": "Conteúdo falso",
+      "ru": "Фальшивка",
+      "uk": "Фейк"
+    },
+    {
+      "key": "Moments_Report_Other",
+      "en": "Other",
+      "zh-Hans": "其他",
+      "zh-Hant": "其他",
+      "ar": "سبب آخر",
+      "de": "Anderer Grund",
+      "es": "Otro motivo",
+      "it": "Altro motivo",
+      "ko": "기타",
+      "nl": "Andere reden",
+      "pt-BR": "Outro motivo",
+      "ru": "Другая причина",
+      "uk": "Інша причина"
+    },
+    {
+      "key": "Moments_Report_Personal",
+      "en": "Personal details",
+      "zh-Hans": "个人隐私",
+      "zh-Hant": "個人隱私",
+      "ar": "بيانات شخصية",
+      "de": "Persönliche Daten",
+      "es": "Datos personales",
+      "it": "Dati personali",
+      "ko": "개인정보",
+      "nl": "Persoonlijke gegevens",
+      "pt-BR": "Dados pessoais",
+      "ru": "Личные данные",
+      "uk": "Особисті дані"
+    },
+    {
+      "key": "Moments_Report_Pornography",
+      "en": "Pornography",
+      "zh-Hans": "色情",
+      "zh-Hant": "色情",
+      "ar": "محتوى إباحي",
+      "de": "Pornografie",
+      "es": "Contenido pornográfico",
+      "it": "Contenuto pornografico",
+      "ko": "음란물",
+      "nl": "Pornografie",
+      "pt-BR": "Conteúdo pornográfico",
+      "ru": "Порнография",
+      "uk": "Порнографія"
+    },
+    {
+      "key": "Moments_Report_Sent",
+      "en": "Report sent",
+      "zh-Hans": "已提交举报",
+      "zh-Hant": "已送出檢舉",
+      "ar": "تم إرسال البلاغ",
+      "de": "Meldung gesendet",
+      "es": "Denuncia enviada",
+      "it": "Segnalazione inviata",
+      "ko": "신고를 보냈습니다",
+      "nl": "Melding verstuurd",
+      "pt-BR": "Denúncia enviada",
+      "ru": "Жалоба отправлена",
+      "uk": "Скаргу надіслано"
+    },
+    {
+      "key": "Moments_Report_Spam",
+      "en": "Spam",
+      "zh-Hans": "垃圾信息",
+      "zh-Hant": "垃圾訊息",
+      "ar": "رسائل مزعجة",
+      "de": "Unerwünschte Werbung",
+      "es": "Mensajes basura",
+      "it": "Messaggi indesiderati",
+      "ko": "스팸",
+      "nl": "Ongewenste berichten",
+      "pt-BR": "Mensagens indesejadas",
+      "ru": "Нежелательные сообщения",
+      "uk": "Небажані повідомлення"
+    },
+    {
+      "key": "Moments_Report_Violence",
+      "en": "Violence",
+      "zh-Hans": "暴力",
+      "zh-Hant": "暴力",
+      "ar": "عنف",
+      "de": "Gewalt",
+      "es": "Contenido violento",
+      "it": "Contenuto violento",
+      "ko": "폭력",
+      "nl": "Geweld",
+      "pt-BR": "Conteúdo violento",
+      "ru": "Насилие",
+      "uk": "Насильство"
+    },
+    {
+      "key": "Moments_Repost",
+      "en": "Repost",
+      "zh-Hans": "转发"
+    },
+    {
+      "key": "Moments_RepostBlocked",
+      "en": "Only public posts can be reposted or quoted.",
+      "zh-Hans": "只有公开帖可以转发或引用"
+    },
+    {
+      "key": "Moments_RepostBlocked_Mutual",
+      "en": "Mutual-follower posts can\\'t be reposted or quoted.",
+      "zh-Hans": "互关好友的帖子不能转发或引用"
+    },
+    {
+      "key": "Moments_RepostHeader",
+      "en": "%s reposted",
+      "zh-Hans": "%s 转发了"
+    },
+    {
+      "key": "Moments_Save",
+      "en": "Save",
+      "zh-Hans": "收藏"
+    },
+    {
+      "key": "Moments_Saved",
+      "en": "Saved",
+      "zh-Hans": "已收藏"
+    },
+    {
+      "key": "Moments_Search",
+      "en": "Moments",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_SearchTab",
+      "en": "Search",
+      "zh-Hans": "搜索"
+    },
+    {
+      "key": "Moments_Segment_Following",
+      "en": "Following",
+      "zh-Hans": "关注"
+    },
+    {
+      "key": "Moments_Segment_Nearby",
+      "en": "Nearby",
+      "zh-Hans": "同城"
+    },
+    {
+      "key": "Moments_Segment_Recommend",
+      "en": "For you",
+      "zh-Hans": "推荐"
+    },
+    {
+      "key": "Moments_Send",
+      "en": "Send",
+      "zh-Hans": "发送",
+      "zh-Hant": "傳送",
+      "ar": "إرسال",
+      "de": "Senden",
+      "es": "Enviar",
+      "it": "Inviare",
+      "ko": "보내기",
+      "nl": "Versturen",
+      "pt-BR": "Enviar agora",
+      "ru": "Отправить",
+      "uk": "Надіслати"
+    },
+    {
+      "key": "Moments_SendOriginal",
+      "en": "Send original",
+      "zh-Hans": "发送原图"
+    },
+    {
+      "key": "Moments_Settings_FollowersList",
+      "en": "Who can see my followers",
+      "zh-Hans": "谁能看到我的粉丝列表"
+    },
+    {
+      "key": "Moments_Settings_FollowingList",
+      "en": "Who can see my following",
+      "zh-Hans": "谁能看到我的关注列表"
+    },
+    {
+      "key": "Moments_Settings_OnlyMe",
+      "en": "Only me",
+      "zh-Hans": "仅自己"
+    },
+    {
+      "key": "Moments_Share",
+      "en": "Share",
+      "zh-Hans": "分享"
+    },
+    {
+      "key": "Moments_ShareBlocked",
+      "en": "This post can\\'t be shared that way.",
+      "zh-Hans": "这条动态不能这样分享"
+    },
+    {
+      "key": "Moments_ShareChat",
+      "en": "Share to chat",
+      "zh-Hans": "分享到聊天"
+    },
+    {
+      "key": "Moments_ShowReplies",
+      "en": "Show %d replies",
+      "zh-Hans": "展开%d条回复"
+    },
+    {
+      "key": "Moments_Sort_Hot",
+      "en": "Top",
+      "zh-Hans": "热门"
+    },
+    {
+      "key": "Moments_Sort_Latest",
+      "en": "Latest",
+      "zh-Hans": "最新"
+    },
+    {
+      "key": "Moments_Sort_Relevance",
+      "en": "Relevance",
+      "zh-Hans": "相关度"
+    },
+    {
+      "key": "Moments_Story",
+      "en": "Story",
+      "zh-Hans": "故事"
+    },
+    {
+      "key": "Moments_SwitchCity",
+      "en": "Switch city",
+      "zh-Hans": "切换城市"
+    },
+    {
+      "key": "Moments_Time_Days",
+      "en": "%d days ago",
+      "zh-Hans": "%d天前",
+      "zh-Hant": "%d天前",
+      "ar": "قبل %d أيام",
+      "de": "vor %d Tagen",
+      "es": "hace %d días",
+      "it": "%d giorni fa",
+      "ko": "%d일 전",
+      "nl": "%d dagen geleden",
+      "pt-BR": "há %d dias",
+      "ru": "%d дн. назад",
+      "uk": "%d дн. тому"
+    },
+    {
+      "key": "Moments_Time_Hours",
+      "en": "%d hours ago",
+      "zh-Hans": "%d小时前",
+      "zh-Hant": "%d小時前",
+      "ar": "قبل %d ساعات",
+      "de": "vor %d Stunden",
+      "es": "hace %d horas",
+      "it": "%d ore fa",
+      "ko": "%d시간 전",
+      "nl": "%d uur geleden",
+      "pt-BR": "há %d horas",
+      "ru": "%d ч. назад",
+      "uk": "%d год тому"
+    },
+    {
+      "key": "Moments_Time_Minutes",
+      "en": "%d minutes ago",
+      "zh-Hans": "%d分钟前",
+      "zh-Hant": "%d分鐘前",
+      "ar": "قبل %d دقائق",
+      "de": "vor %d Minuten",
+      "es": "hace %d minutos",
+      "it": "%d minuti fa",
+      "ko": "%d분 전",
+      "nl": "%d minuten geleden",
+      "pt-BR": "há %d minutos",
+      "ru": "%d мин. назад",
+      "uk": "%d хв тому"
+    },
+    {
+      "key": "Moments_Time_Months",
+      "en": "%d months ago",
+      "zh-Hans": "%d个月前",
+      "zh-Hant": "%d個月前",
+      "ar": "قبل %d أشهر",
+      "de": "vor %d Monaten",
+      "es": "hace %d meses",
+      "it": "%d mesi fa",
+      "ko": "%d개월 전",
+      "nl": "%d maanden geleden",
+      "pt-BR": "há %d meses",
+      "ru": "%d мес. назад",
+      "uk": "%d міс. тому"
+    },
+    {
+      "key": "Moments_Time_Now",
+      "en": "Just now",
+      "zh-Hans": "刚刚",
+      "zh-Hant": "剛剛",
+      "ar": "الآن",
+      "de": "Gerade eben",
+      "es": "Ahora mismo",
+      "it": "Proprio ora",
+      "ko": "방금",
+      "nl": "Zojuist",
+      "pt-BR": "Agora mesmo",
+      "ru": "Только что",
+      "uk": "Щойно"
+    },
+    {
+      "key": "Moments_Time_Weeks",
+      "en": "%d weeks ago",
+      "zh-Hans": "%d周前",
+      "zh-Hant": "%d週前",
+      "ar": "قبل %d أسابيع",
+      "de": "vor %d Wochen",
+      "es": "hace %d semanas",
+      "it": "%d settimane fa",
+      "ko": "%d주 전",
+      "nl": "%d weken geleden",
+      "pt-BR": "há %d semanas",
+      "ru": "%d нед. назад",
+      "uk": "%d тиж. тому"
+    },
+    {
+      "key": "Moments_Time_Years",
+      "en": "%d years ago",
+      "zh-Hans": "%d年前",
+      "zh-Hant": "%d年前",
+      "ar": "قبل %d سنوات",
+      "de": "vor %d Jahren",
+      "es": "hace %d años",
+      "it": "%d anni fa",
+      "ko": "%d년 전",
+      "nl": "%d jaar geleden",
+      "pt-BR": "há %d anos",
+      "ru": "%d г. назад",
+      "uk": "%d р. тому"
+    },
+    {
+      "key": "Moments_Title",
+      "en": "Moments",
+      "zh-Hans": "动态"
+    },
+    {
+      "key": "Moments_Tool_Photo",
+      "en": "Photo",
+      "zh-Hans": "图片"
+    },
+    {
+      "key": "Moments_Tool_Place",
+      "en": "Place",
+      "zh-Hans": "位置"
+    },
+    {
+      "key": "Moments_Tool_Poll",
+      "en": "Poll",
+      "zh-Hans": "投票"
+    },
+    {
+      "key": "Moments_Tool_Sticker",
+      "en": "Sticker",
+      "zh-Hans": "贴纸"
+    },
+    {
+      "key": "Moments_Tool_Video",
+      "en": "Video",
+      "zh-Hans": "视频"
+    },
+    {
+      "key": "Moments_Unavailable",
+      "en": "Content unavailable",
+      "zh-Hans": "内容不可用"
+    },
+    {
+      "key": "Moments_Uploading",
+      "en": "Posting",
+      "zh-Hans": "正在发布"
+    },
+    {
+      "key": "Moments_UseLocation",
+      "en": "Use my city",
+      "zh-Hans": "使用当前城市"
+    },
+    {
+      "key": "Moments_VideoTooLong",
+      "en": "Trim the video to 60 seconds or less.",
+      "zh-Hans": "请把视频裁剪到 60 秒以内"
+    },
+    {
+      "key": "Moments_Voice",
+      "en": "Voice",
+      "zh-Hans": "语音"
+    },
+    {
+      "key": "Moments_WhoCanSee",
+      "en": "Who can view",
+      "zh-Hans": "谁可以看"
+    },
+    {
+      "key": "Moments_Personalized",
+      "en": "Personalized recommendations",
+      "zh-Hans": "个性化推荐"
+    },
+    {
+      "key": "Moments_PersonalizedInfo",
+      "en": "When this is off, For you is not sorted for you.",
+      "zh-Hans": "关闭后，推荐不再按你的兴趣排序。"
+    },
+    {
+      "key": "Moments_Recommendations",
+      "en": "Recommendations",
+      "zh-Hans": "推荐"
+    },
+    {
+      "key": "Moments_VideoTooLongN",
+      "en": "Trim the video to %1$d seconds or less.",
+      "zh-Hans": "请把视频裁剪到 %1$d 秒以内"
+    }
+  ]
+}

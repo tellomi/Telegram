@@ -1,7 +1,11 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class FeedAudiencePicker {
 
@@ -28,6 +32,15 @@ public final class FeedAudiencePicker {
             sheet.dismiss();
         }, false);
         sheet.show();
+    }
+
+    /** Selected people and excluded people, including members chosen as a group. */
+    public static ArrayList<Long> memberIds(StoryPrivacyBottomSheet.StoryPrivacy privacy) {
+        ArrayList<List<Long>> groups = new ArrayList<>();
+        if (privacy != null && privacy.selectedUserIdsByGroup != null) {
+            groups.addAll(privacy.selectedUserIdsByGroup.values());
+        }
+        return FeedContract.uniqueMemberIds(privacy == null ? null : privacy.selectedUserIds, groups);
     }
 
     public static String kind(int type) {
