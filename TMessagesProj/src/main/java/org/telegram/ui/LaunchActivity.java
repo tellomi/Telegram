@@ -132,6 +132,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SharedPrefsHelper;
+import org.telegram.messenger.TellomiIntro;
 import org.telegram.messenger.TopicsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -1089,7 +1090,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private BaseFragment getClientNotActivatedFragment() {
-        if (LoginActivity.loadCurrentState(false, currentAccount).getInt("currentViewNum", 0) != 0) {
+        int savedViewNum = LoginActivity.loadCurrentState(false, currentAccount).getInt("currentViewNum", 0);
+        // Phone screen is the only fragment, so system back finishes the activity
+        // instead of revealing the welcome page or an empty container.
+        if (TellomiIntro.openPhoneLogin(savedViewNum)) {
             return new LoginActivity();
         }
         return new IntroActivity();
@@ -1261,7 +1265,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 layersActionBarLayout.rebuildLogout();
                 rightActionBarLayout.rebuildLogout();
             }
-            presentFragment(new IntroActivity().setOnLogout());
+            if (TellomiIntro.SKIP_WELCOME) {
+                presentFragment(new LoginActivity(), false, true);
+            } else {
+                presentFragment(new IntroActivity().setOnLogout());
+            }
         }
     }
 
