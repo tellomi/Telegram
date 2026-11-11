@@ -126,11 +126,14 @@ def tellomiPublicKeyPem = {
     def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
     return keyFile.isFile() ? keyFile.getText("UTF-8") : ""
 }
-def TELLOMI_PRODUCTION_HOST = '8.156.40.105'
+// 8.137.198.240 relays TCP on 10443 and 443. MTProto still terminates behind it.
+def TELLOMI_PRODUCTION_HOST = '8.137.198.240'
 def TELLOMI_PRODUCTION_PORT = '10443'
 def TELLOMI_FALLBACK_PORT = '443'
 def TELLOMI_FALLBACK_HOST = 'api.tellomi.cn'
-// Each DC: built-in IP on 10443, then 443, then api.tellomi.cn on 10443 and 443.
+// The origin answers that forwarded connection. A shippable seed must not dial it.
+def tellomiDirectOrigin = '8.156.40.105'
+// Each DC: relay IP on 10443, then 443, then api.tellomi.cn on 10443 and 443.
 // The hostname is resolved by tgnet getHostByName. help.getConfig updates IPs.
 def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT}"
 def tellomiServerProfiles = [
@@ -173,11 +176,18 @@ def tellomiTaskShipsClient = { String name ->
 }
 def tellomiRefuseNonProductionShip = { String where ->
     def selection = tellomiServerSelection('dev')
+    def profile = selection == null ? '' : selection.name
+    def addresses = selection == null ? '' : selection.addresses?.toString()
+    if (addresses != null && addresses.contains(tellomiDirectOrigin)) {
+        throw new GradleException(
+            "A shippable build must not dial ${tellomiDirectOrigin}. ${where} resolved " +
+            "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
+            "Embed ${TELLOMI_PRODUCTION_ADDRESSES}."
+        )
+    }
     if (tellomiShippableSelectionOk(selection)) {
         return
     }
-    def profile = selection == null ? '' : selection.name
-    def addresses = selection == null ? '' : selection.addresses
     throw new GradleException(
         "A shippable build must embed ${TELLOMI_PRODUCTION_ADDRESSES}. ${where} resolved " +
         "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
@@ -389,7 +399,7 @@ gradle.taskGraph.whenReady { graph ->
 
 task tellomiVerifyShippableDc {
     group = 'tellomi'
-    description = 'Fail unless a shippable build embeds 8.156.40.105:10443 and :443 and api.tellomi.cn.'
+    description = 'Fail unless a shippable build embeds 8.137.198.240:10443 and :443 and api.tellomi.cn.'
     doLast {
         def shipServer = tellomiEmbeddedShippableServer()
         println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"
