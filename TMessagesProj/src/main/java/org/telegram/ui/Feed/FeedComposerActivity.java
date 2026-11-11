@@ -438,13 +438,13 @@ public class FeedComposerActivity extends BaseFragment {
                 continue;
             }
             if (photo.isVideo && photo.duration > FeedConfig.MAX_VIDEO_SEC && !trimmed(photo)) {
-                new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.getString("Moments_VideoTooLong", R.string.Moments_VideoTooLong)).setPositiveButton(LocaleController.getString("Moments_OK", R.string.Moments_OK), null).show();
+                new AlertDialog.Builder(getParentActivity()).setMessage(LocaleController.formatString(R.string.Moments_VideoTooLongN, FeedConfig.MAX_VIDEO_SEC)).setPositiveButton(LocaleController.getString(R.string.Moments_OK), null).show();
                 continue;
             }
             if (photo.path == null) {
                 continue;
             }
-            if (!photo.isVideo && count("image") >= FeedContract.MAX_IMAGES) {
+            if (!photo.isVideo && count("image") >= FeedConfig.MAX_IMAGES) {
                 continue;
             }
             paths.add(photo.path);

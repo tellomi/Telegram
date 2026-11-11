@@ -21,6 +21,7 @@ public final class FeedVoiceCapture implements NotificationCenter.NotificationCe
     }
 
     private final int account;
+    private final int maxSeconds;
     private final int guid = Utilities.random.nextInt() & 0x7fffffff;
     private final Callback callback;
     private boolean recording;
@@ -35,8 +36,18 @@ public final class FeedVoiceCapture implements NotificationCenter.NotificationCe
         }
     };
 
+    /** Voice post. Stops at {@link FeedConfig#MAX_VOICE_SEC}. */
     public FeedVoiceCapture(int account, Callback callback) {
+        this(account, 0, callback);
+    }
+
+    /**
+     * {@code maxSeconds} is the comment cap. Zero uses the voice-post cap
+     * at the moment recording starts.
+     */
+    public FeedVoiceCapture(int account, int maxSeconds, Callback callback) {
         this.account = account;
+        this.maxSeconds = maxSeconds;
         this.callback = callback;
     }
 
@@ -53,7 +64,8 @@ public final class FeedVoiceCapture implements NotificationCenter.NotificationCe
         NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.recordProgressChanged);
         NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.audioDidSent);
         recording = true;
-        AndroidUtilities.runOnUIThread(cap, FeedConfig.MAX_VOICE_SEC * 1000L);
+        int seconds = maxSeconds > 0 ? maxSeconds : FeedConfig.MAX_VOICE_SEC;
+        AndroidUtilities.runOnUIThread(cap, seconds * 1000L);
         MediaController.getInstance().startRecording(account, Long.MIN_VALUE, null, null, null, guid, true, null, 0, null);
     }
 

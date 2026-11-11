@@ -16,14 +16,14 @@ import static org.junit.Assert.assertTrue;
 public class FeedContractTest {
 
     @Test
-    public void engineLimitsAreFiveHundredCharsAndTenImages() {
-        assertEquals(500, FeedContract.MAX_TEXT);
-        assertEquals(500, FeedContract.MAX_COMMENT);
-        assertEquals(10, FeedContract.MAX_IMAGES);
-        assertEquals(450, FeedContract.TEXT_COUNTER_FROM);
-        assertEquals(500, FeedContract.clampText(repeat('a', 800)).length());
-        assertEquals(0, FeedContract.imageSlotsLeft(10));
-        assertEquals(3, FeedContract.imageSlotsLeft(7));
+    public void engineLimitsMatchTheServerConstants() {
+        assertEquals(2000, FeedContract.MAX_TEXT);
+        assertEquals(1000, FeedContract.MAX_COMMENT);
+        assertEquals(12, FeedContract.MAX_IMAGES);
+        assertEquals(1950, FeedContract.TEXT_COUNTER_FROM);
+        assertEquals(2000, FeedContract.clampText(repeat('a', 2500)).length());
+        assertEquals(0, FeedContract.imageSlotsLeft(12));
+        assertEquals(5, FeedContract.imageSlotsLeft(7));
     }
 
     @Test
@@ -183,8 +183,9 @@ public class FeedContractTest {
         assertTrue(epoch.isCurrent(second));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
-        String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
-        assertFalse(longText.contains(repeat('b', 501)));
+        String longText = FeedContract.commentBody(repeat('b', 1200), null, "voice", "v");
+        assertFalse(longText.contains(repeat('b', 1001)));
+        assertTrue(longText.contains(repeat('b', 1000)));
         assertTrue(longText.contains("\"media_keys\""));
     }
 

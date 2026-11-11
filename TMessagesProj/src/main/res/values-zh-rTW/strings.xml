@@ -16,6 +16,10 @@
     <string name="Moments_City_Hangzhou">杭州</string>
 
     <string name="Moments_Time_Now">剛剛</string>
+    <string name="Moments_Recommendations">推薦</string>
+    <string name="Moments_Personalized">個人化推薦</string>
+    <string name="Moments_PersonalizedInfo">關閉後，推薦不再依照你的興趣排序。</string>
+    <string name="Moments_VideoTooLongN">請把影片裁剪到 %1$d 秒以內</string>
     <string name="Moments_Time_Minutes">%d分鐘前</string>
     <string name="Moments_Time_Hours">%d小時前</string>
     <string name="Moments_Time_Days">%d天前</string>

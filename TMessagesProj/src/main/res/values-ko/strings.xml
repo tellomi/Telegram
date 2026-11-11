@@ -1148,6 +1148,10 @@
     <string name="Moments_City_Hangzhou">항저우</string>
 
     <string name="Moments_Time_Now">방금</string>
+    <string name="Moments_Recommendations">추천</string>
+    <string name="Moments_Personalized">맞춤 추천</string>
+    <string name="Moments_PersonalizedInfo">끄면 추천이 더 이상 관심사 순으로 정렬되지 않습니다.</string>
+    <string name="Moments_VideoTooLongN">동영상을 %1$d초 이하로 자르세요.</string>
     <string name="Moments_Time_Minutes">%d분 전</string>
     <string name="Moments_Time_Hours">%d시간 전</string>
     <string name="Moments_Time_Days">%d일 전</string>

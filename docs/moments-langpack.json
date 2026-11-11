@@ -1300,6 +1300,26 @@
       "key": "Moments_WhoCanSee",
       "en": "Who can view",
       "zh-Hans": "谁可以看"
+    },
+    {
+      "key": "Moments_Personalized",
+      "en": "Personalized recommendations",
+      "zh-Hans": "个性化推荐"
+    },
+    {
+      "key": "Moments_PersonalizedInfo",
+      "en": "When this is off, For you is not sorted for you.",
+      "zh-Hans": "关闭后，推荐不再按你的兴趣排序。"
+    },
+    {
+      "key": "Moments_Recommendations",
+      "en": "Recommendations",
+      "zh-Hans": "推荐"
+    },
+    {
+      "key": "Moments_VideoTooLongN",
+      "en": "Trim the video to %1$d seconds or less.",
+      "zh-Hans": "请把视频裁剪到 %1$d 秒以内"
     }
   ]
 }

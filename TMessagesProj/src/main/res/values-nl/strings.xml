@@ -1096,6 +1096,10 @@
     <string name="Moments_City_Hangzhou">Hangzhou</string>
 
     <string name="Moments_Time_Now">Zojuist</string>
+    <string name="Moments_Recommendations">Aanbevelingen</string>
+    <string name="Moments_Personalized">Persoonlijke aanbevelingen</string>
+    <string name="Moments_PersonalizedInfo">Als dit uit staat, wordt Voor jou niet meer op jouw interesses gesorteerd.</string>
+    <string name="Moments_VideoTooLongN">Kort de video in tot %1$d seconden of minder.</string>
     <string name="Moments_Time_Minutes">%d minuten geleden</string>
     <string name="Moments_Time_Hours">%d uur geleden</string>
     <string name="Moments_Time_Days">%d dagen geleden</string>
