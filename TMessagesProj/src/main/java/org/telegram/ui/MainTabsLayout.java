@@ -47,10 +47,23 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private static final int[] PASS_PADDINGS_DP = {16, 8, 4};
 
     private int maxWidthPx;
+    private boolean hugTabs;
+    private boolean hugShowsLabels = true;
+    private int hugVisibleMask;
+    private int hugSettledContentWidth;
 
     public void setMaxWidth(int maxWidthPx) {
         if (this.maxWidthPx != maxWidthPx) {
             this.maxWidthPx = maxWidthPx;
+            requestLayout();
+        }
+    }
+
+    /** Main-screen capsule. Statistics keeps the upstream widths. */
+    public void setHuggedTabs(boolean hug, boolean showLabels) {
+        if (this.hugTabs != hug || this.hugShowsLabels != showLabels) {
+            this.hugTabs = hug;
+            this.hugShowsLabels = showLabels;
             requestLayout();
         }
     }
@@ -118,12 +131,20 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             totalWeight = visibleChildCount;
         }
 
-        if (totalWidth > maxTotalWidthForTabs) {
+        final boolean hugged = hugTabs && TellomiTabBarWidth.hug(
+                hugShowsLabels,
+                tabsTextWidth,
+                tabsTextWidthWithMargin,
+                dp(TellomiTabBarWidth.TITLED_SLOT_DP),
+                dp(TellomiTabBarWidth.ICON_SLOT_DP),
+                width,
+                getPaddingLeft() + getPaddingRight()) >= 0;
+        if (!hugged && totalWidth > maxTotalWidthForTabs) {
             final float m = maxTotalWidthForTabs / totalWidth;
             for (int a = 0, N = getChildCount(); a < N; a++) {
                 tabsTextWidthWithMargin[a] *= m;
             }
-        } else if (totalWidth < minTotalWidthForTabs) {
+        } else if (!hugged && totalWidth < minTotalWidthForTabs) {
             final float growW = minTotalWidthForTabs - totalWidth;
             final float growP = growW / totalWeight;
 
@@ -232,12 +253,74 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         checkVisualWidth();
+        if (!hugTabs) {
+            return;
+        }
+        final int mask = currentVisibleMask();
+        final int content = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+        if (mask != hugVisibleMask) {
+            // The visibility animator still has the previous width until the next frame.
+            applyHuggedAnimatedWidth();
+            hugVisibleMask = mask;
+            hugSettledContentWidth = content;
+        } else if (content != hugSettledContentWidth) {
+            syncMeasuredItemWidths();
+            hugSettledContentWidth = content;
+        }
     }
 
     @Override
     protected void onItemsChanged() {
         super.onItemsChanged();
         checkVisualWidth();
+        if (hugTabs) {
+            applyHuggedAnimatedWidth();
+        }
+    }
+
+    private int currentVisibleMask() {
+        int mask = 0;
+        final int count = Math.min(getChildCount(), 31);
+        for (int i = 0; i < count; i++) {
+            if (isViewVisible(getChildAt(i))) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
+    }
+
+    /** Follows {@link me.vkryl.android.animator.ListAnimator}'s width while a tab fades in or out. */
+    private void applyHuggedAnimatedWidth() {
+        if (!(getParent() instanceof View) || getWidth() == 0) {
+            return;
+        }
+        final int content = Math.round(getMetadata().getTotalWidth());
+        if (content <= 0) {
+            return;
+        }
+        final View parent = (View) getParent();
+        final int parentLeft = parent.getPaddingLeft();
+        final int space = parent.getWidth() - parentLeft - parent.getPaddingRight();
+        if (space <= 0) {
+            return;
+        }
+        int target = content + getPaddingLeft() + getPaddingRight();
+        if (target > space) {
+            target = space;
+        }
+        final int childLeft = parentLeft + (space - target) / 2;
+        final int childRight = childLeft + target;
+        if (getLeft() == childLeft && getRight() == childRight) {
+            return;
+        }
+        if (childLeft > getRight()) {
+            setRight(childRight);
+            setLeft(childLeft);
+        } else {
+            setLeft(childLeft);
+            setRight(childRight);
+        }
+        parent.invalidate();
     }
 
     private void checkVisualWidth() {
