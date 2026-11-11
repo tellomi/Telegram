@@ -73,7 +73,21 @@ public class FeedLimitsTest {
         assertEquals(FeedLimits.FALLBACK_COMMENT, missing.comment);
         assertEquals(FeedLimits.FALLBACK_VOICE_POST_SEC, missing.voicePostSec);
         assertEquals(FeedLimits.FALLBACK_VOICE_COMMENT_SEC, missing.voiceCommentSec);
-        assertEquals(60, missing.voicePostSec);
+        assertEquals(2000, FeedLimits.FALLBACK_TEXT);
+        assertEquals(1000, FeedLimits.FALLBACK_COMMENT);
+        assertEquals(12, FeedLimits.FALLBACK_IMAGES);
+        assertEquals(3, FeedLimits.FALLBACK_VIDEOS);
+        assertEquals(180, FeedLimits.FALLBACK_VOICE_POST_SEC);
+        assertEquals(180, FeedLimits.FALLBACK_VOICE_COMMENT_SEC);
+        assertEquals(60, FeedLimits.FALLBACK_VIDEO_SEC);
+        assertEquals(20, FeedLimits.FALLBACK_PAGE_SIZE);
+        assertEquals(10, FeedLimits.FALLBACK_MENTIONS);
+        assertEquals(3, FeedLimits.FALLBACK_TOPICS);
+        assertEquals(2000, missing.text);
+        assertEquals(1000, missing.comment);
+        assertEquals(12, missing.images);
+        assertEquals(180, missing.voicePostSec);
+        assertEquals(180, missing.voiceCommentSec);
         assertFalse(missing.personalizationToggleVisible);
 
         FeedLimits.Values cn = FeedLimits.parse("{\"personalization_toggle_visible\":false,\"limits\":{\"post_text_chars\":500}}");
@@ -124,10 +138,12 @@ public class FeedLimitsTest {
         } finally {
             FeedConfig.apply(FeedLimits.fallback());
         }
-        assertEquals(500, FeedConfig.MAX_COMMENT);
-        assertEquals(10, FeedContract.imageSlotsLeft(0));
-        assertEquals(60, FeedConfig.MAX_VOICE_SEC);
-        assertEquals(60, FeedConfig.MAX_VOICE_COMMENT_SEC);
+        assertEquals(1000, FeedConfig.MAX_COMMENT);
+        assertEquals(12, FeedContract.imageSlotsLeft(0));
+        assertEquals(180, FeedConfig.MAX_VOICE_SEC);
+        assertEquals(180, FeedConfig.MAX_VOICE_COMMENT_SEC);
+        assertEquals(2000, FeedConfig.MAX_TEXT);
+        assertEquals(12, FeedConfig.MAX_IMAGES);
         assertEquals(10, FeedConfig.MAX_MENTIONS);
         assertFalse(FeedConfig.personalizationToggleVisible());
     }

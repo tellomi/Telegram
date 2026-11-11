@@ -29,9 +29,9 @@ public final class FeedConfig {
     public static int MAX_IMAGES = FeedLimits.FALLBACK_IMAGES;
     public static int MAX_VIDEOS = FeedLimits.FALLBACK_VIDEOS;
     public static int MAX_VIDEO_SEC = FeedLimits.FALLBACK_VIDEO_SEC;
-    /** {@code limits.voice_post_max_seconds}. 60 when the server omits it. */
+    /** {@code limits.voice_post_max_seconds}. 180 when the server omits it. */
     public static int MAX_VOICE_SEC = FeedLimits.FALLBACK_VOICE_POST_SEC;
-    /** {@code limits.voice_comment_max_seconds}. 60 when the server omits it. */
+    /** {@code limits.voice_comment_max_seconds}. 180 when the server omits it. */
     public static int MAX_VOICE_COMMENT_SEC = FeedLimits.FALLBACK_VOICE_COMMENT_SEC;
     public static int MAX_MENTIONS = FeedLimits.FALLBACK_MENTIONS;
     /** Parsed from {@code limits.max_topics}. The composer has no topic counter. */

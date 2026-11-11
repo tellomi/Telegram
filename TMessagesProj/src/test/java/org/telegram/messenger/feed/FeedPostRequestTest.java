@@ -70,9 +70,9 @@ public class FeedPostRequestTest {
     }
 
     @Test
-    public void videoKeyIsAStringAndExtraImagesStopAtTen() {
+    public void videoKeyIsAStringAndExtraImagesStopAtTwelve() {
         FeedContract.PostRequest request = base("");
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 14; i++) {
             request.mediaKeys.add("m/img-" + i);
             request.mediaTypes.add("image");
         }
@@ -81,10 +81,10 @@ public class FeedPostRequestTest {
         FeedContract.PostBuild built = FeedContract.buildPost(request, null, null);
         assertAccepted(built);
         JsonArray keys = json(built.body).getAsJsonArray("media_keys");
-        assertEquals(11, keys.size());
+        assertEquals(13, keys.size());
         assertEquals("m/img-0", keys.get(0).getAsString());
-        assertEquals("m/img-9", keys.get(9).getAsString());
-        assertEquals("m/clip", keys.get(10).getAsString());
+        assertEquals("m/img-11", keys.get(11).getAsString());
+        assertEquals("m/clip", keys.get(12).getAsString());
         assertFalse(json(built.body).has("media"));
     }
 

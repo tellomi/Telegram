@@ -17,16 +17,19 @@ public final class FeedLimits {
     public static final String PREFERENCES_METHOD = "PUT";
     public static final String PERSONALIZED = "personalized";
 
-    /** Engine fallbacks used only when the server omits the key. */
+    /**
+     * Same numbers as content-engine when a key is omitted, and the same
+     * defaults as iOS. Voice is media/audio.go MaxAudioSeconds.
+     */
     public static final int FALLBACK_PAGE_SIZE = 20;
-    public static final int FALLBACK_TEXT = FeedContract.MAX_TEXT;
-    public static final int FALLBACK_TEXT_COUNTER_FROM = FeedContract.TEXT_COUNTER_FROM;
-    public static final int FALLBACK_COMMENT = FeedContract.MAX_COMMENT;
-    public static final int FALLBACK_IMAGES = FeedContract.MAX_IMAGES;
+    public static final int FALLBACK_TEXT = 2000;
+    public static final int FALLBACK_TEXT_COUNTER_FROM = 1950;
+    public static final int FALLBACK_COMMENT = 1000;
+    public static final int FALLBACK_IMAGES = 12;
     public static final int FALLBACK_VIDEOS = 3;
     public static final int FALLBACK_VIDEO_SEC = 60;
-    public static final int FALLBACK_VOICE_POST_SEC = 60;
-    public static final int FALLBACK_VOICE_COMMENT_SEC = 60;
+    public static final int FALLBACK_VOICE_POST_SEC = 180;
+    public static final int FALLBACK_VOICE_COMMENT_SEC = 180;
     public static final int FALLBACK_MENTIONS = 10;
     public static final int FALLBACK_TOPICS = 3;
 
