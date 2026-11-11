@@ -780,6 +780,17 @@ public class LocaleController {
                 }
             }
 
+            if (currentInfo == null && TellomiIntro.SKIP_WELCOME) {
+                String matched = TellomiIntro.matchShortName(
+                        systemDefaultLocale.getLanguage(),
+                        systemDefaultLocale.getCountry(),
+                        systemDefaultLocale.getScript(),
+                        languageShortNames());
+                if (matched != null) {
+                    currentInfo = getLanguageFromDict(matched);
+                }
+            }
+
             if (currentInfo == null && systemDefaultLocale.getLanguage() != null) {
                 currentInfo = getLanguageFromDict(systemDefaultLocale.getLanguage());
             }
@@ -836,6 +847,17 @@ public class LocaleController {
             return null;
         }
         return languagesDict.get(key.toLowerCase().replace("-", "_"));
+    }
+
+    private ArrayList<String> languageShortNames() {
+        ArrayList<String> names = new ArrayList<>(languages.size());
+        for (int a = 0; a < languages.size(); a++) {
+            LocaleInfo info = languages.get(a);
+            if (info != null && info.shortName != null) {
+                names.add(info.shortName);
+            }
+        }
+        return names;
     }
     public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
@@ -3166,6 +3188,43 @@ public class LocaleController {
         }
     }
 
+    /**
+     * After {@code langpack.getLanguages}. A saved Settings language stays.
+     * Otherwise the device locale is applied and not written, so the next launch
+     * can still follow the system language. Skipping the welcome page must not
+     * persist the English fallback.
+     */
+    private void applyLoadedLanguage(int currentAccount) {
+        LocaleInfo toApply = currentLocaleInfo;
+        boolean override = true;
+        if (TellomiIntro.SKIP_WELCOME) {
+            String saved = null;
+            try {
+                saved = MessagesController.getGlobalMainSettings().getString("language", null);
+            } catch (Exception ignore) {
+            }
+            boolean languageSaved = saved != null && getLanguageFromDict(saved) != null;
+            Locale system = systemDefaultLocale;
+            String chosen = TellomiIntro.languageToApply(
+                    languageSaved,
+                    toApply == null ? null : toApply.shortName,
+                    system == null ? null : system.getLanguage(),
+                    system == null ? null : system.getCountry(),
+                    system == null ? null : system.getScript(),
+                    languageShortNames());
+            if (!languageSaved) {
+                override = false;
+            }
+            if (chosen != null) {
+                LocaleInfo matched = getLanguageFromDict(chosen);
+                if (matched != null) {
+                    toApply = matched;
+                }
+            }
+        }
+        applyLanguage(toApply, override, false, currentAccount);
+    }
+
     public void loadRemoteLanguages(final int currentAccount) {
         loadRemoteLanguages(currentAccount, true);
     }
@@ -3238,7 +3297,7 @@ public class LocaleController {
                     saveOtherLanguages();
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.suggestedLangpack);
                     if (applyCurrent) {
-                        applyLanguage(currentLocaleInfo, true, false, currentAccount);
+                        applyLoadedLanguage(currentAccount);
                     }
                 });
             }
