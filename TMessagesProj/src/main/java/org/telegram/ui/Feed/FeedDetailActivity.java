@@ -320,7 +320,7 @@ public class FeedDetailActivity extends BaseFragment implements FeedPostCell.Del
         }
         FeedPlayback.stop();
         MediaController.getInstance().cleanupPlayer(true, true);
-        commentVoice = new FeedVoiceCapture(currentAccount, new FeedVoiceCapture.Callback() {
+        commentVoice = new FeedVoiceCapture(currentAccount, FeedConfig.MAX_VOICE_COMMENT_SEC, new FeedVoiceCapture.Callback() {
             @Override
             public void onFile(File file) {
                 if (file != null && file.exists()) {

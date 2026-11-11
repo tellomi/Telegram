@@ -29,10 +29,13 @@ public final class FeedConfig {
     public static int MAX_IMAGES = FeedLimits.FALLBACK_IMAGES;
     public static int MAX_VIDEOS = FeedLimits.FALLBACK_VIDEOS;
     public static int MAX_VIDEO_SEC = FeedLimits.FALLBACK_VIDEO_SEC;
-    /** 60 seconds when the server omits {@code limits.voice_max_seconds}. */
-    public static int MAX_VOICE_SEC = FeedLimits.FALLBACK_VOICE_SEC;
-    public static final int MAX_MENTIONS = 10;
-    public static final int MAX_TOPICS = 3;
+    /** {@code limits.voice_post_max_seconds}. 60 when the server omits it. */
+    public static int MAX_VOICE_SEC = FeedLimits.FALLBACK_VOICE_POST_SEC;
+    /** {@code limits.voice_comment_max_seconds}. 60 when the server omits it. */
+    public static int MAX_VOICE_COMMENT_SEC = FeedLimits.FALLBACK_VOICE_COMMENT_SEC;
+    public static int MAX_MENTIONS = FeedLimits.FALLBACK_MENTIONS;
+    /** Parsed from {@code limits.max_topics}. The composer has no topic counter. */
+    public static int MAX_TOPICS = FeedLimits.FALLBACK_TOPICS;
     public static final int TOPIC_NAME_MAX = 32;
     public static final int MAX_CONTENT_WIDTH_DP = 640;
     public static final int COLLAPSE_LINES = 5;
@@ -55,6 +58,7 @@ public final class FeedConfig {
     public static final String LINK_PREFIX = "https://" + LINK_HOST + "/m#";
 
     private static final String[] mediaBase = new String[UserConfig.MAX_ACCOUNT_COUNT];
+    private static boolean personalizationToggleVisible;
     private static final boolean[] personalizedOn = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
     private static final int[] personalizedGeneration = new int[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -74,7 +78,16 @@ public final class FeedConfig {
         MAX_IMAGES = values.images;
         MAX_VIDEOS = values.videos;
         MAX_VIDEO_SEC = values.videoSec;
-        MAX_VOICE_SEC = values.voiceSec;
+        MAX_VOICE_SEC = values.voicePostSec;
+        MAX_VOICE_COMMENT_SEC = values.voiceCommentSec;
+        MAX_MENTIONS = values.mentions;
+        MAX_TOPICS = values.topics;
+        personalizationToggleVisible = values.personalizationToggleVisible;
+    }
+
+    /** True only when config sends {@code personalization_toggle_visible: true}. */
+    public static boolean personalizationToggleVisible() {
+        return personalizationToggleVisible;
     }
 
     /** Default on. Off sends {@code personalized=false} on recommend. */

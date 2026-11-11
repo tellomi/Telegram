@@ -16,76 +16,126 @@ import static org.junit.Assert.assertTrue;
 
 public class FeedLimitsTest {
 
+    /** Shape of GET /v1/feed/config from content-engine server.go. */
+    private static final String SERVER_CONFIG = "{"
+            + "\"media_base_url\":\"https://media.example/feed\","
+            + "\"personalization_toggle_visible\":true,"
+            + "\"text_limit\":900,"
+            + "\"limits\":{"
+            + "\"post_text_chars\":420,"
+            + "\"post_images\":4,"
+            + "\"post_videos\":2,"
+            + "\"article_chars\":8000,"
+            + "\"edit_window_seconds\":900,"
+            + "\"voice_comment_max_seconds\":20,"
+            + "\"voice_post_max_seconds\":30,"
+            + "\"video_max_seconds\":45,"
+            + "\"comment_text_chars\":80,"
+            + "\"page_size\":15,"
+            + "\"posts_per_hour\":10,"
+            + "\"comments_per_hour\":40,"
+            + "\"max_topics\":2,"
+            + "\"max_mentions\":5,"
+            + "\"probe_interval_seconds\":30,"
+            + "\"notification_days\":90,"
+            + "\"text_limit\":111,"
+            + "\"comment_text_limit\":222,"
+            + "\"voice_max_seconds\":180,"
+            + "\"image_limit\":9,"
+            + "\"video_limit\":8"
+            + "}}";
+
     @Test
-    public void nestedLimitsReplaceVoiceAndCommentAndIgnoreTheTopLevel() {
-        String json = "{"
-                + "\"media_base_url\":\"https://media.example/feed\","
-                + "\"text_limit\":900,"
-                + "\"voice_max_seconds\":180,"
-                + "\"comment_text_limit\":1000,"
-                + "\"limits\":{"
-                + "\"text_limit\":420,"
-                + "\"image_limit\":4,"
-                + "\"video_limit\":2,"
-                + "\"video_max_seconds\":45,"
-                + "\"voice_max_seconds\":30,"
-                + "\"comment_text_limit\":80,"
-                + "\"page_size\":15"
-                + "}}";
-        FeedLimits.Values values = FeedLimits.parse(json);
+    public void serverPayloadMapsTheRealLimitKeys() {
+        FeedLimits.Values values = FeedLimits.parse(SERVER_CONFIG);
         assertEquals(420, values.text);
         assertEquals(370, values.textCounterFrom);
+        assertEquals(80, values.comment);
         assertEquals(4, values.images);
         assertEquals(2, values.videos);
         assertEquals(45, values.videoSec);
-        assertEquals(30, values.voiceSec);
-        assertEquals(80, values.comment);
+        assertEquals(30, values.voicePostSec);
+        assertEquals(20, values.voiceCommentSec);
         assertEquals(15, values.pageSize);
-        assertEquals(60, FeedLimits.FALLBACK_VOICE_SEC);
-        assertEquals(500, FeedLimits.FALLBACK_COMMENT);
+        assertEquals(5, values.mentions);
+        assertEquals(2, values.topics);
+        assertTrue(values.personalizationToggleVisible);
+        assertFalse(values.text == 900);
+        assertFalse(values.text == 111);
+        assertFalse(values.comment == 222);
+        assertFalse(values.voicePostSec == 180);
     }
 
     @Test
-    public void omittedLimitKeysKeepTheEngineFallbacks() {
+    public void omittedOrMistypedKeysKeepFallbacksAndHideTheSwitch() {
         FeedLimits.Values missing = FeedLimits.parse("{\"media_base_url\":\"https://media.example/feed\"}");
-        assertEquals(FeedLimits.fallback().text, missing.text);
-        assertEquals(FeedLimits.FALLBACK_VOICE_SEC, missing.voiceSec);
+        assertEquals(FeedLimits.FALLBACK_TEXT, missing.text);
         assertEquals(FeedLimits.FALLBACK_COMMENT, missing.comment);
-        assertEquals(60, missing.voiceSec);
-        assertFalse(missing.voiceSec == 180);
+        assertEquals(FeedLimits.FALLBACK_VOICE_POST_SEC, missing.voicePostSec);
+        assertEquals(FeedLimits.FALLBACK_VOICE_COMMENT_SEC, missing.voiceCommentSec);
+        assertEquals(60, missing.voicePostSec);
+        assertFalse(missing.personalizationToggleVisible);
 
-        FeedLimits.Values partial = FeedLimits.parse("{\"limits\":{\"voice_max_seconds\":\"60\",\"comment_text_limit\":0,\"video_max_seconds\":60.5}}");
-        assertEquals(FeedLimits.FALLBACK_VOICE_SEC, partial.voiceSec);
-        assertEquals(FeedLimits.FALLBACK_COMMENT, partial.comment);
-        assertEquals(FeedLimits.FALLBACK_VIDEO_SEC, partial.videoSec);
+        FeedLimits.Values cn = FeedLimits.parse("{\"personalization_toggle_visible\":false,\"limits\":{\"post_text_chars\":500}}");
+        assertFalse(cn.personalizationToggleVisible);
+        assertEquals(500, cn.text);
 
-        FeedLimits.Values legacy = FeedLimits.parse("{\"limits\":{\"post_text_chars\":320}}");
-        assertEquals(320, legacy.text);
-        assertEquals(270, legacy.textCounterFrom);
-        assertEquals(FeedLimits.FALLBACK_COMMENT, legacy.comment);
+        FeedLimits.Values bad = FeedLimits.parse("{"
+                + "\"personalization_toggle_visible\":\"true\","
+                + "\"limits\":{"
+                + "\"post_text_chars\":\"420\","
+                + "\"comment_text_chars\":0,"
+                + "\"voice_post_max_seconds\":30.5,"
+                + "\"post_images\":4"
+                + "}}");
+        assertFalse(bad.personalizationToggleVisible);
+        assertEquals(FeedLimits.FALLBACK_TEXT, bad.text);
+        assertEquals(FeedLimits.FALLBACK_COMMENT, bad.comment);
+        assertEquals(FeedLimits.FALLBACK_VOICE_POST_SEC, bad.voicePostSec);
+        assertEquals(4, bad.images);
 
-        FeedLimits.Values canonicalWins = FeedLimits.parse("{\"limits\":{\"text_limit\":100,\"post_text_chars\":320}}");
-        assertEquals(100, canonicalWins.text);
+        FeedLimits.Values invented = FeedLimits.parse("{\"limits\":{\"text_limit\":100,\"comment_text_limit\":80,\"voice_max_seconds\":30,\"image_limit\":4,\"video_limit\":2}}");
+        assertEquals(FeedLimits.FALLBACK_TEXT, invented.text);
+        assertEquals(FeedLimits.FALLBACK_COMMENT, invented.comment);
+        assertEquals(FeedLimits.FALLBACK_VOICE_POST_SEC, invented.voicePostSec);
+        assertEquals(FeedLimits.FALLBACK_IMAGES, invented.images);
+        assertEquals(FeedLimits.FALLBACK_VIDEOS, invented.videos);
     }
 
     @Test
-    public void appliedLimitsChangeCommentAndImageCapsUntilReset() {
+    public void appliedLimitsChangeCommentImageVoiceAndMentionsUntilReset() {
         FeedConfig.apply(FeedLimits.fallback());
-        FeedConfig.apply(FeedLimits.parse("{\"limits\":{\"comment_text_limit\":4,\"image_limit\":3,\"text_limit\":6}}"));
+        FeedConfig.apply(FeedLimits.parse(SERVER_CONFIG));
         try {
-            assertEquals(4, FeedConfig.MAX_COMMENT);
-            assertEquals(3, FeedContract.imageSlotsLeft(0));
-            assertEquals(0, FeedContract.imageSlotsLeft(3));
-            String body = FeedContract.commentBody("abcdef", null, null, null);
-            assertTrue(body.contains("\"text\":\"abcd\""));
-            assertFalse(body.contains("abcdef"));
-            assertEquals("abcdef", FeedContract.clampText("abcdefghi"));
+            assertEquals(80, FeedConfig.MAX_COMMENT);
+            assertEquals(4, FeedConfig.MAX_IMAGES);
+            assertEquals(2, FeedConfig.MAX_VIDEOS);
+            assertEquals(45, FeedConfig.MAX_VIDEO_SEC);
+            assertEquals(30, FeedConfig.MAX_VOICE_SEC);
+            assertEquals(20, FeedConfig.MAX_VOICE_COMMENT_SEC);
+            assertEquals(5, FeedConfig.MAX_MENTIONS);
+            assertEquals(2, FeedConfig.MAX_TOPICS);
+            assertEquals(15, FeedConfig.PAGE_SIZE);
+            assertTrue(FeedConfig.personalizationToggleVisible());
+            assertEquals(3, FeedContract.imageSlotsLeft(1));
+            JsonObject comment = JsonParser.parseString(FeedContract.commentBody(repeat('b', 100), null, null, null)).getAsJsonObject();
+            assertEquals(80, comment.get("text").getAsString().length());
+            assertEquals(420, FeedContract.clampText(repeat('a', 900)).length());
         } finally {
             FeedConfig.apply(FeedLimits.fallback());
         }
         assertEquals(500, FeedConfig.MAX_COMMENT);
         assertEquals(10, FeedContract.imageSlotsLeft(0));
         assertEquals(60, FeedConfig.MAX_VOICE_SEC);
+        assertEquals(60, FeedConfig.MAX_VOICE_COMMENT_SEC);
+        assertEquals(10, FeedConfig.MAX_MENTIONS);
+        assertFalse(FeedConfig.personalizationToggleVisible());
+    }
+
+    private static String repeat(char c, int n) {
+        char[] chars = new char[n];
+        java.util.Arrays.fill(chars, c);
+        return new String(chars);
     }
 
     @Test
@@ -126,6 +176,10 @@ public class FeedLimitsTest {
         assertTrue(settings.contains("TextCheckCell"));
         assertTrue(settings.contains("TextInfoPrivacyCell"));
         assertTrue(settings.contains("HeaderCell"));
+        assertTrue(settings.contains("personalizationToggleVisible()"));
+        assertTrue(read("ui/Feed/FeedComposerActivity.java").contains("FeedConfig.MAX_MENTIONS"));
+        assertTrue(read("ui/Feed/FeedDetailActivity.java").contains("FeedConfig.MAX_VOICE_COMMENT_SEC"));
+        assertTrue(read("ui/Feed/FeedVoiceCapture.java").contains("FeedConfig.MAX_VOICE_SEC"));
         assertFalse(privacy.contains("Moments_Personalized"));
         assertFalse(privacy.contains("PREFERENCES_PATH"));
         assertTrue(controller.contains("FeedLimits.parse"));

@@ -78,7 +78,7 @@ public class FeedSettingsActivity extends BaseFragment {
                 values[index] = !values[index];
                 savePush();
                 adapter.notifyItemChanged(position);
-            } else if (position == recommendRow()) {
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendRow()) {
                 personalized = !personalized;
                 savePersonalized();
                 adapter.notifyItemChanged(position);
@@ -100,6 +100,16 @@ public class FeedSettingsActivity extends BaseFragment {
         followingPublic = !"self".equals(controller().storage.getPref("following_list", "public"));
         followersPublic = !"self".equals(controller().storage.getPref("followers_list", "public"));
         personalized = FeedConfig.personalized(currentAccount);
+        controller().api.getJson("/v1/feed/config", (json, error) -> {
+            if (json == null) {
+                return;
+            }
+            controller().storage.putPref("feed_config", json.toString());
+            FeedConfig.apply(FeedLimits.parse(json.toString()));
+            if (listViewAdapter() != null) {
+                listViewAdapter().notifyDataSetChanged();
+            }
+        });
         final int preferenceGeneration = FeedConfig.personalizedGeneration(currentAccount);
         controller().api.getJson(FeedLimits.PREFERENCES_PATH, (json, error) -> {
             if (json == null || preferenceGeneration != FeedConfig.personalizedGeneration(currentAccount)) {
@@ -256,26 +266,30 @@ public class FeedSettingsActivity extends BaseFragment {
                 int[] titles = new int[]{R.string.Moments_Push_Comments, R.string.Moments_Push_Replies, R.string.Moments_Push_Mentions, R.string.Moments_Push_Follows, R.string.Moments_Push_Likes, R.string.Moments_Push_Reposts, R.string.Moments_Push_NewPosts};
                 String[] titleKeys = new String[]{"Moments_Push_Comments", "Moments_Push_Replies", "Moments_Push_Mentions", "Moments_Push_Follows", "Moments_Push_Likes", "Moments_Push_Reposts", "Moments_Push_NewPosts"};
                 ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString(titleKeys[index], titles[index]), values[index], index != titles.length - 1);
-            } else if (position == recommendHeader()) {
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendHeader()) {
                 ((HeaderCell) holder.itemView).setText(LocaleController.getString(R.string.Moments_Recommendations));
-            } else if (position == recommendRow()) {
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendRow()) {
                 ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString(R.string.Moments_Personalized), personalized, false);
-            } else if (position == recommendInfo()) {
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendInfo()) {
                 ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(R.string.Moments_PersonalizedInfo));
             }
         }
 
         @Override
         public int getItemViewType(int position) {
-            if (position == 0 || position == 4 || position == recommendHeader()) return 0;
+            if (position == 0 || position == 4 || (FeedConfig.personalizationToggleVisible() && position == recommendHeader())) return 0;
             if (position == 3) return 2;
-            if (position == recommendInfo()) return 3;
+            if (FeedConfig.personalizationToggleVisible() && position == recommendInfo()) return 3;
             return 1;
         }
 
         @Override
         public int getItemCount() {
-            return 8 + KEYS.length;
+            int count = 5 + KEYS.length;
+            if (FeedConfig.personalizationToggleVisible()) {
+                count += 3;
+            }
+            return count;
         }
     }
 }

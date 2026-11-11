@@ -444,7 +444,7 @@ public class FeedComposerActivity extends BaseFragment {
             if (photo.path == null) {
                 continue;
             }
-            if (!photo.isVideo && count("image") >= FeedContract.MAX_IMAGES) {
+            if (!photo.isVideo && count("image") >= FeedConfig.MAX_IMAGES) {
                 continue;
             }
             paths.add(photo.path);

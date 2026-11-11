@@ -6,11 +6,10 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 /**
- * GET /v1/feed/config. Durations and lengths live on the nested object
- * {@code limits}. The same names at the top of the document are not the
- * contract and are ignored. A missing key keeps the engine fallback.
- * {@code post_text_chars} is the older text key, used only when
- * {@code text_limit} is absent.
+ * GET /v1/feed/config. {@code limits} is a map of ints. The keys are the
+ * ones content-engine writes in server.go. A missing key, or a value that
+ * is not a positive whole number, keeps the fallback. Names that are not
+ * in that map are ignored.
  */
 public final class FeedLimits {
 
@@ -18,7 +17,7 @@ public final class FeedLimits {
     public static final String PREFERENCES_METHOD = "PUT";
     public static final String PERSONALIZED = "personalized";
 
-    /** Engine fallbacks. Voice is 60 seconds. The old client cap of 180 is not used. */
+    /** Engine fallbacks used only when the server omits the key. */
     public static final int FALLBACK_PAGE_SIZE = 20;
     public static final int FALLBACK_TEXT = FeedContract.MAX_TEXT;
     public static final int FALLBACK_TEXT_COUNTER_FROM = FeedContract.TEXT_COUNTER_FROM;
@@ -26,7 +25,10 @@ public final class FeedLimits {
     public static final int FALLBACK_IMAGES = FeedContract.MAX_IMAGES;
     public static final int FALLBACK_VIDEOS = 3;
     public static final int FALLBACK_VIDEO_SEC = 60;
-    public static final int FALLBACK_VOICE_SEC = 60;
+    public static final int FALLBACK_VOICE_POST_SEC = 60;
+    public static final int FALLBACK_VOICE_COMMENT_SEC = 60;
+    public static final int FALLBACK_MENTIONS = 10;
+    public static final int FALLBACK_TOPICS = 3;
 
     private FeedLimits() {
     }
@@ -39,9 +41,14 @@ public final class FeedLimits {
         public final int images;
         public final int videos;
         public final int videoSec;
-        public final int voiceSec;
+        public final int voicePostSec;
+        public final int voiceCommentSec;
+        public final int mentions;
+        public final int topics;
+        /** Top-level bool. Omitted or non-boolean hides the settings switch. */
+        public final boolean personalizationToggleVisible;
 
-        public Values(int pageSize, int text, int textCounterFrom, int comment, int images, int videos, int videoSec, int voiceSec) {
+        public Values(int pageSize, int text, int textCounterFrom, int comment, int images, int videos, int videoSec, int voicePostSec, int voiceCommentSec, int mentions, int topics, boolean personalizationToggleVisible) {
             this.pageSize = pageSize;
             this.text = text;
             this.textCounterFrom = textCounterFrom;
@@ -49,7 +56,11 @@ public final class FeedLimits {
             this.images = images;
             this.videos = videos;
             this.videoSec = videoSec;
-            this.voiceSec = voiceSec;
+            this.voicePostSec = voicePostSec;
+            this.voiceCommentSec = voiceCommentSec;
+            this.mentions = mentions;
+            this.topics = topics;
+            this.personalizationToggleVisible = personalizationToggleVisible;
         }
     }
 
@@ -62,29 +73,60 @@ public final class FeedLimits {
                 FALLBACK_IMAGES,
                 FALLBACK_VIDEOS,
                 FALLBACK_VIDEO_SEC,
-                FALLBACK_VOICE_SEC
+                FALLBACK_VOICE_POST_SEC,
+                FALLBACK_VOICE_COMMENT_SEC,
+                FALLBACK_MENTIONS,
+                FALLBACK_TOPICS,
+                false
         );
     }
 
     /** Positive whole numbers on {@code limits} replace the fallback. Anything else does not. */
     public static Values parse(String json) {
         Values base = fallback();
-        JsonObject limits = limitsObject(json);
-        if (limits == null) {
+        JsonObject root = object(json);
+        if (root == null) {
             return base;
         }
-        int text = limit(limits, "text_limit", "post_text_chars", base.text);
+        boolean toggle = bool(root, "personalization_toggle_visible");
+        JsonElement limitsElement = root.get("limits");
+        if (limitsElement == null || !limitsElement.isJsonObject()) {
+            return copy(base, toggle);
+        }
+        JsonObject limits = limitsElement.getAsJsonObject();
+        int text = limit(limits, "post_text_chars", base.text);
         int gap = FALLBACK_TEXT - FALLBACK_TEXT_COUNTER_FROM;
         int counter = text > gap ? text - gap : 0;
         return new Values(
-                limit(limits, "page_size", null, base.pageSize),
+                limit(limits, "page_size", base.pageSize),
                 text,
                 counter,
-                limit(limits, "comment_text_limit", null, base.comment),
-                limit(limits, "image_limit", null, base.images),
-                limit(limits, "video_limit", null, base.videos),
-                limit(limits, "video_max_seconds", null, base.videoSec),
-                limit(limits, "voice_max_seconds", null, base.voiceSec)
+                limit(limits, "comment_text_chars", base.comment),
+                limit(limits, "post_images", base.images),
+                limit(limits, "post_videos", base.videos),
+                limit(limits, "video_max_seconds", base.videoSec),
+                limit(limits, "voice_post_max_seconds", base.voicePostSec),
+                limit(limits, "voice_comment_max_seconds", base.voiceCommentSec),
+                limit(limits, "max_mentions", base.mentions),
+                limit(limits, "max_topics", base.topics),
+                toggle
+        );
+    }
+
+    private static Values copy(Values base, boolean personalizationToggleVisible) {
+        return new Values(
+                base.pageSize,
+                base.text,
+                base.textCounterFrom,
+                base.comment,
+                base.images,
+                base.videos,
+                base.videoSec,
+                base.voicePostSec,
+                base.voiceCommentSec,
+                base.mentions,
+                base.topics,
+                personalizationToggleVisible
         );
     }
 
@@ -144,7 +186,7 @@ public final class FeedLimits {
         return path + "&personalized=false";
     }
 
-    private static JsonObject limitsObject(String json) {
+    private static JsonObject object(String json) {
         if (json == null || json.length() == 0) {
             return null;
         }
@@ -153,26 +195,29 @@ public final class FeedLimits {
             if (!root.isJsonObject()) {
                 return null;
             }
-            JsonElement limits = root.getAsJsonObject().get("limits");
-            if (limits == null || !limits.isJsonObject()) {
-                return null;
-            }
-            return limits.getAsJsonObject();
+            return root.getAsJsonObject();
         } catch (Exception ignore) {
             return null;
         }
     }
 
-    private static int limit(JsonObject limits, String key, String legacyKey, int fallback) {
-        if (limits.has(key)) {
-            Integer value = number(limits, key);
-            return value == null ? fallback : value;
+    private static boolean bool(JsonObject object, String key) {
+        if (object == null || !object.has(key)) {
+            return false;
         }
-        if (legacyKey != null && limits.has(legacyKey)) {
-            Integer value = number(limits, legacyKey);
-            return value == null ? fallback : value;
+        JsonElement element = object.get(key);
+        if (element == null || element.isJsonNull() || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isBoolean()) {
+            return false;
         }
-        return fallback;
+        return element.getAsBoolean();
+    }
+
+    private static int limit(JsonObject limits, String key, int fallback) {
+        if (!limits.has(key)) {
+            return fallback;
+        }
+        Integer value = number(limits, key);
+        return value == null ? fallback : value;
     }
 
     private static Integer number(JsonObject object, String key) {
