@@ -132,7 +132,7 @@ public class FeedApi {
                             tokenExpires = 0;
                         }
                         if (result.json != null && result.code >= 200 && result.code < 300 && path != null && path.startsWith("/v1/feed/config")) {
-                            FeedActionPolicy.noteConfig(result.json);
+                            FeedActionPolicy.noteConfig(result.json.toString());
                         }
                         if (result.json == null) {
                             callback.run(null, result.error == null ? "network" : result.error);

@@ -1,6 +1,8 @@
 package org.telegram.messenger.feed;
 
-import org.json.JSONObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Repost, quote, and share for one Moments card.
@@ -84,18 +86,23 @@ public final class FeedActionPolicy {
         return editWindowSeconds;
     }
 
-    /** {@code GET /v1/feed/config} {@code limits.edit_window_seconds}. Missing stays at the last value. */
-    public static void noteConfig(JSONObject config) {
+    /** {@code GET /v1/feed/config} {@code limits.edit_window_seconds}. A body without the key keeps the last value. */
+    public static void noteConfig(String configJson) {
+        JsonObject config = object(configJson);
         if (config == null) {
             return;
         }
-        JSONObject limits = config.optJSONObject("limits");
-        if (limits != null && limits.has("edit_window_seconds") && !limits.isNull("edit_window_seconds")) {
-            editWindowSeconds = Math.max(0, limits.optInt("edit_window_seconds", 0));
-            return;
+        if (config.has("limits") && config.get("limits").isJsonObject()) {
+            JsonObject limits = config.getAsJsonObject("limits");
+            Integer window = integer(limits, "edit_window_seconds");
+            if (window != null) {
+                editWindowSeconds = window;
+                return;
+            }
         }
-        if (config.has("edit_window_seconds") && !config.isNull("edit_window_seconds")) {
-            editWindowSeconds = Math.max(0, config.optInt("edit_window_seconds", 0));
+        Integer top = integer(config, "edit_window_seconds");
+        if (top != null) {
+            editWindowSeconds = top;
         }
     }
 
@@ -140,14 +147,15 @@ public final class FeedActionPolicy {
     }
 
     /**
-     * Card field only. Other names are not capability flags and are ignored.
+     * Top-level card field only. Nested copies and other names are ignored.
      * Null when the card did not include {@code shareable}.
      */
-    public static Boolean readShareable(JSONObject post) {
-        if (post == null || !post.has("shareable") || post.isNull("shareable")) {
+    public static Boolean readShareable(String postJson) {
+        JsonObject post = object(postJson);
+        if (post == null || !post.has("shareable") || post.get("shareable").isJsonNull()) {
             return null;
         }
-        return bool(post, "shareable");
+        return bool(post.get("shareable"));
     }
 
     public static Decision decide(Input input, Action action) {
@@ -260,16 +268,49 @@ public final class FeedActionPolicy {
         return REASON_REPOST;
     }
 
-    private static Boolean bool(JSONObject object, String key) {
-        Object value = object.opt(key);
-        if (value instanceof Boolean) {
-            return (Boolean) value;
+    private static JsonObject object(String json) {
+        if (json == null || json.length() == 0) {
+            return null;
         }
-        if (value instanceof Number) {
-            return ((Number) value).intValue() != 0;
+        try {
+            JsonElement element = JsonParser.parseString(json);
+            if (element != null && element.isJsonObject()) {
+                return element.getAsJsonObject();
+            }
+        } catch (RuntimeException ignore) {
         }
-        if (value instanceof String) {
-            String text = (String) value;
+        return null;
+    }
+
+    private static Integer integer(JsonObject object, String key) {
+        if (object == null || !object.has(key) || object.get(key).isJsonNull()) {
+            return null;
+        }
+        JsonElement value = object.get(key);
+        try {
+            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) {
+                return Math.max(0, value.getAsInt());
+            }
+            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                return Math.max(0, Integer.parseInt(value.getAsString().trim()));
+            }
+        } catch (RuntimeException ignore) {
+        }
+        return null;
+    }
+
+    private static Boolean bool(JsonElement value) {
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) {
+            return null;
+        }
+        if (value.getAsJsonPrimitive().isBoolean()) {
+            return value.getAsBoolean();
+        }
+        if (value.getAsJsonPrimitive().isNumber()) {
+            return value.getAsInt() != 0;
+        }
+        if (value.getAsJsonPrimitive().isString()) {
+            String text = value.getAsString();
             if ("true".equalsIgnoreCase(text) || "1".equals(text)) {
                 return Boolean.TRUE;
             }

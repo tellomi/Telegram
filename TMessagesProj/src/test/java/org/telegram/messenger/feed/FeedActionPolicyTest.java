@@ -1,6 +1,5 @@
 package org.telegram.messenger.feed;
 
-import org.json.JSONObject;
 import org.junit.Test;
 
 import java.nio.file.Files;
@@ -139,17 +138,17 @@ public class FeedActionPolicyTest {
         assertFalse(FeedActionPolicy.decide(pending, FeedActionPolicy.Action.COPY_LINK).allowed);
         assertTrue(FeedActionPolicy.decide(pending, FeedActionPolicy.Action.EDIT).allowed);
 
-        JSONObject invented = new JSONObject("{\"can_repost\":true,\"can_quote\":true,\"can_chat_share\":true,\"can_copy_link\":true,\"can_external_share\":true,\"can_share\":true,\"actions\":{\"repost\":true}}");
+        String invented = "{\"can_repost\":true,\"can_quote\":true,\"can_chat_share\":true,\"can_copy_link\":true,\"can_external_share\":true,\"can_share\":true,\"actions\":{\"repost\":true}}";
         assertNull(FeedActionPolicy.readShareable(invented));
         FeedActionPolicy.Input contacts = published("contacts", false);
         assertFalse(FeedActionPolicy.decide(contacts, FeedActionPolicy.Action.REPOST).allowed);
         assertFalse(FeedActionPolicy.decide(contacts, FeedActionPolicy.Action.CHAT_SHARE).allowed);
         assertTrue(FeedActionPolicy.decide(contacts, FeedActionPolicy.Action.COPY_LINK).allowed);
 
-        assertEquals(Boolean.TRUE, FeedActionPolicy.readShareable(new JSONObject("{\"shareable\":true}")));
-        assertEquals(Boolean.FALSE, FeedActionPolicy.readShareable(new JSONObject("{\"shareable\":0}")));
-        assertEquals(Boolean.TRUE, FeedActionPolicy.readShareable(new JSONObject("{\"shareable\":\"1\"}")));
-        assertNull(FeedActionPolicy.readShareable(new JSONObject("{\"viewer\":{\"shareable\":true}}")));
+        assertEquals(Boolean.TRUE, FeedActionPolicy.readShareable("{\"shareable\":true}"));
+        assertEquals(Boolean.FALSE, FeedActionPolicy.readShareable("{\"shareable\":0}"));
+        assertEquals(Boolean.TRUE, FeedActionPolicy.readShareable("{\"shareable\":\"1\"}"));
+        assertNull(FeedActionPolicy.readShareable("{\"viewer\":{\"shareable\":true}}"));
     }
 
     @Test
@@ -186,11 +185,11 @@ public class FeedActionPolicyTest {
     public void configEditWindowAndRepost404() throws Exception {
         int previous = FeedActionPolicy.editWindowSeconds();
         try {
-            FeedActionPolicy.noteConfig(new JSONObject("{\"limits\":{\"edit_window_seconds\":900}}"));
+            FeedActionPolicy.noteConfig("{\"limits\":{\"edit_window_seconds\":900}}");
             assertEquals(900, FeedActionPolicy.editWindowSeconds());
-            FeedActionPolicy.noteConfig(new JSONObject("{\"media_base_url\":\"https://cdn.example\"}"));
+            FeedActionPolicy.noteConfig("{\"media_base_url\":\"https://cdn.example\"}");
             assertEquals(900, FeedActionPolicy.editWindowSeconds());
-            FeedActionPolicy.noteConfig(new JSONObject("{\"edit_window_seconds\":0}"));
+            FeedActionPolicy.noteConfig("{\"edit_window_seconds\":0}");
             assertEquals(0, FeedActionPolicy.editWindowSeconds());
         } finally {
             FeedActionPolicy.setEditWindowSecondsForTest(previous);

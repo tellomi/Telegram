@@ -441,7 +441,7 @@ public final class FeedModels {
             String state = o.optString("state", "published");
             p.state = state;
             p.unavailable = FeedContract.cardUnavailable(o.optBoolean("unavailable", false), state);
-            p.shareable = FeedActionPolicy.readShareable(o);
+            p.shareable = FeedActionPolicy.readShareable(o.toString());
             p.authorOnlyPending = o.optBoolean("author_only_pending", false);
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
