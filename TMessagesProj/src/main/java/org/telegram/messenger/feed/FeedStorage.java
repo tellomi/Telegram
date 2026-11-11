@@ -131,6 +131,12 @@ public class FeedStorage {
         }
         o.put("media", media);
         o.put("audience", new JSONObject().put("kind", p.audienceKind));
+        if (p.shareable != null) {
+            o.put("shareable", p.shareable.booleanValue());
+        }
+        if (p.authorOnlyPending) {
+            o.put("author_only_pending", true);
+        }
         o.put("comment_policy", p.commentPolicy);
         JSONObject location = new JSONObject();
         location.put("city", p.cityCode);
