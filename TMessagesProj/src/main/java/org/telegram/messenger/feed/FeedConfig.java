@@ -8,6 +8,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 
 import java.net.URL;
+import java.util.Arrays;
 
 /**
  * Suggested defaults from the feed spec (SG-*). Change them here.
@@ -18,17 +19,18 @@ public final class FeedConfig {
     private FeedConfig() {
     }
 
-    public static final int PAGE_SIZE = 20;
+    public static int PAGE_SIZE = FeedLimits.FALLBACK_PAGE_SIZE;
     public static final long NEW_POSTS_POLL_MS = 60_000L;
     public static final int MAX_DRAFTS = 20;
-    /** content-engine limits. See FeedContract. */
-    public static final int MAX_TEXT = FeedContract.MAX_TEXT;
-    public static final int TEXT_COUNTER_FROM = FeedContract.TEXT_COUNTER_FROM;
-    public static final int MAX_COMMENT = FeedContract.MAX_COMMENT;
-    public static final int MAX_IMAGES = FeedContract.MAX_IMAGES;
-    public static final int MAX_VIDEOS = 3;
-    public static final int MAX_VIDEO_SEC = 60;
-    public static final int MAX_VOICE_SEC = 180;
+    /** Live caps. {@link #apply} replaces them from {@code config.limits}. */
+    public static int MAX_TEXT = FeedLimits.FALLBACK_TEXT;
+    public static int TEXT_COUNTER_FROM = FeedLimits.FALLBACK_TEXT_COUNTER_FROM;
+    public static int MAX_COMMENT = FeedLimits.FALLBACK_COMMENT;
+    public static int MAX_IMAGES = FeedLimits.FALLBACK_IMAGES;
+    public static int MAX_VIDEOS = FeedLimits.FALLBACK_VIDEOS;
+    public static int MAX_VIDEO_SEC = FeedLimits.FALLBACK_VIDEO_SEC;
+    /** 60 seconds when the server omits {@code limits.voice_max_seconds}. */
+    public static int MAX_VOICE_SEC = FeedLimits.FALLBACK_VOICE_SEC;
     public static final int MAX_MENTIONS = 10;
     public static final int MAX_TOPICS = 3;
     public static final int TOPIC_NAME_MAX = 32;
@@ -53,6 +55,58 @@ public final class FeedConfig {
     public static final String LINK_PREFIX = "https://" + LINK_HOST + "/m#";
 
     private static final String[] mediaBase = new String[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final boolean[] personalizedOn = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final int[] personalizedGeneration = new int[UserConfig.MAX_ACCOUNT_COUNT];
+
+    static {
+        Arrays.fill(personalizedOn, true);
+    }
+
+    /** Last parsed {@code config.limits}. Omitted keys stay on the engine fallback. */
+    public static void apply(FeedLimits.Values values) {
+        if (values == null) {
+            return;
+        }
+        PAGE_SIZE = values.pageSize;
+        MAX_TEXT = values.text;
+        TEXT_COUNTER_FROM = values.textCounterFrom;
+        MAX_COMMENT = values.comment;
+        MAX_IMAGES = values.images;
+        MAX_VIDEOS = values.videos;
+        MAX_VIDEO_SEC = values.videoSec;
+        MAX_VOICE_SEC = values.voiceSec;
+    }
+
+    /** Default on. Off sends {@code personalized=false} on recommend. */
+    public static boolean personalized(int account) {
+        if (account < 0 || account >= personalizedOn.length) {
+            return true;
+        }
+        return personalizedOn[account];
+    }
+
+    public static void setPersonalized(int account, boolean on) {
+        if (account < 0 || account >= personalizedOn.length) {
+            return;
+        }
+        personalizedOn[account] = on;
+    }
+
+    /** Bumps when the user flips the switch, so an older read cannot overwrite it. */
+    public static int notePersonalizedEdit(int account) {
+        if (account < 0 || account >= personalizedGeneration.length) {
+            return 0;
+        }
+        personalizedGeneration[account]++;
+        return personalizedGeneration[account];
+    }
+
+    public static int personalizedGeneration(int account) {
+        if (account < 0 || account >= personalizedGeneration.length) {
+            return 0;
+        }
+        return personalizedGeneration[account];
+    }
     private static final boolean[] configKeyKnown = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
     private static final boolean[] configKeyPresent = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
 

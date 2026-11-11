@@ -11772,6 +11772,10 @@
     <string name="Moments_City_Hangzhou">Hangzhou</string>
 
     <string name="Moments_Time_Now">Just now</string>
+    <string name="Moments_Recommendations">Recommendations</string>
+    <string name="Moments_Personalized">Personalized recommendations</string>
+    <string name="Moments_PersonalizedInfo">When this is off, For you is not sorted for you.</string>
+    <string name="Moments_VideoTooLongN">Trim the video to %1$d seconds or less.</string>
     <string name="Moments_Time_Minutes">%d minutes ago</string>
     <string name="Moments_Time_Hours">%d hours ago</string>
     <string name="Moments_Time_Days">%d days ago</string>

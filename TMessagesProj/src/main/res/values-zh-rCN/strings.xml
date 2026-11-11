@@ -144,6 +144,10 @@
     <string name="ContactShortcutVideoCall">视频通话 %1$s</string>
 
     <string name="Moments_Time_Now">刚刚</string>
+    <string name="Moments_Recommendations">推荐</string>
+    <string name="Moments_Personalized">个性化推荐</string>
+    <string name="Moments_PersonalizedInfo">关闭后，推荐不再按你的兴趣排序。</string>
+    <string name="Moments_VideoTooLongN">请把视频裁剪到 %1$d 秒以内</string>
     <string name="Moments_Time_Minutes">%d分钟前</string>
     <string name="Moments_Time_Hours">%d小时前</string>
     <string name="Moments_Time_Days">%d天前</string>

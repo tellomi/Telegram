@@ -713,8 +713,8 @@ public final class FeedContract {
     public static String commentBody(String text, String parentId, String attachmentType, String attachmentKey, String clientNonce) {
         JsonObject body = new JsonObject();
         String value = text == null ? "" : text;
-        if (value.length() > MAX_COMMENT) {
-            value = value.substring(0, MAX_COMMENT);
+        if (value.length() > FeedConfig.MAX_COMMENT) {
+            value = value.substring(0, FeedConfig.MAX_COMMENT);
         }
         body.addProperty("text", value);
         if (parentId != null && parentId.length() > 0) {
@@ -771,17 +771,17 @@ public final class FeedContract {
         if (text == null) {
             return "";
         }
-        if (text.length() <= MAX_TEXT) {
+        if (text.length() <= FeedConfig.MAX_TEXT) {
             return text;
         }
-        return text.substring(0, MAX_TEXT);
+        return text.substring(0, FeedConfig.MAX_TEXT);
     }
 
     public static int imageSlotsLeft(int already) {
-        if (already >= MAX_IMAGES) {
+        if (already >= FeedConfig.MAX_IMAGES) {
             return 0;
         }
-        return MAX_IMAGES - Math.max(0, already);
+        return FeedConfig.MAX_IMAGES - Math.max(0, already);
     }
 
     /** JSON null, a blank cursor, and the literal "null" all mean "no next page". */
@@ -1237,7 +1237,7 @@ public final class FeedContract {
             String type = types != null && i < types.size() && types.get(i) != null ? types.get(i) : "image";
             boolean image = "image".equals(type) || "photo".equals(type);
             if (image) {
-                if (images >= MAX_IMAGES) {
+                if (images >= FeedConfig.MAX_IMAGES) {
                     continue;
                 }
                 images++;
