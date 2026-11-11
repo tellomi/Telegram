@@ -230,7 +230,12 @@ public final class FeedActionPolicy {
         return "";
     }
 
-    /** SQL shareable() when the card omitted the bit. A present bit wins, including false. */
+    /**
+     * SQL {@code shareable()} when the card omitted the bit. A present bit wins, including false.
+     * The author's own only-me card is {@code ownOnlyMe} (cards.go:324) and does not send
+     * {@code shareable:true}. For that published post the SQL predicate is still true, so copy
+     * link and external share stay allowed. Repost and quote still need public visibility.
+     */
     static boolean shareable(Input card) {
         if (tombstone(card.unavailable, card.state)) {
             return false;

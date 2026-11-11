@@ -152,6 +152,32 @@ public class FeedActionPolicyTest {
     }
 
     @Test
+    public void ownOnlyMeWithoutShareableFlagAllowsCopyAndExternal() {
+        FeedActionPolicy.Input card = published("only_me", true);
+        assertNull(card.shareable);
+        assertEquals("published", card.state);
+        assertFalse(card.unavailable);
+        assertTrue(FeedActionPolicy.decide(card, FeedActionPolicy.Action.COPY_LINK).allowed);
+        assertTrue(FeedActionPolicy.decide(card, FeedActionPolicy.Action.EXTERNAL_SHARE).allowed);
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.REPOST).allowed);
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.QUOTE).allowed);
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.CHAT_SHARE).allowed);
+        assertEquals(FeedActionPolicy.REASON_REPOST, FeedActionPolicy.decide(card, FeedActionPolicy.Action.REPOST).reasonKey);
+        assertTrue(FeedActionPolicy.decide(card, FeedActionPolicy.Action.EDIT).allowed);
+        assertTrue(FeedActionPolicy.decide(card, FeedActionPolicy.Action.CHANGE_AUDIENCE).allowed);
+
+        card.shareable = Boolean.FALSE;
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.COPY_LINK).allowed);
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.EXTERNAL_SHARE).allowed);
+
+        card.shareable = null;
+        card.state = "deleted";
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.COPY_LINK).allowed);
+        assertFalse(FeedActionPolicy.decide(card, FeedActionPolicy.Action.EXTERNAL_SHARE).allowed);
+        assertEquals(FeedActionPolicy.REASON_UNAVAILABLE, FeedActionPolicy.decide(card, FeedActionPolicy.Action.COPY_LINK).reasonKey);
+    }
+
+    @Test
     public void explicitShareableBeatsAuthorOnlyPending() {
         FeedActionPolicy.Input card = published("contacts", false);
         card.authorOnlyPending = true;
