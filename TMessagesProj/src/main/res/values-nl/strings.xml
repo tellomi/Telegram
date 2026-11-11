@@ -1136,10 +1136,10 @@
     <string name="Moments_Report_Detail">Toelichting</string>
     <string name="Moments_Report_Sent">Melding verstuurd</string>
 
-    <string name="TellomiTools">Hulpmiddelen</string>
-    <string name="TellomiMenuSettings">Menu-instellingen</string>
-    <string name="TellomiHideTabLabels">Knoplabels verbergen</string>
-    <string name="TellomiNavBarButtons">Knoppen van de navigatiebalk</string>
+    <string name="SettingsTools">Hulpmiddelen</string>
+    <string name="MainTabsMenuSettings">Menu-instellingen</string>
+    <string name="MainTabsHideLabels">Knoplabels verbergen</string>
+    <string name="MainTabsButtons">Knoppen van de navigatiebalk</string>
 
     <string name="Moments_FollowingEntry">Volgend</string>
     <string name="Moments_FollowersEntry">Volgers</string>

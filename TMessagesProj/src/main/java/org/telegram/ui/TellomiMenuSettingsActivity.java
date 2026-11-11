@@ -6,6 +6,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TellomiMainTabs;
 import org.telegram.messenger.TellomiMainTabsStore;
@@ -23,7 +24,7 @@ import java.util.ArrayList;
  * Settings → Tools → Menu settings. One switch hides tab captions. The next
  * section shows or hides each bottom-bar tab. Chats and Profile stay on.
  */
-public class TellomiMenuSettingsActivity extends BaseFragment implements TellomiMainTabs.Listener {
+public class TellomiMenuSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private static final int ROW_HIDE_LABELS = 1;
     private static final int ROW_TAB = 10;
@@ -34,7 +35,7 @@ public class TellomiMenuSettingsActivity extends BaseFragment implements Tellomi
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(getString("TellomiMenuSettings", R.string.TellomiMenuSettings));
+        actionBar.setTitle(getString(R.string.MainTabsMenuSettings));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -56,32 +57,39 @@ public class TellomiMenuSettingsActivity extends BaseFragment implements Tellomi
 
     @Override
     public boolean onFragmentCreate() {
-        TellomiMainTabs.addListener(this);
-        return super.onFragmentCreate();
+        if (!super.onFragmentCreate()) {
+            return false;
+        }
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsSettingsUpdated);
+        return true;
     }
 
     @Override
     public void onFragmentDestroy() {
-        TellomiMainTabs.removeListener(this);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsSettingsUpdated);
         super.onFragmentDestroy();
     }
 
     @Override
-    public void onTellomiMainTabsChanged() {
-        if (listView != null && listView.adapter != null) {
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.mainTabsSettingsUpdated && listView != null && listView.adapter != null) {
             listView.adapter.update(true);
         }
     }
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         TellomiMainTabs.Store store = TellomiMainTabsStore.device();
-        items.add(UItem.asCheck(ROW_HIDE_LABELS, getString("TellomiHideTabLabels", R.string.TellomiHideTabLabels))
+        items.add(UItem.asCheck(ROW_HIDE_LABELS, getString(R.string.MainTabsHideLabels))
                 .setChecked(TellomiMainTabs.hideLabels(store)));
         items.add(UItem.asShadow(null));
-        items.add(UItem.asHeader(getString("TellomiNavBarButtons", R.string.TellomiNavBarButtons)));
+        items.add(UItem.asHeader(getString(R.string.MainTabsButtons)));
         for (int tab : TellomiMainTabs.SETTINGS_ORDER) {
+            int title = titleRes(tab);
+            if (title == 0) {
+                continue;
+            }
             boolean locked = TellomiMainTabs.isLocked(tab);
-            items.add(UItem.asCheck(ROW_TAB + tab, getString(titleRes(tab)))
+            items.add(UItem.asCheck(ROW_TAB + tab, getString(title))
                     .setChecked(TellomiMainTabs.isVisible(store, tab))
                     .setEnabled(!locked));
         }
@@ -97,11 +105,13 @@ public class TellomiMenuSettingsActivity extends BaseFragment implements Tellomi
             if (TellomiMainTabs.isLocked(tab)) {
                 return;
             }
-            TellomiMainTabs.setVisible(store, tab, !TellomiMainTabs.isVisible(store, tab));
+            if (!TellomiMainTabs.setVisible(store, tab, !TellomiMainTabs.isVisible(store, tab))) {
+                return;
+            }
         } else {
             return;
         }
-        TellomiMainTabs.notifyChanged();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsSettingsUpdated);
     }
 
     static int titleRes(int tab) {
@@ -119,7 +129,7 @@ public class TellomiMenuSettingsActivity extends BaseFragment implements Tellomi
             case TellomiMainTabs.PROFILE:
                 return R.string.MainTabsProfile;
             default:
-                return R.string.TellomiMenuSettings;
+                return 0;
         }
     }
 }

@@ -112,7 +112,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private boolean feedLeftMainTab;
     private FeedActivity feedActivity;
-    private final TellomiMainTabs.Listener tellomiTabsListener = () -> applyTellomiTabs(true);
+    private boolean applyingTellomiTabs;
 
     private static int indexToPosition(int index) {
         return index;
@@ -328,7 +328,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabs[INDEX_CONTACTS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.MainTabsContacts);
         tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
         tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.Moments_Title);
-        tabs[INDEX_FEED].setText(LocaleController.getString("Moments_Title", R.string.Moments_Title));
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
         tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
         tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.MainTabsProfile);
@@ -1035,6 +1034,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             } else if (!callTabsVisible) {
                 dropFragmentAtPosition(POSITION_CALLS);
             }
+        } else if (id == NotificationCenter.mainTabsSettingsUpdated) {
+            applyTellomiTabs(true);
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             if (tabs != null && tabs[INDEX_PROFILE] != null) {
                 tabs[INDEX_PROFILE].updateUserAvatar(currentAccount);
@@ -1048,7 +1049,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     @Override
     public boolean onFragmentCreate() {
-        TellomiMainTabs.addListener(tellomiTabsListener);
         observersGroup = NotificationCenter.getInstance(currentAccount)
             .createObserversGroup(this)
             .add(NotificationCenter.fileLoaded)
@@ -1061,14 +1061,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .add(NotificationCenter.contactsPermissionBadgeCheck)
             .addGlobal(NotificationCenter.appUpdateAvailable)
             .addGlobal(NotificationCenter.appUpdateLoading)
-            .addGlobal(NotificationCenter.needSetDayNightTheme);
+            .addGlobal(NotificationCenter.needSetDayNightTheme)
+            .addGlobal(NotificationCenter.mainTabsSettingsUpdated);
 
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        TellomiMainTabs.removeListener(tellomiTabsListener);
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
 
@@ -1125,30 +1125,41 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void checkUi_callTabVisible(boolean callTabsVisible, boolean animated) {
         TellomiMainTabs.setVisible(TellomiMainTabsStore.device(), TellomiMainTabs.CALLS, callTabsVisible);
         applyTellomiTabs(animated);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsSettingsUpdated);
     }
 
     private void applyTellomiTabs(boolean animated) {
-        if (tabsView == null || tabs == null) {
+        if (applyingTellomiTabs || tabsView == null || tabs == null) {
             return;
         }
-        TellomiMainTabs.Store store = TellomiMainTabsStore.device();
-        boolean showLabels = !TellomiMainTabs.hideLabels(store);
-        for (int index = 0; index < tabs.length; index++) {
-            if (tabs[index] == null) {
-                continue;
+        applyingTellomiTabs = true;
+        boolean callsChanged = false;
+        try {
+            TellomiMainTabs.Store store = TellomiMainTabsStore.device();
+            boolean showLabels = !TellomiMainTabs.hideLabels(store);
+            for (int index = 0; index < tabs.length; index++) {
+                if (tabs[index] == null) {
+                    continue;
+                }
+                tabs[index].setShowsLabel(showLabels);
+                tabsView.setViewVisible(tabs[index], TellomiMainTabs.isVisible(store, index), animated);
             }
-            tabs[index].setShowsLabel(showLabels);
-            tabsView.setViewVisible(tabs[index], TellomiMainTabs.isVisible(store, index), animated);
+            boolean callsVisible = TellomiMainTabs.isVisible(store, TellomiMainTabs.CALLS);
+            if (getUserConfig().showCallsTab != callsVisible) {
+                getUserConfig().setShowCallsTab(callsVisible);
+                callsChanged = true;
+            }
+            if (viewPager != null && !TellomiMainTabs.isVisible(store, viewPager.getCurrentPosition())) {
+                viewPager.scrollToPosition(POSITION_CHATS);
+                selectTab(POSITION_CHATS, animated);
+            }
+            tabsView.requestLayout();
+        } finally {
+            applyingTellomiTabs = false;
         }
-        boolean callsVisible = TellomiMainTabs.isVisible(store, TellomiMainTabs.CALLS);
-        if (getUserConfig().showCallsTab != callsVisible) {
-            getUserConfig().setShowCallsTab(callsVisible);
+        if (callsChanged) {
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
         }
-        if (viewPager != null && !TellomiMainTabs.isVisible(store, viewPager.getCurrentPosition())) {
-            viewPager.scrollToPosition(POSITION_CHATS);
-            selectTab(POSITION_CHATS, animated);
-        }
-        tabsView.requestLayout();
     }
 
     @Override

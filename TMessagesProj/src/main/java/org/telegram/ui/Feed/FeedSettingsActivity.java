@@ -1,6 +1,5 @@
 package org.telegram.ui.Feed;
 
-import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -9,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONObject;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -49,7 +49,7 @@ public class FeedSettingsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(LocaleController.getString("Moments_Title", R.string.Moments_Title));
+        actionBar.setTitle(getString(R.string.Moments_Title));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -252,20 +252,19 @@ public class FeedSettingsActivity extends BaseFragment {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
-                ((HeaderCell) holder.itemView).setText(LocaleController.getString("Moments_Lists", R.string.Moments_Lists));
+                ((HeaderCell) holder.itemView).setText(getString(R.string.Moments_Lists));
             } else if (position == 1) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString("Moments_Settings_FollowingList", R.string.Moments_Settings_FollowingList), followingPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.Moments_Settings_FollowingList), followingPublic, true);
             } else if (position == 2) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString("Moments_Settings_FollowersList", R.string.Moments_Settings_FollowersList), followersPublic, true);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.Moments_Settings_FollowersList), followersPublic, true);
             } else if (position == 3) {
-                ((TextSettingsCell) holder.itemView).setTextAndValue(LocaleController.getString("Moments_Mutes", R.string.Moments_Mutes), "", true);
+                ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.Moments_Mutes), "", true);
             } else if (position == 4) {
-                ((HeaderCell) holder.itemView).setText(LocaleController.getString("Moments_Push", R.string.Moments_Push));
+                ((HeaderCell) holder.itemView).setText(getString(R.string.Moments_Push));
             } else if (position < 5 + KEYS.length) {
                 int index = position - 5;
                 int[] titles = new int[]{R.string.Moments_Push_Comments, R.string.Moments_Push_Replies, R.string.Moments_Push_Mentions, R.string.Moments_Push_Follows, R.string.Moments_Push_Likes, R.string.Moments_Push_Reposts, R.string.Moments_Push_NewPosts};
-                String[] titleKeys = new String[]{"Moments_Push_Comments", "Moments_Push_Replies", "Moments_Push_Mentions", "Moments_Push_Follows", "Moments_Push_Likes", "Moments_Push_Reposts", "Moments_Push_NewPosts"};
-                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString(titleKeys[index], titles[index]), values[index], index != titles.length - 1);
+                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(titles[index]), values[index], index != titles.length - 1);
             } else if (FeedConfig.personalizationToggleVisible() && position == recommendHeader()) {
                 ((HeaderCell) holder.itemView).setText(LocaleController.getString(R.string.Moments_Recommendations));
             } else if (FeedConfig.personalizationToggleVisible() && position == recommendRow()) {

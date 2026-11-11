@@ -315,10 +315,10 @@
     <string name="Moments_Report_Detail">Подробности</string>
     <string name="Moments_Report_Sent">Жалоба отправлена</string>
 
-    <string name="TellomiTools">Инструменты</string>
-    <string name="TellomiMenuSettings">Настройки меню</string>
-    <string name="TellomiHideTabLabels">Скрыть подписи кнопок</string>
-    <string name="TellomiNavBarButtons">Кнопки панели навигации</string>
+    <string name="SettingsTools">Инструменты</string>
+    <string name="MainTabsMenuSettings">Настройки меню</string>
+    <string name="MainTabsHideLabels">Скрыть подписи кнопок</string>
+    <string name="MainTabsButtons">Кнопки панели навигации</string>
 
     <string name="Moments_FollowingEntry">Подписки</string>
     <string name="Moments_FollowersEntry">Подписчики</string>

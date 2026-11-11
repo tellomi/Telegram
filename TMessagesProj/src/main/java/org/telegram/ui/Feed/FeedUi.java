@@ -314,6 +314,25 @@ public final class FeedUi {
         heart.animate().scaleX(1f).scaleY(1f).setDuration(180).withEndAction(() -> heart.animate().alpha(0f).setDuration(220).withEndAction(() -> host.removeView(heart)).start()).start();
     }
 
+    public static String mediaKindLabel(String kind) {
+        if ("video".equals(kind)) {
+            return getString(R.string.Moments_Tool_Video);
+        }
+        if ("audio".equals(kind) || "voice".equals(kind)) {
+            return getString(R.string.Moments_Voice);
+        }
+        if ("sticker".equals(kind)) {
+            return getString(R.string.Moments_Tool_Sticker);
+        }
+        if ("gif".equals(kind)) {
+            return getString(R.string.AttachGif);
+        }
+        if ("image".equals(kind) || "photo".equals(kind)) {
+            return getString(R.string.Moments_Photo);
+        }
+        return getString(R.string.Moments_File);
+    }
+
     public static String linkFor(String id) {
         return FeedConfig.LINK_PREFIX + id;
     }

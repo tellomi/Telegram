@@ -1,6 +1,5 @@
 package org.telegram.ui.Feed;
 
-import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -44,7 +43,7 @@ public class FeedNotificationsActivity extends BaseFragment {
 
     @Override
     public View createView(android.content.Context context) {
-        actionBar.setTitle(LocaleController.getString("Moments_Notifications", R.string.Moments_Notifications));
+        actionBar.setTitle(getString(R.string.Moments_Notifications));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -57,11 +56,10 @@ public class FeedNotificationsActivity extends BaseFragment {
         LinearLayout filters = new LinearLayout(context);
         filters.setOrientation(LinearLayout.HORIZONTAL);
         int[] labels = new int[]{R.string.Moments_Notif_Interactions, R.string.Moments_Notif_Follows, R.string.Moments_Notif_System};
-        String[] labelKeys = new String[]{"Moments_Notif_Interactions", "Moments_Notif_Follows", "Moments_Notif_System"};
         for (int i = 0; i < labels.length; i++) {
             final int index = i;
             TextView chip = new TextView(context);
-            chip.setText(LocaleController.getString(labelKeys[i], labels[i]));
+            chip.setText(getString(labels[i]));
             chip.setTextSize(13);
             chip.setPadding(dp(8), dp(8), dp(8), dp(8));
             chip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -227,7 +225,7 @@ public class FeedNotificationsActivity extends BaseFragment {
                 names.append(FeedUi.displayName(item.actors.get(i), currentAccount));
             }
             if (item.actors.size() > 2) {
-                names.append(" ").append(LocaleController.getString("Moments_AndOthers", R.string.Moments_AndOthers));
+                names.append(" ").append(getString(R.string.Moments_AndOthers));
             }
             String line = names + " · " + kindLabel(item.kind);
             if (item.text != null && item.text.length() > 0) {
@@ -244,13 +242,13 @@ public class FeedNotificationsActivity extends BaseFragment {
     }
 
     private String kindLabel(String kind) {
-        if ("like".equals(kind)) return LocaleController.getString("Moments_Filter_Likes", R.string.Moments_Filter_Likes);
-        if ("comment".equals(kind) || "reply".equals(kind)) return LocaleController.getString("Moments_Filter_Comments", R.string.Moments_Filter_Comments);
-        if ("mention".equals(kind)) return LocaleController.getString("Moments_Filter_Mentions", R.string.Moments_Filter_Mentions);
-        if ("follow".equals(kind) || "mutual".equals(kind)) return LocaleController.getString("Moments_Notif_Follows", R.string.Moments_Notif_Follows);
-        if ("repost".equals(kind) || "quote".equals(kind)) return LocaleController.getString("Moments_Filter_Reposts", R.string.Moments_Filter_Reposts);
-        if ("new_post".equals(kind)) return LocaleController.getString("Moments_Filter_Posts", R.string.Moments_Filter_Posts);
-        return LocaleController.getString("Moments_Notif_Other", R.string.Moments_Notif_Other);
+        if ("like".equals(kind)) return getString(R.string.Moments_Filter_Likes);
+        if ("comment".equals(kind) || "reply".equals(kind)) return getString(R.string.Moments_Filter_Comments);
+        if ("mention".equals(kind)) return getString(R.string.Moments_Filter_Mentions);
+        if ("follow".equals(kind) || "mutual".equals(kind)) return getString(R.string.Moments_Notif_Follows);
+        if ("repost".equals(kind) || "quote".equals(kind)) return getString(R.string.Moments_Filter_Reposts);
+        if ("new_post".equals(kind)) return getString(R.string.Moments_Filter_Posts);
+        return getString(R.string.Moments_Notif_Other);
     }
 
     private void open(FeedModels.NotificationItem item) {
@@ -272,8 +270,8 @@ public class FeedNotificationsActivity extends BaseFragment {
         }
         if (getParentActivity() != null) {
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setMessage(LocaleController.getString(R.string.Moments_PostGone))
-                    .setPositiveButton(LocaleController.getString(R.string.Moments_OK), null)
+                    .setMessage(getString(R.string.Moments_PostGone))
+                    .setPositiveButton(getString(R.string.Moments_OK), null)
                     .show();
         }
     }

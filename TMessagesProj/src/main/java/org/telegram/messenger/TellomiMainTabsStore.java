@@ -2,7 +2,7 @@ package org.telegram.messenger;
 
 import android.content.SharedPreferences;
 
-/** Per-device preferences. {@link MessagesController#getGlobalMainSettings()} is not synced. */
+/** Device UI flags in {@link MessagesController#getGlobalMainSettings()} ({@code mainconfig}, the same file as {@link SharedConfig}). Not synced. */
 public final class TellomiMainTabsStore {
 
     private TellomiMainTabsStore() {
