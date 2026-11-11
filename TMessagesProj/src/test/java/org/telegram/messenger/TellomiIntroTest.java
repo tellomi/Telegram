@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -96,6 +98,33 @@ public class TellomiIntroTest {
     }
 
     @Test
+    public void remotePackSaveDoesNotFreezeAnAutomaticLanguage() {
+        List<String> names = Arrays.asList("en", "de", "zh_hans", "zh_hant");
+        MemoryLanguagePrefs prefs = new MemoryLanguagePrefs(names);
+        LocaleController controller = new LocaleController(false);
+
+        controller.storeLanguageAfterRemoteSave(prefs, "zh_hans", "zh_hans");
+        assertNull(prefs.language);
+
+        assertEquals("en", TellomiIntro.languageToApply(prefs.language != null, "zh_hans", "en", "US", "", names));
+        assertEquals("zh_hant", TellomiIntro.languageToApply(prefs.language != null, "zh_hans", "zh", "TW", "", names));
+
+        prefs.language = "de";
+        controller.storeLanguageAfterRemoteSave(prefs, "de", "de");
+        assertEquals("de", prefs.language);
+        assertNull(TellomiIntro.languageToApply(prefs.language != null, "de", "zh", "CN", "", names));
+
+        prefs.language = "zh_hans";
+        controller.storeLanguageAfterRemoteSave(prefs, "zh_hans", "zh_hans");
+        assertEquals("zh_hans", prefs.language);
+        assertNull(TellomiIntro.languageToApply(true, "zh_hans", "zh", "TW", "", names));
+
+        prefs.language = "no-such-lang";
+        controller.storeLanguageAfterRemoteSave(prefs, "zh_hans", "zh_hans");
+        assertEquals("no-such-lang", prefs.language);
+    }
+
+    @Test
     public void releaseDoesNotEmbedTheLocalDatacenter() throws Exception {
         String gradle = read("build.gradle");
         assertTrue(gradle.contains("local: '1:10.0.2.2:10443,2:10.0.2.2:10443'"));
@@ -107,6 +136,31 @@ public class TellomiIntroTest {
         String workflow = readWorkflow();
         assertTrue(workflow.contains("-PTELLOMI_SERVER_PROFILE=dev"));
         assertFalse(workflow.contains("-PTELLOMI_SERVER_PROFILE=local"));
+    }
+
+    /** In-memory {@code mainconfig} language row. */
+    private static final class MemoryLanguagePrefs implements LocaleController.LanguagePreference {
+        String language;
+        private final Set<String> known;
+
+        MemoryLanguagePrefs(List<String> known) {
+            this.known = new HashSet<>(known);
+        }
+
+        @Override
+        public String get() {
+            return language;
+        }
+
+        @Override
+        public boolean isKnown(String key) {
+            return known.contains(key);
+        }
+
+        @Override
+        public void put(String key) {
+            language = key;
+        }
     }
 
     private static String method(String source, String name) {

@@ -3137,12 +3137,9 @@ public class LocaleController {
                         } else {
                             newLocale = new Locale(args[0], args[1]);
                         }
-                        languageOverride = localeInfo.shortName;
-
-                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("language", localeInfo.getKey());
-                        editor.commit();
+                        // Automatic system-language selection must not become a saved choice
+                        // when the remote pack finishes. Settings already wrote `language`.
+                        storeLanguageAfterRemoteSave(mainLanguagePreference(), localeInfo.getKey(), localeInfo.shortName);
 
                         localizationExternal = new Localization.Builder()
                             .addLocalization(valuesToSet)
@@ -3186,6 +3183,58 @@ public class LocaleController {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    /**
+     * Preference bag used when a remote langpack file has just been saved.
+     * Tests supply a memory copy; production reads {@code mainconfig}.
+     */
+    interface LanguagePreference {
+        String get();
+
+        boolean isKnown(String key);
+
+        void put(String key);
+    }
+
+    /**
+     * {@code saveRemoteLocaleStrings} calls this for the locale on screen.
+     * A language Settings already stored is written again. An automatic
+     * system-language choice leaves {@code language} empty.
+     */
+    void storeLanguageAfterRemoteSave(LanguagePreference prefs, String preferenceKey, String shortName) {
+        if (prefs == null || preferenceKey == null) {
+            return;
+        }
+        String saved = prefs.get();
+        boolean userChose = !TellomiIntro.SKIP_WELCOME || (saved != null && prefs.isKnown(saved));
+        if (userChose) {
+            languageOverride = shortName;
+            prefs.put(preferenceKey);
+        }
+    }
+
+    private LanguagePreference mainLanguagePreference() {
+        return new LanguagePreference() {
+            @Override
+            public String get() {
+                try {
+                    return MessagesController.getGlobalMainSettings().getString("language", null);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
+            @Override
+            public boolean isKnown(String key) {
+                return getLanguageFromDict(key) != null;
+            }
+
+            @Override
+            public void put(String key) {
+                MessagesController.getGlobalMainSettings().edit().putString("language", key).commit();
+            }
+        };
     }
 
     /**
