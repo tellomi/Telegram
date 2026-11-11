@@ -1387,6 +1387,10 @@
     <string name="Moments_City_Hangzhou">Hangzhou</string>
 
     <string name="Moments_Time_Now">Gerade eben</string>
+    <string name="Moments_Recommendations">Empfehlungen</string>
+    <string name="Moments_Personalized">Personalisierte Empfehlungen</string>
+    <string name="Moments_PersonalizedInfo">Wenn das aus ist, ist „Für dich“ nicht mehr nach deinen Interessen sortiert.</string>
+    <string name="Moments_VideoTooLongN">Kürze das Video auf höchstens %1$d Sekunden.</string>
     <string name="Moments_Time_Minutes">vor %d Minuten</string>
     <string name="Moments_Time_Hours">vor %d Stunden</string>
     <string name="Moments_Time_Days">vor %d Tagen</string>
@@ -1427,4 +1431,17 @@
     <string name="MainTabsMenuSettings">Menüeinstellungen</string>
     <string name="MainTabsHideLabels">Beschriftungen ausblenden</string>
     <string name="MainTabsButtons">Schaltflächen der Navigationsleiste</string>
+
+    <string name="Moments_FollowingEntry">Folge ich</string>
+    <string name="Moments_FollowersEntry">Follower</string>
+    <string name="Moments_FollowingWithCount">Folge ich · %d</string>
+    <string name="Moments_FollowersWithCount">Follower · %d</string>
+    <string name="Moments_ListPrivate">Diese Liste ist privat</string>
+    <string name="Moments_ListLoadFailed">Diese Liste konnte nicht geladen werden</string>
+    <string name="Moments_PostGone">Dieser Beitrag ist nicht mehr da</string>
+    <string name="Moments_CommentGone">Dieser Kommentar ist nicht mehr da</string>
+    <string name="Moments_Unavailable">Inhalt nicht verfügbar</string>
+
+    <string name="Moments_FollowingPrivate">Folge ich · Diese Liste ist privat</string>
+    <string name="Moments_FollowersPrivate">Follower · Diese Liste ist privat</string>
 </resources>

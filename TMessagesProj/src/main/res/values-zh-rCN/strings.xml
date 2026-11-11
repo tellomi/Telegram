@@ -26,6 +26,10 @@
     <string name="Moments_Share">分享</string>
     <string name="Moments_ShareChat">分享到聊天</string>
     <string name="Moments_CopyLink">复制链接</string>
+    <string name="Moments_ExternalShare">其他应用</string>
+    <string name="Moments_ShareBlocked">这条动态不能这样分享</string>
+    <string name="Moments_QuoteUnavailable">这条动态不能引用</string>
+    <string name="Moments_QuoteInvalid">引用无效</string>
     <string name="Moments_Like">点赞</string>
     <string name="Moments_Comment">评论</string>
     <string name="Moments_CommentCount">%d条评论</string>
@@ -144,6 +148,10 @@
     <string name="ContactShortcutVideoCall">视频通话 %1$s</string>
 
     <string name="Moments_Time_Now">刚刚</string>
+    <string name="Moments_Recommendations">推荐</string>
+    <string name="Moments_Personalized">个性化推荐</string>
+    <string name="Moments_PersonalizedInfo">关闭后，推荐不再按你的兴趣排序。</string>
+    <string name="Moments_VideoTooLongN">请把视频裁剪到 %1$d 秒以内</string>
     <string name="Moments_Time_Minutes">%d分钟前</string>
     <string name="Moments_Time_Hours">%d小时前</string>
     <string name="Moments_Time_Days">%d天前</string>
@@ -184,4 +192,15 @@
     <string name="MainTabsMenuSettings">选单设定</string>
     <string name="MainTabsHideLabels">隐藏按钮文字</string>
     <string name="MainTabsButtons">导航栏按钮</string>
+
+    <string name="Moments_FollowingEntry">关注</string>
+    <string name="Moments_FollowersEntry">粉丝</string>
+    <string name="Moments_FollowingWithCount">关注 · %d</string>
+    <string name="Moments_FollowersWithCount">粉丝 · %d</string>
+    <string name="Moments_ListLoadFailed">名单没有加载出来</string>
+    <string name="Moments_PostGone">这条动态已经不存在</string>
+    <string name="Moments_CommentGone">这条评论已经不存在</string>
+
+    <string name="Moments_FollowingPrivate">关注 · 对方未公开</string>
+    <string name="Moments_FollowersPrivate">粉丝 · 对方未公开</string>
 </resources>

@@ -472,6 +472,11 @@
       "zh-Hans": "还没有内容，来发第一条吧"
     },
     {
+      "key": "Moments_ExternalShare",
+      "en": "Other apps",
+      "zh-Hans": "其他应用"
+    },
+    {
       "key": "Moments_FailedRetry",
       "en": "Could not post. Retry",
       "zh-Hans": "发布失败，点击重试"
@@ -817,6 +822,16 @@
       "zh-Hans": "说点什么"
     },
     {
+      "key": "Moments_QuoteInvalid",
+      "en": "That quote isn\\'t valid.",
+      "zh-Hans": "引用无效"
+    },
+    {
+      "key": "Moments_QuoteUnavailable",
+      "en": "This post can\\'t be quoted.",
+      "zh-Hans": "这条动态不能引用"
+    },
+    {
       "key": "Moments_Recording",
       "en": "Recording…",
       "zh-Hans": "正在录音…"
@@ -1102,6 +1117,11 @@
       "zh-Hans": "分享"
     },
     {
+      "key": "Moments_ShareBlocked",
+      "en": "This post can\\'t be shared that way.",
+      "zh-Hans": "这条动态不能这样分享"
+    },
+    {
       "key": "Moments_ShareChat",
       "en": "Share to chat",
       "zh-Hans": "分享到聊天"
@@ -1300,6 +1320,26 @@
       "key": "Moments_WhoCanSee",
       "en": "Who can view",
       "zh-Hans": "谁可以看"
+    },
+    {
+      "key": "Moments_Personalized",
+      "en": "Personalized recommendations",
+      "zh-Hans": "个性化推荐"
+    },
+    {
+      "key": "Moments_PersonalizedInfo",
+      "en": "When this is off, For you is not sorted for you.",
+      "zh-Hans": "关闭后，推荐不再按你的兴趣排序。"
+    },
+    {
+      "key": "Moments_Recommendations",
+      "en": "Recommendations",
+      "zh-Hans": "推荐"
+    },
+    {
+      "key": "Moments_VideoTooLongN",
+      "en": "Trim the video to %1$d seconds or less.",
+      "zh-Hans": "请把视频裁剪到 %1$d 秒以内"
     }
   ]
 }

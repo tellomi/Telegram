@@ -16,6 +16,10 @@
     <string name="Moments_City_Hangzhou">杭州</string>
 
     <string name="Moments_Time_Now">剛剛</string>
+    <string name="Moments_Recommendations">推薦</string>
+    <string name="Moments_Personalized">個人化推薦</string>
+    <string name="Moments_PersonalizedInfo">關閉後，推薦不再依照你的興趣排序。</string>
+    <string name="Moments_VideoTooLongN">請把影片裁剪到 %1$d 秒以內</string>
     <string name="Moments_Time_Minutes">%d分鐘前</string>
     <string name="Moments_Time_Hours">%d小時前</string>
     <string name="Moments_Time_Days">%d天前</string>
@@ -56,4 +60,17 @@
     <string name="MainTabsMenuSettings">選單設定</string>
     <string name="MainTabsHideLabels">隱藏按鈕文字</string>
     <string name="MainTabsButtons">導覽列按鈕</string>
+
+    <string name="Moments_FollowingEntry">關注</string>
+    <string name="Moments_FollowersEntry">粉絲</string>
+    <string name="Moments_FollowingWithCount">關注 · %d</string>
+    <string name="Moments_FollowersWithCount">粉絲 · %d</string>
+    <string name="Moments_ListPrivate">對方未公開</string>
+    <string name="Moments_ListLoadFailed">名單沒有載入</string>
+    <string name="Moments_PostGone">這則動態已經不存在</string>
+    <string name="Moments_CommentGone">這則留言已經不存在</string>
+    <string name="Moments_Unavailable">內容無法查看</string>
+
+    <string name="Moments_FollowingPrivate">關注 · 對方未公開</string>
+    <string name="Moments_FollowersPrivate">粉絲 · 對方未公開</string>
 </resources>

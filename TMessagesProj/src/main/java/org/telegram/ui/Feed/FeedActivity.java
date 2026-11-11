@@ -27,9 +27,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.FragmentFloatingButton;
-import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsActivity;
@@ -652,37 +650,12 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onRepost(FeedModels.Post post) {
-        if (!post.isPublic() && FeedConfig.ONLY_PUBLIC_CAN_REPOST) {
-            String message = post.isMutual()
-                    ? LocaleController.getString("Moments_RepostBlocked_Mutual", R.string.Moments_RepostBlocked_Mutual)
-                    : LocaleController.getString("Moments_RepostBlocked", R.string.Moments_RepostBlocked);
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, message).show();
-            return;
-        }
-        ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_saved, post.saved ? LocaleController.getString("Moments_Saved", R.string.Moments_Saved) : LocaleController.getString("Moments_Save", R.string.Moments_Save), () -> controller().toggleSave(post));
-        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Repost", R.string.Moments_Repost), () -> controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/repost", new org.json.JSONObject(), (json, error) -> {
-            if (error != null) {
-                BulletinFactory.of(this).createErrorBulletin(error).show();
-            }
-        }));
-        options.add(R.drawable.msg_forward, LocaleController.getString("Moments_Quote", R.string.Moments_Quote), () -> presentFragment(FeedComposerActivity.quote(post.id)));
-        options.show();
+        FeedPostActions.showRepostMenu(this, post, fragmentView);
     }
 
     @Override
     public void onShare(FeedModels.Post post) {
-        String link = FeedUi.linkFor(post.id);
-        ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_share, LocaleController.getString("Moments_ShareChat", R.string.Moments_ShareChat), () -> {
-            ShareAlert alert = ShareAlert.createShareAlert(getContext(), null, link, false, link, false);
-            showDialog(alert);
-        });
-        options.add(R.drawable.msg_link2, LocaleController.getString("Moments_CopyLink", R.string.Moments_CopyLink), () -> {
-            AndroidUtilities.addToClipboard(link);
-            BulletinFactory.of(this).createCopyLinkBulletin().show();
-        });
-        options.show();
+        FeedPostActions.showShareMenu(this, post, fragmentView);
     }
 
     @Override
@@ -692,25 +665,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onMore(FeedModels.Post post, View anchor) {
-        ItemOptions options = ItemOptions.makeOptions(this, anchor);
-        if (FeedUi.isSelf(currentAccount, post.author)) {
-            options.add(R.drawable.msg_edit, LocaleController.getString("Moments_Edit", R.string.Moments_Edit), () -> presentFragment(FeedComposerActivity.edit(post.id)));
-            options.add(R.drawable.msg_openin, LocaleController.getString("Moments_ChangeAudience", R.string.Moments_ChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> controller().updateAudience(post.id, FeedAudiencePicker.kind(privacy.type), FeedAudiencePicker.memberIds(privacy), error -> {
-                if (error != null) {
-                    BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("Moments_Audience_Kept", R.string.Moments_Audience_Kept)).show();
-                }
-            })));
-            options.add(R.drawable.msg_delete, LocaleController.getString("Moments_Delete", R.string.Moments_Delete), () -> controller().deletePost(post.id));
-        } else {
-            options.add(R.drawable.msg_block, LocaleController.getString("Moments_NotInterested", R.string.Moments_NotInterested), () -> controller().notInterested(post));
-            options.add(R.drawable.msg_archive_hide, LocaleController.getString("Moments_HidePost", R.string.Moments_HidePost), () -> controller().hidePost(post));
-            options.add(R.drawable.msg_block2, LocaleController.getString("Moments_Mute", R.string.Moments_Mute), () -> controller().mute(post.author.profileId, true));
-            options.add(R.drawable.msg_report, LocaleController.getString("Moments_Report", R.string.Moments_Report), () -> FeedReportSheet.open(this, "post", post.id));
-            if (post.isPublic()) {
-                options.add(R.drawable.msg_link2, LocaleController.getString("Moments_CopyLink", R.string.Moments_CopyLink), () -> AndroidUtilities.addToClipboard(FeedUi.linkFor(post.id)));
-            }
-        }
-        options.show();
+        FeedPostActions.showMoreMenu(this, post, anchor);
     }
 
     @Override

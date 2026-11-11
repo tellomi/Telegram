@@ -8,12 +8,17 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONObject;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.messenger.feed.FeedConfig;
+import org.telegram.messenger.feed.FeedContract;
+import org.telegram.messenger.feed.FeedLimits;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -31,6 +36,8 @@ public class FeedSettingsActivity extends BaseFragment {
     private final boolean[] values = new boolean[KEYS.length];
     private boolean followingPublic = true;
     private boolean followersPublic = true;
+    private boolean personalized = true;
+    private String preferencesJson = "";
 
     public FeedSettingsActivity() {
         System.arraycopy(DEFAULTS, 0, values, 0, DEFAULTS.length);
@@ -71,6 +78,10 @@ public class FeedSettingsActivity extends BaseFragment {
                 values[index] = !values[index];
                 savePush();
                 adapter.notifyItemChanged(position);
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendRow()) {
+                personalized = !personalized;
+                savePersonalized();
+                adapter.notifyItemChanged(position);
             }
         });
         fragmentView = listView;
@@ -88,6 +99,34 @@ public class FeedSettingsActivity extends BaseFragment {
         }
         followingPublic = !"self".equals(controller().storage.getPref("following_list", "public"));
         followersPublic = !"self".equals(controller().storage.getPref("followers_list", "public"));
+        personalized = FeedConfig.personalized(currentAccount);
+        controller().api.getJson("/v1/feed/config", (json, error) -> {
+            if (json == null) {
+                return;
+            }
+            controller().storage.putPref("feed_config", json.toString());
+            FeedConfig.apply(FeedLimits.parse(json.toString()));
+            if (listViewAdapter() != null) {
+                listViewAdapter().notifyDataSetChanged();
+            }
+        });
+        final int preferenceGeneration = FeedConfig.personalizedGeneration(currentAccount);
+        controller().api.getJson(FeedLimits.PREFERENCES_PATH, (json, error) -> {
+            if (json == null || preferenceGeneration != FeedConfig.personalizedGeneration(currentAccount)) {
+                return;
+            }
+            preferencesJson = json.toString();
+            Boolean on = FeedLimits.parsePersonalized(preferencesJson);
+            if (on == null) {
+                return;
+            }
+            personalized = on;
+            FeedConfig.setPersonalized(currentAccount, on);
+            controller().storage.putPref("personalized", on ? "1" : "0");
+            if (listViewAdapter() != null) {
+                listViewAdapter().notifyDataSetChanged();
+            }
+        });
         controller().api.getJson("/v1/feed/me/notification-settings", (json, error) -> {
             if (json != null) {
                 for (int i = 0; i < KEYS.length; i++) {
@@ -147,11 +186,56 @@ public class FeedSettingsActivity extends BaseFragment {
         controller().api.sendJson("PUT", "/v1/feed/me/list-visibility", body, (json, error) -> {});
     }
 
+    private void savePersonalized() {
+        FeedConfig.setPersonalized(currentAccount, personalized);
+        final int preferenceGeneration = FeedConfig.notePersonalizedEdit(currentAccount);
+        controller().storage.putPref("personalized", personalized ? "1" : "0");
+        JSONObject body;
+        try {
+            body = new JSONObject(FeedLimits.preferenceRequest(preferencesJson, personalized));
+        } catch (Exception e) {
+            body = new JSONObject();
+            try {
+                body.put(FeedLimits.PERSONALIZED, personalized);
+            } catch (Exception ignore) {
+            }
+        }
+        controller().api.sendJson(FeedLimits.PREFERENCES_METHOD, FeedLimits.PREFERENCES_PATH, body, (json, error) -> {
+            if (json == null || preferenceGeneration != FeedConfig.personalizedGeneration(currentAccount)) {
+                return;
+            }
+            preferencesJson = json.toString();
+            Boolean on = FeedLimits.parsePersonalized(preferencesJson);
+            if (on == null) {
+                return;
+            }
+            personalized = on;
+            FeedConfig.setPersonalized(currentAccount, on);
+            controller().storage.putPref("personalized", on ? "1" : "0");
+            if (listViewAdapter() != null) {
+                listViewAdapter().notifyDataSetChanged();
+            }
+        });
+        controller().load(FeedContract.STREAM_RECOMMEND, true, null);
+    }
+
+    private int recommendHeader() {
+        return 5 + KEYS.length;
+    }
+
+    private int recommendRow() {
+        return 6 + KEYS.length;
+    }
+
+    private int recommendInfo() {
+        return 7 + KEYS.length;
+    }
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
-            return type != 0;
+            return type != 0 && type != 3;
         }
 
         @NonNull
@@ -160,6 +244,7 @@ public class FeedSettingsActivity extends BaseFragment {
             View view;
             if (viewType == 0) view = new HeaderCell(parent.getContext());
             else if (viewType == 2) view = new TextSettingsCell(parent.getContext());
+            else if (viewType == 3) view = new TextInfoPrivacyCell(parent.getContext());
             else view = new TextCheckCell(parent.getContext());
             return new RecyclerListView.Holder(view);
         }
@@ -176,23 +261,34 @@ public class FeedSettingsActivity extends BaseFragment {
                 ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.Moments_Mutes), "", true);
             } else if (position == 4) {
                 ((HeaderCell) holder.itemView).setText(getString(R.string.Moments_Push));
-            } else {
+            } else if (position < 5 + KEYS.length) {
                 int index = position - 5;
                 int[] titles = new int[]{R.string.Moments_Push_Comments, R.string.Moments_Push_Replies, R.string.Moments_Push_Mentions, R.string.Moments_Push_Follows, R.string.Moments_Push_Likes, R.string.Moments_Push_Reposts, R.string.Moments_Push_NewPosts};
                 ((TextCheckCell) holder.itemView).setTextAndCheck(getString(titles[index]), values[index], index != titles.length - 1);
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendHeader()) {
+                ((HeaderCell) holder.itemView).setText(LocaleController.getString(R.string.Moments_Recommendations));
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendRow()) {
+                ((TextCheckCell) holder.itemView).setTextAndCheck(LocaleController.getString(R.string.Moments_Personalized), personalized, false);
+            } else if (FeedConfig.personalizationToggleVisible() && position == recommendInfo()) {
+                ((TextInfoPrivacyCell) holder.itemView).setText(LocaleController.getString(R.string.Moments_PersonalizedInfo));
             }
         }
 
         @Override
         public int getItemViewType(int position) {
-            if (position == 0 || position == 4) return 0;
+            if (position == 0 || position == 4 || (FeedConfig.personalizationToggleVisible() && position == recommendHeader())) return 0;
             if (position == 3) return 2;
+            if (FeedConfig.personalizationToggleVisible() && position == recommendInfo()) return 3;
             return 1;
         }
 
         @Override
         public int getItemCount() {
-            return 5 + KEYS.length;
+            int count = 5 + KEYS.length;
+            if (FeedConfig.personalizationToggleVisible()) {
+                count += 3;
+            }
+            return count;
         }
     }
 }

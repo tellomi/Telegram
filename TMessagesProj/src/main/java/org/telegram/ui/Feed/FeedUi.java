@@ -52,11 +52,15 @@ public final class FeedUi {
     }
 
     public static void openEntry(BaseFragment fragment, String postId, String entry, boolean focus) {
+        openEntry(fragment, postId, "", entry, focus);
+    }
+
+    public static void openEntry(BaseFragment fragment, String postId, String commentId, String entry, boolean focus) {
         if (fragment == null || postId == null || postId.length() == 0) {
             return;
         }
         if (FeedContract.opensStandaloneDetail(entry)) {
-            fragment.presentFragment(FeedDetailActivity.forPost(postId));
+            fragment.presentFragment(FeedDetailActivity.forPost(postId, commentId));
             return;
         }
         FeedCommentSheet.open(fragment, postId, focus);

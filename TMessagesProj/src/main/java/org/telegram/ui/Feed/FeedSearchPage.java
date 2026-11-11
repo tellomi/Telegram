@@ -31,6 +31,7 @@ public class FeedSearchPage extends LinearLayout {
     private final DialogsActivity parent;
     private final ArrayList<Row> rows = new ArrayList<>();
     private final RecyclerListView listView;
+    private final FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
     private String query = "";
     private String sort = "relevance";
 
@@ -60,8 +61,9 @@ public class FeedSearchPage extends LinearLayout {
 
     public void search(String text) {
         query = text == null ? "" : text;
-        rows.clear();
+        final int token = generation.next();
         if (query.length() == 0) {
+            rows.clear();
             ArrayList<String> history = FeedController.getInstance(parent.getCurrentAccount()).searchHistory();
             for (int i = 0; i < history.size(); i++) {
                 rows.add(Row.history(history.get(i)));
@@ -73,6 +75,9 @@ public class FeedSearchPage extends LinearLayout {
         controller.pushSearchHistory(query);
         String path = "/v1/feed/search?q=" + FeedApi.enc(query) + "&scope=all&sort=" + sort;
         controller.api.getJson(path, (json, error) -> {
+            if (!generation.accept(token)) {
+                return;
+            }
             rows.clear();
             if (json == null) {
                 if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
@@ -109,6 +114,9 @@ public class FeedSearchPage extends LinearLayout {
                 }
                 final JSONObject postPage = page;
                 controller.resolvePostPage(postPage, (posts, pageError) -> {
+                    if (!generation.accept(token)) {
+                        return;
+                    }
                     if (posts != null) {
                         for (int i = 0; i < posts.size(); i++) {
                             rows.add(Row.post(posts.get(i)));

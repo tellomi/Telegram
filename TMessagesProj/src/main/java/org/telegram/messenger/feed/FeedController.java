@@ -108,6 +108,13 @@ public class FeedController {
         } catch (Exception ignore) {
             unread = 0;
         }
+        if ("0".equals(storage.getPref("personalized", "1"))) {
+            FeedConfig.setPersonalized(account, false);
+        }
+        String cachedConfig = storage.getPref("feed_config", "");
+        if (cachedConfig.length() > 0) {
+            FeedConfig.apply(FeedLimits.parse(cachedConfig));
+        }
     }
 
     public void addListener(Listener listener) {
@@ -233,7 +240,7 @@ public class FeedController {
         if (cursor.length() == 0) {
             return;
         }
-        String path = FeedContract.nextPagePath(stream, cursor, cityCode(), nearbySort());
+        String path = feedPath(stream, FeedContract.nextPagePath(stream, cursor, cityCode(), nearbySort()));
         if (path == null) {
             return;
         }
@@ -276,6 +283,26 @@ public class FeedController {
         remoteConfigReady = false;
     }
 
+    /** Recommend follows the stored preference. Other streams do not send it. */
+    private String feedPath(String stream, String path) {
+        if (path != null && FeedContract.STREAM_RECOMMEND.equals(stream)) {
+            return FeedLimits.recommendPath(path, FeedConfig.personalized(account));
+        }
+        return path;
+    }
+
+    private void rememberPersonalized(JSONObject json) {
+        if (json == null) {
+            return;
+        }
+        Boolean on = FeedLimits.parsePersonalized(json.toString());
+        if (on == null) {
+            return;
+        }
+        FeedConfig.setPersonalized(account, on);
+        storage.putPref("personalized", on ? "1" : "0");
+    }
+
     private void ensureRemoteConfig(final Runnable next) {
         if (remoteConfigReady) {
             next.run();
@@ -291,10 +318,19 @@ public class FeedController {
                 applyCapabilities(json.toString());
             }
         });
+        final int preferenceGeneration = FeedConfig.personalizedGeneration(account);
+        api.getJson(FeedLimits.PREFERENCES_PATH, (json, error) -> {
+            if (preferenceGeneration != FeedConfig.personalizedGeneration(account)) {
+                return;
+            }
+            rememberPersonalized(json);
+        });
         api.getJson("/v1/feed/config", (json, error) -> {
             remoteConfigLoading = false;
             if (json != null) {
                 FeedConfig.rememberMediaBase(account, json.optString("media_base_url", ""));
+                storage.putPref("feed_config", json.toString());
+                FeedConfig.apply(FeedLimits.parse(json.toString()));
                 if (json.has("tabs")) {
                     applyCapabilities(json.toString());
                 }
@@ -343,6 +379,7 @@ public class FeedController {
         String path = refresh
                 ? FeedContract.streamPath(stream, "", cityCode(), nearbySort())
                 : FeedContract.nextPagePath(stream, cursor, cityCode(), nearbySort());
+        path = feedPath(stream, path);
         if (path == null) {
             if (done != null) {
                 done.run(true, null);
@@ -662,7 +699,7 @@ public class FeedController {
 
     /** Fetches the first page and reports whether its head id differs. Does not insert rows. */
     public void probeHead(String stream, Utilities.Callback<Boolean> done) {
-        String path = FeedContract.streamPath(stream, "", cityCode(), nearbySort());
+        String path = feedPath(stream, FeedContract.streamPath(stream, "", cityCode(), nearbySort()));
         if (path == null) {
             if (done != null) {
                 done.run(false);
@@ -705,8 +742,8 @@ public class FeedController {
                 body = new JSONObject(FeedContract.commentBody(text, parentId, type, key, clientNonce));
             } else {
                 String value = text == null ? "" : text;
-                if (value.length() > FeedContract.MAX_COMMENT) {
-                    value = value.substring(0, FeedContract.MAX_COMMENT);
+                if (value.length() > FeedConfig.MAX_COMMENT) {
+                    value = value.substring(0, FeedConfig.MAX_COMMENT);
                 }
                 body.put("text", value);
                 if (parentId != null && parentId.length() > 0) {
@@ -786,15 +823,33 @@ public class FeedController {
         });
     }
 
-    public void markNotificationsRead() {
-        setUnread(0);
-        api.sendJson("POST", "/v1/feed/me/notifications/read", new JSONObject(), (json, error) -> {
+    /** Marks the tab on screen. An empty body would clear every tab. */
+    public void markNotificationsRead(String tab) {
+        JSONObject body;
+        try {
+            body = new JSONObject(FeedContract.notificationReadBody(tab));
+        } catch (Exception e) {
+            return;
+        }
+        api.sendJson("POST", "/v1/feed/me/notifications/read", body, (json, error) -> {
+            if (error == null) {
+                refreshUnread();
+            }
         });
     }
 
     public void loadNotifications(String tab, Utilities.Callback2<ArrayList<FeedModels.NotificationItem>, String> done) {
-        api.getJson(FeedContract.notificationsPath(tab), (json, error) -> {
+        loadNotifications(tab, "", (list, cursor, error) -> {
+            if (done != null) {
+                done.run(list, error);
+            }
+        });
+    }
+
+    public void loadNotifications(String tab, String cursor, Utilities.Callback3<ArrayList<FeedModels.NotificationItem>, String, String> done) {
+        api.getJson(FeedContract.notificationsPath(tab, cursor), (json, error) -> {
             ArrayList<FeedModels.NotificationItem> list = new ArrayList<>();
+            String next = "";
             if (json != null) {
                 JSONArray items = json.optJSONArray("items");
                 if (items != null) {
@@ -805,12 +860,13 @@ public class FeedController {
                         }
                     }
                 }
+                next = FeedContract.normalizeCursor(json.optString("next_cursor", json.optString("cursor", "")));
                 if (json.has("unread")) {
                     setUnread(json.optInt("unread", 0));
                 }
             }
             if (done != null) {
-                done.run(list, error);
+                done.run(list, next, error);
             }
         });
     }

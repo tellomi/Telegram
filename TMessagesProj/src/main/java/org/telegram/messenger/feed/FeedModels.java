@@ -349,6 +349,10 @@ public final class FeedModels {
         public String quoteId = "";
         public Post quote;
         public String audienceKind = "public";
+        /** Null when the card omitted shareable. The only capability bit the engine sends. */
+        public Boolean shareable;
+        /** SQL shareable() is false while this is set. Ignored when {@link #shareable} is present. */
+        public boolean authorOnlyPending;
         public String commentPolicy = "everyone_who_can_view";
         public String cityCode = "";
         public String cityName = "";
@@ -377,6 +381,21 @@ public final class FeedModels {
 
         public boolean isMutual() {
             return FeedContract.isMutualAudience(audienceKind);
+        }
+
+        public FeedActionPolicy.Input actionInput(boolean own) {
+            FeedActionPolicy.Input input = new FeedActionPolicy.Input();
+            input.visibility = audienceKind;
+            input.state = state;
+            input.kind = kind;
+            input.unavailable = unavailable;
+            input.authorOnlyPending = authorOnlyPending;
+            input.shareable = shareable;
+            input.own = own;
+            input.createdAtMillis = createdAt;
+            input.nowMillis = System.currentTimeMillis();
+            input.editWindowSeconds = FeedActionPolicy.editWindowSeconds();
+            return input;
         }
 
         public boolean hasImages() {
@@ -422,6 +441,8 @@ public final class FeedModels {
             String state = o.optString("state", "published");
             p.state = state;
             p.unavailable = FeedContract.cardUnavailable(o.optBoolean("unavailable", false), state);
+            p.shareable = FeedActionPolicy.readShareable(o.toString());
+            p.authorOnlyPending = o.optBoolean("author_only_pending", false);
             if (p.unavailable && o.optString("text", "").length() == 0 && !o.has("author")) {
                 return p;
             }
@@ -774,6 +795,7 @@ public final class FeedModels {
         public String text = "";
         public long createdAt;
         public boolean read;
+        public boolean unavailable;
         public ArrayList<Author> actors = new ArrayList<>();
         public int extraCount;
 
@@ -790,6 +812,9 @@ public final class FeedModels {
             n.text = o.optString("text", o.optString("summary", ""));
             n.createdAt = o.optLong("created_at", 0);
             n.read = o.optBoolean("read", false);
+            String state = o.optString("state", "");
+            n.unavailable = o.optBoolean("unavailable", false) || o.optBoolean("gone", false)
+                    || "unavailable".equals(state) || "deleted".equals(state) || "gone".equals(state);
             n.extraCount = o.optInt("extra_count", 0);
             JSONArray actors = o.optJSONArray("actors");
             if (actors != null) {

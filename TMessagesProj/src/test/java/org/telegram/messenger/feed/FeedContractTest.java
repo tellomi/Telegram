@@ -16,14 +16,14 @@ import static org.junit.Assert.assertTrue;
 public class FeedContractTest {
 
     @Test
-    public void engineLimitsAreFiveHundredCharsAndTenImages() {
-        assertEquals(500, FeedContract.MAX_TEXT);
-        assertEquals(500, FeedContract.MAX_COMMENT);
-        assertEquals(10, FeedContract.MAX_IMAGES);
-        assertEquals(450, FeedContract.TEXT_COUNTER_FROM);
-        assertEquals(500, FeedContract.clampText(repeat('a', 800)).length());
-        assertEquals(0, FeedContract.imageSlotsLeft(10));
-        assertEquals(3, FeedContract.imageSlotsLeft(7));
+    public void engineLimitsMatchTheServerConstants() {
+        assertEquals(2000, FeedContract.MAX_TEXT);
+        assertEquals(1000, FeedContract.MAX_COMMENT);
+        assertEquals(12, FeedContract.MAX_IMAGES);
+        assertEquals(1950, FeedContract.TEXT_COUNTER_FROM);
+        assertEquals(2000, FeedContract.clampText(repeat('a', 2500)).length());
+        assertEquals(0, FeedContract.imageSlotsLeft(12));
+        assertEquals(5, FeedContract.imageSlotsLeft(7));
     }
 
     @Test
@@ -183,8 +183,9 @@ public class FeedContractTest {
         assertTrue(epoch.isCurrent(second));
         assertEquals("/v1/feed/comments/c1/replies", FeedContract.repliesPath("c1", ""));
         assertEquals("/v1/feed/comments/c1/replies?cursor=n", FeedContract.repliesPath("c1", "n"));
-        String longText = FeedContract.commentBody(repeat('b', 800), null, "voice", "v");
-        assertFalse(longText.contains(repeat('b', 501)));
+        String longText = FeedContract.commentBody(repeat('b', 1200), null, "voice", "v");
+        assertFalse(longText.contains(repeat('b', 1001)));
+        assertTrue(longText.contains(repeat('b', 1000)));
         assertTrue(longText.contains("\"media_keys\""));
     }
 
@@ -465,6 +466,109 @@ public class FeedContractTest {
         assertTrue(ui.contains("Moments_Time_Now"));
         assertTrue(ui.contains("avatarSource"));
         assertFalse(ui.contains("cancelLoadImage"));
+    }
+
+    @Test
+    public void queryGenerationAndRoutesIgnoreStaleWork() {
+        FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
+        int first = generation.next();
+        int second = generation.next();
+        assertFalse(generation.accept(first));
+        assertTrue(generation.accept(second));
+        assertFalse(FeedContract.acceptQuery(first, generation.current()));
+        assertTrue(FeedContract.acceptQuery(second, generation.current()));
+        assertFalse(FeedContract.acceptQuery(0, generation.current()));
+        assertFalse(generation.accept(0));
+
+        assertEquals("/v1/feed/profiles/42/following", FeedContract.relationPath("42", false, ""));
+        assertEquals("/v1/feed/profiles/42/followers?cursor=c2", FeedContract.relationPath("42", true, "c2"));
+        assertNull(FeedContract.relationPath("", true, ""));
+        assertTrue(FeedContract.knownListVisibility("public"));
+        assertTrue(FeedContract.knownListVisibility("self"));
+        assertFalse(FeedContract.knownListVisibility("friends"));
+        assertTrue(FeedContract.listPrivate("list_private", null));
+        assertTrue(FeedContract.listPrivate(null, "list_private"));
+        assertFalse(FeedContract.listPrivate("network", null));
+
+        FeedContract.RelationPage hidden = FeedContract.parseRelationPage("{\"error\":\"list_private\",\"items\":[{}]}", "list_private", false);
+        assertTrue(hidden.hidden);
+        assertFalse(hidden.failed);
+        assertEquals(-1, hidden.total);
+        assertTrue(FeedContract.applyRelationPage(true, true, hidden.failed, hidden.hidden));
+        assertFalse(FeedContract.applyRelationPage(true, false, hidden.failed, hidden.hidden));
+
+        FeedContract.RelationPage failed = FeedContract.parseRelationPage(null, "network", true);
+        assertTrue(failed.failed);
+        assertFalse(failed.hidden);
+        assertFalse(FeedContract.applyRelationPage(true, false, failed.failed, failed.hidden));
+        assertFalse(FeedContract.applyRelationPage(false, true, false, false));
+
+        String both = "{\"items\":[{}],\"cursor\":\"n\",\"following_count\":2,\"followers_count\":8}";
+        FeedContract.RelationPage following = FeedContract.parseRelationPage(both, null, false);
+        FeedContract.RelationPage followers = FeedContract.parseRelationPage(both, null, true);
+        assertEquals(2, following.total);
+        assertEquals(8, followers.total);
+        assertEquals("n", following.cursor);
+        assertTrue(FeedContract.applyRelationPage(true, false, following.failed, following.hidden));
+        assertEquals(2, FeedContract.parseRelationPage("{\"items\":[{},{}]}", null, false).total);
+        assertEquals(-1, FeedContract.parseRelationPage("{\"items\":[{}],\"next_cursor\":\"more\"}", "", false).total);
+        assertEquals(4, FeedContract.parseRelationPage("{\"users\":[{}],\"counts\":{\"followers\":4}}", null, true).total);
+
+        assertEquals("/v1/feed/me/notifications?tab=follows&cursor=c2", FeedContract.notificationsPath("follows", "c2"));
+        assertEquals(FeedContract.notificationsPath("system"), FeedContract.notificationsPath("system", ""));
+        assertEquals("{\"tab\":\"interactions\"}", FeedContract.notificationReadBody("nope"));
+        assertFalse(FeedContract.notificationReadBody("follows").equals("{}"));
+        assertTrue(FeedContract.notificationReadBody("follows").contains("\"tab\":\"follows\""));
+
+        assertEquals(FeedContract.OPEN_PROFILE, FeedContract.notificationOpen("follow", "p", "c", 5, false));
+        assertEquals(FeedContract.OPEN_PROFILE, FeedContract.notificationOpen("mutual", "", "", 9, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("follow", "p", "", 0, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("like", "p", "c", 5, true));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("comment", "p", "c", 5, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("reply", "p", "c", 0, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("mention", "p", "c", 0, false));
+        assertEquals(FeedContract.OPEN_POST, FeedContract.notificationOpen("repost", "p", "", 3, false));
+        assertEquals(FeedContract.OPEN_GONE, FeedContract.notificationOpen("system", "", "", 0, false));
+        assertEquals("c", FeedContract.notificationCommentId(FeedContract.OPEN_POST, "c"));
+        assertEquals("", FeedContract.notificationCommentId(FeedContract.OPEN_PROFILE, "c"));
+        assertEquals("", FeedContract.notificationCommentId(FeedContract.OPEN_POST, ""));
+
+        ArrayList<String> roots = new ArrayList<>();
+        roots.add("a");
+        roots.add("b");
+        ArrayList<java.util.List<String>> replies = new ArrayList<>();
+        replies.add(Arrays.asList("c", "d", "e"));
+        replies.add(new ArrayList<String>());
+        assertEquals(0, FeedContract.locateComment(roots, replies, 2, "a"));
+        assertEquals(1, FeedContract.locateComment(roots, replies, 2, "c"));
+        assertEquals(2, FeedContract.locateComment(roots, replies, 2, "d"));
+        assertEquals(0, FeedContract.locateComment(roots, replies, 2, "e"));
+        assertEquals(3, FeedContract.locateComment(roots, replies, 2, "b"));
+        assertEquals(-1, FeedContract.locateComment(roots, replies, 2, "z"));
+        assertEquals(-1, FeedContract.locateComment(roots, replies, 2, ""));
+
+        FeedContract.TopicPlace topic = FeedContract.topicPlace("cats", "latest", 12, -4);
+        FeedContract.TopicPlace topicBack = FeedContract.restoreTopic(topic);
+        assertEquals("cats", topicBack.topic);
+        assertEquals("latest", topicBack.sort);
+        assertEquals(12, topicBack.position);
+        assertEquals(-4, topicBack.offset);
+        assertEquals("hot", FeedContract.topicPlace("cats", "nope", 1, 0).sort);
+        assertEquals(0, FeedContract.topicPlace("cats", "hot", -1, 8).position);
+        assertEquals("", FeedContract.restoreTopic(null).topic);
+        assertEquals("hot", FeedContract.restoreTopic(null).sort);
+
+        FeedContract.NotificationPlace notes = FeedContract.notificationPlace("follows", 8, 2);
+        FeedContract.NotificationPlace notesBack = FeedContract.restoreNotifications(notes);
+        assertEquals("follows", notesBack.tab);
+        assertEquals(8, notesBack.position);
+        assertEquals(2, notesBack.offset);
+        assertEquals("interactions", FeedContract.notificationPlace("nope", 1, 0).tab);
+        assertEquals("interactions", FeedContract.restoreNotifications(null).tab);
+        assertEquals(0, FeedContract.notificationPlace("system", -3, 4).position);
+
+        assertFalse(FeedContract.composerGestureLeaves(true));
+        assertTrue(FeedContract.composerGestureLeaves(false));
     }
 
     private static String readDesign() throws Exception {

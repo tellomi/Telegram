@@ -1096,6 +1096,10 @@
     <string name="Moments_City_Hangzhou">Hangzhou</string>
 
     <string name="Moments_Time_Now">Zojuist</string>
+    <string name="Moments_Recommendations">Aanbevelingen</string>
+    <string name="Moments_Personalized">Persoonlijke aanbevelingen</string>
+    <string name="Moments_PersonalizedInfo">Als dit uit staat, wordt Voor jou niet meer op jouw interesses gesorteerd.</string>
+    <string name="Moments_VideoTooLongN">Kort de video in tot %1$d seconden of minder.</string>
     <string name="Moments_Time_Minutes">%d minuten geleden</string>
     <string name="Moments_Time_Hours">%d uur geleden</string>
     <string name="Moments_Time_Days">%d dagen geleden</string>
@@ -1136,4 +1140,17 @@
     <string name="MainTabsMenuSettings">Menu-instellingen</string>
     <string name="MainTabsHideLabels">Knoplabels verbergen</string>
     <string name="MainTabsButtons">Knoppen van de navigatiebalk</string>
+
+    <string name="Moments_FollowingEntry">Volgend</string>
+    <string name="Moments_FollowersEntry">Volgers</string>
+    <string name="Moments_FollowingWithCount">Volgend · %d</string>
+    <string name="Moments_FollowersWithCount">Volgers · %d</string>
+    <string name="Moments_ListPrivate">Deze lijst is privé</string>
+    <string name="Moments_ListLoadFailed">Deze lijst kon niet worden geladen</string>
+    <string name="Moments_PostGone">Die post is er niet meer</string>
+    <string name="Moments_CommentGone">Die reactie is er niet meer</string>
+    <string name="Moments_Unavailable">Inhoud niet beschikbaar</string>
+
+    <string name="Moments_FollowingPrivate">Volgend · Deze lijst is privé</string>
+    <string name="Moments_FollowersPrivate">Volgers · Deze lijst is privé</string>
 </resources>

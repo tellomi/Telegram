@@ -23,6 +23,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.feed.FeedActionPolicy;
 import org.telegram.messenger.feed.FeedConfig;
 import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedModels;
@@ -410,6 +411,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
             repost.setVisibility(GONE);
             share.setVisibility(GONE);
             save.setVisibility(GONE);
+            more.setVisibility(GONE);
             return;
         }
         like.setVisibility(VISIBLE);
@@ -420,6 +422,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         repostCount.setVisibility(VISIBLE);
         share.setVisibility(VISIBLE);
         save.setVisibility(GONE);
+        more.setVisibility(VISIBLE);
         FeedUi.bindAvatar(avatar, post.author, account);
         org.telegram.tgnet.TLRPC.User shown = post.author == null ? null : org.telegram.messenger.MessagesController.getInstance(account).getUser(post.author.userId);
         boundPhotoId = shown != null && shown.photo != null ? shown.photo.photo_id : 0;
@@ -532,8 +535,17 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         repost.setContentDescription(LocaleController.getString("Moments_Repost", R.string.Moments_Repost) + " " + post.reposts);
         save.setColorFilter(post.saved ? Theme.getColor(Theme.key_featuredStickers_addButton) : Theme.getColor(Theme.key_dialogIcon));
         save.setContentDescription(post.saved ? LocaleController.getString("Moments_Saved", R.string.Moments_Saved) : LocaleController.getString("Moments_Save", R.string.Moments_Save));
-        boolean canRepost = post.isPublic() || !FeedConfig.ONLY_PUBLIC_CAN_REPOST;
-        repost.setAlpha(canRepost ? 1f : 0.35f);
+        boolean repostOn = allows(post, FeedActionPolicy.Action.REPOST) || allows(post, FeedActionPolicy.Action.QUOTE);
+        boolean shareOn = allows(post, FeedActionPolicy.Action.CHAT_SHARE) || allows(post, FeedActionPolicy.Action.COPY_LINK) || allows(post, FeedActionPolicy.Action.EXTERNAL_SHARE);
+        repost.setAlpha(repostOn ? 1f : 0.35f);
+        share.setAlpha(shareOn ? 1f : 0.35f);
+    }
+
+    private static boolean allows(FeedModels.Post post, FeedActionPolicy.Action action) {
+        if (post == null) {
+            return false;
+        }
+        return FeedActionPolicy.decide(post.actionInput(false), action).allowed;
     }
 
     private String LocaleSafe(String name) {
@@ -709,6 +721,7 @@ public class FeedPostCell extends LinearLayout implements NotificationCenter.Not
         repost.setVisibility(GONE);
         share.setVisibility(GONE);
         save.setVisibility(GONE);
+        more.setVisibility(GONE);
         full.setVisibility(GONE);
         if (skeleton != null) {
             skeleton.setVisibility(VISIBLE);
