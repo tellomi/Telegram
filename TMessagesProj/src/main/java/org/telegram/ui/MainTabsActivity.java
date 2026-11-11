@@ -1137,6 +1137,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         try {
             TellomiMainTabs.Store store = TellomiMainTabsStore.device();
             boolean showLabels = !TellomiMainTabs.hideLabels(store);
+            tabsView.setHuggedTabs(true, showLabels);
             for (int index = 0; index < tabs.length; index++) {
                 if (tabs[index] == null) {
                     continue;
