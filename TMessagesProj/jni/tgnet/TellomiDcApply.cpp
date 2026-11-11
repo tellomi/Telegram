@@ -37,7 +37,29 @@ bool tellomiEnsureTcpAddresses(std::vector<TcpAddress> &addresses) {
         endpoint.secret = !address.secret.empty();
         endpoints.push_back(endpoint);
     }
-    if (!tellomiEnsurePortPair(endpoints)) {
+    bool changed = tellomiEnsurePortPair(endpoints);
+    if (!tellomiEndpointListIsIpv6(endpoints)) {
+        std::vector<std::string> hostnames;
+        for (const TellomiDcAddress &dc : TellomiNetConfig::datacenters()) {
+            if (!tellomiDcHostNeedsResolve(dc.host)) {
+                continue;
+            }
+            bool seen = false;
+            for (const std::string &host : hostnames) {
+                if (host == dc.host) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                hostnames.push_back(dc.host);
+            }
+        }
+        if (tellomiRestoreHostnameFallbacks(endpoints, hostnames)) {
+            changed = true;
+        }
+    }
+    if (!changed) {
         return false;
     }
     std::vector<TcpAddress> rebuilt;

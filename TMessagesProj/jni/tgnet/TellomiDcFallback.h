@@ -4,6 +4,10 @@
 /*
  * Tellomi serves MTProto on 10443 and, for networks that drop that port, on
  * 443 of the same host. 10443 stays the first address. 443 is the next one.
+ * The built-in IP is tried first. api.tellomi.cn follows, resolved by the
+ * existing getHostByName path, so a DNS change can move the server without
+ * an app update. help.getConfig replaces IP literals and the hostname is
+ * appended again.
  *
  * Upstream tgnet also rewrites a single address onto ports 443 and 5222, but
  * only after repeating the configured port, and 5222 is not this server.
@@ -15,6 +19,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include "TellomiDcAddress.h"
 
 static const int32_t TELLOMI_MTPROTO_PORT = 10443;
 static const int32_t TELLOMI_MTPROTO_FALLBACK_PORT = 443;
@@ -92,6 +97,62 @@ inline bool tellomiEnsurePortPair(std::vector<TellomiEndpoint> &addresses) {
     }
     if (changed) {
         addresses.swap(rebuilt);
+    }
+    return changed;
+}
+
+// An IPv6 literal list is not a place for an A-record hostname. ConnectionSocket
+// would open an AF_INET6 socket and close the name as a bad IPv6 address.
+inline bool tellomiEndpointListIsIpv6(const std::vector<TellomiEndpoint> &addresses) {
+    for (const TellomiEndpoint &entry : addresses) {
+        if (entry.secret) {
+            continue;
+        }
+        int32_t port = entry.port > 0 ? entry.port : 1;
+        if (tellomiAcceptDcAddress(entry.host, true, port) && !tellomiAcceptDcAddress(entry.host, false, port)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Append host:10443 when that hostname is missing, then pair 443. A literal
+// is ignored. Returns true when the list changes.
+inline bool tellomiAppendHostnameFallback(std::vector<TellomiEndpoint> &addresses, const std::string &host) {
+    if (!tellomiDcHostNeedsResolve(host)) {
+        return false;
+    }
+    bool present = false;
+    for (const TellomiEndpoint &entry : addresses) {
+        if (!entry.secret && entry.host == host) {
+            present = true;
+            break;
+        }
+    }
+    if (!present) {
+        TellomiEndpoint added;
+        added.host = host;
+        added.port = TELLOMI_MTPROTO_PORT;
+        added.flags = 0;
+        added.secret = false;
+        addresses.push_back(added);
+    }
+    return tellomiEnsurePortPair(addresses);
+}
+
+// After help.getConfig replaces a family with IP literals, put each seed
+// hostname back at the end (10443 then 443). An empty list is left empty so
+// a hostname-only config cannot replace the previous addresses. An IPv6
+// family is left alone.
+inline bool tellomiRestoreHostnameFallbacks(std::vector<TellomiEndpoint> &addresses, const std::vector<std::string> &hostnames) {
+    if (addresses.empty() || hostnames.empty() || tellomiEndpointListIsIpv6(addresses)) {
+        return false;
+    }
+    bool changed = false;
+    for (const std::string &host : hostnames) {
+        if (tellomiAppendHostnameFallback(addresses, host)) {
+            changed = true;
+        }
     }
     return changed;
 }

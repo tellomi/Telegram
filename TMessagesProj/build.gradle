@@ -126,11 +126,13 @@ def tellomiPublicKeyPem = {
     def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
     return keyFile.isFile() ? keyFile.getText("UTF-8") : ""
 }
-def TELLOMI_PRODUCTION_HOST = '8.137.39.82'
+def TELLOMI_PRODUCTION_HOST = '8.156.40.105'
 def TELLOMI_PRODUCTION_PORT = '10443'
 def TELLOMI_FALLBACK_PORT = '443'
-// 10443 first. 443 is the same host, used when 10443 is dropped.
-def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT}"
+def TELLOMI_FALLBACK_HOST = 'api.tellomi.cn'
+// Each DC: built-in IP on 10443, then 443, then api.tellomi.cn on 10443 and 443.
+// The hostname is resolved by tgnet getHostByName. help.getConfig updates IPs.
+def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT}"
 def tellomiServerProfiles = [
     dev  : TELLOMI_PRODUCTION_ADDRESSES,
     local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
@@ -387,7 +389,7 @@ gradle.taskGraph.whenReady { graph ->
 
 task tellomiVerifyShippableDc {
     group = 'tellomi'
-    description = 'Fail unless a shippable build embeds 8.137.39.82:10443 and :443.'
+    description = 'Fail unless a shippable build embeds 8.156.40.105:10443 and :443 and api.tellomi.cn.'
     doLast {
         def shipServer = tellomiEmbeddedShippableServer()
         println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"
