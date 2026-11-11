@@ -780,6 +780,17 @@ public class LocaleController {
                 }
             }
 
+            if (currentInfo == null && TellomiIntro.SKIP_WELCOME) {
+                String matched = TellomiIntro.matchShortName(
+                        systemDefaultLocale.getLanguage(),
+                        systemDefaultLocale.getCountry(),
+                        systemDefaultLocale.getScript(),
+                        languageShortNames());
+                if (matched != null) {
+                    currentInfo = getLanguageFromDict(matched);
+                }
+            }
+
             if (currentInfo == null && systemDefaultLocale.getLanguage() != null) {
                 currentInfo = getLanguageFromDict(systemDefaultLocale.getLanguage());
             }
@@ -836,6 +847,17 @@ public class LocaleController {
             return null;
         }
         return languagesDict.get(key.toLowerCase().replace("-", "_"));
+    }
+
+    private ArrayList<String> languageShortNames() {
+        ArrayList<String> names = new ArrayList<>(languages.size());
+        for (int a = 0; a < languages.size(); a++) {
+            LocaleInfo info = languages.get(a);
+            if (info != null && info.shortName != null) {
+                names.add(info.shortName);
+            }
+        }
+        return names;
     }
     public LocaleInfo getBuiltinLanguageByPlural(String plural) {
         Collection<LocaleInfo> values = languagesDict.values();
@@ -3115,12 +3137,9 @@ public class LocaleController {
                         } else {
                             newLocale = new Locale(args[0], args[1]);
                         }
-                        languageOverride = localeInfo.shortName;
-
-                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("language", localeInfo.getKey());
-                        editor.commit();
+                        // Automatic system-language selection must not become a saved choice
+                        // when the remote pack finishes. Settings already wrote `language`.
+                        storeLanguageAfterRemoteSave(mainLanguagePreference(), localeInfo.getKey(), localeInfo.shortName);
 
                         localizationExternal = new Localization.Builder()
                             .addLocalization(valuesToSet)
@@ -3164,6 +3183,95 @@ public class LocaleController {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    /**
+     * Preference bag used when a remote langpack file has just been saved.
+     * Tests supply a memory copy; production reads {@code mainconfig}.
+     */
+    interface LanguagePreference {
+        String get();
+
+        boolean isKnown(String key);
+
+        void put(String key);
+    }
+
+    /**
+     * {@code saveRemoteLocaleStrings} calls this for the locale on screen.
+     * A language Settings already stored is written again. An automatic
+     * system-language choice leaves {@code language} empty.
+     */
+    void storeLanguageAfterRemoteSave(LanguagePreference prefs, String preferenceKey, String shortName) {
+        if (prefs == null || preferenceKey == null) {
+            return;
+        }
+        String saved = prefs.get();
+        boolean userChose = !TellomiIntro.SKIP_WELCOME || (saved != null && prefs.isKnown(saved));
+        if (userChose) {
+            languageOverride = shortName;
+            prefs.put(preferenceKey);
+        }
+    }
+
+    private LanguagePreference mainLanguagePreference() {
+        return new LanguagePreference() {
+            @Override
+            public String get() {
+                try {
+                    return MessagesController.getGlobalMainSettings().getString("language", null);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
+            @Override
+            public boolean isKnown(String key) {
+                return getLanguageFromDict(key) != null;
+            }
+
+            @Override
+            public void put(String key) {
+                MessagesController.getGlobalMainSettings().edit().putString("language", key).commit();
+            }
+        };
+    }
+
+    /**
+     * After {@code langpack.getLanguages}. A saved Settings language stays.
+     * Otherwise the device locale is applied and not written, so the next launch
+     * can still follow the system language. Skipping the welcome page must not
+     * persist the English fallback.
+     */
+    private void applyLoadedLanguage(int currentAccount) {
+        LocaleInfo toApply = currentLocaleInfo;
+        boolean override = true;
+        if (TellomiIntro.SKIP_WELCOME) {
+            String saved = null;
+            try {
+                saved = MessagesController.getGlobalMainSettings().getString("language", null);
+            } catch (Exception ignore) {
+            }
+            boolean languageSaved = saved != null && getLanguageFromDict(saved) != null;
+            Locale system = systemDefaultLocale;
+            String chosen = TellomiIntro.languageToApply(
+                    languageSaved,
+                    toApply == null ? null : toApply.shortName,
+                    system == null ? null : system.getLanguage(),
+                    system == null ? null : system.getCountry(),
+                    system == null ? null : system.getScript(),
+                    languageShortNames());
+            if (!languageSaved) {
+                override = false;
+            }
+            if (chosen != null) {
+                LocaleInfo matched = getLanguageFromDict(chosen);
+                if (matched != null) {
+                    toApply = matched;
+                }
+            }
+        }
+        applyLanguage(toApply, override, false, currentAccount);
     }
 
     public void loadRemoteLanguages(final int currentAccount) {
@@ -3238,7 +3346,7 @@ public class LocaleController {
                     saveOtherLanguages();
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.suggestedLangpack);
                     if (applyCurrent) {
-                        applyLanguage(currentLocaleInfo, true, false, currentAccount);
+                        applyLoadedLanguage(currentAccount);
                     }
                 });
             }
