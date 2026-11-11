@@ -31,6 +31,9 @@
 #include "BuffersStorage.h"
 #include "Connection.h"
 #include "TLSHello.h"
+#include "TellomiDcAddress.h"
+#include "TellomiDcFallback.h"
+#include "TellomiNetConfig.h"
 #include <random>
 
 #ifndef EPOLLRDHUP
@@ -165,6 +168,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
             closeSocket(1, -1);
             return;
         }
+        bool hostNeedsResolve = false;
         if (ipv6) {
             socketAddress6.sin6_family = AF_INET6;
             socketAddress6.sin6_port = htons(port);
@@ -177,9 +181,12 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
             socketAddress.sin_family = AF_INET;
             socketAddress.sin_port = htons(port);
             if (inet_pton(AF_INET, address.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
-                if (LOGS_ENABLED) DEBUG_E("connection(%p) bad ipv4 %s", this, address.c_str());
-                closeSocket(1, -1);
-                return;
+                hostNeedsResolve = TellomiNetConfig::customBackend() && tellomiDcHostNeedsResolve(address);
+                if (!hostNeedsResolve) {
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) bad ipv4 %s", this, address.c_str());
+                    closeSocket(1, -1);
+                    return;
+                }
             }
         }
         uint32_t tempBuffLength;
@@ -199,6 +206,34 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
                 }
                 tempBuffer = new ByteArray(tempBuffLength);
             }
+        }
+        if (hostNeedsResolve) {
+            // Same resolver as a proxy hostname: delegate getHostByName on
+            // Android (dns.google A, then InetAddress), gethostbyname elsewhere.
+            // The TCP timeout starts after the IP is known.
+#ifdef USE_DELEGATE_HOST_RESOLVE
+            waitingForHostResolve = address;
+            if (LOGS_ENABLED) DEBUG_D("connection(%p) resolve dc host %s", this, address.c_str());
+            ConnectionsManager::getInstance(instanceNum).delegate->getHostByName(address, instanceNum, this);
+            return;
+#else
+            struct hostent *he;
+            if ((he = gethostbyname(address.c_str())) == nullptr) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, address.c_str());
+                closeSocket(1, -1);
+                return;
+            }
+            struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
+            if (addr_list[0] != nullptr) {
+                socketAddress.sin_addr.s_addr = addr_list[0]->s_addr;
+                if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x", this, address.c_str(), addr_list[0]->s_addr);
+                ipv6 = false;
+            } else {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, address.c_str());
+                closeSocket(1, -1);
+                return;
+            }
+#endif
         }
     }
 
@@ -706,6 +741,11 @@ time_t ConnectionSocket::getTimeout() {
 }
 
 bool ConnectionSocket::checkTimeout(int64_t now) {
+    // DNS for a hostname is not a TCP handshake. onHostNameResolved starts
+    // the connect budget once an IP is known.
+    if (TellomiNetConfig::customBackend() && !waitingForHostResolve.empty()) {
+        return false;
+    }
     if (timeout != 0 && (now - lastEventTime) > (int64_t) timeout * 1000) {
         if (!onConnectedSent || hasPendingRequests()) {
             closeSocket(2, 0);
@@ -752,6 +792,9 @@ void ConnectionSocket::onHostNameResolved(std::string host, std::string ip, bool
                 return;
             }
             if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %s via delegate", this, host.c_str(), ip.c_str());
+            if (TellomiNetConfig::customBackend()) {
+                setTimeout(TELLOMI_CONNECT_TIMEOUT_SEC);
+            }
             openConnectionInternal(ipv6);
         }
     });
