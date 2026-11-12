@@ -10,6 +10,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * One controller per account. Switching accounts uses another instance (FR-162).
@@ -71,6 +72,12 @@ public class FeedController {
             controller.storage.wipe();
             controller.pages.clear();
             controller.cursors.clear();
+            controller.profilePostsKnown.clear();
+            controller.profileProbeStarted.clear();
+            controller.profileLoading.clear();
+            controller.profileFailed.clear();
+            controller.profileVisibility.clear();
+            controller.profileGenerations.clear();
             controller.unread = 0;
             controller.notifyListeners();
         } else {
@@ -94,6 +101,13 @@ public class FeedController {
     private final ArrayList<Runnable> configWaiters = new ArrayList<>();
     private final HashMap<String, FeedModels.Page> primed = new HashMap<>();
     private final HashMap<String, String> primedCursor = new HashMap<>();
+    /** null means this profile has never been confirmed. */
+    private final HashMap<String, Boolean> profilePostsKnown = new HashMap<>();
+    private final HashSet<String> profileProbeStarted = new HashSet<>();
+    private final HashMap<String, Boolean> profileLoading = new HashMap<>();
+    private final HashMap<String, Boolean> profileFailed = new HashMap<>();
+    private final HashMap<String, Runnable> profileVisibility = new HashMap<>();
+    private final HashMap<String, FeedContract.QueryGeneration> profileGenerations = new HashMap<>();
 
     private FeedController(int account) {
         this.account = account;
@@ -593,6 +607,32 @@ public class FeedController {
                 }
             }
         }
+        ArrayList<String> keys = new ArrayList<>(pages.keySet());
+        for (int k = 0; k < keys.size(); k++) {
+            String key = keys.get(k);
+            if (key == null || !key.startsWith("profile:")) {
+                continue;
+            }
+            ArrayList<FeedModels.Post> list = pages.get(key);
+            if (list == null) {
+                continue;
+            }
+            boolean removed = false;
+            for (int i = list.size() - 1; i >= 0; i--) {
+                FeedModels.Post post = list.get(i);
+                if (id != null && post != null && id.equals(post.id)) {
+                    list.remove(i);
+                    removed = true;
+                }
+            }
+            if (removed && list.isEmpty()) {
+                String profileId = key.substring("profile:".length());
+                boolean showed = FeedContract.showProfilePostsTab(profilePostsState(profileId));
+                profilePostsKnown.put(profileId, false);
+                cursors.put(key, "");
+                dispatchProfileVisibility(profileId, showed, false);
+            }
+        }
         notifyListeners();
     }
 
@@ -665,6 +705,210 @@ public class FeedController {
 
     public void follow(String profileId, boolean follow) {
         api.sendJson(follow ? "PUT" : "DELETE", "/v1/feed/follow/author/" + FeedApi.enc(profileId), follow ? new JSONObject() : null, (json, error) -> notifyListeners());
+    }
+
+    /**
+     * Confirmed profile-posts bit. Null until a saved homepage or a successful
+     * GET /v1/feed/profiles/{id}/posts says whether any post exists.
+     */
+    public Boolean profilePostsState(String profileId) {
+        if (profileId == null || !profilePostsKnown.containsKey(profileId)) {
+            return null;
+        }
+        return profilePostsKnown.get(profileId);
+    }
+
+    public boolean profilePostsLoading(String profileId) {
+        return Boolean.TRUE.equals(profileLoading.get(profileId));
+    }
+
+    public boolean profilePostsFailed(String profileId) {
+        return Boolean.TRUE.equals(profileFailed.get(profileId));
+    }
+
+    /**
+     * Returns immediately. The homepage cache is read on a later UI turn and
+     * the network read stays on the feed HTTP queue, so opening a profile
+     * does not wait on either one.
+     */
+    public void ensureProfilePosts(String profileId, Runnable onVisibility) {
+        if (profileId == null || profileId.length() == 0) {
+            return;
+        }
+        if (onVisibility != null) {
+            profileVisibility.put(profileId, onVisibility);
+        }
+        if (Boolean.TRUE.equals(profileLoading.get(profileId))) {
+            return;
+        }
+        if (profileProbeStarted.contains(profileId) && !Boolean.TRUE.equals(profileFailed.get(profileId))) {
+            return;
+        }
+        profileProbeStarted.add(profileId);
+        profileFailed.put(profileId, false);
+        AndroidUtilities.runOnUIThread(() -> readProfilePostsCache(profileId));
+    }
+
+    private void readProfilePostsCache(String profileId) {
+        String stream = FeedContract.profilePostsStream(profileId);
+        if (stream == null) {
+            return;
+        }
+        if (!profilePostsKnown.containsKey(profileId) && storage.hasSavedPage(stream)) {
+            FeedModels.Page cached = storage.loadPage(stream);
+            int count = cached == null ? 0 : FeedContract.uniqueIds(idsOf(cached.items)).size();
+            boolean has = count > 0;
+            boolean showed = FeedContract.showProfilePostsTab(profilePostsState(profileId));
+            if (has && posts(stream).isEmpty()) {
+                ArrayList<FeedModels.Post> list = posts(stream);
+                for (int i = 0; i < cached.items.size(); i++) {
+                    FeedModels.Post post = cached.items.get(i);
+                    if (post != null && post.id != null && post.id.length() > 0) {
+                        list.add(post);
+                    }
+                }
+                cursors.put(stream, FeedContract.normalizeCursor(cached.nextCursor));
+            }
+            profilePostsKnown.put(profileId, has);
+            if (has) {
+                notifyListeners();
+            }
+            dispatchProfileVisibility(profileId, showed, has);
+        }
+        loadProfilePosts(profileId, true);
+    }
+
+    /** First page or the next page. A failure leaves the previous posts and the previous bit. */
+    public void loadProfilePosts(String profileId, boolean refresh) {
+        String stream = FeedContract.profilePostsStream(profileId);
+        String path = stream == null ? null : FeedContract.profilePostsPath(profileId, refresh ? "" : cursor(stream));
+        if (path == null) {
+            return;
+        }
+        if (!refresh && (Boolean.TRUE.equals(profileLoading.get(profileId)) || FeedContract.normalizeCursor(cursor(stream)).length() == 0)) {
+            return;
+        }
+        final int token = profileGeneration(profileId).next();
+        profileLoading.put(profileId, true);
+        if (refresh) {
+            profileFailed.put(profileId, false);
+        }
+        api.getJson(path, (json, error) -> {
+            if (!profileGeneration(profileId).accept(token)) {
+                return;
+            }
+            boolean denied = FeedContract.profilePostsDenied(error);
+            boolean failed = !denied && (error != null || json == null);
+            if (failed) {
+                keepProfilePosts(profileId);
+                return;
+            }
+            String next = "";
+            if (!denied && json != null) {
+                next = FeedContract.parseFeedList(json.toString()).cursor;
+            }
+            if (denied) {
+                publishProfilePosts(profileId, stream, refresh, new ArrayList<>(), "", token);
+                return;
+            }
+            final String cursor = next;
+            resolvePostPage(json, (list, pageError) -> {
+                if (!profileGeneration(profileId).accept(token)) {
+                    return;
+                }
+                if (pageError != null) {
+                    keepProfilePosts(profileId);
+                    return;
+                }
+                publishProfilePosts(profileId, stream, refresh, list, cursor, token);
+            });
+        });
+    }
+
+    private FeedContract.QueryGeneration profileGeneration(String profileId) {
+        FeedContract.QueryGeneration generation = profileGenerations.get(profileId);
+        if (generation == null) {
+            generation = new FeedContract.QueryGeneration();
+            profileGenerations.put(profileId, generation);
+        }
+        return generation;
+    }
+
+    /** Transport failure. The last confirmed bit and the rows already shown stay. */
+    private void keepProfilePosts(String profileId) {
+        Boolean previous = profilePostsState(profileId);
+        Boolean next = FeedContract.profilePostsVisible(previous, true, 0);
+        profileLoading.put(profileId, false);
+        profileFailed.put(profileId, true);
+        if (next == null) {
+            profilePostsKnown.remove(profileId);
+        }
+        notifyListeners();
+    }
+
+    private void publishProfilePosts(String profileId, String stream, boolean refresh, ArrayList<FeedModels.Post> incoming, String nextCursor, int token) {
+        if (!profileGeneration(profileId).accept(token)) {
+            return;
+        }
+        ArrayList<FeedModels.Post> list = posts(stream);
+        ArrayList<FeedModels.Post> rows = incoming == null ? new ArrayList<FeedModels.Post>() : incoming;
+        Boolean previous = profilePostsState(profileId);
+        boolean showed = FeedContract.showProfilePostsTab(previous);
+        int incomingCount = FeedContract.uniqueIds(idsOf(rows)).size();
+        if (refresh && incomingCount == 0) {
+            list.clear();
+            cursors.put(stream, "");
+            storage.savePage(stream, "", list);
+        } else {
+            FeedContract.PageApply apply = FeedContract.applyPage(idsOf(list), idsOf(rows), refresh, nextCursor);
+            HashMap<String, FeedModels.Post> byId = new HashMap<>();
+            if (!refresh) {
+                for (int i = 0; i < list.size(); i++) {
+                    FeedModels.Post post = list.get(i);
+                    if (post != null && post.id != null && post.id.length() > 0) {
+                        byId.put(post.id, post);
+                    }
+                }
+            }
+            for (int i = 0; i < rows.size(); i++) {
+                FeedModels.Post post = rows.get(i);
+                if (post == null || post.id == null || post.id.length() == 0) {
+                    continue;
+                }
+                if (refresh || !byId.containsKey(post.id)) {
+                    byId.put(post.id, post);
+                }
+            }
+            list.clear();
+            for (int i = 0; i < apply.ids.size(); i++) {
+                FeedModels.Post post = byId.get(apply.ids.get(i));
+                if (post != null) {
+                    list.add(post);
+                }
+            }
+            cursors.put(stream, apply.stopPaging ? "" : apply.nextCursor);
+            if (refresh) {
+                storage.savePage(stream, cursors.get(stream), list);
+            }
+        }
+        int shown = FeedContract.uniqueIds(idsOf(list)).size();
+        Boolean visible = FeedContract.profilePostsVisible(previous, false, refresh ? incomingCount : shown);
+        profilePostsKnown.put(profileId, Boolean.TRUE.equals(visible));
+        profileLoading.put(profileId, false);
+        profileFailed.put(profileId, false);
+        profileProbeStarted.add(profileId);
+        notifyListeners();
+        dispatchProfileVisibility(profileId, showed, FeedContract.showProfilePostsTab(profilePostsState(profileId)));
+    }
+
+    private void dispatchProfileVisibility(String profileId, boolean showed, boolean shows) {
+        if (showed == shows) {
+            return;
+        }
+        Runnable run = profileVisibility.get(profileId);
+        if (run != null) {
+            AndroidUtilities.runOnUIThread(run);
+        }
     }
 
     public void deletePost(String id) {

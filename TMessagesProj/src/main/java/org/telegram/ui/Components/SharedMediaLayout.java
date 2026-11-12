@@ -3717,6 +3717,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 if (giftsContainer != null) {
                     giftsContainer.setPaddingTop(dp(48) + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7)));
                 }
+                applyMomentsPadding();
                 if (mediaPages != null) {
                     for (MediaPage page : mediaPages) {
                         if (page != null) {
@@ -5769,6 +5770,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (mediaPages[0].selectedType == TAB_SAVED_MESSAGES && savedMessagesContainer != null) {
             return savedMessagesContainer.chatActivity.getChatListView();
         }
+        if (mediaPages[0].selectedType == TAB_MOMENTS && momentsPage != null && momentsPage.getListView() != null) {
+            return momentsPage.getListView();
+        }
         return mediaPages[0].listView;
     }
 
@@ -6722,6 +6726,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (savedMessagesContainer != null) {
             savedMessagesContainer.onResume();
         }
+        ensureMomentsTab();
     }
 
     public void onPause() {
@@ -6857,10 +6862,48 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private long giftsLastHash;
     private boolean wasReordering;
     private int firstTab = -1;
+    private boolean momentsProfileEligible() {
+        return profileActivity != null && !isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id);
+    }
+
+    /** Posts tab follows the same rule as hasMedia: confirmed rows, then updateTabs. */
+    private boolean wantMomentsTab() {
+        if (!momentsProfileEligible()) {
+            return false;
+        }
+        boolean hasPosts = org.telegram.messenger.feed.FeedContract.showProfilePostsTab(
+                org.telegram.messenger.feed.FeedController.getInstance(profileActivity.getCurrentAccount()).profilePostsState(String.valueOf(dialog_id))
+        );
+        return org.telegram.ui.Feed.FeedProfileTabs.show(true, hasPosts);
+    }
+
+    private void ensureMomentsTab() {
+        if (!momentsProfileEligible()) {
+            return;
+        }
+        org.telegram.messenger.feed.FeedController.getInstance(profileActivity.getCurrentAccount()).ensureProfilePosts(String.valueOf(dialog_id), () -> {
+            if (scrollSlidingTextTabStrip == null) {
+                return;
+            }
+            updateTabs(true);
+            checkCurrentTabValid();
+        });
+    }
+
+    /** Feed page only. The profile name and avatar stay on ProfileActivity's layout. */
+    private void applyMomentsPadding() {
+        if (momentsPage == null) {
+            return;
+        }
+        momentsPage.setContentPaddingTop(getPagePaddingTop(TAB_MOMENTS));
+        momentsPage.setListBottomInset(getPagePaddingBottom(false));
+    }
+
     public void updateTabs(boolean animated) {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
+        ensureMomentsTab();
         if (!delegate.isFragmentOpened()) {
             animated = false;
         }
@@ -6878,6 +6921,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             changed++;
         }
         if ((hasStories || hasBotPreviews) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+            changed++;
+        }
+        final boolean showMoments = wantMomentsTab();
+        if (showMoments != scrollSlidingTextTabStrip.hasTab(TAB_MOMENTS)) {
             changed++;
         }
         if (hasEditBotPreviews != scrollSlidingTextTabStrip.hasTab(TAB_BOT_PREVIEWS)) {
@@ -7088,8 +7135,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
             }
-            if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
-                tabs.add(0, new Pair<>(TAB_MOMENTS, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts)));
+            if (showMoments) {
+                final ArrayList<Integer> momentsIds = new ArrayList<>();
+                for (int i = 0; i < tabs.size(); i++) {
+                    momentsIds.add(tabs.get(i).first);
+                }
+                final int momentsIndex = org.telegram.ui.Feed.FeedProfileTabs.insertIndex(momentsIds, true);
+                if (momentsIndex >= 0) {
+                    tabs.add(momentsIndex, new Pair<>(TAB_MOMENTS, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts)));
+                }
             }
             if (!tabs.isEmpty()) {
                 firstTab = tabs.get(0).first;
@@ -7385,9 +7439,12 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 if (momentsPage == null && profileActivity != null) {
                     momentsPage = new org.telegram.ui.Feed.FeedProfilePage(getContext(), profileActivity, dialog_id);
                 }
-                if (momentsPage != null && momentsPage.getParent() != mediaPages[a]) {
-                    AndroidUtilities.removeFromParent(momentsPage);
-                    mediaPages[a].addView(momentsPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 48, 0, 0));
+                if (momentsPage != null) {
+                    applyMomentsPadding();
+                    if (momentsPage.getParent() != mediaPages[a]) {
+                        AndroidUtilities.removeFromParent(momentsPage);
+                        mediaPages[a].addView(momentsPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                    }
                 }
                 if (mediaPages[a].emptyView != null) {
                     mediaPages[a].emptyView.setVisibility(View.INVISIBLE);
@@ -7464,6 +7521,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             }
             if (giftsContainer != null && mediaPages[a].selectedType != TAB_GIFTS && giftsContainer.getParent() == mediaPages[a]) {
                 mediaPages[a].removeView(giftsContainer);
+            }
+            if (momentsPage != null && mediaPages[a].selectedType != TAB_MOMENTS && momentsPage.getParent() == mediaPages[a]) {
+                mediaPages[a].removeView(momentsPage);
             }
             if (mediaPages[a].selectedType == TAB_PHOTOVIDEO || mediaPages[a].selectedType == TAB_SAVED_DIALOGS || isAnyStoryPageType(mediaPages[a].selectedType)|| mediaPages[a].selectedType == TAB_VOICE || mediaPages[a].selectedType == TAB_GIF || mediaPages[a].selectedType == TAB_COMMON_GROUPS || mediaPages[a].selectedType == TAB_GROUPUSERS && !delegate.canSearchMembers() || mediaPages[a].selectedType == TAB_RECOMMENDED_CHANNELS || mediaPages[a].selectedType == TAB_BOT_PREVIEWS || mediaPages[a].selectedType == TAB_GIFTS) {
                 if (animated) {

@@ -1701,6 +1701,52 @@ public final class FeedContract {
         return path;
     }
 
+    /**
+     * GET /v1/feed/profiles/{id}/posts. An empty cursor is the first page.
+     * Null when the profile id is missing.
+     */
+    public static String profilePostsPath(String profileId, String cursor) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        String path = "/v1/feed/profiles/" + enc(profileId) + "/posts";
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "?cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    /** Cache key for one profile's post homepage. Null when the id is missing. */
+    public static String profilePostsStream(String profileId) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        return "profile:" + profileId;
+    }
+
+    /** A private list is an answer, not a transport failure. */
+    public static boolean profilePostsDenied(String error) {
+        return LIST_PRIVATE.equals(error);
+    }
+
+    /**
+     * Whether the profile posts tab should show.
+     * A failed fetch keeps {@code previous} (null stays unknown).
+     * A successful page shows the tab only when it contains at least one post.
+     */
+    public static Boolean profilePostsVisible(Boolean previous, boolean failed, int visiblePosts) {
+        if (failed) {
+            return previous;
+        }
+        return visiblePosts > 0;
+    }
+
+    /** Unknown and confirmed-empty both keep the tab off. */
+    public static boolean showProfilePostsTab(Boolean visible) {
+        return Boolean.TRUE.equals(visible);
+    }
+
     public static final class RelationPage {
         /** -1 when the server did not give a count and a cursor says the page is partial. */
         public int total = -1;
