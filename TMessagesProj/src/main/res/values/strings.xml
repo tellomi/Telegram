@@ -6568,7 +6568,7 @@
     <string name="MessageSent">Message sent.</string>
     <string name="RightNow">Just now</string>
     <string name="ExpiredStory">Expired story</string>
-    <string name="ProfileStories">Posts</string>
+    <string name="ProfileStories">Stories</string>
     <string name="ProfileArchivedStories">Archived Posts</string>
     <string name="ReactionSent">Reaction sent.</string>
     <string name="MyProfile">My Profile</string>
@@ -11751,6 +11751,8 @@
     <string name="Moments_Followers">Followers</string>
     <string name="Moments_ListPrivate">This list is private</string>
     <string name="Moments_Profile_Posts">Posts</string>
+    <string name="Moments_Profile_OpenPosts">All posts</string>
+    <string name="Moments_Profile_Stories">Stories</string>
     <string name="Moments_Photo">Photo</string>
     
     <string name="Moments_Search">Moments</string>

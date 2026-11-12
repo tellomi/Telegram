@@ -757,6 +757,11 @@
       "zh-Hans": "赞过"
     },
     {
+      "key": "Moments_Profile_OpenPosts",
+      "en": "All posts",
+      "zh-Hans": "帖子"
+    },
+    {
       "key": "Moments_Profile_Posts",
       "en": "Posts",
       "zh-Hans": "动态"
@@ -765,6 +770,11 @@
       "key": "Moments_Profile_Saved",
       "en": "Saved posts",
       "zh-Hans": "动态收藏"
+    },
+    {
+      "key": "Moments_Profile_Stories",
+      "en": "Stories",
+      "zh-Hans": "快拍"
     },
     {
       "key": "Moments_Publish",

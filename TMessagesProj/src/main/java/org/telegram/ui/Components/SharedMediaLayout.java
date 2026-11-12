@@ -7080,6 +7080,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     tabs.add(0, tab);
                 }
             }
+            if (!hasBotPreviews) {
+                for (int i = 0; i < tabs.size(); i++) {
+                    if (tabs.get(i).first == TAB_STORIES) {
+                        tabs.set(i, new Pair<>(TAB_STORIES, LocaleController.getString("Moments_Profile_Stories", R.string.Moments_Profile_Stories)));
+                        break;
+                    }
+                }
+            }
             if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
                 tabs.add(0, new Pair<>(TAB_MOMENTS, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts)));
             }

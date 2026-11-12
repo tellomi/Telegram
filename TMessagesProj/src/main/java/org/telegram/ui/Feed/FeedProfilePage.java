@@ -47,7 +47,7 @@ public class FeedProfilePage extends FrameLayout {
             addLink(column, LocaleController.getString(R.string.Moments_Mute), () -> FeedController.getInstance(account).mute(profileId, true));
             addLink(column, LocaleController.getString(R.string.Moments_Report), () -> FeedReportSheet.open(fragment, "user", profileId));
         }
-        addLink(column, LocaleController.getString(R.string.Moments_Profile_Posts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, profileId)));
+        addLink(column, LocaleController.getString("Moments_Profile_OpenPosts", R.string.Moments_Profile_OpenPosts), () -> fragment.presentFragment(new FeedCollectionActivity(FeedCollectionActivity.PROFILE, profileId)));
         addView(column, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
 
