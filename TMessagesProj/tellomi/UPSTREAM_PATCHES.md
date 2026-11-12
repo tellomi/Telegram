@@ -47,4 +47,23 @@ Native Stories stay on the profile. Archive and album tabs are unchanged. The bo
 
 `ProfileStories` in the bundled strings is `Stories` / `快拍`. A downloaded langpack replaces a key it contains, and the official simplified value of `ProfileStories` is `动态`. The Moments insertion in `updateTabs` therefore sets the existing `TAB_STORIES` title to `Moments_Profile_Stories` (`Stories` / `快拍`) unless that slot is a bot preview. The tab is not removed. `ProfileActivity`'s open animation is unchanged. The post-list row stays `Moments_Profile_OpenPosts` (`All posts` / `帖子`).
 
+## Offline profile
+
+Opening a profile from a chat avatar or a post avatar must show the cached `TLRPC.User` / `UserFull` immediately. `users.getFullUser` and `GET /v1/feed/profiles/{id}/posts` refresh in the background. Neither request holds the fragment at alpha 0, and neither request is required before back.
+
+`ProfileActivity.needDelayOpenAnimation` no longer returns true while `playProfileAnimation == 0`. That path is the one used when the avatar animation is not playing (another member in a group, a feed author). The fragment used to sit at alpha 0 until `userInfo` arrived. Offline, `users.getFullUser` does not arrive, so the page stayed blank and back was swallowed by the unfinished transition.
+
+`sharedMediaData` has nine message-media columns. `TAB_MOMENTS` is 16. With no cached `UserFull`, the stories tab stays off (`stories_pinned_available` is on `UserFull`). A saved post homepage then becomes the first tab and `switchToCurrentSelectedMode` indexed `sharedMediaData[16]` while the profile view was being created. That threw on the UI thread, so the open never finished and back did not complete. Official Telegram has no posts tab, so the same offline open only shows the cached user. `ProfileOffline.usesSharedMediaArray` keeps tab 16 out of that array. The scroll loader uses the same guard.
+
+Cached rows:
+
+- Memory miss for the user reads `MessagesStorage.getUser` on the storage queue, the same wait `ProfileActivity` already uses when a chat is missing, then `putUser`.
+- Memory miss for `UserFull` calls the existing `loadUserInfo` (user_settings). `loadFullUser` still runs afterwards and is not awaited.
+- A feed author with a blank cached user copies name, username, and access hash onto that user. A name already in the cache is left as it is.
+- `loadProfilePosts` does not start the HTTPS call when `ApplicationLoader.isNetworkOnline()` is false. `keepProfilePosts` leaves the last confirmed bit and clears the in-flight probe.
+
+`onBackPressed(boolean)` closes a sheet, tab reorder, or media action mode, then allows the fragment to finish. It does not look at the network.
+
+Upstream files touched: `ProfileActivity`, `SharedMediaLayout`.
+
 The posts tab follows the same rule as `hasMedia[i] > 0` in `SharedMediaLayout.updateTabs`, and stories still follow `stories_pinned_available`. `FeedProfileTabs.show` adds `TAB_MOMENTS` only after a confirmed homepage, and `FeedProfileTabs.insertIndex` places it immediately after `TAB_STORIES` when that tab is present. `FeedContract.profilePostsVisible` keeps the previous "has posts" bit when `GET /v1/feed/profiles/{id}/posts` fails. `FeedController.ensureProfilePosts` returns before the cache read and the request, then `updateTabs` runs again. Opening the profile and `onResume` each re-read the cache and refresh the homepage. `updateTabs` does not start that fetch. `FeedProfileProbe` keeps one flight per peer and backs off after a failure. The layout callback is removed in `onDestroy` and ignored once the view is detached. Deleting the loaded page does not count as an empty profile while a next-page cursor remains. The list itself is `FeedProfilePage` hosting `FeedListView` inside the media page, the same way gifts and saved messages are hosted. Its top padding is `getPagePaddingTop`, so the rows clear the name the way the media grid does. Avatar and title layout stay in `ProfileActivity`.

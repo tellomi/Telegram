@@ -824,6 +824,10 @@ public class FeedController {
         if (!refresh && (Boolean.TRUE.equals(profileLoading.get(profileId)) || FeedContract.normalizeCursor(cursor(stream)).length() == 0)) {
             return;
         }
+        if (!FeedContract.fetchWhenOnline(org.telegram.messenger.ApplicationLoader.isNetworkOnline())) {
+            keepProfilePosts(profileId, refresh);
+            return;
+        }
         final int token = profileGeneration(profileId).next();
         profileLoading.put(profileId, true);
         if (refresh) {

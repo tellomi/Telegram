@@ -2141,6 +2141,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 flagSecure.invalidate();
             }
             TLRPC.User user = getMessagesController().getUser(userId);
+            if (user == null && ProfileOffline.readStoredUserWhenMemoryEmpty(true)) {
+                user = readStoredUser(userId);
+            }
             if (user == null) {
                 return false;
             }
@@ -2161,6 +2164,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 getMediaDataController().loadBotInfo(user.id, user.id, true, classGuid);
             }
             userInfo = getMessagesController().getUserFull(userId);
+            if (ProfileOffline.loadCachedFullUser(userInfo != null)) {
+                getMessagesController().loadUserInfo(user, false, classGuid);
+            }
             getMessagesController().loadFullUser(getMessagesController().getUser(userId), classGuid, true);
             participantsMap = null;
 
@@ -9590,10 +9596,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean needDelayOpenAnimation() {
-        if (playProfileAnimation == 0) {
-            return true;
+        if (playProfileAnimation != 0) {
+            return false;
         }
-        return false;
+        return ProfileOffline.delayOpenUntilNetwork();
     }
 
     @Override
@@ -9603,10 +9609,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         updateSharedMediaRows();
         updateSelectedMediaTabText();
-
-        if (userInfo != null) {
-            resumeDelayedFragmentAnimation();
-        }
+        resumeDelayedFragmentAnimation();
     }
 
     @Override
@@ -9617,7 +9620,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (openMoments) {
                 openMoments = false;
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (sharedMediaLayout != null) {
+                    if (sharedMediaLayout != null && sharedMediaLayout.hasTab(SharedMediaLayout.TAB_MOMENTS)) {
                         sharedMediaLayout.scrollToPage(SharedMediaLayout.TAB_MOMENTS);
                     }
                 }, 250);
@@ -9712,7 +9715,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean canBeginSlide() {
-        if (!sharedMediaLayout.isSwipeBackEnabled()) {
+        if (sharedMediaLayout != null && !sharedMediaLayout.isSwipeBackEnabled()) {
             return false;
         }
         return super.canBeginSlide();
@@ -9723,14 +9726,46 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     public boolean onBackPressed() {
+        return onBackPressed(true);
+    }
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
         if (closeSheet()) {
             return false;
         }
         if (sharedMediaLayout != null && sharedMediaLayout.scrollSlidingTextTabStrip != null && sharedMediaLayout.scrollSlidingTextTabStrip.isReordering()) {
-            stopTabsReorder();
+            if (invoked) {
+                stopTabsReorder();
+            }
             return false;
         }
-        return actionBar.isEnabled() && (sharedMediaRow == -1 || sharedMediaLayout == null || !sharedMediaLayout.closeActionMode());
+        if (invoked && sharedMediaRow != -1 && sharedMediaLayout != null && sharedMediaLayout.closeActionMode()) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Local users row. Same wait the chat profile already uses when the chat object is missing. */
+    private TLRPC.User readStoredUser(long id) {
+        final TLRPC.User[] loaded = new TLRPC.User[1];
+        final CountDownLatch latch = new CountDownLatch(1);
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                loaded[0] = getMessagesStorage().getUser(id);
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            latch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        if (loaded[0] != null) {
+            getMessagesController().putUser(loaded[0], true);
+        }
+        return getMessagesController().getUser(id);
     }
 
     public boolean isSettings() {

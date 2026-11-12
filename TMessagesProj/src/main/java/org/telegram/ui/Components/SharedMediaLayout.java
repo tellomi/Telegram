@@ -4834,7 +4834,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (lastVisiblePosition + 1 >= profileActivity.getMessagesController().getSavedMessagesController().getLoadedCount()) {
                 profileActivity.getMessagesController().getSavedMessagesController().loadDialogs(false);
             }
-        } else if (mediaPage.selectedType != TAB_RECOMMENDED_CHANNELS && mediaPage.selectedType != TAB_SAVED_MESSAGES && mediaPage.selectedType != TAB_BOT_PREVIEWS && mediaPage.selectedType != TAB_GIFTS) {
+        } else if (mediaPage.selectedType != TAB_RECOMMENDED_CHANNELS && mediaPage.selectedType != TAB_SAVED_MESSAGES && mediaPage.selectedType != TAB_BOT_PREVIEWS && mediaPage.selectedType != TAB_GIFTS && org.telegram.ui.ProfileOffline.usesSharedMediaArray(mediaPage.selectedType)) {
             final int threshold;
             if (mediaPage.selectedType == 0) {
                 threshold = 3;
@@ -5763,6 +5763,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     public boolean isCurrentTabFirst() {
         return getSelectedTab() == scrollSlidingTextTabStrip.getFirstTabId();
+    }
+
+    public boolean hasTab(int tab) {
+        return scrollSlidingTextTabStrip != null && scrollSlidingTextTabStrip.hasTab(tab);
     }
 
     public RecyclerListView getCurrentListView() {
@@ -7600,7 +7604,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
             } else if (mediaPages[a].selectedType == TAB_GIFTS) {
 
-            } else {
+            } else if (org.telegram.ui.ProfileOffline.usesSharedMediaArray(mediaPages[a].selectedType)) {
                 int type = mediaPages[a].selectedType;
                 if (type == TAB_POLL) {
                     type = MEDIA_POLL;

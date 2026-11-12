@@ -1747,6 +1747,11 @@ public final class FeedContract {
         return Boolean.TRUE.equals(visible);
     }
 
+    /** Offline leaves the cached homepage in place and does not start a request. */
+    public static boolean fetchWhenOnline(boolean networkOnline) {
+        return networkOnline;
+    }
+
     public static final class RelationPage {
         /** -1 when the server did not give a count and a cursor says the page is partial. */
         public int total = -1;

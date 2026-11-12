@@ -160,10 +160,50 @@ public final class FeedUi {
         if (fragment == null || author == null || author.userId == 0) {
             return;
         }
+        seedCachedUser(fragment.getCurrentAccount(), author);
         Bundle args = new Bundle();
         args.putLong("user_id", author.userId);
         args.putBoolean("open_moments", true);
         fragment.presentFragment(new ProfileActivity(args));
+    }
+
+    /** Name and username from the card, only where the cached user is blank. */
+    static void seedCachedUser(int account, FeedModels.Author author) {
+        if (author == null || author.userId == 0) {
+            return;
+        }
+        org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
+        TLRPC.User user = controller.getUser(author.userId);
+        if (user == null) {
+            TLRPC.TL_user stub = new TLRPC.TL_user();
+            stub.id = author.userId;
+            stub.access_hash = author.accessHash;
+            controller.putUser(stub, false);
+            user = controller.getUser(author.userId);
+        }
+        if (user == null) {
+            return;
+        }
+        boolean changed = false;
+        String first = org.telegram.ui.ProfileOffline.firstNameIfBlank(user.first_name, user.last_name, author.name);
+        if (first != null && !first.equals(user.first_name)) {
+            user.first_name = first;
+            changed = true;
+        }
+        String username = org.telegram.ui.ProfileOffline.usernameIfBlank(user.username, author.username);
+        if (username != null && !username.equals(user.username)) {
+            user.username = username;
+            user.flags |= 8;
+            changed = true;
+        }
+        long hash = org.telegram.ui.ProfileOffline.accessHashIfMissing(user.access_hash, author.accessHash);
+        if (hash != user.access_hash) {
+            user.access_hash = hash;
+            changed = true;
+        }
+        if (changed) {
+            controller.putUser(user, false);
+        }
     }
 
     public static void bindAvatar(BackupImageView view, FeedModels.Author author, int account) {
