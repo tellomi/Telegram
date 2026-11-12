@@ -7,10 +7,11 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 
+import android.os.SystemClock;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * One controller per account. Switching accounts uses another instance (FR-162).
@@ -73,10 +74,13 @@ public class FeedController {
             controller.pages.clear();
             controller.cursors.clear();
             controller.profilePostsKnown.clear();
-            controller.profileProbeStarted.clear();
+            controller.profileProbes.clear();
+            for (Runnable retry : controller.profileRetries.values()) {
+                AndroidUtilities.cancelRunOnUIThread(retry);
+            }
+            controller.profileRetries.clear();
             controller.profileLoading.clear();
             controller.profileFailed.clear();
-            controller.profileVisibility.clear();
             controller.profileGenerations.clear();
             controller.unread = 0;
             controller.notifyListeners();
@@ -103,10 +107,10 @@ public class FeedController {
     private final HashMap<String, String> primedCursor = new HashMap<>();
     /** null means this profile has never been confirmed. */
     private final HashMap<String, Boolean> profilePostsKnown = new HashMap<>();
-    private final HashSet<String> profileProbeStarted = new HashSet<>();
+    private final HashMap<String, FeedProfileProbe.Peer> profileProbes = new HashMap<>();
+    private final HashMap<String, Runnable> profileRetries = new HashMap<>();
     private final HashMap<String, Boolean> profileLoading = new HashMap<>();
     private final HashMap<String, Boolean> profileFailed = new HashMap<>();
-    private final HashMap<String, Runnable> profileVisibility = new HashMap<>();
     private final HashMap<String, FeedContract.QueryGeneration> profileGenerations = new HashMap<>();
 
     private FeedController(int account) {
@@ -625,12 +629,18 @@ public class FeedController {
                     removed = true;
                 }
             }
-            if (removed && list.isEmpty()) {
-                String profileId = key.substring("profile:".length());
+            if (!removed) {
+                continue;
+            }
+            String profileId = key.substring("profile:".length());
+            boolean hasNext = FeedContract.normalizeCursor(cursors.get(key)).length() > 0;
+            if (FeedProfileProbe.confirmNoPostsAfterDelete(list.size(), hasNext)) {
                 boolean showed = FeedContract.showProfilePostsTab(profilePostsState(profileId));
                 profilePostsKnown.put(profileId, false);
                 cursors.put(key, "");
                 dispatchProfileVisibility(profileId, showed, false);
+            } else if (list.isEmpty() && hasNext) {
+                loadProfilePosts(profileId, false);
             }
         }
         notifyListeners();
@@ -727,53 +737,79 @@ public class FeedController {
     }
 
     /**
-     * Returns immediately. The homepage cache is read on a later UI turn and
-     * the network read stays on the feed HTTP queue, so opening a profile
-     * does not wait on either one.
+     * Returns immediately. Each open or resume reads the cached homepage and
+     * refreshes it. A tab rebuild must not call this. One peer has one flight,
+     * and a failure waits out {@link FeedProfileProbe#backoffMs}.
      */
     public void ensureProfilePosts(String profileId, Runnable onVisibility) {
         if (profileId == null || profileId.length() == 0) {
             return;
         }
+        FeedProfileProbe.Peer peer = profileProbe(profileId);
         if (onVisibility != null) {
-            profileVisibility.put(profileId, onVisibility);
+            FeedProfileProbe.bind(peer, onVisibility);
         }
-        if (Boolean.TRUE.equals(profileLoading.get(profileId))) {
+        if (!FeedProfileProbe.beginOpen(peer, profileNow())) {
             return;
         }
-        if (profileProbeStarted.contains(profileId) && !Boolean.TRUE.equals(profileFailed.get(profileId))) {
-            return;
-        }
-        profileProbeStarted.add(profileId);
-        profileFailed.put(profileId, false);
         AndroidUtilities.runOnUIThread(() -> readProfilePostsCache(profileId));
+    }
+
+    /** Drop the layout callback when that layout leaves. A newer layout is left in place. */
+    public void clearProfilePostsListener(String profileId, Runnable onVisibility) {
+        if (!FeedProfileProbe.unbind(profileProbes.get(profileId), onVisibility)) {
+            return;
+        }
+        Runnable retry = profileRetries.remove(profileId);
+        if (retry != null) {
+            AndroidUtilities.cancelRunOnUIThread(retry);
+        }
+        FeedProfileProbe.Peer peer = profileProbes.get(profileId);
+        if (peer != null) {
+            peer.retryArmed = false;
+        }
+    }
+
+    private FeedProfileProbe.Peer profileProbe(String profileId) {
+        FeedProfileProbe.Peer peer = profileProbes.get(profileId);
+        if (peer == null) {
+            peer = new FeedProfileProbe.Peer();
+            profileProbes.put(profileId, peer);
+        }
+        return peer;
+    }
+
+    private static long profileNow() {
+        return SystemClock.elapsedRealtime();
     }
 
     private void readProfilePostsCache(String profileId) {
         String stream = FeedContract.profilePostsStream(profileId);
         if (stream == null) {
+            FeedProfileProbe.succeed(profileProbe(profileId));
             return;
         }
-        if (!profilePostsKnown.containsKey(profileId) && storage.hasSavedPage(stream)) {
+        if (storage.hasSavedPage(stream)) {
             FeedModels.Page cached = storage.loadPage(stream);
             int count = cached == null ? 0 : FeedContract.uniqueIds(idsOf(cached.items)).size();
-            boolean has = count > 0;
-            boolean showed = FeedContract.showProfilePostsTab(profilePostsState(profileId));
-            if (has && posts(stream).isEmpty()) {
+            if (count > 0) {
                 ArrayList<FeedModels.Post> list = posts(stream);
-                for (int i = 0; i < cached.items.size(); i++) {
-                    FeedModels.Post post = cached.items.get(i);
-                    if (post != null && post.id != null && post.id.length() > 0) {
-                        list.add(post);
+                if (list.isEmpty()) {
+                    for (int i = 0; i < cached.items.size(); i++) {
+                        FeedModels.Post post = cached.items.get(i);
+                        if (post != null && post.id != null && post.id.length() > 0) {
+                            list.add(post);
+                        }
                     }
+                    cursors.put(stream, FeedContract.normalizeCursor(cached.nextCursor));
                 }
-                cursors.put(stream, FeedContract.normalizeCursor(cached.nextCursor));
+                boolean showed = FeedContract.showProfilePostsTab(profilePostsState(profileId));
+                if (!Boolean.TRUE.equals(profilePostsKnown.get(profileId))) {
+                    profilePostsKnown.put(profileId, true);
+                    notifyListeners();
+                    dispatchProfileVisibility(profileId, showed, true);
+                }
             }
-            profilePostsKnown.put(profileId, has);
-            if (has) {
-                notifyListeners();
-            }
-            dispatchProfileVisibility(profileId, showed, has);
         }
         loadProfilePosts(profileId, true);
     }
@@ -800,7 +836,7 @@ public class FeedController {
             boolean denied = FeedContract.profilePostsDenied(error);
             boolean failed = !denied && (error != null || json == null);
             if (failed) {
-                keepProfilePosts(profileId);
+                keepProfilePosts(profileId, refresh);
                 return;
             }
             String next = "";
@@ -817,7 +853,7 @@ public class FeedController {
                     return;
                 }
                 if (pageError != null) {
-                    keepProfilePosts(profileId);
+                    keepProfilePosts(profileId, refresh);
                     return;
                 }
                 publishProfilePosts(profileId, stream, refresh, list, cursor, token);
@@ -835,7 +871,7 @@ public class FeedController {
     }
 
     /** Transport failure. The last confirmed bit and the rows already shown stay. */
-    private void keepProfilePosts(String profileId) {
+    private void keepProfilePosts(String profileId, boolean refresh) {
         Boolean previous = profilePostsState(profileId);
         Boolean next = FeedContract.profilePostsVisible(previous, true, 0);
         profileLoading.put(profileId, false);
@@ -843,7 +879,37 @@ public class FeedController {
         if (next == null) {
             profilePostsKnown.remove(profileId);
         }
+        if (refresh) {
+            long delay = FeedProfileProbe.fail(profileProbe(profileId), profileNow());
+            if (delay > 0L) {
+                scheduleProfileRetry(profileId, delay);
+            }
+        }
         notifyListeners();
+    }
+
+    private void scheduleProfileRetry(String profileId, long delayMs) {
+        Runnable previous = profileRetries.remove(profileId);
+        if (previous != null) {
+            AndroidUtilities.cancelRunOnUIThread(previous);
+        }
+        Runnable retry = () -> {
+            profileRetries.remove(profileId);
+            if (!FeedProfileProbe.beginRetry(profileProbes.get(profileId), profileNow())) {
+                return;
+            }
+            readProfilePostsCache(profileId);
+        };
+        profileRetries.put(profileId, retry);
+        AndroidUtilities.runOnUIThread(retry, delayMs);
+    }
+
+    private void finishProfileProbe(String profileId) {
+        FeedProfileProbe.succeed(profileProbe(profileId));
+        Runnable retry = profileRetries.remove(profileId);
+        if (retry != null) {
+            AndroidUtilities.cancelRunOnUIThread(retry);
+        }
     }
 
     private void publishProfilePosts(String profileId, String stream, boolean refresh, ArrayList<FeedModels.Post> incoming, String nextCursor, int token) {
@@ -896,7 +962,7 @@ public class FeedController {
         profilePostsKnown.put(profileId, Boolean.TRUE.equals(visible));
         profileLoading.put(profileId, false);
         profileFailed.put(profileId, false);
-        profileProbeStarted.add(profileId);
+        finishProfileProbe(profileId);
         notifyListeners();
         dispatchProfileVisibility(profileId, showed, FeedContract.showProfilePostsTab(profilePostsState(profileId)));
     }
@@ -905,10 +971,11 @@ public class FeedController {
         if (showed == shows) {
             return;
         }
-        Runnable run = profileVisibility.get(profileId);
-        if (run != null) {
-            AndroidUtilities.runOnUIThread(run);
+        FeedProfileProbe.Peer peer = profileProbes.get(profileId);
+        if (!FeedProfileProbe.dispatch(peer, true) || !(peer.listener instanceof Runnable)) {
+            return;
         }
+        AndroidUtilities.runOnUIThread((Runnable) peer.listener);
     }
 
     public void deletePost(String id) {

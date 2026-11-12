@@ -3811,6 +3811,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         updateTabs(false);
+        ensureMomentsTab();
         switchToCurrentSelectedMode(false);
         if (hasMedia[0] >= 0) {
             loadFastScrollData(false);
@@ -5048,6 +5049,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 data.adapter.destroy();
             }
         }
+        if (momentsPostsListener != null && profileActivity != null) {
+            org.telegram.messenger.feed.FeedController.getInstance(profileActivity.getCurrentAccount()).clearProfilePostsListener(String.valueOf(dialog_id), momentsPostsListener);
+        }
+        momentsPostsListener = null;
     }
 
     private void checkCurrentTabValid() {
@@ -6862,6 +6867,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private long giftsLastHash;
     private boolean wasReordering;
     private int firstTab = -1;
+    private Runnable momentsPostsListener;
+    private boolean momentsTabsApplying;
+
     private boolean momentsProfileEligible() {
         return profileActivity != null && !isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id);
     }
@@ -6878,16 +6886,24 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     private void ensureMomentsTab() {
-        if (!momentsProfileEligible()) {
+        if (momentsTabsApplying || !momentsProfileEligible()) {
             return;
         }
-        org.telegram.messenger.feed.FeedController.getInstance(profileActivity.getCurrentAccount()).ensureProfilePosts(String.valueOf(dialog_id), () -> {
-            if (scrollSlidingTextTabStrip == null) {
-                return;
-            }
-            updateTabs(true);
-            checkCurrentTabValid();
-        });
+        if (momentsPostsListener == null) {
+            momentsPostsListener = () -> {
+                if (!org.telegram.messenger.feed.FeedProfileProbe.acceptCallback(isAttachedToWindow(), scrollSlidingTextTabStrip != null)) {
+                    return;
+                }
+                momentsTabsApplying = true;
+                try {
+                    updateTabs(true);
+                    checkCurrentTabValid();
+                } finally {
+                    momentsTabsApplying = false;
+                }
+            };
+        }
+        org.telegram.messenger.feed.FeedController.getInstance(profileActivity.getCurrentAccount()).ensureProfilePosts(String.valueOf(dialog_id), momentsPostsListener);
     }
 
     /** Feed page only. The profile name and avatar stay on ProfileActivity's layout. */
@@ -6903,7 +6919,6 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        ensureMomentsTab();
         if (!delegate.isFragmentOpened()) {
             animated = false;
         }
