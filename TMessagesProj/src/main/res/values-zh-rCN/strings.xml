@@ -119,6 +119,8 @@
     <string name="Moments_ListPrivate">对方未公开</string>
     <string name="Moments_Profile_Posts">动态</string>
     <string name="Moments_Profile_OpenPosts">帖子</string>
+    <string name="Moments_Profile_Stories">快拍</string>
+    <string name="ProfileStories">快拍</string>
     <string name="Moments_Photo">图片</string>
     
     <string name="Moments_Search">动态</string>

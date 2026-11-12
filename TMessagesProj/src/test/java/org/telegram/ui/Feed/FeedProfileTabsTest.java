@@ -13,75 +13,51 @@ import static org.junit.Assert.assertTrue;
 public class FeedProfileTabsTest {
 
     @Test
-    public void momentsTabReplacesNativeStoriesOnOtherUserProfiles() {
-        assertTrue(FeedProfileTabs.showsMoments(true, false, false, false));
-        assertTrue(FeedProfileTabs.hidesNativeStories(true, false));
-
-        assertFalse(FeedProfileTabs.showsMoments(true, false, false, true));
-        assertFalse(FeedProfileTabs.hidesNativeStories(false, false));
-        assertFalse(FeedProfileTabs.showsMoments(true, false, true, false));
-        assertFalse(FeedProfileTabs.showsMoments(true, true, false, false));
-        assertFalse(FeedProfileTabs.showsMoments(false, false, false, false));
-        assertFalse(FeedProfileTabs.hidesNativeStories(true, true));
+    public void existingCopyDoesNotCallStoriesKuaiPai() throws Exception {
+        String chinese = read("src/main/res/values-zh-rCN/strings.xml");
+        assertTrue(stringValue(chinese, "Moments_Title").equals("动态"));
+        assertTrue(stringValue(chinese, "Moments_Story").equals("故事"));
+        assertFalse(stringValue(chinese, "MainTabsMenuSettings").contains("快拍"));
+        assertFalse(stringValue(chinese, "MainTabsHideLabels").contains("快拍"));
+        assertFalse(stringValue(chinese, "MainTabsButtons").contains("快拍"));
+        assertFalse(stringValue(chinese, "Moments_Title").contains("快拍"));
+        assertFalse(stringValue(chinese, "Moments_Story").contains("快拍"));
     }
 
     @Test
-    public void followingLineStaysBelowTheProfileInfoForEveryInset() {
-        int[] statusBars = {0, 24, 47, 62};
-        int[] cutouts = {0, 28, 44, 59};
-        int[] navigationBars = {0, 24, 48};
-        int[] topPanels = {0, 38, 76, 112};
-        int[] infoHeights = {0, 48, 180, 420, 800};
-        int contentTop = momentsContentTop();
-        assertTrue(contentTop >= 0);
-        for (int status : statusBars) {
-            for (int cutout : cutouts) {
-                for (int navigation : navigationBars) {
-                    for (int panel : topPanels) {
-                        for (int info : infoHeights) {
-                            int infoBottom = status + cutout + info;
-                            int sharedMediaTop = infoBottom;
-                            assertFalse(FeedProfileTabs.followingCoversInfo(infoBottom, sharedMediaTop, contentTop));
-                            assertFalse(FeedProfileTabs.followingCoversInfo(infoBottom, sharedMediaTop, contentTop + panel + navigation));
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(FeedProfileTabs.followingCoversInfo(240, 240, -88));
-        assertTrue(FeedProfileTabs.followingCoversInfo(240, 240, -1));
-    }
-
-    @Test
-    public void profileRowDoesNotReuseTheTabTitle() throws Exception {
-        String page = read("src/main/java/org/telegram/ui/Feed/FeedProfilePage.java");
-        String layout = read("src/main/java/org/telegram/ui/Components/SharedMediaLayout.java");
-        assertTrue(page.contains("Moments_Profile_OpenPosts"));
-        assertFalse(page.contains("Moments_Profile_Posts"));
-        assertTrue(layout.contains("hideNativeStories"));
-        assertTrue(layout.contains("hasTab(TAB_MOMENTS)"));
-        assertTrue(layout.contains("isAnyStoryPageType"));
-        assertTrue(layout.contains("Moments_Profile_Posts"));
+    public void profileStoriesTabSaysKuaiPaiAndStaysDistinctFromMoments() throws Exception {
         String english = read("src/main/res/values/strings.xml");
         String chinese = read("src/main/res/values-zh-rCN/strings.xml");
-        assertFalse(stringValue(english, "Moments_Profile_OpenPosts").equals(stringValue(english, "Moments_Profile_Posts")));
-        assertFalse(stringValue(chinese, "Moments_Profile_OpenPosts").equals(stringValue(chinese, "Moments_Profile_Posts")));
+        assertTrue(stringValue(english, "ProfileStories").equals("Stories"));
+        assertTrue(stringValue(chinese, "ProfileStories").equals("快拍"));
+        assertTrue(stringValue(english, "Moments_Profile_Stories").equals("Stories"));
+        assertTrue(stringValue(chinese, "Moments_Profile_Stories").equals("快拍"));
+        assertTrue(stringValue(english, "Moments_Profile_Posts").equals("Posts"));
         assertTrue(stringValue(chinese, "Moments_Profile_Posts").equals("动态"));
+        assertFalse(stringValue(chinese, "ProfileStories").equals(stringValue(chinese, "Moments_Profile_Posts")));
+        assertFalse(stringValue(english, "ProfileStories").equals(stringValue(english, "Moments_Profile_Posts")));
+        assertTrue(stringValue(english, "ProfileArchivedStories").equals("Archived Posts"));
+        assertTrue(stringValue(english, "Moments_Profile_OpenPosts").equals("All posts"));
         assertTrue(stringValue(chinese, "Moments_Profile_OpenPosts").equals("帖子"));
+        assertFalse(stringValue(chinese, "Moments_Profile_OpenPosts").equals("动态"));
+        assertFalse(stringValue(chinese, "Moments_Profile_OpenPosts").equals("快拍"));
     }
 
-    private static int momentsContentTop() {
-        try {
-            String layout = read("src/main/java/org/telegram/ui/Components/SharedMediaLayout.java");
-            int at = layout.indexOf("momentsPage, LayoutHelper.createFrame");
-            assertTrue(at > 0);
-            int open = layout.indexOf("Gravity.FILL,", at);
-            String args = layout.substring(open, layout.indexOf(")", open));
-            String[] parts = args.split(",");
-            return Integer.parseInt(parts[2].trim());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    @Test
+    public void storiesTabStaysAndOnlyItsTitleIsReplaced() throws Exception {
+        String layout = read("src/main/java/org/telegram/ui/Components/SharedMediaLayout.java");
+        String page = read("src/main/java/org/telegram/ui/Feed/FeedProfilePage.java");
+        assertFalse(layout.contains("hideNativeStories"));
+        assertFalse(layout.contains("FeedProfileTabs"));
+        int storiesTitle = layout.indexOf("tabs.get(i).first == TAB_STORIES");
+        int momentsInsert = layout.indexOf("TAB_MOMENTS, LocaleController.getString(\"Moments_Profile_Posts\"");
+        assertTrue(storiesTitle > 0 && momentsInsert > storiesTitle);
+        String block = layout.substring(storiesTitle, momentsInsert);
+        assertTrue(block.contains("Moments_Profile_Stories"));
+        assertFalse(block.contains("tabs.remove"));
+        assertTrue(layout.substring(Math.max(0, storiesTitle - 220), storiesTitle).contains("!hasBotPreviews"));
+        assertTrue(page.contains("Moments_Profile_OpenPosts"));
+        assertFalse(page.contains("Moments_Profile_Posts"));
     }
 
     private static String read(String relative) throws Exception {

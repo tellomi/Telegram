@@ -772,6 +772,11 @@
       "zh-Hans": "动态收藏"
     },
     {
+      "key": "Moments_Profile_Stories",
+      "en": "Stories",
+      "zh-Hans": "快拍"
+    },
+    {
       "key": "Moments_Publish",
       "en": "Post",
       "zh-Hans": "发布"
