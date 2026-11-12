@@ -571,6 +571,32 @@ public class FeedContractTest {
         assertTrue(FeedContract.composerGestureLeaves(false));
     }
 
+    @Test
+    public void profilePostsTabFollowsConfirmedHomepage() {
+        assertEquals("/v1/feed/profiles/42/posts", FeedContract.profilePostsPath("42", ""));
+        assertEquals("/v1/feed/profiles/42/posts?cursor=c2", FeedContract.profilePostsPath("42", "c2"));
+        assertNull(FeedContract.profilePostsPath("", "c2"));
+        assertNull(FeedContract.profilePostsPath(null, ""));
+        assertEquals("profile:42", FeedContract.profilePostsStream("42"));
+        assertNull(FeedContract.profilePostsStream(""));
+        assertTrue(FeedContract.profilePostsDenied("list_private"));
+        assertFalse(FeedContract.profilePostsDenied("network"));
+
+        assertNull(FeedContract.profilePostsVisible(null, true, 4));
+        assertEquals(Boolean.TRUE, FeedContract.profilePostsVisible(Boolean.TRUE, true, 0));
+        assertEquals(Boolean.FALSE, FeedContract.profilePostsVisible(Boolean.FALSE, true, 3));
+        assertEquals(Boolean.TRUE, FeedContract.profilePostsVisible(null, false, 1));
+        assertEquals(Boolean.FALSE, FeedContract.profilePostsVisible(Boolean.TRUE, false, 0));
+        assertEquals(Boolean.FALSE, FeedContract.profilePostsVisible(null, false, 0));
+        assertFalse(FeedContract.showProfilePostsTab(null));
+        assertFalse(FeedContract.showProfilePostsTab(Boolean.FALSE));
+        assertTrue(FeedContract.showProfilePostsTab(Boolean.TRUE));
+
+        assertTrue(FeedContract.shouldLoadMore(2, true, false));
+        assertFalse(FeedContract.shouldLoadMore(2, true, true));
+        assertFalse(FeedContract.shouldLoadMore(2, false, false));
+    }
+
     private static String readDesign() throws Exception {
         java.nio.file.Path[] candidates = new java.nio.file.Path[]{
                 java.nio.file.Paths.get("docs/FEED-DESIGN.md"),

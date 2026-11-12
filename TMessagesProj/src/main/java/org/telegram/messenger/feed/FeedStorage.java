@@ -202,6 +202,25 @@ public class FeedStorage {
         return page;
     }
 
+    /** True when a homepage row was saved, including a confirmed empty page. */
+    public boolean hasSavedPage(String stream) {
+        if (db == null || stream == null) {
+            return false;
+        }
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery("SELECT 1 FROM pages WHERE stream=? LIMIT 1", new String[]{stream});
+            return cursor.moveToFirst();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
     public void putPref(String key, String value) {
         if (db == null) {
             return;
