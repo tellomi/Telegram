@@ -757,6 +757,11 @@
       "zh-Hans": "赞过"
     },
     {
+      "key": "Moments_Profile_OpenPosts",
+      "en": "All posts",
+      "zh-Hans": "帖子"
+    },
+    {
       "key": "Moments_Profile_Posts",
       "en": "Posts",
       "zh-Hans": "动态"

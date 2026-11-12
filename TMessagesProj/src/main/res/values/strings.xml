@@ -11751,6 +11751,7 @@
     <string name="Moments_Followers">Followers</string>
     <string name="Moments_ListPrivate">This list is private</string>
     <string name="Moments_Profile_Posts">Posts</string>
+    <string name="Moments_Profile_OpenPosts">All posts</string>
     <string name="Moments_Photo">Photo</string>
     
     <string name="Moments_Search">Moments</string>

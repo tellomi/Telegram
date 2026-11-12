@@ -104,7 +104,7 @@ public class FeedCollectionActivity extends BaseFragment {
         if (mode == FOLLOWING) return LocaleController.getString(R.string.Moments_FollowingEntry);
         if (mode == FOLLOWERS) return LocaleController.getString(R.string.Moments_FollowersEntry);
         if (mode == MUTES) return LocaleController.getString(R.string.Moments_Mutes);
-        return LocaleController.getString(R.string.Moments_Profile_Posts);
+        return LocaleController.getString("Moments_Profile_OpenPosts", R.string.Moments_Profile_OpenPosts);
     }
 
     private void load() {

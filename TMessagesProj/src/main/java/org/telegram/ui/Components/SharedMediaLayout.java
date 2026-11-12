@@ -5848,6 +5848,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (disableScrolling || scrollSlidingTextTabStrip == null) {
             return;
         }
+        if (isAnyStoryPageType(page) && !scrollSlidingTextTabStrip.hasTab(page)) {
+            return;
+        }
         scrollSlidingTextTabStrip.scrollTo(page);
     }
 
@@ -6871,13 +6874,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         boolean hasEditBotPreviews = user != null && user.bot && user.bot_has_main_app && user.bot_can_edit;
         boolean hasBotPreviews = user != null && user.bot && !user.bot_can_edit && (userInfo != null && userInfo.bot_info != null && userInfo.bot_info.has_preview_medias) && !hasEditBotPreviews;
         boolean hasStories = (DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories();
+        final boolean showsMoments = org.telegram.ui.Feed.FeedProfileTabs.showsMoments(DialogObject.isUserDialog(dialog_id), DialogObject.isEncryptedDialog(dialog_id), isSearchingStories(), isStoriesView());
+        final boolean hideNativeStories = org.telegram.ui.Feed.FeedProfileTabs.hidesNativeStories(showsMoments, hasBotPreviews);
         boolean hasGifts = giftsContainer != null && (userInfo != null && userInfo.stargifts_count > 0 || info != null && info.stargifts_count > 0);
         final TLRPC.ProfileTab main_tab = info != null ? info.main_tab : userInfo != null ? userInfo.main_tab : null;
         int changed = 0;
         if (wasReordering != scrollSlidingTextTabStrip.isReordering()) {
             changed++;
         }
-        if ((hasStories || hasBotPreviews) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+        if (((hasStories && !hideNativeStories) || hasBotPreviews) != scrollSlidingTextTabStrip.hasTab(TAB_STORIES)) {
+            changed++;
+        }
+        if (showsMoments != scrollSlidingTextTabStrip.hasTab(TAB_MOMENTS)) {
             changed++;
         }
         if (hasEditBotPreviews != scrollSlidingTextTabStrip.hasTab(TAB_BOT_PREVIEWS)) {
@@ -7080,7 +7088,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     tabs.add(0, tab);
                 }
             }
-            if (!isSearchingStories() && !isStoriesView() && DialogObject.isUserDialog(dialog_id) && !DialogObject.isEncryptedDialog(dialog_id)) {
+            if (showsMoments) {
+                if (hideNativeStories) {
+                    for (int i = tabs.size() - 1; i >= 0; i--) {
+                        if (isAnyStoryPageType(tabs.get(i).first)) {
+                            tabs.remove(i);
+                        }
+                    }
+                    if (isAnyStoryPageType(scrollSlidingTextTabStrip.getCurrentTabId())) {
+                        scrollSlidingTextTabStrip.resetTab();
+                    }
+                }
                 tabs.add(0, new Pair<>(TAB_MOMENTS, LocaleController.getString("Moments_Profile_Posts", R.string.Moments_Profile_Posts)));
             }
             if (!tabs.isEmpty()) {
