@@ -2141,7 +2141,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 flagSecure.invalidate();
             }
             TLRPC.User user = getMessagesController().getUser(userId);
-            if (ProfileOffline.needsStoredUser(user != null, user != null && user.min)) {
+            boolean authorRowChecked = arguments.getBoolean("author_row_checked", false);
+            if (!authorRowChecked && ProfileOffline.needsStoredUser(user != null, user != null && user.min)) {
                 TLRPC.User stored = readStoredUser(userId);
                 if (stored != null) {
                     user = stored;
@@ -9751,24 +9752,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return true;
     }
 
-    /** Local users row. Bounded so a wedged storage queue cannot ANR the open. */
+    /** Local users row. One shared read; the feed open sets author_row_checked and skips this. */
     private TLRPC.User readStoredUser(long id) {
-        final TLRPC.User[] loaded = new TLRPC.User[1];
-        final CountDownLatch latch = new CountDownLatch(1);
-        getMessagesStorage().getStorageQueue().postRunnable(() -> {
-            try {
-                loaded[0] = getMessagesStorage().getUser(id);
-            } finally {
-                latch.countDown();
-            }
-        });
-        if (!ProfileOffline.awaitStoredUser(latch)) {
-            return getMessagesController().getUser(id);
-        }
-        if (loaded[0] != null) {
-            getMessagesController().putUser(loaded[0], true);
-        }
-        return getMessagesController().getUser(id);
+        return FeedUi.ensureStoredUser(currentAccount, id);
     }
 
     public boolean isSettings() {

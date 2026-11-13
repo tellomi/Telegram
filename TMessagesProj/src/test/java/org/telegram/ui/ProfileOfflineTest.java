@@ -87,31 +87,100 @@ public class ProfileOfflineTest {
         assertTrue(baseBack.contains("return false"));
 
         String readUser = method(profile, "private TLRPC.User readStoredUser", "public boolean isSettings()");
-        assertTrue(readUser.contains("ProfileOffline.awaitStoredUser(latch)"));
-        assertFalse(readUser.contains("latch.await()"));
-        assertTrue(readUser.contains("putUser(loaded[0], true)"));
-        assertTrue(profile.contains("needsStoredUser(user != null, user != null && user.min)"));
+        assertTrue(readUser.contains("FeedUi.ensureStoredUser"));
+        assertFalse(readUser.contains("await"));
+        assertFalse(readUser.contains("getStorageQueue"));
+        int checked = profile.indexOf("author_row_checked");
+        int readCall = profile.indexOf("readStoredUser(userId)", checked);
+        assertTrue(checked >= 0 && readCall > checked);
+        assertTrue(profile.contains("!authorRowChecked && ProfileOffline.needsStoredUser(user != null, user != null && user.min)"));
+    }
+
+    @Test
+    public void bindDoesNotBlockOnStorage() throws Exception {
+        ProfileOffline.StoredReadGate gate = new ProfileOffline.StoredReadGate();
+        String key = ProfileOffline.storedKey(0, AUTHOR);
+        assertEquals(ProfileOffline.StoredRead.START, gate.begin(key, false));
+        long started = System.nanoTime();
+        assertEquals(ProfileOffline.StoredRead.SKIP, gate.begin(key, false));
+        assertTrue((System.nanoTime() - started) < 50_000_000L);
+
+        String feed = read("src/main/java/org/telegram/ui/Feed/FeedUi.java");
+        String bind = method(feed, "public static void bindAvatar", "private static TLRPC.User telegramUser");
+        String avatar = method(feed, "private static TLRPC.User telegramUser", "static String avatarHttp");
+        String schedule = method(feed, "private static void scheduleStoredAuthor", "private static void postStoredRead");
+        assertFalse(containsStorageWait(bind));
+        assertFalse(containsStorageWait(avatar));
+        assertFalse(containsStorageWait(schedule));
+        assertTrue(avatar.contains("memoryAuthor"));
+        assertTrue(avatar.contains("scheduleStoredAuthor"));
+        assertTrue(schedule.contains("begin(key, false)"));
+        assertFalse(schedule.contains("await("));
+        assertFalse(bind.contains("ensureStoredUser"));
+        assertFalse(avatar.contains("ensureStoredUser"));
+    }
+
+    @Test
+    public void repeatedBindsOfAMissingAuthorReadStorageOnce() {
+        ProfileOffline.StoredReadGate gate = new ProfileOffline.StoredReadGate();
+        String key = ProfileOffline.storedKey(1, 99L);
+        int reads = 0;
+        for (int i = 0; i < 6; i++) {
+            if (gate.begin(key, false) == ProfileOffline.StoredRead.START) {
+                reads++;
+            }
+        }
+        assertEquals(1, reads);
+        assertEquals(ProfileOffline.StoredRead.WAIT, gate.begin(key, true));
+        gate.complete(key);
+        for (int i = 0; i < 6; i++) {
+            assertEquals(ProfileOffline.StoredRead.SKIP, gate.begin(key, false));
+            assertEquals(ProfileOffline.StoredRead.SKIP, gate.begin(key, true));
+        }
+        assertEquals(1, reads);
+        assertTrue(gate.isDone(key));
+    }
+
+    @Test
+    public void profileOpenJoinsTheInFlightRead() throws Exception {
+        ProfileOffline.StoredReadGate gate = new ProfileOffline.StoredReadGate();
+        String key = ProfileOffline.storedKey(0, AUTHOR);
+        assertEquals(ProfileOffline.StoredRead.START, gate.begin(key, false));
+        Thread worker = new Thread(() -> gate.complete(key));
+        worker.start();
+        assertTrue(gate.await(key, 1_000L));
+        worker.join();
+        assertEquals(ProfileOffline.StoredRead.SKIP, gate.begin(key, true));
+
+        String feed = read("src/main/java/org/telegram/ui/Feed/FeedUi.java");
+        String open = method(feed, "public static void openProfile", "static void seedCachedUser");
+        assertTrue(open.contains("author_row_checked"));
+        String ensure = method(feed, "public static TLRPC.User ensureStoredUser", "private static void scheduleStoredAuthor");
+        assertTrue(ensure.contains("begin(key, true)"));
+        assertTrue(ensure.contains("storedUsers().await(key, org.telegram.ui.ProfileOffline.STORED_USER_WAIT_MS)"));
+        assertEquals(1, count(feed, "getStorageQueue().postRunnable"));
     }
 
     @Test
     public void feedStubCannotReplaceAStoredOrCurrentUser() throws Exception {
         String feed = read("src/main/java/org/telegram/ui/Feed/FeedUi.java");
         assertFalse(feed.contains("putUser(stub, false)"));
-        String resolver = method(feed, "static TLRPC.User cachedAuthorUser", "private static final class DiskUser");
+        String resolver = method(feed, "static TLRPC.User resolveAuthorForProfile", "private static TLRPC.User memoryAuthor");
         assertTrue(resolver.contains("needsStoredUser"));
-        assertTrue(resolver.contains("readDiskUser"));
+        assertTrue(resolver.contains("ensureStoredUser"));
         assertTrue(resolver.contains("authorSeed"));
         assertTrue(resolver.contains("putUser(stored, true)"));
-        assertTrue(resolver.contains("putUser(self, true)"));
         int stubMin = resolver.indexOf("stub.min = org.telegram.ui.ProfileOffline.authorStubIsMin()");
         int stubPut = resolver.indexOf("putUser(stub, org.telegram.ui.ProfileOffline.authorStubFromCache())");
         assertTrue(stubMin > 0 && stubPut > stubMin);
-        assertTrue(resolver.contains("userId == selfId"));
-        String seed = method(feed, "static void seedCachedUser", "static TLRPC.User cachedAuthorUser");
-        assertTrue(seed.contains("cachedAuthorUser"));
+        assertTrue(resolver.contains("userId, selfId"));
+        String memory = method(feed, "private static TLRPC.User memoryAuthor", "public static TLRPC.User ensureStoredUser");
+        assertTrue(memory.contains("putUser(self, true)"));
+        assertFalse(containsStorageWait(memory));
+        String seed = method(feed, "static void seedCachedUser", "static TLRPC.User resolveAuthorForProfile");
+        assertTrue(seed.contains("resolveAuthorForProfile"));
         assertTrue(seed.contains("!user.min && user.id != selfId"));
         String avatar = method(feed, "private static TLRPC.User telegramUser", "static String avatarHttp");
-        assertTrue(avatar.contains("cachedAuthorUser"));
         assertFalse(avatar.contains("new TLRPC.TL_user"));
 
         String controller = read("src/main/java/org/telegram/messenger/MessagesController.java");
@@ -123,6 +192,26 @@ public class ProfileOfflineTest {
         int putReturns = put.indexOf("return false;", replaceMin);
         assertTrue(liveWrite >= 0 && saveSelf > liveWrite && insertMissing > saveSelf && replaceMin > insertMissing && putReturns > replaceMin);
         assertFalse(put.substring(insertMissing, putReturns).contains("setCurrentUser"));
+    }
+
+    private static boolean containsStorageWait(String source) {
+        return source.contains("await(")
+                || source.contains("awaitStoredUser")
+                || source.contains("CountDownLatch")
+                || source.contains("getStorageQueue");
+    }
+
+    private static int count(String source, String token) {
+        int found = 0;
+        int from = 0;
+        while (true) {
+            int at = source.indexOf(token, from);
+            if (at < 0) {
+                return found;
+            }
+            found++;
+            from = at + token.length();
+        }
     }
 
     private static String method(String source, String startToken, String endToken) {

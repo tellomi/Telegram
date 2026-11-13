@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -84,6 +85,71 @@ public final class ProfileOffline {
             Thread.currentThread().interrupt();
             return false;
         }
+    }
+
+    public enum StoredRead {
+        START,
+        WAIT,
+        SKIP
+    }
+
+    /**
+     * One users-table read per account and user for this process.
+     * List binding passes allowWait false, so an in-flight read is not a second read and does not block.
+     */
+    public static final class StoredReadGate {
+        private final HashSet<String> inflight = new HashSet<>();
+        private final HashSet<String> done = new HashSet<>();
+
+        public synchronized StoredRead begin(String key, boolean allowWait) {
+            if (key == null || done.contains(key)) {
+                return StoredRead.SKIP;
+            }
+            if (inflight.contains(key)) {
+                return allowWait ? StoredRead.WAIT : StoredRead.SKIP;
+            }
+            inflight.add(key);
+            return StoredRead.START;
+        }
+
+        public synchronized boolean isDone(String key) {
+            return key != null && done.contains(key);
+        }
+
+        public synchronized void complete(String key) {
+            inflight.remove(key);
+            if (key != null) {
+                done.add(key);
+            }
+            notifyAll();
+        }
+
+        public synchronized boolean await(String key, long timeoutMs) {
+            long deadline = System.currentTimeMillis() + Math.max(0L, timeoutMs);
+            while (key != null && inflight.contains(key) && !done.contains(key)) {
+                long left = deadline - System.currentTimeMillis();
+                if (left <= 0L) {
+                    return false;
+                }
+                try {
+                    wait(left);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                }
+            }
+            return isDone(key);
+        }
+    }
+
+    private static final StoredReadGate STORED_USERS = new StoredReadGate();
+
+    public static StoredReadGate storedUsers() {
+        return STORED_USERS;
+    }
+
+    public static String storedKey(int account, long userId) {
+        return account + ":" + userId;
     }
 
     /** The open slide does not wait for a network round-trip. */

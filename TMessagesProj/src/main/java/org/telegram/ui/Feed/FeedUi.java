@@ -30,9 +30,11 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ProfileActivity;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
@@ -40,7 +42,10 @@ import static org.telegram.messenger.LocaleController.getString;
 public final class FeedUi {
 
     private static final WeakHashMap<BackupImageView, String> avatarKeys = new WeakHashMap<>();
+    private static final WeakHashMap<BackupImageView, FeedModels.Author> avatarAuthors = new WeakHashMap<>();
+    private static final WeakHashMap<BackupImageView, Integer> avatarAccounts = new WeakHashMap<>();
     private static final HashSet<Long> avatarReloads = new HashSet<>();
+    private static final ConcurrentHashMap<String, TLRPC.User> storedResults = new ConcurrentHashMap<>();
 
     private FeedUi() {
     }
@@ -165,6 +170,7 @@ public final class FeedUi {
         Bundle args = new Bundle();
         args.putLong("user_id", author.userId);
         args.putBoolean("open_moments", true);
+        args.putBoolean("author_row_checked", true);
         fragment.presentFragment(new ProfileActivity(args));
     }
 
@@ -174,7 +180,7 @@ public final class FeedUi {
             return;
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
-        TLRPC.User user = cachedAuthorUser(account, author.userId, author.accessHash);
+        TLRPC.User user = resolveAuthorForProfile(account, author.userId, author.accessHash);
         if (user == null) {
             return;
         }
@@ -202,38 +208,34 @@ public final class FeedUi {
     }
 
     /**
-     * Memory user, then the users table, then a min stub.
-     * fromCache keeps the stub from replacing a full user or the logged-in user record.
+     * Profile open only. Joins an in-flight list read instead of starting a second one.
+     * The bounded wait lives here, not in bindAvatar.
      */
-    static TLRPC.User cachedAuthorUser(int account, long userId, long accessHash) {
+    static TLRPC.User resolveAuthorForProfile(int account, long userId, long accessHash) {
         if (userId == 0) {
             return null;
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
         long selfId = UserConfig.getInstance(account).getClientUserId();
-        TLRPC.User memory = controller.getUser(userId);
-        if (memory == null && userId == selfId) {
-            TLRPC.User self = UserConfig.getInstance(account).getCurrentUser();
-            if (self != null) {
-                controller.putUser(self, true);
-                memory = controller.getUser(userId);
-                if (memory == null) {
-                    memory = self;
-                }
-            }
-        }
+        TLRPC.User memory = memoryAuthor(account, userId);
         boolean memoryPresent = memory != null;
         boolean memoryMin = memory != null && memory.min;
+        String key = org.telegram.ui.ProfileOffline.storedKey(account, userId);
         TLRPC.User stored = null;
         boolean storedReadFinished = true;
         if (org.telegram.ui.ProfileOffline.needsStoredUser(memoryPresent, memoryMin)) {
-            DiskUser disk = readDiskUser(account, userId);
-            stored = disk.user;
-            storedReadFinished = disk.finished;
+            TLRPC.User resolved = ensureStoredUser(account, userId);
+            storedReadFinished = org.telegram.ui.ProfileOffline.storedUsers().isDone(key);
+            stored = storedResults.get(key);
+            if (resolved != null) {
+                memory = resolved;
+                memoryPresent = true;
+                memoryMin = resolved.min;
+            }
         }
         org.telegram.ui.ProfileOffline.AuthorSeed action = org.telegram.ui.ProfileOffline.authorSeed(
                 memoryPresent, memoryMin, stored != null, storedReadFinished, userId, selfId);
-        if (action == org.telegram.ui.ProfileOffline.AuthorSeed.USE_STORED) {
+        if (action == org.telegram.ui.ProfileOffline.AuthorSeed.USE_STORED && stored != null) {
             controller.putUser(stored, true);
             TLRPC.User resolved = controller.getUser(userId);
             return resolved != null ? resolved : stored;
@@ -250,37 +252,118 @@ public final class FeedUi {
         return memory;
     }
 
-    private static final class DiskUser {
-        final TLRPC.User user;
-        final boolean finished;
+    /** In-memory user, including the logged-in user record. Does not touch the users table. */
+    private static TLRPC.User memoryAuthor(int account, long userId) {
+        org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
+        TLRPC.User memory = controller.getUser(userId);
+        if (memory == null && userId == UserConfig.getInstance(account).getClientUserId()) {
+            TLRPC.User self = UserConfig.getInstance(account).getCurrentUser();
+            if (self != null) {
+                controller.putUser(self, true);
+                memory = controller.getUser(userId);
+                if (memory == null) {
+                    memory = self;
+                }
+            }
+        }
+        return memory;
+    }
 
-        DiskUser(TLRPC.User user, boolean finished) {
-            this.user = user;
-            this.finished = finished;
+    /**
+     * One users-table read for this author. List binding and profile open share it.
+     * A caller that did not start the read still waits at most STORED_USER_WAIT_MS.
+     */
+    public static TLRPC.User ensureStoredUser(int account, long userId) {
+        if (userId == 0) {
+            return null;
+        }
+        org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
+        String key = org.telegram.ui.ProfileOffline.storedKey(account, userId);
+        org.telegram.ui.ProfileOffline.StoredRead decision = org.telegram.ui.ProfileOffline.storedUsers().begin(key, true);
+        if (decision == org.telegram.ui.ProfileOffline.StoredRead.START) {
+            postStoredRead(account, userId, key);
+        }
+        if (decision == org.telegram.ui.ProfileOffline.StoredRead.START || decision == org.telegram.ui.ProfileOffline.StoredRead.WAIT) {
+            org.telegram.ui.ProfileOffline.storedUsers().await(key, org.telegram.ui.ProfileOffline.STORED_USER_WAIT_MS);
+        }
+        TLRPC.User found = storedResults.get(key);
+        if (found != null) {
+            controller.putUser(found, true);
+        }
+        TLRPC.User resolved = controller.getUser(userId);
+        return resolved != null ? resolved : found;
+    }
+
+    /** List binding. Starts the shared read when needed and returns without waiting. */
+    private static void scheduleStoredAuthor(int account, long userId) {
+        if (userId == 0) {
+            return;
+        }
+        String key = org.telegram.ui.ProfileOffline.storedKey(account, userId);
+        if (org.telegram.ui.ProfileOffline.storedUsers().isDone(key)) {
+            return;
+        }
+        if (org.telegram.ui.ProfileOffline.storedUsers().begin(key, false) != org.telegram.ui.ProfileOffline.StoredRead.START) {
+            return;
+        }
+        postStoredRead(account, userId, key);
+    }
+
+    private static void postStoredRead(int account, long userId, String key) {
+        org.telegram.messenger.MessagesStorage storage = org.telegram.messenger.MessagesStorage.getInstance(account);
+        boolean queued = false;
+        try {
+            queued = storage.getStorageQueue().postRunnable(() -> {
+                TLRPC.User loaded = null;
+                try {
+                    loaded = storage.getUser(userId);
+                } finally {
+                    if (loaded != null) {
+                        storedResults.put(key, loaded);
+                    } else {
+                        storedResults.remove(key);
+                    }
+                    org.telegram.ui.ProfileOffline.storedUsers().complete(key);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        TLRPC.User found = storedResults.get(key);
+                        if (found != null) {
+                            org.telegram.messenger.MessagesController.getInstance(account).putUser(found, true);
+                        }
+                        rebindAuthor(account, userId);
+                    });
+                }
+            });
+        } catch (Exception ignored) {
+            queued = false;
+        }
+        if (!queued) {
+            org.telegram.ui.ProfileOffline.storedUsers().complete(key);
         }
     }
 
-    private static DiskUser readDiskUser(int account, long userId) {
-        final TLRPC.User[] loaded = new TLRPC.User[1];
-        final CountDownLatch latch = new CountDownLatch(1);
-        org.telegram.messenger.MessagesStorage storage = org.telegram.messenger.MessagesStorage.getInstance(account);
-        storage.getStorageQueue().postRunnable(() -> {
-            try {
-                loaded[0] = storage.getUser(userId);
-            } finally {
-                latch.countDown();
+    private static void rebindAuthor(int account, long userId) {
+        ArrayList<BackupImageView> views = new ArrayList<>();
+        for (Map.Entry<BackupImageView, FeedModels.Author> entry : avatarAuthors.entrySet()) {
+            FeedModels.Author author = entry.getValue();
+            BackupImageView view = entry.getKey();
+            Integer boundAccount = avatarAccounts.get(view);
+            if (author != null && author.userId == userId && boundAccount != null && boundAccount == account) {
+                views.add(view);
             }
-        });
-        if (!org.telegram.ui.ProfileOffline.awaitStoredUser(latch)) {
-            return new DiskUser(null, false);
         }
-        return new DiskUser(loaded[0], true);
+        for (int i = 0; i < views.size(); i++) {
+            BackupImageView view = views.get(i);
+            avatarKeys.remove(view);
+            bindAvatar(view, avatarAuthors.get(view), account);
+        }
     }
 
     public static void bindAvatar(BackupImageView view, FeedModels.Author author, int account) {
         if (view == null) {
             return;
         }
+        avatarAuthors.put(view, author);
+        avatarAccounts.put(view, account);
         TLRPC.User user = telegramUser(author, account);
         String http = avatarHttp(author, account);
         boolean telegramPhoto = user != null && user.photo != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty);
@@ -314,9 +397,12 @@ public final class FeedUi {
             return null;
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
-        TLRPC.User user = cachedAuthorUser(account, author.userId, author.accessHash);
+        TLRPC.User user = memoryAuthor(account, author.userId);
+        if (org.telegram.ui.ProfileOffline.needsStoredUser(user != null, user != null && user.min)) {
+            scheduleStoredAuthor(account, author.userId);
+        }
         boolean missingPhoto = user == null || user.photo == null || user.photo instanceof TLRPC.TL_userProfilePhotoEmpty;
-        if (missingPhoto && user != null && avatarReloads.add(author.userId)) {
+        if (missingPhoto && user != null && !user.min && avatarReloads.add(author.userId)) {
             controller.reloadUser(author.userId);
         }
         return user;
