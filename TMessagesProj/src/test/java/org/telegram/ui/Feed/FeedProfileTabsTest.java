@@ -141,6 +141,40 @@ public class FeedProfileTabsTest {
         assertFalse(gate.contains("Moments"));
         assertFalse(gate.contains("TAB_MOMENTS"));
         assertTrue(gate.contains("playProfileAnimation"));
+        assertTrue(gate.contains("delayOpenUntilNetwork"));
+        assertFalse(gate.contains("return true"));
+    }
+
+    @Test
+    public void postsTabIsNotASharedMediaIndexAndOfflineSkipsTheRequest() throws Exception {
+        assertFalse(org.telegram.ui.ProfileOffline.usesSharedMediaArray(16));
+        assertFalse(org.telegram.ui.ProfileOffline.delayOpenUntilNetwork());
+        assertTrue(org.telegram.ui.ProfileOffline.loadCachedFullUser(false));
+        assertFalse(org.telegram.ui.ProfileOffline.loadCachedFullUser(true));
+        assertTrue(org.telegram.ui.ProfileOffline.usesSharedMediaArray(0));
+        assertTrue(org.telegram.ui.ProfileOffline.usesSharedMediaArray(15));
+        assertEquals("Ada", org.telegram.ui.ProfileOffline.firstNameIfBlank("", "", "Ada"));
+        assertEquals("Ann", org.telegram.ui.ProfileOffline.firstNameIfBlank("Ann", "", "Ada"));
+        assertEquals("ada", org.telegram.ui.ProfileOffline.usernameIfBlank(null, "ada"));
+        assertEquals("kept", org.telegram.ui.ProfileOffline.usernameIfBlank("kept", "ada"));
+        assertFalse(org.telegram.messenger.feed.FeedContract.fetchWhenOnline(false));
+        assertTrue(org.telegram.messenger.feed.FeedContract.fetchWhenOnline(true));
+
+        String layout = read("src/main/java/org/telegram/ui/Components/SharedMediaLayout.java");
+        int gifts = layout.indexOf("selectedType == TAB_GIFTS");
+        int crash = layout.indexOf("sharedMediaData[type].loading", gifts);
+        assertTrue(gifts > 0 && crash > gifts);
+        assertTrue(layout.substring(gifts, crash).contains("usesSharedMediaArray"));
+        String controller = read("src/main/java/org/telegram/messenger/feed/FeedController.java");
+        int load = controller.indexOf("void loadProfilePosts");
+        int json = controller.indexOf("api.getJson(path", load);
+        assertTrue(load > 0 && json > load);
+        assertTrue(controller.substring(load, json).contains("fetchWhenOnline"));
+        String profile = read("src/main/java/org/telegram/ui/ProfileActivity.java");
+        assertTrue(profile.contains("loadUserInfo(user, false, classGuid)"));
+        assertTrue(profile.contains("readStoredUser(userId)"));
+        assertTrue(profile.contains("hasTab(SharedMediaLayout.TAB_MOMENTS)"));
+        assertTrue(profile.contains("public boolean onBackPressed(boolean invoked)"));
     }
 
     private static String read(String relative) throws Exception {
