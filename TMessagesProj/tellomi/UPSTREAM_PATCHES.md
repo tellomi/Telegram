@@ -57,12 +57,12 @@ Opening a profile from a chat avatar or a post avatar must show the cached `TLRP
 
 Cached rows:
 
-- Memory miss for the user reads `MessagesStorage.getUser` on the storage queue, the same wait `ProfileActivity` already uses when a chat is missing, then `putUser`.
+- Memory miss for the user reads `MessagesStorage.getUser` on the storage queue, the same wait `ProfileActivity` already uses when a chat is missing, then `putUser(..., true)`. A min user already in memory is not treated as the cached row: the users table is still read, and `putUser` from cache replaces that min user. The wait is `CountDownLatch.await` bounded by `ProfileOffline.STORED_USER_WAIT_MS` (1500 ms). A wedged queue returns and the page uses whatever is already in memory.
 - Memory miss for `UserFull` calls the existing `loadUserInfo` (user_settings). `loadFullUser` still runs afterwards and is not awaited.
-- A feed author with a blank cached user copies name, username, and access hash onto that user. A name already in the cache is left as it is.
+- A feed author resolves the user before any stub: the in-memory user, then the logged-in user from `UserConfig` when the id matches, then the users table. A stub is inserted only when both are absent, the read finished, and the id is not the logged-in user. The stub is `min` and is passed to `putUser` with `fromCache=true`, so it cannot replace a full user or write `UserConfig.setCurrentUser`. Blank name, username, and access hash are still copied onto that user. A name already in the cache is left as it is. `putUser(..., false)` after that copy is skipped for a min stub and for the logged-in user id.
 - `loadProfilePosts` does not start the HTTPS call when `ApplicationLoader.isNetworkOnline()` is false. `keepProfilePosts` leaves the last confirmed bit and clears the in-flight probe.
 
-`onBackPressed(boolean)` closes a sheet, tab reorder, or media action mode, then allows the fragment to finish. It does not look at the network.
+`onBackPressed(boolean)` calls `BaseFragment.onBackPressed`. That closes a shown sheet or story viewer only when `invoked` is true (the same rule as `ChatActivity`) and returns false while the sheet is up, so a predictive back that has only passed the 1.5% threshold does not dismiss it. Tab reorder and media action mode are unchanged. The method does not look at the network. When nothing local is open it returns true, so a committed or hardware back still finishes the page.
 
 Upstream files touched: `ProfileActivity`, `SharedMediaLayout`.
 

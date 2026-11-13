@@ -32,6 +32,7 @@ import org.telegram.ui.ProfileActivity;
 
 import java.util.HashSet;
 import java.util.WeakHashMap;
+import java.util.concurrent.CountDownLatch;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
@@ -173,14 +174,7 @@ public final class FeedUi {
             return;
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
-        TLRPC.User user = controller.getUser(author.userId);
-        if (user == null) {
-            TLRPC.TL_user stub = new TLRPC.TL_user();
-            stub.id = author.userId;
-            stub.access_hash = author.accessHash;
-            controller.putUser(stub, false);
-            user = controller.getUser(author.userId);
-        }
+        TLRPC.User user = cachedAuthorUser(account, author.userId, author.accessHash);
         if (user == null) {
             return;
         }
@@ -201,9 +195,86 @@ public final class FeedUi {
             user.access_hash = hash;
             changed = true;
         }
-        if (changed) {
+        long selfId = UserConfig.getInstance(account).getClientUserId();
+        if (changed && !user.min && user.id != selfId) {
             controller.putUser(user, false);
         }
+    }
+
+    /**
+     * Memory user, then the users table, then a min stub.
+     * fromCache keeps the stub from replacing a full user or the logged-in user record.
+     */
+    static TLRPC.User cachedAuthorUser(int account, long userId, long accessHash) {
+        if (userId == 0) {
+            return null;
+        }
+        org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
+        long selfId = UserConfig.getInstance(account).getClientUserId();
+        TLRPC.User memory = controller.getUser(userId);
+        if (memory == null && userId == selfId) {
+            TLRPC.User self = UserConfig.getInstance(account).getCurrentUser();
+            if (self != null) {
+                controller.putUser(self, true);
+                memory = controller.getUser(userId);
+                if (memory == null) {
+                    memory = self;
+                }
+            }
+        }
+        boolean memoryPresent = memory != null;
+        boolean memoryMin = memory != null && memory.min;
+        TLRPC.User stored = null;
+        boolean storedReadFinished = true;
+        if (org.telegram.ui.ProfileOffline.needsStoredUser(memoryPresent, memoryMin)) {
+            DiskUser disk = readDiskUser(account, userId);
+            stored = disk.user;
+            storedReadFinished = disk.finished;
+        }
+        org.telegram.ui.ProfileOffline.AuthorSeed action = org.telegram.ui.ProfileOffline.authorSeed(
+                memoryPresent, memoryMin, stored != null, storedReadFinished, userId, selfId);
+        if (action == org.telegram.ui.ProfileOffline.AuthorSeed.USE_STORED) {
+            controller.putUser(stored, true);
+            TLRPC.User resolved = controller.getUser(userId);
+            return resolved != null ? resolved : stored;
+        }
+        if (action == org.telegram.ui.ProfileOffline.AuthorSeed.INSERT_MIN_STUB) {
+            TLRPC.TL_user stub = new TLRPC.TL_user();
+            stub.id = userId;
+            stub.access_hash = accessHash;
+            stub.min = org.telegram.ui.ProfileOffline.authorStubIsMin();
+            controller.putUser(stub, org.telegram.ui.ProfileOffline.authorStubFromCache());
+            TLRPC.User resolved = controller.getUser(userId);
+            return resolved != null ? resolved : stub;
+        }
+        return memory;
+    }
+
+    private static final class DiskUser {
+        final TLRPC.User user;
+        final boolean finished;
+
+        DiskUser(TLRPC.User user, boolean finished) {
+            this.user = user;
+            this.finished = finished;
+        }
+    }
+
+    private static DiskUser readDiskUser(int account, long userId) {
+        final TLRPC.User[] loaded = new TLRPC.User[1];
+        final CountDownLatch latch = new CountDownLatch(1);
+        org.telegram.messenger.MessagesStorage storage = org.telegram.messenger.MessagesStorage.getInstance(account);
+        storage.getStorageQueue().postRunnable(() -> {
+            try {
+                loaded[0] = storage.getUser(userId);
+            } finally {
+                latch.countDown();
+            }
+        });
+        if (!org.telegram.ui.ProfileOffline.awaitStoredUser(latch)) {
+            return new DiskUser(null, false);
+        }
+        return new DiskUser(loaded[0], true);
     }
 
     public static void bindAvatar(BackupImageView view, FeedModels.Author author, int account) {
@@ -243,16 +314,9 @@ public final class FeedUi {
             return null;
         }
         org.telegram.messenger.MessagesController controller = org.telegram.messenger.MessagesController.getInstance(account);
-        TLRPC.User user = controller.getUser(author.userId);
+        TLRPC.User user = cachedAuthorUser(account, author.userId, author.accessHash);
         boolean missingPhoto = user == null || user.photo == null || user.photo instanceof TLRPC.TL_userProfilePhotoEmpty;
-        if (user == null && author.accessHash != 0) {
-            TLRPC.TL_user stub = new TLRPC.TL_user();
-            stub.id = author.userId;
-            stub.access_hash = author.accessHash;
-            controller.putUser(stub, false);
-            user = controller.getUser(author.userId);
-        }
-        if (missingPhoto && avatarReloads.add(author.userId)) {
+        if (missingPhoto && user != null && avatarReloads.add(author.userId)) {
             controller.reloadUser(author.userId);
         }
         return user;

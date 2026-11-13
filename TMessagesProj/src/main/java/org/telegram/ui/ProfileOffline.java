@@ -1,12 +1,89 @@
 package org.telegram.ui;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Offline profile open. The page draws the cached user at once.
  * users.getFullUser and the posts list never hold the fragment shut.
  */
 public final class ProfileOffline {
 
+    /**
+     * UI-thread bound for one users-table read.
+     * A wedged storage queue must not sit on the main thread long enough to ANR.
+     */
+    public static final long STORED_USER_WAIT_MS = 1500L;
+
     private ProfileOffline() {
+    }
+
+    /** A full in-memory user is enough. A missing user or a min stub still needs the users table. */
+    public static boolean needsStoredUser(boolean memoryPresent, boolean memoryMin) {
+        return !memoryPresent || memoryMin;
+    }
+
+    public enum AuthorSeed {
+        USE_MEMORY,
+        USE_STORED,
+        INSERT_MIN_STUB,
+        LEAVE_ABSENT
+    }
+
+    /**
+     * Memory, then the users-table row, then a stub.
+     * A stub is refused for the logged-in user and when the table read did not finish,
+     * so a timeout cannot hide a row that is still on disk.
+     */
+    public static AuthorSeed authorSeed(boolean memoryPresent, boolean memoryMin, boolean storedPresent, boolean storedReadFinished, long authorId, long currentUserId) {
+        if (authorId == 0) {
+            return AuthorSeed.LEAVE_ABSENT;
+        }
+        if (memoryPresent && !memoryMin) {
+            return AuthorSeed.USE_MEMORY;
+        }
+        if (storedPresent) {
+            return AuthorSeed.USE_STORED;
+        }
+        if (!storedReadFinished) {
+            return memoryPresent ? AuthorSeed.USE_MEMORY : AuthorSeed.LEAVE_ABSENT;
+        }
+        if (memoryPresent) {
+            return AuthorSeed.USE_MEMORY;
+        }
+        if (currentUserId != 0 && authorId == currentUserId) {
+            return AuthorSeed.LEAVE_ABSENT;
+        }
+        return AuthorSeed.INSERT_MIN_STUB;
+    }
+
+    /** A min user is merged into an existing user and does not replace one. */
+    public static boolean authorStubIsMin() {
+        return true;
+    }
+
+    /**
+     * putUser(..., fromCache=true) inserts only when the id is absent,
+     * replaces a min user, and does not write the current-user config.
+     */
+    public static boolean authorStubFromCache() {
+        return true;
+    }
+
+    public static boolean awaitStoredUser(CountDownLatch latch) {
+        return awaitStoredUser(latch, STORED_USER_WAIT_MS);
+    }
+
+    public static boolean awaitStoredUser(CountDownLatch latch, long timeoutMs) {
+        if (latch == null) {
+            return false;
+        }
+        try {
+            return latch.await(Math.max(0L, timeoutMs), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /** The open slide does not wait for a network round-trip. */

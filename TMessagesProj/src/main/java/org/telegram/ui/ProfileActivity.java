@@ -2141,8 +2141,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 flagSecure.invalidate();
             }
             TLRPC.User user = getMessagesController().getUser(userId);
-            if (user == null && ProfileOffline.readStoredUserWhenMemoryEmpty(true)) {
-                user = readStoredUser(userId);
+            if (ProfileOffline.needsStoredUser(user != null, user != null && user.min)) {
+                TLRPC.User stored = readStoredUser(userId);
+                if (stored != null) {
+                    user = stored;
+                }
             }
             if (user == null) {
                 return false;
@@ -9731,7 +9734,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean onBackPressed(boolean invoked) {
-        if (closeSheet()) {
+        // BaseFragment closes a shown sheet or story viewer only when invoked is true,
+        // and returns false so the predictive gesture does not pop this page early.
+        if (!super.onBackPressed(invoked)) {
             return false;
         }
         if (sharedMediaLayout != null && sharedMediaLayout.scrollSlidingTextTabStrip != null && sharedMediaLayout.scrollSlidingTextTabStrip.isReordering()) {
@@ -9746,7 +9751,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return true;
     }
 
-    /** Local users row. Same wait the chat profile already uses when the chat object is missing. */
+    /** Local users row. Bounded so a wedged storage queue cannot ANR the open. */
     private TLRPC.User readStoredUser(long id) {
         final TLRPC.User[] loaded = new TLRPC.User[1];
         final CountDownLatch latch = new CountDownLatch(1);
@@ -9757,10 +9762,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 latch.countDown();
             }
         });
-        try {
-            latch.await();
-        } catch (Exception e) {
-            FileLog.e(e);
+        if (!ProfileOffline.awaitStoredUser(latch)) {
+            return getMessagesController().getUser(id);
         }
         if (loaded[0] != null) {
             getMessagesController().putUser(loaded[0], true);
