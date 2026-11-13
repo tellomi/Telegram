@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -529,7 +530,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
 
     private boolean shownAiButton;
     private void showAiButton(boolean show_) {
-        final boolean show = show_;
+        final boolean show = show_ && TellomiNativeFeatures.aiComposeEnabled(MessagesController.getInstance(currentAccount).config.tellomiAiComposeEnabled.get());
 
         if (shownAiButton == show) return;
         if (show) {

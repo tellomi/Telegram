@@ -47,6 +47,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -870,6 +871,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 new ClickableSpan() {
                                     @Override
                                     public void onClick(@NonNull View view) {
+                                        if (!TellomiNativeFeatures.fragmentLinksAllowed()) {
+                                            return;
+                                        }
                                         Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                     }
 

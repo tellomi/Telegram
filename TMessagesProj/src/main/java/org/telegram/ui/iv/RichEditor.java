@@ -57,6 +57,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessageChatArguments;
@@ -624,12 +625,18 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setContentDescription(getString(R.string.AIEditor));
         aiButton.setOnClickListener(v -> {
+            if (!TellomiNativeFeatures.aiComposeEnabled(MessagesController.getInstance(currentAccount).config.tellomiAiComposeEnabled.get())) {
+                return;
+            }
             if (listView.isInSelectionMode()) {
                 onAiStyleSelection();
             } else {
                 new RichAIComposeSheet(getContext(), currentAccount, getResourceProvider(), richMessage -> listView.addRichMessage(richMessage)).show();
             }
         });
+        if (!TellomiNativeFeatures.aiComposeEnabled(MessagesController.getInstance(currentAccount).config.tellomiAiComposeEnabled.get())) {
+            aiButton.setVisibility(View.GONE);
+        }
 
         final FrameLayout blocksContainer2 = new FrameLayout(context);
         blocksContainer2.setClipToPadding(false);

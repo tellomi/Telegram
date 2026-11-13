@@ -77,6 +77,7 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
@@ -2371,7 +2372,12 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
             sheet.dismiss();
             fragment.presentFragment(new WalletSendSelectSender().setCollectible(collectible));
         });
-        actions.getChildAt(1).setOnClickListener(v -> Browser.openUrlInSystemBrowser(context, "https://fragment.com/"));
+        actions.getChildAt(1).setOnClickListener(v -> {
+            if (!TellomiNativeFeatures.fragmentLinksAllowed()) {
+                return;
+            }
+            Browser.openUrlInSystemBrowser(context, "https://fragment.com/");
+        });
         okButton.setOnClickListener(v -> sheet.dismiss());
         sheet.show();
         sheet.fixNavigationBar(backgroundColor);

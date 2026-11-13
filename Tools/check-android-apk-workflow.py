@@ -2,9 +2,10 @@
 """Static checks for .github/workflows/android-apk.yml.
 
 Ordinary push and pull_request must not install the release keystore or upload
-an installable APK. Run workflow, a v* tag, release/android, and the moments
-feed branch still package. The feed branch is debug-only and is not a publish
-path. The publish job keeps its existing triggers and does not gain new ones.
+an installable APK. Run workflow, a v* tag, release/android, the moments
+feed branch, and the native-feature-audit branch still package. The feed and
+audit branches are debug-only and are not publish paths. The publish job
+keeps its existing triggers and does not gain new ones.
 """
 
 import pathlib
@@ -18,7 +19,8 @@ PACKAGE_EXPR = (
     "(github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') "
     "|| github.ref == 'refs/heads/release/android' "
     "|| github.ref == 'refs/heads/cursor/android-official-restore-2a44' "
-    "|| github.ref == 'refs/heads/cursor/feed-on-master-7033'))"
+    "|| github.ref == 'refs/heads/cursor/feed-on-master-7033' "
+    "|| github.ref == 'refs/heads/cursor/native-feature-audit-00c9'))"
 )
 
 PUBLISH_IF = """needs.apk.outputs.type == 'release' && (
@@ -34,6 +36,7 @@ def packages(event, ref):
             or ref == "refs/heads/release/android"
             or ref == "refs/heads/cursor/android-official-restore-2a44"
             or ref == "refs/heads/cursor/feed-on-master-7033"
+            or ref == "refs/heads/cursor/native-feature-audit-00c9"
         )
     )
 
@@ -145,6 +148,8 @@ def main():
         ("push", "refs/heads/cursor/example-38d3", None, False, False),
         ("push", "refs/heads/cursor/android-official-restore-2a44", None, True, False),
         ("push", "refs/heads/cursor/feed-on-master-7033", None, True, False),
+        ("push", "refs/heads/cursor/native-feature-audit-00c9", None, True, False),
+        ("pull_request", "refs/heads/cursor/native-feature-audit-00c9", "none", False, False),
         ("pull_request", "refs/heads/cursor/feed-on-master-7033", "none", False, False),
         ("pull_request", "refs/heads/cursor/android-official-restore-2a44", "none", False, False),
         ("push", "refs/tags/1.2.3", None, False, False),

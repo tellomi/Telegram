@@ -87,6 +87,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BillingController;
@@ -6857,6 +6858,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final TL_stars.TL_starGiftUnique gift = getUniqueGift();
         if (gift != null && !TextUtils.isEmpty(gift.slug)) {
             a.setPositiveButton(getString(R.string.OpenFragment), (di, w) -> {
+                if (!TellomiNativeFeatures.fragmentLinksAllowed()) {
+                    return;
+                }
                 Browser.openUrlInSystemBrowser(getContext(), "https://fragment.com/gift/" + gift.slug);
             });
         }
