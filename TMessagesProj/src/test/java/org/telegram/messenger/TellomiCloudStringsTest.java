@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.telegram.localization.LocalizationUtils;
 import org.telegram.utils.localization.Localization;
 
 import java.lang.reflect.Field;
@@ -132,10 +133,12 @@ public class TellomiCloudStringsTest {
     }
 
     /**
-     * zh-Hans and zh-Hant both report plural code {@code zh}. {@code applyLanguage}
-     * then uses {@code Locale("zh")}, whose language tag is {@code zh}. The
-     * built-in overlay for that tag is {@code values-zh}, not {@code values-zh-rCN}.
-     * The downloaded pack still owns {@code MainTabsProfile}.
+     * zh-Hans reports plural code {@code zh}. {@code applyLanguage} then uses
+     * {@code Locale("zh")}, whose language tag is {@code zh}. The built-in
+     * overlay for that tag is {@code values-zh}, not {@code values-zh-rCN}.
+     * Plural {@code zh-hant} tags as {@code zh} as well. {@code zh_tw} still
+     * uses {@code values-zh-rTW}. The downloaded pack still owns
+     * {@code MainTabsProfile}.
      */
     @Test
     public void zhPluralCodeKeepsAvatarCaptionWhenThePackSaysProfile() throws Exception {
@@ -148,14 +151,31 @@ public class TellomiCloudStringsTest {
 
             HashMap<String, String> simplified = pack("MainTabsProfile", "个人资料");
             LocaleController controller = LocaleController.getInstance();
-            controller.useCloudPackForTest(simplified, "zh");
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
             assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
-            assertEquals(new Locale("zh").toLanguageTag(), controller.getCurrentLocale().toLanguageTag());
-            controller.useBuiltInStringsForTest(readStrings("src/main/res/values-zh/strings.xml"));
-
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
             assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
             assertEquals("个人资料", LocaleController.getString(R.string.MainTabsProfile));
             assertFalse(simplified.containsKey("TellomiTabMe"));
+
+            HashMap<String, String> traditional = pack("MainTabsProfile", "個人資料");
+            showBuiltin(controller, "zh-hant", traditional, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+            assertEquals("個人資料", LocaleController.getString(R.string.MainTabsProfile));
+
+            showBuiltin(controller, "zh_tw", pack("MainTabsProfile", "個人資料"), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+
+            showBuiltin(controller, "en", pack(), "src/main/res/values/strings.xml");
+            assertEquals(LocalizationUtils.DEFAULT_LOCALIZATION, LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("Me", LocaleController.getString(R.string.TellomiTabMe));
+
+            showBuiltin(controller, "zh", pack("TellomiTabMe", "个人资料"), "src/main/res/values-zh/strings.xml");
+            assertEquals("个人资料", LocaleController.getString(R.string.TellomiTabMe));
         } finally {
             ApplicationLoader.applicationContext = previous;
             setResourceBindings(previousBindings);
@@ -181,6 +201,11 @@ public class TellomiCloudStringsTest {
         String settings = LocaleController.getString("Settings");
         assertFalse(settings.contains("设置"));
         assertEquals("LOC_ERR:Settings", settings);
+    }
+
+    private static void showBuiltin(LocaleController controller, String pluralLangCode, HashMap<String, String> cloud, String builtinXml) throws Exception {
+        controller.useCloudPackForTest(cloud, pluralLangCode);
+        controller.useBuiltInStringsForTest(readStrings(builtinXml));
     }
 
     private static HashMap<String, String> readStrings(String relative) throws Exception {
