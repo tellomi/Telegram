@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="TellomiTabMe">我</string>
+    <string name="TellomiTabFeed">发现</string>
 </resources>

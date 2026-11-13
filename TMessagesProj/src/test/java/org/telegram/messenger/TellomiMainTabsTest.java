@@ -18,17 +18,62 @@ import static org.junit.Assert.assertTrue;
 public class TellomiMainTabsTest {
 
     @Test
-    public void freshInstallShowsMomentsChatsAndProfile() {
+    public void freshInstallShowsDiscoverChatsAndProfile() {
         int[] visible = TellomiMainTabs.visibleTabs(new MemoryStore());
         assertArrayEquals(new int[]{
                 TellomiMainTabs.FEED,
                 TellomiMainTabs.CHATS,
                 TellomiMainTabs.PROFILE
         }, visible);
+        assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.FEED));
+        assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.CHATS));
+        assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.PROFILE));
+        assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.SETTINGS));
+        assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.CONTACTS));
+        assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.CALLS));
         assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.SETTINGS));
         assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.CONTACTS));
         assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.CALLS));
         assertFalse(TellomiMainTabs.hideLabels(new MemoryStore()));
+    }
+
+    @Test
+    public void allOnOrderIsDiscoverChatsCallsContactsSettingsProfile() {
+        assertEquals(6, TellomiMainTabs.COUNT);
+        assertArrayEquals(new int[]{
+                TellomiMainTabs.FEED,
+                TellomiMainTabs.CHATS,
+                TellomiMainTabs.CALLS,
+                TellomiMainTabs.CONTACTS,
+                TellomiMainTabs.SETTINGS,
+                TellomiMainTabs.PROFILE
+        }, TellomiMainTabs.BAR_ORDER);
+        for (int index = 0; index < TellomiMainTabs.BAR_ORDER.length; index++) {
+            assertEquals(index, TellomiMainTabs.BAR_ORDER[index]);
+        }
+        assertEquals(0, TellomiMainTabs.FEED);
+        assertEquals(1, TellomiMainTabs.CHATS);
+        assertEquals(2, TellomiMainTabs.CALLS);
+        assertEquals(3, TellomiMainTabs.CONTACTS);
+        assertEquals(4, TellomiMainTabs.SETTINGS);
+        assertEquals(5, TellomiMainTabs.PROFILE);
+
+        MemoryStore store = new MemoryStore();
+        assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CALLS, true));
+        assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CONTACTS, true));
+        assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, true));
+        assertArrayEquals(TellomiMainTabs.BAR_ORDER, TellomiMainTabs.visibleTabs(store));
+    }
+
+    @Test
+    public void coldStartStaysOnTheChatsTab() throws Exception {
+        assertEquals(TellomiMainTabs.CHATS, TellomiMainTabs.BAR_ORDER[1]);
+        String activity = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java"));
+        assertTrue(activity.contains("private static final int POSITION_CHATS = TellomiMainTabs.CHATS;"));
+        assertTrue(activity.contains("protected int getStartPosition() {\n        return POSITION_CHATS;\n    }"));
+        assertTrue(activity.contains("tabsView.addView(tabs[index]);"));
+        assertTrue(activity.contains("GlassTabView.TabAnimation.FEED, R.string.TellomiTabFeed"));
+        assertFalse(activity.contains("R.string.Moments_Title"));
     }
 
     @Test
@@ -57,9 +102,9 @@ public class TellomiMainTabsTest {
 
         MemoryStore restored = store.copy();
         assertArrayEquals(new int[]{
-                TellomiMainTabs.CONTACTS,
-                TellomiMainTabs.CALLS,
                 TellomiMainTabs.CHATS,
+                TellomiMainTabs.CALLS,
+                TellomiMainTabs.CONTACTS,
                 TellomiMainTabs.SETTINGS,
                 TellomiMainTabs.PROFILE
         }, TellomiMainTabs.visibleTabs(restored));
@@ -70,10 +115,10 @@ public class TellomiMainTabsTest {
         assertTrue(TellomiMainTabs.setVisible(restored, TellomiMainTabs.SETTINGS, false));
         TellomiMainTabs.setHideLabels(restored, false);
         assertArrayEquals(new int[]{
-                TellomiMainTabs.CONTACTS,
-                TellomiMainTabs.CALLS,
                 TellomiMainTabs.FEED,
                 TellomiMainTabs.CHATS,
+                TellomiMainTabs.CALLS,
+                TellomiMainTabs.CONTACTS,
                 TellomiMainTabs.PROFILE
         }, TellomiMainTabs.visibleTabs(restored));
         assertFalse(TellomiMainTabs.hideLabels(restored));
@@ -84,6 +129,14 @@ public class TellomiMainTabsTest {
         boolean[] seen = new boolean[TellomiMainTabs.COUNT];
         assertEquals(TellomiMainTabs.COUNT, TellomiMainTabs.SETTINGS_ORDER.length);
         assertEquals(TellomiMainTabs.COUNT, TellomiMainTabs.BAR_ORDER.length);
+        assertArrayEquals(new int[]{
+                TellomiMainTabs.FEED,
+                TellomiMainTabs.CHATS,
+                TellomiMainTabs.SETTINGS,
+                TellomiMainTabs.PROFILE,
+                TellomiMainTabs.CONTACTS,
+                TellomiMainTabs.CALLS
+        }, TellomiMainTabs.SETTINGS_ORDER);
         for (int tab : TellomiMainTabs.SETTINGS_ORDER) {
             assertFalse(seen[tab]);
             seen[tab] = true;
@@ -111,6 +164,56 @@ public class TellomiMainTabsTest {
     }
 
     @Test
+    public void namedAndHistoricalVisibilityKeysStayOnTheSameTabs() {
+        assertEquals("mainTabsFeed", TellomiMainTabs.visibleKey(TellomiMainTabs.FEED));
+        assertEquals("mainTabsChats", TellomiMainTabs.visibleKey(TellomiMainTabs.CHATS));
+        assertEquals("mainTabsCalls", TellomiMainTabs.visibleKey(TellomiMainTabs.CALLS));
+        assertEquals("mainTabsContacts", TellomiMainTabs.visibleKey(TellomiMainTabs.CONTACTS));
+        assertEquals("mainTabsSettings", TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS));
+        assertEquals("mainTabsProfile", TellomiMainTabs.visibleKey(TellomiMainTabs.PROFILE));
+        assertEquals("tellomi_main_tab_visible_0", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.CONTACTS));
+        assertEquals("tellomi_main_tab_visible_1", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.CALLS));
+        assertEquals("tellomi_main_tab_visible_2", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.FEED));
+        assertEquals("tellomi_main_tab_visible_3", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.CHATS));
+        assertEquals("tellomi_main_tab_visible_4", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS));
+        assertEquals("tellomi_main_tab_visible_5", TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.PROFILE));
+
+        MemoryStore named = new MemoryStore();
+        named.putBoolean("mainTabsContacts", true);
+        named.putBoolean("mainTabsCalls", false);
+        named.putBoolean("mainTabsFeed", false);
+        named.putBoolean("mainTabsSettings", true);
+        assertTrue(TellomiMainTabs.isVisible(named, TellomiMainTabs.CONTACTS));
+        assertFalse(TellomiMainTabs.isVisible(named, TellomiMainTabs.CALLS));
+        assertFalse(TellomiMainTabs.isVisible(named, TellomiMainTabs.FEED));
+        assertTrue(TellomiMainTabs.isVisible(named, TellomiMainTabs.CHATS));
+        assertTrue(TellomiMainTabs.isVisible(named, TellomiMainTabs.SETTINGS));
+        assertTrue(TellomiMainTabs.isVisible(named, TellomiMainTabs.PROFILE));
+        assertArrayEquals(new int[]{
+                TellomiMainTabs.CHATS,
+                TellomiMainTabs.CONTACTS,
+                TellomiMainTabs.SETTINGS,
+                TellomiMainTabs.PROFILE
+        }, TellomiMainTabs.visibleTabs(named));
+
+        MemoryStore legacy = new MemoryStore();
+        legacy.putBoolean("tellomi_main_tab_visible_0", true);
+        legacy.putBoolean("tellomi_main_tab_visible_1", false);
+        legacy.putBoolean("tellomi_main_tab_visible_2", false);
+        legacy.putBoolean("tellomi_main_tab_visible_4", true);
+        assertTrue(TellomiMainTabs.isVisible(legacy, TellomiMainTabs.CONTACTS));
+        assertFalse(TellomiMainTabs.isVisible(legacy, TellomiMainTabs.CALLS));
+        assertFalse(TellomiMainTabs.isVisible(legacy, TellomiMainTabs.FEED));
+        assertTrue(TellomiMainTabs.isVisible(legacy, TellomiMainTabs.SETTINGS));
+        assertTrue(legacy.getBoolean("mainTabsContacts", false));
+        assertFalse(legacy.getBoolean("mainTabsCalls", true));
+        assertFalse(legacy.getBoolean("mainTabsFeed", true));
+        assertTrue(legacy.getBoolean("mainTabsSettings", false));
+        assertFalse(legacy.contains("mainTabs" + TellomiMainTabs.FEED));
+        assertArrayEquals(TellomiMainTabs.visibleTabs(named), TellomiMainTabs.visibleTabs(legacy));
+    }
+
+    @Test
     public void freshInstallThirdTabIsMeNotTheOfficialProfileString() throws Exception {
         int[] visible = TellomiMainTabs.visibleTabs(new MemoryStore());
         assertEquals(3, visible.length);
@@ -121,7 +224,9 @@ public class TellomiMainTabsTest {
         assertTrue(activity.contains("createAvatar(context, resourceProvider, currentAccount, R.string.TellomiTabMe)"));
         assertFalse(activity.contains("R.string.MainTabsProfile"));
         assertTrue(menu.contains("return R.string.TellomiTabMe;"));
+        assertTrue(menu.contains("return R.string.TellomiTabFeed;"));
         assertFalse(menu.contains("R.string.MainTabsProfile"));
+        assertFalse(menu.contains("R.string.Moments_Title"));
 
         String english = read(repoRoot().resolve("TMessagesProj/src/main/res/values/strings.xml"));
         String simplified = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh-rCN/strings.xml"));
@@ -131,7 +236,12 @@ public class TellomiMainTabsTest {
         assertTrue(simplified.contains("<string name=\"TellomiTabMe\">我</string>"));
         assertTrue(traditional.contains("<string name=\"TellomiTabMe\">我</string>"));
         String zh = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh/strings.xml"));
+        assertTrue(english.contains("<string name=\"TellomiTabFeed\">Discover</string>"));
+        assertTrue(simplified.contains("<string name=\"TellomiTabFeed\">发现</string>"));
+        assertTrue(traditional.contains("<string name=\"TellomiTabFeed\">发现</string>"));
+        assertTrue(simplified.contains("name=\"Moments_Title\">动态<"));
         assertTrue(zh.contains("<string name=\"TellomiTabMe\">我</string>"));
+        assertTrue(zh.contains("<string name=\"TellomiTabFeed\">发现</string>"));
         assertFalse(simplified.contains("name=\"MainTabsProfile\""));
         assertFalse(traditional.contains("name=\"MainTabsProfile\""));
         assertFalse(zh.contains("name=\"MainTabsProfile\""));
