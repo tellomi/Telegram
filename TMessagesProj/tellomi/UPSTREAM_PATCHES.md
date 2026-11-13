@@ -18,6 +18,14 @@ Upstream files:
 - `ChatActivityEnterView`, `ChatAttachAlert`, `CaptionPhotoViewer`, `RichEditor`, `RichEditorToolbar`, `ChatAttachAlertRichLayout` — AI buttons call `TellomiNativeFeatures.aiComposeEnabled`.
 - `ChangeUsernameActivity`, `ChannelCreateActivity`, `ChatEditTypeActivity`, `ChatActivity`, `ProfileActivity`, `WalletActivity`, `StarGiftSheet` — Fragment links call `fragmentLinksAllowed`.
 
+## Message bubble accessibility date
+
+`ChatMessageCell.onInitializeAccessibilityNodeInfo` used to pass `TodayAt + " " + time` into `AccDescrSentDate` and `AccDescrReceivedDate`. English is `Sent %s` / `at`, so the spoken line is “Sent at HH:mm”. The zh-Hans langpack (`AccDescrSentDate` = `已发送于 %s`, `TodayAt` = `于`) then speaks “已发送于 于 HH:mm”. zh-Hant does the same with `傳送於 %s` and `於`. `AccDescrReceivedDate` (`已收到 %s` / `收到了 %s`) does not already contain that preposition.
+
+The chat list (`DialogCell`) passes `formatDateAudio` into the same sent-date key. For today that is `TodayAtFormatted`, which zh-Hans translates as `%1$s` with no `于`, so “已发送于 HH:mm” is already correct there. Removing `于` from the langpack string would fix the bubble and drop it from the chat list. `TellomiAccDescr.sentOrReceivedAt` keeps the preposition when the format does not already end with it, and collapses a doubled CJK `于` / `於` when a translation glues them together (`已发送于%s`).
+
+Upstream file: `ChatMessageCell`.
+
 ## Earlier patches
 
 Official tree is DrKLO `3de37c8cfb039452be7398909461da6288babf15`. These `src/main` edits keep the installed `app.tellomi.chat` package readable. They do not restore Discover, story hiding, or email login.
