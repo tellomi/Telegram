@@ -1,13 +1,26 @@
 package org.telegram.messenger;
 
+import android.content.Context;
+import android.util.SparseIntArray;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.telegram.utils.localization.Localization;
 
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -118,6 +131,37 @@ public class TellomiCloudStringsTest {
         assertEquals("2 members", LocaleController.formatPluralStringComma("Members", 2));
     }
 
+    /**
+     * zh-Hans and zh-Hant both report plural code {@code zh}. {@code applyLanguage}
+     * then uses {@code Locale("zh")}, whose language tag is {@code zh}. The
+     * built-in overlay for that tag is {@code values-zh}, not {@code values-zh-rCN}.
+     * The downloaded pack still owns {@code MainTabsProfile}.
+     */
+    @Test
+    public void zhPluralCodeKeepsAvatarCaptionWhenThePackSaysProfile() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiTabMe", R.string.TellomiTabMe);
+            bindResource("MainTabsProfile", R.string.MainTabsProfile);
+
+            HashMap<String, String> simplified = pack("MainTabsProfile", "个人资料");
+            LocaleController controller = LocaleController.getInstance();
+            controller.useCloudPackForTest(simplified, "zh");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals(new Locale("zh").toLanguageTag(), controller.getCurrentLocale().toLanguageTag());
+            controller.useBuiltInStringsForTest(readStrings("src/main/res/values-zh/strings.xml"));
+
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+            assertEquals("个人资料", LocaleController.getString(R.string.MainTabsProfile));
+            assertFalse(simplified.containsKey("TellomiTabMe"));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
     @Test
     public void pluralFallsBackToOtherInsideTheCloudPack() {
         HashMap<String, String> russian = pack(
@@ -137,6 +181,48 @@ public class TellomiCloudStringsTest {
         String settings = LocaleController.getString("Settings");
         assertFalse(settings.contains("设置"));
         assertEquals("LOC_ERR:Settings", settings);
+    }
+
+    private static HashMap<String, String> readStrings(String relative) throws Exception {
+        String xml = new String(Files.readAllBytes(repoRoot().resolve("TMessagesProj").resolve(relative)), StandardCharsets.UTF_8);
+        HashMap<String, String> values = new HashMap<>();
+        Matcher matcher = Pattern.compile("<string name=\"([^\"]+)\">(.*?)</string>", Pattern.DOTALL).matcher(xml);
+        while (matcher.find()) {
+            values.put(matcher.group(1), matcher.group(2));
+        }
+        return values;
+    }
+
+    private static Path repoRoot() {
+        Path dir = Paths.get("").toAbsolutePath();
+        for (int i = 0; i < 6 && dir != null; i++) {
+            if (Files.exists(dir.resolve("settings.gradle")) && Files.exists(dir.resolve("TMessagesProj"))) {
+                return dir;
+            }
+            dir = dir.getParent();
+        }
+        return Paths.get("").toAbsolutePath();
+    }
+
+    private static void bindResource(String name, int resId) throws Exception {
+        SparseIntArray bindings = resourceBindings();
+        if (bindings == null) {
+            bindings = new SparseIntArray();
+            setResourceBindings(bindings);
+        }
+        bindings.put(resId, name.hashCode());
+    }
+
+    private static SparseIntArray resourceBindings() throws Exception {
+        Field field = Localization.class.getDeclaredField("rawResBindings");
+        field.setAccessible(true);
+        return (SparseIntArray) field.get(null);
+    }
+
+    private static void setResourceBindings(SparseIntArray bindings) throws Exception {
+        Field field = Localization.class.getDeclaredField("rawResBindings");
+        field.setAccessible(true);
+        field.set(null, bindings);
     }
 
     private static HashMap<String, String> pack(String... pairs) {

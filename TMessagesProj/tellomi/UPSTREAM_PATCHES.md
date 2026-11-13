@@ -2,9 +2,14 @@
 
 ## Profile tab label (M2 / ISSUE-A-NAV-001)
 
-After signup the visible bar is Discover, Chats, then the avatar tab. That tab used `R.string.MainTabsProfile`. Cloud strings replace a key the downloaded langpack contains, and the applied zh-Hans value of `MainTabsProfile` is 个人资料. The product caption is 我. `TellomiTabMe` is not an official key (`Me` / `我` / `我`), so the built-in string is the one that shows. The menu-settings row for the same tab uses that key too. `MainTabsProfile` itself is unchanged.
+After signup the visible bar is Discover, Chats, then the avatar tab. That tab used `R.string.MainTabsProfile`. Cloud strings replace a key the downloaded langpack contains, and the applied zh-Hans value of `MainTabsProfile` is 个人资料. The product caption is 我.
 
-Upstream file: `MainTabsActivity` — the avatar tab’s string resource.
+`TellomiTabMe` is not an official key, so the pack does not contain it. `langpack.getLanguages` reports `plural_code` `zh` for both zh-Hans and zh-Hant. `applyLanguage` builds the locale from that code, so the locale is `Locale("zh")`. Built-in bins are chosen with `locale.toLanguageTag()`. `values-zh-rCN` is `zh-CN` and `values-zh-rTW` is `zh-TW`, and neither matches `zh`, which would leave the caption as the English `Me`. `values-zh/strings.xml` is the `zh` bin (`我`). The same character is the zh-Hant caption. `MainTabsProfile` stays `Profile`.
+
+Upstream files:
+
+- `MainTabsActivity` — the avatar tab’s string resource.
+- `LocaleController` — `useBuiltInStringsForTest`, next to `useCloudPackForTest`, so a unit test can install that `zh` overlay without a process asset.
 
 
 ## Native feature audit 2026-11-14

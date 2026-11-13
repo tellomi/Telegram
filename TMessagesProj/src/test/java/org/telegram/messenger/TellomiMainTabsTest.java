@@ -130,8 +130,11 @@ public class TellomiMainTabsTest {
         assertTrue(english.contains("<string name=\"MainTabsProfile\">Profile</string>"));
         assertTrue(simplified.contains("<string name=\"TellomiTabMe\">我</string>"));
         assertTrue(traditional.contains("<string name=\"TellomiTabMe\">我</string>"));
+        String zh = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh/strings.xml"));
+        assertTrue(zh.contains("<string name=\"TellomiTabMe\">我</string>"));
         assertFalse(simplified.contains("name=\"MainTabsProfile\""));
         assertFalse(traditional.contains("name=\"MainTabsProfile\""));
+        assertFalse(zh.contains("name=\"MainTabsProfile\""));
     }
 
     @Test
