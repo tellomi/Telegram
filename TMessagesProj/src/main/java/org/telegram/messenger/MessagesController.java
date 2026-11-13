@@ -1606,8 +1606,8 @@ public class MessagesController extends BaseController implements NotificationCe
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
-        keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
-        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", false);
+        keepAliveService = mainPreferences.getBoolean("keepAliveService", TellomiNativeFeatures.KEEP_ALIVE_SERVICE);
+        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", TellomiNativeFeatures.BACKGROUND_CONNECTION);
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
         promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
@@ -1622,8 +1622,8 @@ public class MessagesController extends BaseController implements NotificationCe
         suggestedLangCode = mainPreferences.getString("suggestedLangCode", "en");
         animatedEmojisZoom = mainPreferences.getFloat("animatedEmojisZoom", 0.625f);
         qrLoginCamera = mainPreferences.getBoolean("qrLoginCamera", true);
-        saveGifsWithStickers = mainPreferences.getBoolean("saveGifsWithStickers", false);
-        filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);
+        saveGifsWithStickers = mainPreferences.getBoolean("saveGifsWithStickers", TellomiNativeFeatures.SAVE_GIFS_WITH_STICKERS);
+        filtersEnabled = mainPreferences.getBoolean("filtersEnabled", TellomiNativeFeatures.DIALOG_FILTERS_ENABLED);
         getfileExperimentalParams = mainPreferences.getBoolean("getfileExperimentalParams", false);
         downloadImprovementKillswitch = mainPreferences.getBoolean("android_download_improvement_killswitch", false);
         smsjobsStickyNotificationEnabled = mainPreferences.getBoolean("smsjobsStickyNotificationEnabled", false);
@@ -1675,7 +1675,7 @@ public class MessagesController extends BaseController implements NotificationCe
         verifyAgeCountry = mainPreferences.getString("verifyAgeCountry", "GB");
         verifyAgeMin = mainPreferences.getInt("verifyAgeMin", 18);
         premiumBotUsername = mainPreferences.getString("premiumBotUsername", null);
-        premiumLocked = mainPreferences.getBoolean("premiumLocked", false);
+        premiumLocked = mainPreferences.getBoolean("premiumLocked", TellomiNativeFeatures.PREMIUM_PURCHASE_BLOCKED);
         starsLocked = mainPreferences.getBoolean("starsLocked", true);
         transcribeButtonPressed = mainPreferences.getInt("transcribeButtonPressed", 0);
         forumUpgradeParticipantsMin = mainPreferences.getInt("forumUpgradeParticipantsMin", 200);
@@ -1732,7 +1732,7 @@ public class MessagesController extends BaseController implements NotificationCe
         starsPaidMessageAmountMax = mainPreferences.getLong("starsPaidMessageAmountMax", 10_000L);
         starsPaidMessageCommissionPermille = mainPreferences.getInt("starsPaidMessageCommissionPermille", 850);
         stargiftsPinnedToTopLimit = mainPreferences.getInt("stargiftsPinnedToTopLimit", 6);
-        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", true);
+        starsPaidMessagesAvailable = mainPreferences.getBoolean("starsPaidMessagesAvailable", TellomiNativeFeatures.STARS_PAID_MESSAGES);
         freezeSinceDate = mainPreferences.getLong("freezeSinceDate", 0L);
         freezeUntilDate = mainPreferences.getLong("freezeUntilDate", 0L);
         conferenceCallSizeLimit = mainPreferences.getInt("conferenceCallSizeLimit", isTest ? 5 : 100);
@@ -1740,13 +1740,13 @@ public class MessagesController extends BaseController implements NotificationCe
         todoItemsMax = mainPreferences.getInt("todoItemsMax", isTest ? 10 : 30);
         todoTitleLengthMax = mainPreferences.getInt("todoTitleLengthMax", 32);
         todoItemLengthMax = mainPreferences.getInt("todoItemLengthMax", 64);
-        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", "enabled");
-        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", "enabled");
+        translationsManualEnabled = mainPreferences.getString("translationsManualEnabled", TellomiNativeFeatures.TRANSLATIONS);
+        translationsAutoEnabled = mainPreferences.getString("translationsAutoEnabled", TellomiNativeFeatures.TRANSLATIONS);
         whitelistedBots = mainPreferences.getStringSet("whitelistedBots", new HashSet<>()).stream().map(s -> tryParseLong(s, 0)).collect(Collectors.toCollection(HashSet::new));
         starsGroupcallMessageAmountMax = mainPreferences.getInt("starsGroupcallMessageAmountMax", 10_000);
         starsGroupcallMessageLimits = parseTiersString(mainPreferences.getString("starsGroupcallMessageLimits", null));
         freezeAppealUrl = mainPreferences.getString("freezeAppealUrl", BuildVars.LINK_HOST + "/spambot");
-        enableGiftsInProfile = mainPreferences.getBoolean("enableGiftsInProfile", true);
+        enableGiftsInProfile = mainPreferences.getBoolean("enableGiftsInProfile", TellomiNativeFeatures.GIFTS_IN_PROFILE);
         storiesPosting = mainPreferences.getString("storiesPosting", "enabled");
         storiesEntities = mainPreferences.getString("storiesEntities", "premium");
         storiesExportNopublicLink = mainPreferences.getBoolean("storiesExportNopublicLink", false);
@@ -1792,7 +1792,7 @@ public class MessagesController extends BaseController implements NotificationCe
         tonProxyAddress = mainPreferences.getString("tonProxyAddress", "magic.org");
         weatherSearchUsername = mainPreferences.getString("weatherSearchUsername", "izweatherbot");
         storyWeatherPreload = mainPreferences.getBoolean("storyWeatherPreload", true);
-        starsGiftsEnabled = mainPreferences.getBoolean("starsGiftsEnabled", true);
+        starsGiftsEnabled = mainPreferences.getBoolean("starsGiftsEnabled", TellomiNativeFeatures.STARS_GIFTS_ENABLED);
         stargiftsBlocked = mainPreferences.getBoolean("stargiftsBlocked", true); // !BuildVars.DEBUG_VERSION);
         starsPaidReactionAmountMax = mainPreferences.getLong("starsPaidReactionAmountMax", 10_000L);
         starsSubscriptionAmountMax = mainPreferences.getLong("starsSubscriptionAmountMax", 2500L);

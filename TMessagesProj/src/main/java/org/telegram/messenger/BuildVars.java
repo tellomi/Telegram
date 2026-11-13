@@ -68,7 +68,7 @@ public class BuildVars {
     public static String HUAWEI_APP_ID = "101184875";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
-    public static boolean IS_BILLING_UNAVAILABLE = false;
+    public static boolean IS_BILLING_UNAVAILABLE = TellomiNativeFeatures.BILLING_UNAVAILABLE;
 
     // works only on official app ids, disable on your forks
     public static boolean SUPPORTS_PASSKEYS = true;

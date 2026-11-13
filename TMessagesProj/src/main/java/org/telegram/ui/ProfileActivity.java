@@ -133,6 +133,7 @@ import androidx.viewpager.widget.ViewPager;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.AuthTokensHelper;
 import org.telegram.messenger.BillingController;
@@ -7545,6 +7546,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     final TextView textView = (TextView) o.getLastView();
                     textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6));
                     textView.setOnClickListener(v -> {
+                        if (!TellomiNativeFeatures.fragmentLinksAllowed()) {
+                            return;
+                        }
                         try {
                             v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://fragment.com")));
                         } catch (ActivityNotFoundException e) {
