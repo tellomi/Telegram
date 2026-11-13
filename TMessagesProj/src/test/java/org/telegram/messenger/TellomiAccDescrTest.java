@@ -59,6 +59,36 @@ public class TellomiAccDescrTest {
     }
 
     @Test
+    public void charSequenceClockUsesToString() {
+        CharSequence clock = new CharSequence() {
+            private final String text = "12:34";
+
+            @Override
+            public int length() {
+                return text.length();
+            }
+
+            @Override
+            public char charAt(int index) {
+                return text.charAt(index);
+            }
+
+            @Override
+            public CharSequence subSequence(int start, int end) {
+                return text.subSequence(start, end);
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        };
+        assertEquals("已发送于 12:34", TellomiAccDescr.sentOrReceivedAt("已发送于 %s", "于", clock));
+        assertEquals("Sent at 12:34", TellomiAccDescr.sentOrReceivedAt("Sent %s", "at", clock));
+        assertEquals("Sent at ", TellomiAccDescr.sentOrReceivedAt("Sent %s", "at", null));
+    }
+
+    @Test
     public void shortLatinPrepositionIsNotStrippedFromTheWordBeforeIt() {
         assertEquals("Chat at 12:34", TellomiAccDescr.sentOrReceivedAt("Chat %s", "at", TIME));
         assertEquals("Para a 12:34", TellomiAccDescr.sentOrReceivedAt("Para %s", "a", TIME));

@@ -30,10 +30,12 @@ public final class TellomiAccDescr {
     private TellomiAccDescr() {
     }
 
-    public static String sentOrReceivedAt(String format, String todayAt, String time) {
+    public static String sentOrReceivedAt(String format, String todayAt, CharSequence time) {
         String pattern = format == null ? "%s" : format;
         String at = todayAt == null ? "" : todayAt;
-        String clock = time == null ? "" : time;
+        // currentTimeString is a CharSequence. Stars and a repeat prefix store a
+        // Spannable there. String concatenation used to call toString() on it.
+        String clock = time == null ? "" : time.toString();
         String arg = clock;
         if (!at.isEmpty() && patternEndsWithPreposition(pattern, at)) {
             String trimmed = pattern.replace('\u00a0', ' ').trim();
