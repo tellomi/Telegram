@@ -127,7 +127,7 @@ public class TellomiMenuSettingsActivity extends BaseFragment implements Notific
             case TellomiMainTabs.SETTINGS:
                 return R.string.Settings;
             case TellomiMainTabs.PROFILE:
-                return R.string.MainTabsProfile;
+                return R.string.TellomiTabMe;
             default:
                 return 0;
         }
