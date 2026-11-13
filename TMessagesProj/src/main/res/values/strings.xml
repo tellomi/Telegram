@@ -10621,6 +10621,7 @@
     <string name="MainTabsCalls">Calls</string>
     <string name="MainTabsChats">Chats</string>
     <string name="MainTabsProfile">Profile</string>
+    <string name="TellomiTabMe">Me</string>
     <string name="MainTabsSettings">Settings</string>
     <string name="SwitchThemeToDay">Day Mode</string>
     <string name="SwitchThemeToNight">Night Mode</string>

@@ -1,5 +1,12 @@
 # Upstream patches
 
+## Profile tab label (M2 / ISSUE-A-NAV-001)
+
+After signup the visible bar is Discover, Chats, then the avatar tab. That tab used `R.string.MainTabsProfile`. Cloud strings replace a key the downloaded langpack contains, and the applied zh-Hans value of `MainTabsProfile` is 个人资料. The product caption is 我. `TellomiTabMe` is not an official key (`Me` / `我` / `我`), so the built-in string is the one that shows. The menu-settings row for the same tab uses that key too. `MainTabsProfile` itself is unchanged.
+
+Upstream file: `MainTabsActivity` — the avatar tab’s string resource.
+
+
 ## Native feature audit 2026-11-14
 
 Teamgram `master` implements the folder, sticker, and connection methods the official client leaves off until `help.getAppConfig`. This server does not send `dialog_filters_enabled`, `background_connection`, `keep_alive_service`, or `save_gifs_with_stickers`, so those DrKLO defaults stayed off. `TellomiNativeFeatures` turns them on. `help.getAppConfig` can still write the key later.

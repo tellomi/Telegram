@@ -111,6 +111,30 @@ public class TellomiMainTabsTest {
     }
 
     @Test
+    public void freshInstallThirdTabIsMeNotTheOfficialProfileString() throws Exception {
+        int[] visible = TellomiMainTabs.visibleTabs(new MemoryStore());
+        assertEquals(3, visible.length);
+        assertEquals(TellomiMainTabs.PROFILE, visible[2]);
+
+        String activity = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java"));
+        String menu = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiMenuSettingsActivity.java"));
+        assertTrue(activity.contains("createAvatar(context, resourceProvider, currentAccount, R.string.TellomiTabMe)"));
+        assertFalse(activity.contains("R.string.MainTabsProfile"));
+        assertTrue(menu.contains("return R.string.TellomiTabMe;"));
+        assertFalse(menu.contains("R.string.MainTabsProfile"));
+
+        String english = read(repoRoot().resolve("TMessagesProj/src/main/res/values/strings.xml"));
+        String simplified = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh-rCN/strings.xml"));
+        String traditional = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh-rTW/strings.xml"));
+        assertTrue(english.contains("<string name=\"TellomiTabMe\">Me</string>"));
+        assertTrue(english.contains("<string name=\"MainTabsProfile\">Profile</string>"));
+        assertTrue(simplified.contains("<string name=\"TellomiTabMe\">我</string>"));
+        assertTrue(traditional.contains("<string name=\"TellomiTabMe\">我</string>"));
+        assertFalse(simplified.contains("name=\"MainTabsProfile\""));
+        assertFalse(traditional.contains("name=\"MainTabsProfile\""));
+    }
+
+    @Test
     public void menuStringsMatchLanguagePackKeys() throws Exception {
         String[] keys = {
                 "SettingsTools",
