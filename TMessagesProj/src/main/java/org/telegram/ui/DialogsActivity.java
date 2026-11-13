@@ -6765,33 +6765,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateCounters(false);
     }
 
-    private Runnable mainTabSearchCloseListener;
-
-    public void setMainTabSearchCloseListener(Runnable listener) {
-        mainTabSearchCloseListener = listener;
-    }
-
-    public void openSearchFromMainTab() {
-        showSearch(true, false, true);
-        if (fragmentSearchFieldWatcher != null) {
-            fragmentSearchFieldWatcher.toggleSearch(true);
-        }
-        AndroidUtilities.runOnUIThread(() -> {
-            if (fragmentSearchField != null && fragmentSearchField.editText != null) {
-                fragmentSearchField.editText.requestFocus();
-                AndroidUtilities.showKeyboard(fragmentSearchField.editText);
-            }
-        }, 80);
-    }
-
     public void closeSearching() {
         if (actionBar != null && actionBar.isSearchFieldVisible()) {
             actionBar.closeSearchField();
             searchIsShowed = false;
             updateFilterTabs(true, true);
-            if (mainTabSearchCloseListener != null) {
-                mainTabSearchCloseListener.run();
-            }
         }
     }
 

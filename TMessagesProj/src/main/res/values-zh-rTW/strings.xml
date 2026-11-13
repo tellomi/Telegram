@@ -4,4 +4,73 @@
     <string name="ContactShortcutMessage">傳訊息給 %1$s</string>
     <string name="ContactShortcutVoiceCall">語音通話 %1$s</string>
     <string name="ContactShortcutVideoCall">視訊通話 %1$s</string>
+
+    <string name="Moments_Comment_SendFailed">留言沒有送出，內容還在。</string>
+    <string name="Moments_Audience_Kept">沒能更新誰可以看。你的選擇還在。</string>
+    <string name="Moments_Notif_Other">動態通知</string>
+    <string name="Moments_City_Beijing">北京</string>
+    <string name="Moments_City_Shanghai">上海</string>
+    <string name="Moments_City_Guangzhou">廣州</string>
+    <string name="Moments_City_Shenzhen">深圳</string>
+    <string name="Moments_City_Chengdu">成都</string>
+    <string name="Moments_City_Hangzhou">杭州</string>
+
+    <string name="Moments_Time_Now">剛剛</string>
+    <string name="Moments_Recommendations">推薦</string>
+    <string name="Moments_Personalized">個人化推薦</string>
+    <string name="Moments_PersonalizedInfo">關閉後，推薦不再依照你的興趣排序。</string>
+    <string name="Moments_VideoTooLongN">請把影片裁剪到 %1$d 秒以內</string>
+    <string name="Moments_Time_Minutes">%d分鐘前</string>
+    <string name="Moments_Time_Hours">%d小時前</string>
+    <string name="Moments_Time_Days">%d天前</string>
+    <string name="Moments_Time_Weeks">%d週前</string>
+    <string name="Moments_Time_Months">%d個月前</string>
+    <string name="Moments_Time_Years">%d年前</string>
+    <string name="Moments_Audience_Contacts">聯絡人</string>
+    <string name="Moments_Audience_CloseFriends">密友</string>
+    <string name="Moments_Audience_Selected">指定的人</string>
+    <string name="Moments_Loading">正在載入…</string>
+    <string name="Moments_HiddenName">已隱藏</string>
+    <string name="Moments_Edit">編輯</string>
+    <string name="Moments_Delete">刪除</string>
+    <string name="Moments_Report">檢舉</string>
+    <string name="Moments_Forward">轉寄</string>
+    <string name="Moments_Copy">複製</string>
+    <string name="Moments_Close">關閉</string>
+    <string name="Moments_Cancel">取消</string>
+    <string name="Moments_OK">好</string>
+    <string name="Moments_Send">傳送</string>
+    <string name="Moments_More">更多</string>
+    <string name="Moments_Conn_Waiting">正在等待網路…</string>
+    <string name="Moments_Conn_Connecting">正在連線…</string>
+    <string name="Moments_Conn_Updating">正在更新…</string>
+    <string name="Moments_Conn_Proxy">正在連接代理…</string>
+    <string name="Moments_Report_Spam">垃圾訊息</string>
+    <string name="Moments_Report_Violence">暴力</string>
+    <string name="Moments_Report_Child">虐待兒童</string>
+    <string name="Moments_Report_Drugs">毒品</string>
+    <string name="Moments_Report_Personal">個人隱私</string>
+    <string name="Moments_Report_Pornography">色情</string>
+    <string name="Moments_Report_Fake">虛假</string>
+    <string name="Moments_Report_Other">其他</string>
+    <string name="Moments_Report_Detail">補充說明</string>
+    <string name="Moments_Report_Sent">已送出檢舉</string>
+
+    <string name="SettingsTools">工具</string>
+    <string name="MainTabsMenuSettings">選單設定</string>
+    <string name="MainTabsHideLabels">隱藏按鈕文字</string>
+    <string name="MainTabsButtons">導覽列按鈕</string>
+
+    <string name="Moments_FollowingEntry">關注</string>
+    <string name="Moments_FollowersEntry">粉絲</string>
+    <string name="Moments_FollowingWithCount">關注 · %d</string>
+    <string name="Moments_FollowersWithCount">粉絲 · %d</string>
+    <string name="Moments_ListPrivate">對方未公開</string>
+    <string name="Moments_ListLoadFailed">名單沒有載入</string>
+    <string name="Moments_PostGone">這則動態已經不存在</string>
+    <string name="Moments_CommentGone">這則留言已經不存在</string>
+    <string name="Moments_Unavailable">內容無法查看</string>
+
+    <string name="Moments_FollowingPrivate">關注 · 對方未公開</string>
+    <string name="Moments_FollowersPrivate">粉絲 · 對方未公開</string>
 </resources>

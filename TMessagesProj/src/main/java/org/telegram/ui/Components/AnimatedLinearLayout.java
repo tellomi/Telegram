@@ -205,6 +205,12 @@ public class AnimatedLinearLayout extends LinearLayout {
 
     }
 
+    /** Writes the current measured child sizes into the visibility animator without interpolating. */
+    protected final void syncMeasuredItemWidths() {
+        listAnimator.measure(false);
+        checkViewsVisibility();
+    }
+
     protected int getEntriesCount() {
         return listAnimator.size();
     }

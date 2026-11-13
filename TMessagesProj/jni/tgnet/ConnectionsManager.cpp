@@ -432,7 +432,7 @@ void ConnectionsManager::loadConfig() {
         }
     }
 
-    initDatacenters();
+    bool tellomiDcChanged = initDatacenters();
 
     if ((!datacenters.empty() && currentDatacenterId == 0) || pushSessionId == 0) {
         if (pushSessionId == 0) {
@@ -441,6 +441,9 @@ void ConnectionsManager::loadConfig() {
         if (currentDatacenterId == 0) {
             currentDatacenterId = TellomiNetConfig::customBackend() ? (uint32_t) TellomiNetConfig::defaultDcId() : 2;
         }
+        saveConfig();
+    } else if (tellomiDcChanged) {
+        // Existing installs already have a DC id. Persist the added 443 address.
         saveConfig();
     }
     movingToDatacenterId = DEFAULT_DATACENTER_ID;
@@ -1817,19 +1820,28 @@ uint8_t ConnectionsManager::getIpStratagy() {
     return ipStrategy;
 }
 
-void ConnectionsManager::initDatacenters() {
+bool ConnectionsManager::initDatacenters() {
     Datacenter *datacenter;
     if (TellomiNetConfig::customBackend()) {
         // TELLOMI: never install Telegram production/test DCs. See docs/TELLOMI.md.
+        // An existing install already has the DC. Add any seed address it is
+        // missing (443 on the same host) instead of leaving the saved list.
+        bool changed = false;
         for (const auto &dc : TellomiNetConfig::datacenters()) {
-            if (datacenters.find((uint32_t) dc.dcId) != datacenters.end()) {
-                continue;
+            auto existing = datacenters.find((uint32_t) dc.dcId);
+            if (existing == datacenters.end()) {
+                datacenter = new Datacenter(instanceNum, dc.dcId);
+                datacenters[(uint32_t) dc.dcId] = datacenter;
+                changed = true;
+            } else {
+                datacenter = existing->second;
             }
-            datacenter = new Datacenter(instanceNum, dc.dcId);
-            datacenter->addAddressAndPort(dc.host, (uint32_t) dc.port, 0, "");
-            datacenters[(uint32_t) dc.dcId] = datacenter;
+            changed |= datacenter->addAddressAndPort(dc.host, (uint32_t) dc.port, 0, "");
         }
-        return;
+        for (auto &entry : datacenters) {
+            changed |= entry.second->ensureTellomiFallback();
+        }
+        return changed;
     }
     if (!testBackend) {
         if (datacenters.find(1) == datacenters.end()) {
@@ -1889,6 +1901,7 @@ void ConnectionsManager::initDatacenters() {
             datacenters[3] = datacenter;
         }
     }
+    return false;
 }
 
 void ConnectionsManager::attachConnection(ConnectionSocket *connection) {

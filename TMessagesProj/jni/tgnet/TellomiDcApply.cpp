@@ -3,6 +3,7 @@
 #include "Datacenter.h"
 #include "FileLog.h"
 #include "TellomiDcAddress.h"
+#include "TellomiDcFallback.h"
 
 static std::vector<TcpAddress> usableDcAddresses(const std::vector<TcpAddress> &input, bool ipv6) {
     std::vector<TcpAddress> kept;
@@ -23,6 +24,70 @@ static std::string dcEndpoint(Datacenter *datacenter, uint32_t flags) {
         return std::string();
     }
     return current->address + ":" + std::to_string(current->port);
+}
+
+bool tellomiEnsureTcpAddresses(std::vector<TcpAddress> &addresses) {
+    std::vector<TellomiEndpoint> endpoints;
+    endpoints.reserve(addresses.size());
+    for (const TcpAddress &address : addresses) {
+        TellomiEndpoint endpoint;
+        endpoint.host = address.address;
+        endpoint.port = address.port;
+        endpoint.flags = address.flags;
+        endpoint.secret = !address.secret.empty();
+        endpoints.push_back(endpoint);
+    }
+    bool changed = tellomiEnsurePortPair(endpoints);
+    if (!tellomiEndpointListIsIpv6(endpoints)) {
+        std::vector<std::string> hostnames;
+        for (const TellomiDcAddress &dc : TellomiNetConfig::datacenters()) {
+            if (!tellomiDcHostNeedsResolve(dc.host)) {
+                continue;
+            }
+            bool seen = false;
+            for (const std::string &host : hostnames) {
+                if (host == dc.host) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                hostnames.push_back(dc.host);
+            }
+        }
+        if (tellomiRestoreHostnameFallbacks(endpoints, hostnames)) {
+            changed = true;
+        }
+    }
+    if (!changed) {
+        return false;
+    }
+    std::vector<TcpAddress> rebuilt;
+    rebuilt.reserve(endpoints.size());
+    for (const TellomiEndpoint &endpoint : endpoints) {
+        std::string secret;
+        if (endpoint.secret) {
+            for (const TcpAddress &address : addresses) {
+                if (address.address == endpoint.host && address.port == endpoint.port && !address.secret.empty()) {
+                    secret = address.secret;
+                    break;
+                }
+            }
+        }
+        rebuilt.emplace_back(endpoint.host, endpoint.port, endpoint.flags, secret);
+    }
+    if (LOGS_ENABLED) {
+        std::string listed;
+        for (const TcpAddress &address : rebuilt) {
+            if (!listed.empty()) {
+                listed += ",";
+            }
+            listed += address.address + ":" + std::to_string(address.port);
+        }
+        DEBUG_D("tellomi port pair -> %s", listed.c_str());
+    }
+    addresses.swap(rebuilt);
+    return true;
 }
 
 static void replaceDcFamily(Datacenter *datacenter, std::vector<TcpAddress> &addresses, uint32_t flags, bool filter, bool ipv6) {

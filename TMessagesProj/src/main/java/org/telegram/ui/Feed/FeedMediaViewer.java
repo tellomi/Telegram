@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.os.Build;
 import android.view.View;
 
@@ -61,8 +62,16 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         }
         int start = Math.max(0, Math.min(index, media.size() - 1));
         FeedPlayback.stop();
-        String missing = firstMissing(media, fragment.getCurrentAccount());
-        if (missing == null) {
+        FeedPlayback.stopVoice();
+        int account = fragment.getCurrentAccount();
+        for (int i = 0; i < media.size(); i++) {
+            String url = media.get(i).displayUrl(account);
+            if (url.startsWith("http") && !localFile(media.get(i), account).exists()) {
+                ImageLoader.getInstance().loadHttpFile(url, media.get(i).isVideo() ? "mp4" : "jpg", account);
+            }
+        }
+        String tapped = media.get(start).displayUrl(account);
+        if (!tapped.startsWith("http") || localFile(media.get(start), account).exists()) {
             show(fragment, media, start, post.id);
             return;
         }
@@ -70,16 +79,9 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
             NotificationCenter.getInstance(pending.account).removeObserver(pending, NotificationCenter.httpFileDidLoad);
             NotificationCenter.getInstance(pending.account).removeObserver(pending, NotificationCenter.httpFileDidFailedLoad);
         }
-        pending = new FeedMediaViewer(fragment, media, start, post.id, missing);
-        NotificationCenter.getInstance(fragment.getCurrentAccount()).addObserver(pending, NotificationCenter.httpFileDidLoad);
-        NotificationCenter.getInstance(fragment.getCurrentAccount()).addObserver(pending, NotificationCenter.httpFileDidFailedLoad);
-        int account = fragment.getCurrentAccount();
-        for (int i = 0; i < media.size(); i++) {
-            String url = media.get(i).displayUrl(account);
-            if (url.startsWith("http") && !localFile(media.get(i), account).exists()) {
-                ImageLoader.getInstance().loadHttpFile(url, "video".equals(media.get(i).type) ? "mp4" : "jpg", account);
-            }
-        }
+        pending = new FeedMediaViewer(fragment, media, start, post.id, tapped);
+        NotificationCenter.getInstance(account).addObserver(pending, NotificationCenter.httpFileDidLoad);
+        NotificationCenter.getInstance(account).addObserver(pending, NotificationCenter.httpFileDidFailedLoad);
     }
 
     private static String firstMissing(ArrayList<FeedModels.Media> media, int account) {
@@ -172,7 +174,7 @@ public final class FeedMediaViewer implements NotificationCenter.NotificationCen
         }
         if (id == NotificationCenter.httpFileDidFailedLoad) {
             if (fragment.getParentActivity() != null) {
-                BulletinFactory.of(fragment).createErrorBulletin(FeedUi.s("Moments.LoadFailed", R.string.FeedRetry)).show();
+                BulletinFactory.of(fragment).createErrorBulletin(LocaleController.getString("Moments_LoadFailed", R.string.Moments_LoadFailed)).show();
             }
             return;
         }

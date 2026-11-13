@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -8,8 +9,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -29,9 +32,12 @@ public class FeedTopicActivity extends BaseFragment {
     private int visibleCount;
     private final ArrayList<FeedModels.Post> posts = new ArrayList<>();
     private RecyclerListView listView;
+    private FeedContract.TopicPlace place;
+    private boolean pendingRestore;
 
     public FeedTopicActivity(String name) {
         this.name = name == null ? "" : name;
+        this.place = FeedContract.topicPlace(this.name, sort, 0, 0);
     }
 
     @Override
@@ -54,6 +60,44 @@ public class FeedTopicActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @Override
+    public void onPause() {
+        rememberTopic();
+        pendingRestore = true;
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        restoreTopic();
+    }
+
+    private void rememberTopic() {
+        int position = 0;
+        int offset = 0;
+        if (listView != null && listView.getLayoutManager() instanceof LinearLayoutManager) {
+            LinearLayoutManager manager = (LinearLayoutManager) listView.getLayoutManager();
+            position = manager.findFirstVisibleItemPosition();
+            View child = manager.findViewByPosition(position);
+            offset = child == null ? 0 : child.getTop();
+        }
+        place = FeedContract.topicPlace(name, sort, position, offset);
+    }
+
+    private void restoreTopic() {
+        place = FeedContract.restoreTopic(place);
+        sort = place.sort;
+        if (!pendingRestore || listView == null || listView.getAdapter() == null || listView.getAdapter().getItemCount() == 0) {
+            return;
+        }
+        if (!(listView.getLayoutManager() instanceof LinearLayoutManager)) {
+            return;
+        }
+        pendingRestore = false;
+        ((LinearLayoutManager) listView.getLayoutManager()).scrollToPositionWithOffset(place.position, place.offset);
+    }
+
     private BaseFragment thisFragment() {
         return this;
     }
@@ -72,6 +116,7 @@ public class FeedTopicActivity extends BaseFragment {
                 }
                 if (visibleCount == 0) visibleCount = posts.size();
                 if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
+                AndroidUtilities.runOnUIThread(this::restoreTopic);
             });
         });
     }
@@ -98,9 +143,11 @@ public class FeedTopicActivity extends BaseFragment {
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (position == 0) {
                 TextView text = (TextView) holder.itemView;
-                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? FeedUi.s("Moments.Sort.Hot", R.string.FeedSortHot) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew)));
+                text.setText("#" + name + " · " + visibleCount + " · " + ("hot".equals(sort) ? LocaleController.getString("Moments_Sort_Hot", R.string.Moments_Sort_Hot) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest)));
                 text.setOnClickListener(v -> {
                     sort = "hot".equals(sort) ? "latest" : "hot";
+                    place = FeedContract.topicPlace(name, sort, 0, 0);
+                    pendingRestore = true;
                     load();
                 });
                 return;
@@ -117,9 +164,9 @@ public class FeedTopicActivity extends BaseFragment {
 
     private FeedPostCell.Delegate simple() {
         return new FeedPostCell.Delegate() {
-            @Override public void onOpen(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, false); }
+            @Override public void onOpen(FeedModels.Post post) { FeedUi.openEntry(FeedTopicActivity.this, post, FeedContract.ENTRY_TOPIC, false); }
             @Override public void onLike(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleLike(post); }
-            @Override public void onComment(FeedModels.Post post) { FeedCommentSheet.open(FeedTopicActivity.this, post.id, true); }
+            @Override public void onComment(FeedModels.Post post) { FeedUi.openEntry(FeedTopicActivity.this, post, FeedContract.ENTRY_COMMENT, true); }
             @Override public void onRepost(FeedModels.Post post) {}
             @Override public void onShare(FeedModels.Post post) {}
             @Override public void onSave(FeedModels.Post post) { FeedController.getInstance(currentAccount).toggleSave(post); }

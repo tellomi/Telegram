@@ -2141,6 +2141,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 flagSecure.invalidate();
             }
             TLRPC.User user = getMessagesController().getUser(userId);
+            boolean authorRowChecked = arguments.getBoolean("author_row_checked", false);
+            if (!authorRowChecked && ProfileOffline.needsStoredUser(user != null, user != null && user.min)) {
+                TLRPC.User stored = readStoredUser(userId);
+                if (stored != null) {
+                    user = stored;
+                }
+            }
             if (user == null) {
                 return false;
             }
@@ -2161,6 +2168,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 getMediaDataController().loadBotInfo(user.id, user.id, true, classGuid);
             }
             userInfo = getMessagesController().getUserFull(userId);
+            if (ProfileOffline.loadCachedFullUser(userInfo != null)) {
+                getMessagesController().loadUserInfo(user, false, classGuid);
+            }
             getMessagesController().loadFullUser(getMessagesController().getUser(userId), classGuid, true);
             participantsMap = null;
 
@@ -9590,10 +9600,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean needDelayOpenAnimation() {
-        if (playProfileAnimation == 0) {
-            return true;
+        if (playProfileAnimation != 0) {
+            return false;
         }
-        return false;
+        return ProfileOffline.delayOpenUntilNetwork();
     }
 
     @Override
@@ -9603,10 +9613,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         updateSharedMediaRows();
         updateSelectedMediaTabText();
-
-        if (userInfo != null) {
-            resumeDelayedFragmentAnimation();
-        }
+        resumeDelayedFragmentAnimation();
     }
 
     @Override
@@ -9617,7 +9624,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (openMoments) {
                 openMoments = false;
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (sharedMediaLayout != null) {
+                    if (sharedMediaLayout != null && sharedMediaLayout.hasTab(SharedMediaLayout.TAB_MOMENTS)) {
                         sharedMediaLayout.scrollToPage(SharedMediaLayout.TAB_MOMENTS);
                     }
                 }, 250);
@@ -9712,7 +9719,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean canBeginSlide() {
-        if (!sharedMediaLayout.isSwipeBackEnabled()) {
+        if (sharedMediaLayout != null && !sharedMediaLayout.isSwipeBackEnabled()) {
             return false;
         }
         return super.canBeginSlide();
@@ -9723,14 +9730,31 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     public boolean onBackPressed() {
-        if (closeSheet()) {
+        return onBackPressed(true);
+    }
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
+        // BaseFragment closes a shown sheet or story viewer only when invoked is true,
+        // and returns false so the predictive gesture does not pop this page early.
+        if (!super.onBackPressed(invoked)) {
             return false;
         }
         if (sharedMediaLayout != null && sharedMediaLayout.scrollSlidingTextTabStrip != null && sharedMediaLayout.scrollSlidingTextTabStrip.isReordering()) {
-            stopTabsReorder();
+            if (invoked) {
+                stopTabsReorder();
+            }
             return false;
         }
-        return actionBar.isEnabled() && (sharedMediaRow == -1 || sharedMediaLayout == null || !sharedMediaLayout.closeActionMode());
+        if (invoked && sharedMediaRow != -1 && sharedMediaLayout != null && sharedMediaLayout.closeActionMode()) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Local users row. One shared read; the feed open sets author_row_checked and skips this. */
+    private TLRPC.User readStoredUser(long id) {
+        return FeedUi.ensureStoredUser(currentAccount, id);
     }
 
     public boolean isSettings() {
@@ -12193,8 +12217,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (myProfile) {
                     setUsernameItem = otherItem.addSubItem(set_username, R.drawable.menu_username_change, getString(R.string.ProfileUsernameEdit));
                     linkItem = otherItem.addSubItem(copy_link_profile, R.drawable.msg_link2, getString(R.string.ProfileCopyLink));
-                    otherItem.addSubItem(feed_saved, R.drawable.msg_saved, FeedUi.s("Moments.Profile.Saved", R.string.FeedSavedTitle));
-                    otherItem.addSubItem(feed_liked, R.drawable.media_like, FeedUi.s("Moments.Profile.Liked", R.string.FeedLikedTitle));
+                    otherItem.addSubItem(feed_saved, R.drawable.msg_saved, LocaleController.getString("Moments_Profile_Saved", R.string.Moments_Profile_Saved));
+                    otherItem.addSubItem(feed_liked, R.drawable.media_like, LocaleController.getString("Moments_Profile_Liked", R.string.Moments_Profile_Liked));
                     updateItemsUsername();
                 }
                 selfUser = true;
@@ -12256,7 +12280,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!isBot && !UserObject.isDeleted(user)) {
-                    otherItem.addSubItem(feed_mute, R.drawable.msg_archive_hide, FeedUi.s("Moments.Mute", R.string.FeedMute));
+                    otherItem.addSubItem(feed_mute, R.drawable.msg_archive_hide, LocaleController.getString("Moments_Mute", R.string.Moments_Mute));
                     otherItem.addSubItem(feed_report, R.drawable.msg_report, getString(R.string.ReportChat));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {

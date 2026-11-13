@@ -19,6 +19,7 @@ import org.telegram.messenger.feed.FeedConfig;
 import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -26,12 +27,12 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.FragmentFloatingButton;
-import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsActivity;
+
+import org.json.JSONArray;
 
 import java.util.ArrayList;
 
@@ -50,10 +51,19 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     private long[] loadedAt = new long[0];
     private TextView[] tabs = new TextView[0];
     private TextView uploadBanner;
+    private TextView newPosts;
+    private TextView nearbySortView;
     private int index;
     private boolean resetOnShow;
     private String appliedEngineBase = "";
     private String mountedTabs = "";
+    private final Runnable probeNewPosts = new Runnable() {
+        @Override
+        public void run() {
+            probeVisibleHead();
+            AndroidUtilities.runOnUIThread(this, FeedConfig.NEW_POSTS_POLL_MS);
+        }
+    };
 
     public FeedActivity(Bundle args) {
         super(args);
@@ -65,13 +75,13 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public View createView(Context context) {
-        actionBar.setTitle(FeedUi.s("Moments.Title", R.string.FeedTitle));
+        actionBar.setTitle(LocaleController.getString("Moments_Title", R.string.Moments_Title));
         actionBar.setBackButtonDrawable(null);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setCastShadows(false);
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem heart = menu.addItem(1, R.drawable.media_like);
-        heart.setContentDescription(FeedUi.s("Moments.Notifications", R.string.FeedNotifications));
+        heart.setContentDescription(LocaleController.getString("Moments_Notifications", R.string.Moments_Notifications));
         heart.setOnClickListener(v -> presentFragment(new FeedNotificationsActivity()));
 
         content = new FrameLayout(context);
@@ -84,9 +94,35 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         uploadBanner.setVisibility(View.GONE);
         content.addView(uploadBanner, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 40, 0, 0));
 
+        newPosts = new TextView(context);
+        newPosts.setText(LocaleController.getString("Moments_NewPosts", R.string.Moments_NewPosts));
+        newPosts.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        newPosts.setTextSize(14);
+        newPosts.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        newPosts.setPadding(dp(14), dp(6), dp(14), dp(6));
+        newPosts.setVisibility(View.GONE);
+        newPosts.setOnClickListener(v -> {
+            newPosts.setVisibility(View.GONE);
+            ensure(index, true);
+        });
+        content.addView(newPosts, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
+
+        nearbySortView = new TextView(context);
+        nearbySortView.setTextSize(13);
+        nearbySortView.setTypeface(AndroidUtilities.bold());
+        nearbySortView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        nearbySortView.setPadding(dp(12), dp(4), dp(12), dp(4));
+        nearbySortView.setVisibility(View.GONE);
+        nearbySortView.setOnClickListener(v -> {
+            controller().setNearbySort(FeedContract.nextNearbySort(controller().nearbySort()));
+            paintTabs();
+            ensure(index, true);
+        });
+        content.addView(nearbySortView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
+
         FragmentFloatingButton fab = new FragmentFloatingButton(context, resourceProvider);
         fab.setImageResource(R.drawable.filled_fab_compose_32);
-        fab.setContentDescription(FeedUi.s("Moments.Publish", R.string.FeedPublish));
+        fab.setContentDescription(LocaleController.getString("Moments_Publish", R.string.Moments_Publish));
         fab.setOnClickListener(v -> presentFragment(new FeedComposerActivity(null)));
         content.addView(fab, LayoutHelper.createFrame(56, 56, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, 20, 0, 20, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS + 16));
 
@@ -94,8 +130,9 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         paintTabs();
         controller().addListener(this);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appConfigUpdated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdateConnectionState);
+        applyConnectionTitle();
         controller().resumeUploads();
-        controller().refreshGate();
         if (controller().debugFixtures() && streams.length > 0 && controller().posts(streams[0]).isEmpty()) {
             controller().setDebugFixtures(true);
         }
@@ -140,11 +177,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             view.setGravity(Gravity.CENTER);
             view.setTextSize(14);
             view.setTypeface(AndroidUtilities.bold());
-            view.setOnClickListener(v -> {
-                if (pager != null) {
-                    pager.scrollToPosition(tab);
-                }
-            });
+            view.setOnClickListener(v -> selectTab(tab));
             tabs[i] = view;
             tabsRow.addView(view, LayoutHelper.createLinear(0, 40, 1f));
         }
@@ -163,19 +196,21 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
                 }
 
                 @Override
+                public void onPrefetchPage() {
+                    if (!loading[tab] && org.telegram.messenger.feed.FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0) {
+                        controller().prefetchNext(streams[tab]);
+                    }
+                }
+
+                @Override
                 public void onLoadMore() {
                     if (tab >= loading.length) {
                         return;
                     }
                     if (!loading[tab] && FeedContract.normalizeCursor(controller().cursor(streams[tab])).length() > 0) {
                         loading[tab] = true;
-                        controller().load(streams[tab], false, (ok, error) -> {
-                            loading[tab] = false;
-                            failed[tab] = !ok;
-                            if (tab < lists.length && lists[tab] != null) {
-                                lists[tab].refresh();
-                            }
-                        });
+                        final String stream = streams[tab];
+                        controller().load(stream, false, (ok, error) -> finishLoad(stream, ok, error));
                     }
                 }
 
@@ -231,11 +266,26 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             public void onTabAnimationUpdate(boolean manual) {
                 super.onTabAnimationUpdate(manual);
                 int next = Math.round(getPositionAnimated());
-                if (next != index && next >= 0 && next < streams.length) {
-                    index = next;
-                    paintTabs();
-                    ensure(index, false);
+                if (next == index || next < 0 || next >= streams.length) {
+                    return;
                 }
+                index = next;
+                paintTabLabels(false);
+            }
+
+            @Override
+            protected void onScrollEnd() {
+                if (streams.length == 0) {
+                    return;
+                }
+                int tab = currentPosition;
+                if (tab < 0 || tab >= streams.length) {
+                    return;
+                }
+                index = tab;
+                controller().cancelLoadsExcept(streams[tab]);
+                paintTabs();
+                ensure(tab, false);
             }
         };
         pager.setAdapter(new ViewPagerFixed.Adapter() {
@@ -266,22 +316,91 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     private String titleFor(String stream) {
         if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
-            return FeedUi.s("Moments.Segment.Following", R.string.FeedFollowing);
+            return LocaleController.getString("Moments_Segment_Following", R.string.Moments_Segment_Following);
+        }
+        if (FeedModels.STREAM_FRIENDS.equals(stream)) {
+            return LocaleController.getString("Moments_Friends", R.string.Moments_Friends);
         }
         if (FeedModels.STREAM_NEARBY.equals(stream)) {
-            return FeedUi.s("Moments.Segment.Nearby", R.string.FeedNearby);
+            return LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby);
         }
-        return FeedUi.s("Moments.Segment.Recommend", R.string.FeedRecommend);
+        return LocaleController.getString("Moments_Segment_Recommend", R.string.Moments_Segment_Recommend);
+    }
+
+    private void selectTab(int tab) {
+        if (pager == null || tab < 0 || tab >= streams.length) {
+            return;
+        }
+        if (pager.currentPosition == tab && !pager.isManualScrolling()) {
+            index = tab;
+            if (lists[tab] != null) {
+                lists[tab].scrollToTop();
+            }
+            paintTabs();
+            return;
+        }
+        pager.scrollToPosition(tab);
     }
 
     private void paintTabs() {
+        paintTabLabels(true);
+    }
+
+    private void paintTabLabels(boolean layout) {
         for (int i = 0; i < tabs.length; i++) {
             tabs[i].setTextColor(Theme.getColor(i == index ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_windowBackgroundWhiteGrayText));
             tabs[i].setText(titleFor(streams[i]));
         }
         if (index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]) && controller().cityName().length() > 0) {
-            tabs[index].setText(FeedUi.s("Moments.Segment.Nearby", R.string.FeedNearby) + " · " + controller().cityName());
+            tabs[index].setText(LocaleController.getString("Moments_Segment_Nearby", R.string.Moments_Segment_Nearby) + " · " + controller().cityName());
         }
+        if (!layout) {
+            return;
+        }
+        boolean nearby = index >= 0 && index < streams.length && FeedModels.STREAM_NEARBY.equals(streams[index]);
+        if (nearbySortView != null) {
+            nearbySortView.setVisibility(nearby ? View.VISIBLE : View.GONE);
+            if (nearby) {
+                boolean mixed = "mixed".equals(controller().nearbySort());
+                nearbySortView.setText(mixed
+                        ? LocaleController.getString("Moments_Nearby_Mixed", R.string.Moments_Nearby_Mixed)
+                        : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest));
+                nearbySortView.setContentDescription(nearbySortView.getText());
+            }
+        }
+        if (pager != null && pager.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) pager.getLayoutParams();
+            int top = dp(nearby ? 72 : 40);
+            if (lp.topMargin != top) {
+                lp.topMargin = top;
+                pager.setLayoutParams(lp);
+            }
+        }
+    }
+
+    private void applyConnectionTitle() {
+        if (actionBar == null) {
+            return;
+        }
+        String key = FeedContract.connectionMomentsKey(FeedContract.connectionTitleKey(ConnectionsManager.getInstance(currentAccount).getConnectionState()));
+        if (key == null) {
+            actionBar.setTitleOverlayText(null, 0, null);
+            return;
+        }
+        actionBar.setTitleOverlayText(key, titleRes(key), null);
+    }
+
+    private static int titleRes(String key) {
+        if ("Moments_Conn_Waiting".equals(key)) {
+            return R.string.Moments_Conn_Waiting;
+        }
+        if ("Moments_Conn_Updating".equals(key)) {
+            return R.string.Moments_Conn_Updating;
+        }
+        if ("Moments_Conn_Proxy".equals(key)) {
+            return R.string.Moments_Conn_Proxy;
+        }
+        return R.string.Moments_Conn_Connecting;
     }
 
     private void ensure(int tab, boolean refresh) {
@@ -296,7 +415,6 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             return;
         }
         if (!refresh && !controller().posts(streams[tab]).isEmpty()) {
-            lists[tab].refresh();
             return;
         }
         loading[tab] = true;
@@ -304,42 +422,68 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
         lists[tab].refresh();
         final String stream = streams[tab];
         controller().load(stream, true, (ok, error) -> {
-            if (tab >= loading.length) {
-                return;
-            }
-            loading[tab] = false;
-            failed[tab] = !ok;
-            loadedAt[tab] = System.currentTimeMillis();
-            if (!ok && controller().debugFixtures()) {
+            if (!ok && !"cancelled".equals(error) && controller().debugFixtures()) {
                 controller().posts(stream).clear();
                 controller().posts(stream).addAll(FeedController.fixtures(stream));
-                failed[tab] = false;
+                ok = true;
             }
-            if (tab < lists.length && lists[tab] != null) {
-                lists[tab].refresh();
-            }
+            finishLoad(stream, ok, error);
             if (FeedContract.KEPT_EXISTING.equals(error)) {
-                BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, FeedUi.s("Moments.RefreshKept", R.string.FeedRefreshKept)).show();
+                BulletinFactory.of(FeedActivity.this).createSimpleBulletin(R.raw.chats_infotip, LocaleController.getString("Moments_RefreshKept", R.string.Moments_RefreshKept)).show();
             }
         });
     }
 
+    private int streamIndex(String stream) {
+        if (stream == null) {
+            return -1;
+        }
+        for (int i = 0; i < streams.length; i++) {
+            if (stream.equals(streams[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void finishLoad(String stream, boolean ok, String error) {
+        int live = streamIndex(stream);
+        if (live < 0 || live >= loading.length) {
+            return;
+        }
+        loading[live] = false;
+        if ("cancelled".equals(error)) {
+            if (live == index && controller().posts(stream).isEmpty() && lists[live] != null) {
+                ensure(live, false);
+            }
+            return;
+        }
+        failed[live] = !ok;
+        if (live < loadedAt.length) {
+            loadedAt[live] = System.currentTimeMillis();
+        }
+        if (live < lists.length && lists[live] != null) {
+            lists[live].refresh();
+        }
+    }
+
     private String emptyMessage(String stream) {
-        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return FeedUi.s("Moments.Empty.Following", R.string.FeedEmptyFollowing);
-        if (FeedModels.STREAM_NEARBY.equals(stream)) return FeedUi.s("Moments.Empty.Nearby", R.string.FeedEmptyNearby);
-        return FeedUi.s("Moments.Empty.Recommend", R.string.FeedEmptyRecommend);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return LocaleController.getString("Moments_Empty_Following", R.string.Moments_Empty_Following);
+        if (FeedModels.STREAM_FRIENDS.equals(stream)) return LocaleController.getString("Moments_EmptyFriends", R.string.Moments_EmptyFriends);
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_Empty_Nearby", R.string.Moments_Empty_Nearby);
+        return LocaleController.getString("Moments_Empty_Recommend", R.string.Moments_Empty_Recommend);
     }
 
     private String emptyActionFor(String stream) {
-        if (FeedModels.STREAM_NEARBY.equals(stream)) return FeedUi.s("Moments.SwitchCity", R.string.FeedChangeCity);
-        if (FeedModels.STREAM_FOLLOWING.equals(stream)) return FeedUi.s("Moments.FindPeople", R.string.FeedFindPeople);
+        if (FeedModels.STREAM_NEARBY.equals(stream)) return LocaleController.getString("Moments_SwitchCity", R.string.Moments_SwitchCity);
+        if (FeedModels.STREAM_FOLLOWING.equals(stream) || FeedModels.STREAM_FRIENDS.equals(stream)) return LocaleController.getString("Moments_FindPeople", R.string.Moments_FindPeople);
         return null;
     }
 
     private void onEmpty(String stream) {
         if (FeedModels.STREAM_NEARBY.equals(stream)) {
             presentFragment(new FeedCityActivity(false));
-        } else if (FeedModels.STREAM_FOLLOWING.equals(stream)) {
+        } else if (FeedModels.STREAM_FOLLOWING.equals(stream) || FeedModels.STREAM_FRIENDS.equals(stream)) {
             if (pager != null) {
                 pager.scrollToPosition(0);
             }
@@ -355,6 +499,9 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
     @Override
     public void onResume() {
         super.onResume();
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
+        AndroidUtilities.runOnUIThread(probeNewPosts, FeedConfig.NEW_POSTS_POLL_MS);
+        applyConnectionTitle();
         if (resetOnShow) {
             resetOnShow = false;
             index = 0;
@@ -367,20 +514,42 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             ensure(0, true);
             paintTabs();
         }
-        controller().refreshGate();
+    }
+
+    @Override
+    public void onPause() {
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
+        super.onPause();
+    }
+
+    private void probeVisibleHead() {
+        if (newPosts == null || streams.length == 0 || index < 0 || index >= streams.length) {
+            return;
+        }
+        String stream = streams[index];
+        if (FeedModels.STREAM_RECOMMEND.equals(stream) || controller().posts(stream).isEmpty()) {
+            return;
+        }
+        controller().probeHead(stream, newer -> AndroidUtilities.runOnUIThread(() -> {
+            if (newPosts == null || index < 0 || index >= streams.length || !stream.equals(streams[index])) {
+                return;
+            }
+            newPosts.setVisibility(Boolean.TRUE.equals(newer) ? View.VISIBLE : View.GONE);
+        }));
     }
 
     @Override
     public void onFragmentDestroy() {
+        AndroidUtilities.cancelRunOnUIThread(probeNewPosts);
         controller().removeListener(this);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appConfigUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
         super.onFragmentDestroy();
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.appConfigUpdated && account == currentAccount) {
-            controller().refreshGate();
             if (lists == null || index < 0 || index >= lists.length || lists[index] == null) {
                 return;
             }
@@ -393,6 +562,8 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             if (index < loading.length && !loading[index]) {
                 ensure(index, true);
             }
+        } else if (id == NotificationCenter.didUpdateConnectionState && account == currentAccount) {
+            applyConnectionTitle();
         }
     }
 
@@ -420,10 +591,10 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
             FeedController.UploadTask task = tasks.get(0);
             uploadBanner.setVisibility(View.VISIBLE);
             if ("failed".equals(task.state)) {
-                uploadBanner.setText(FeedUi.s("Moments.FailedRetry", R.string.FeedUploadFailed));
+                uploadBanner.setText(LocaleController.getString("Moments_FailedRetry", R.string.Moments_FailedRetry));
                 uploadBanner.setOnClickListener(v -> controller().retry(task));
             } else {
-                uploadBanner.setText(FeedUi.s("Moments.Uploading", R.string.FeedUploading) + " " + task.progress + "%");
+                uploadBanner.setText(LocaleController.getString("Moments_Uploading", R.string.Moments_Uploading) + " " + task.progress + "%");
                 uploadBanner.setOnClickListener(v -> controller().cancel(task));
             }
         }
@@ -444,7 +615,27 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onOpen(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post.id, false);
+        openInFeed(FeedContract.ENTRY_BODY, post, false);
+    }
+
+    private void openInFeed(String entry, FeedModels.Post post, boolean focus) {
+        if (post == null || post.pending) {
+            return;
+        }
+        if (FeedContract.opensStandaloneDetail(entry)) {
+            presentFragment(FeedDetailActivity.forPost(post.id));
+            return;
+        }
+        FeedCommentSheet.open(this, post, focus);
+    }
+
+    @Override
+    public void onPostUpdated(String postId) {
+        for (int i = 0; i < lists.length; i++) {
+            if (lists[i] != null) {
+                lists[i].notifyPost(postId);
+            }
+        }
     }
 
     @Override
@@ -454,39 +645,17 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onComment(FeedModels.Post post) {
-        FeedCommentSheet.open(this, post.id, true);
+        openInFeed(FeedContract.ENTRY_COMMENT, post, true);
     }
 
     @Override
     public void onRepost(FeedModels.Post post) {
-        if (!post.isPublic() && FeedConfig.ONLY_PUBLIC_CAN_REPOST) {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, FeedUi.s("Moments.RepostBlocked", R.string.FeedRepostBlocked)).show();
-            return;
-        }
-        ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_saved, post.saved ? FeedUi.s("Moments.Saved", R.string.FeedSaved) : FeedUi.s("Moments.Save", R.string.FeedSave), () -> controller().toggleSave(post));
-        options.add(R.drawable.msg_forward, FeedUi.s("Moments.Repost", R.string.FeedRepost), () -> controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/repost", new org.json.JSONObject(), (json, error) -> {
-            if (error != null) {
-                BulletinFactory.of(this).createErrorBulletin(error).show();
-            }
-        }));
-        options.add(R.drawable.msg_forward, FeedUi.s("Moments.Quote", R.string.FeedQuote), () -> presentFragment(FeedComposerActivity.quote(post.id)));
-        options.show();
+        FeedPostActions.showRepostMenu(this, post, fragmentView);
     }
 
     @Override
     public void onShare(FeedModels.Post post) {
-        String link = FeedUi.linkFor(post.id);
-        ItemOptions options = ItemOptions.makeOptions(this, fragmentView);
-        options.add(R.drawable.msg_share, FeedUi.s("Moments.ShareChat", R.string.FeedShareChat), () -> {
-            ShareAlert alert = ShareAlert.createShareAlert(getContext(), null, link, false, link, false);
-            showDialog(alert);
-        });
-        options.add(R.drawable.msg_link2, FeedUi.s("Moments.CopyLink", R.string.FeedCopyLink), () -> {
-            AndroidUtilities.addToClipboard(link);
-            BulletinFactory.of(this).createCopyLinkBulletin().show();
-        });
-        options.show();
+        FeedPostActions.showShareMenu(this, post, fragmentView);
     }
 
     @Override
@@ -496,28 +665,7 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onMore(FeedModels.Post post, View anchor) {
-        ItemOptions options = ItemOptions.makeOptions(this, anchor);
-        if (FeedUi.isSelf(currentAccount, post.author)) {
-            options.add(R.drawable.msg_edit, getString(R.string.Edit), () -> presentFragment(FeedComposerActivity.edit(post.id)));
-            options.add(R.drawable.msg_openin, FeedUi.s("Moments.WhoCanSee", R.string.FeedChangeAudience), () -> FeedAudiencePicker.open(this, null, privacy -> {
-                org.json.JSONObject body = new org.json.JSONObject();
-                try {
-                    body.put("kind", FeedAudiencePicker.kind(privacy.type));
-                } catch (Exception ignore) {
-                }
-                controller().api.sendJson("PUT", "/v1/feed/posts/" + post.id + "/audience", body, (json, error) -> { });
-            }));
-            options.add(R.drawable.msg_delete, getString(R.string.Delete), () -> controller().deletePost(post.id));
-        } else {
-            options.add(R.drawable.msg_block, FeedUi.s("Moments.NotInterested", R.string.FeedNotInterested), () -> controller().notInterested(post));
-            options.add(R.drawable.msg_archive_hide, FeedUi.s("Moments.HidePost", R.string.FeedHidePost), () -> controller().hidePost(post));
-            options.add(R.drawable.msg_block2, FeedUi.s("Moments.Mute", R.string.FeedMute), () -> controller().mute(post.author.profileId, true));
-            options.add(R.drawable.msg_report, getString(R.string.ReportChat), () -> FeedReportSheet.open(this, "post", post.id));
-            if (post.isPublic()) {
-                options.add(R.drawable.msg_link2, FeedUi.s("Moments.CopyLink", R.string.FeedCopyLink), () -> AndroidUtilities.addToClipboard(FeedUi.linkFor(post.id)));
-            }
-        }
-        options.show();
+        FeedPostActions.showMoreMenu(this, post, anchor);
     }
 
     @Override
@@ -535,7 +683,34 @@ public class FeedActivity extends BaseFragment implements MainTabsActivity.TabFr
 
     @Override
     public void onVote(FeedModels.Post post, int option) {
-        FeedCommentSheet.open(this, post.id, false);
+        if (post == null || post.poll == null || post.poll.closed() || option < 0 || option >= post.poll.options.size()) {
+            return;
+        }
+        FeedModels.PollOption chosen = post.poll.options.get(option);
+        JSONArray options = new JSONArray();
+        options.put(chosen.id);
+        boolean clear = chosen.chosen && !post.poll.multiple;
+        controller().vote(post.id, options, clear, error -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                BulletinFactory.of(FeedActivity.this).createErrorBulletin(error).show();
+                return;
+            }
+            if (clear) {
+                chosen.chosen = false;
+                post.poll.voted = false;
+            } else if (!post.poll.multiple) {
+                for (int i = 0; i < post.poll.options.size(); i++) {
+                    post.poll.options.get(i).chosen = i == option;
+                }
+                post.poll.voted = true;
+                post.poll.canSeeResults = true;
+            } else {
+                chosen.chosen = true;
+                post.poll.voted = true;
+                post.poll.canSeeResults = true;
+            }
+            onChanged();
+        }));
     }
 
     @Override

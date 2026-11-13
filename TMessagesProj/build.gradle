@@ -108,6 +108,7 @@ dependencies {
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
 }
 
 def tellomiJavaString = { String value ->
@@ -125,9 +126,16 @@ def tellomiPublicKeyPem = {
     def keyFile = rootProject.file("TMessagesProj/config/tellomi-server-public.pem")
     return keyFile.isFile() ? keyFile.getText("UTF-8") : ""
 }
-def TELLOMI_PRODUCTION_HOST = '8.137.39.82'
+// 8.137.198.240 relays TCP on 10443 and 443. MTProto still terminates behind it.
+def TELLOMI_PRODUCTION_HOST = '8.137.198.240'
 def TELLOMI_PRODUCTION_PORT = '10443'
-def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT}"
+def TELLOMI_FALLBACK_PORT = '443'
+def TELLOMI_FALLBACK_HOST = 'api.tellomi.cn'
+// The origin answers that forwarded connection. A shippable seed must not dial it.
+def tellomiDirectOrigin = '8.156.40.105'
+// Each DC: relay IP on 10443, then 443, then api.tellomi.cn on 10443 and 443.
+// The hostname is resolved by tgnet getHostByName. help.getConfig updates IPs.
+def TELLOMI_PRODUCTION_ADDRESSES = "1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},1:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_PRODUCTION_HOST}:${TELLOMI_FALLBACK_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_PRODUCTION_PORT},2:${TELLOMI_FALLBACK_HOST}:${TELLOMI_FALLBACK_PORT}"
 def tellomiServerProfiles = [
     dev  : TELLOMI_PRODUCTION_ADDRESSES,
     local: '1:10.0.2.2:10443,2:10.0.2.2:10443',
@@ -145,20 +153,7 @@ def tellomiServerSelection = { String fallbackName ->
     return [name: name, addresses: tellomiServerProfiles[name]]
 }
 def tellomiAddressesAreProduction = { String addresses ->
-    if (addresses == null) {
-        return false
-    }
-    def parts = addresses.split(',')
-    if (parts.length < 1) {
-        return false
-    }
-    for (raw in parts) {
-        def bits = raw.trim().split(':')
-        if (bits.length < 3 || bits[1] != TELLOMI_PRODUCTION_HOST || bits[2] != TELLOMI_PRODUCTION_PORT) {
-            return false
-        }
-    }
-    return true
+    return addresses != null && addresses == TELLOMI_PRODUCTION_ADDRESSES
 }
 def tellomiShippableSelectionOk = { selection ->
     return selection != null && selection.name != 'local' && tellomiAddressesAreProduction(selection.addresses?.toString())
@@ -181,11 +176,18 @@ def tellomiTaskShipsClient = { String name ->
 }
 def tellomiRefuseNonProductionShip = { String where ->
     def selection = tellomiServerSelection('dev')
+    def profile = selection == null ? '' : selection.name
+    def addresses = selection == null ? '' : selection.addresses?.toString()
+    if (addresses != null && addresses.contains(tellomiDirectOrigin)) {
+        throw new GradleException(
+            "A shippable build must not dial ${tellomiDirectOrigin}. ${where} resolved " +
+            "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
+            "Embed ${TELLOMI_PRODUCTION_ADDRESSES}."
+        )
+    }
     if (tellomiShippableSelectionOk(selection)) {
         return
     }
-    def profile = selection == null ? '' : selection.name
-    def addresses = selection == null ? '' : selection.addresses
     throw new GradleException(
         "A shippable build must embed ${TELLOMI_PRODUCTION_ADDRESSES}. ${where} resolved " +
         "TELLOMI_SERVER_PROFILE='${profile}' TELLOMI_DC_ADDRESSES='${addresses}'. " +
@@ -236,7 +238,7 @@ android {
         buildConfigField "int", "TELLOMI_DEFAULT_DC_ID", tellomiProp("TELLOMI_DEFAULT_DC_ID", "1")
         buildConfigField "boolean", "TELLOMI_CUSTOM_BACKEND", tellomiProp("TELLOMI_CUSTOM_BACKEND", "true")
         buildConfigField "boolean", "TELLOMI_LOCK_DC_ADDRESSES", tellomiProp("TELLOMI_LOCK_DC_ADDRESSES", "false")
-        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "false")
+        buildConfigField "boolean", "TELLOMI_USE_CLOUD_STRINGS", tellomiProp("TELLOMI_USE_CLOUD_STRINGS", "true")
         buildConfigField "String", "TELLOMI_SERVER_PUBLIC_KEY", tellomiJavaString(tellomiPublicKeyPem())
 
         def tellomiAbiOverride = findProperty("TELLOMI_ABI_FILTERS")
@@ -397,7 +399,7 @@ gradle.taskGraph.whenReady { graph ->
 
 task tellomiVerifyShippableDc {
     group = 'tellomi'
-    description = 'Fail unless a shippable build embeds 8.137.39.82:10443.'
+    description = 'Fail unless a shippable build embeds 8.137.198.240:10443 and :443 and api.tellomi.cn.'
     doLast {
         def shipServer = tellomiEmbeddedShippableServer()
         println "release BuildConfig TELLOMI_SERVER_PROFILE=${shipServer.name}"

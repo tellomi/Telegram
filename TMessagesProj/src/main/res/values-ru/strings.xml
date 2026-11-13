@@ -263,4 +263,73 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+
+    <string name="Moments_Comment_SendFailed">Не удалось отправить комментарий. Текст на месте.</string>
+    <string name="Moments_Audience_Kept">Не удалось обновить, кто может видеть. Ваш выбор сохранён.</string>
+    <string name="Moments_Notif_Other">Активность</string>
+    <string name="Moments_City_Beijing">Пекин</string>
+    <string name="Moments_City_Shanghai">Шанхай</string>
+    <string name="Moments_City_Guangzhou">Гуанчжоу</string>
+    <string name="Moments_City_Shenzhen">Шэньчжэнь</string>
+    <string name="Moments_City_Chengdu">Чэнду</string>
+    <string name="Moments_City_Hangzhou">Ханчжоу</string>
+
+    <string name="Moments_Time_Now">Только что</string>
+    <string name="Moments_Recommendations">Рекомендации</string>
+    <string name="Moments_Personalized">Персональные рекомендации</string>
+    <string name="Moments_PersonalizedInfo">Если выключить, «Для вас» больше не сортируется по вашим интересам.</string>
+    <string name="Moments_VideoTooLongN">Обрежьте видео до %1$d секунд или короче.</string>
+    <string name="Moments_Time_Minutes">%d мин. назад</string>
+    <string name="Moments_Time_Hours">%d ч. назад</string>
+    <string name="Moments_Time_Days">%d дн. назад</string>
+    <string name="Moments_Time_Weeks">%d нед. назад</string>
+    <string name="Moments_Time_Months">%d мес. назад</string>
+    <string name="Moments_Time_Years">%d г. назад</string>
+    <string name="Moments_Audience_Contacts">Мои контакты</string>
+    <string name="Moments_Audience_CloseFriends">Близкие друзья</string>
+    <string name="Moments_Audience_Selected">Выбранные люди</string>
+    <string name="Moments_Loading">Загрузка…</string>
+    <string name="Moments_HiddenName">Скрыто</string>
+    <string name="Moments_Edit">Изменить</string>
+    <string name="Moments_Delete">Удалить</string>
+    <string name="Moments_Report">Пожаловаться</string>
+    <string name="Moments_Forward">Переслать</string>
+    <string name="Moments_Copy">Копировать</string>
+    <string name="Moments_Close">Закрыть</string>
+    <string name="Moments_Cancel">Отмена</string>
+    <string name="Moments_OK">ОК</string>
+    <string name="Moments_Send">Отправить</string>
+    <string name="Moments_More">Ещё</string>
+    <string name="Moments_Conn_Waiting">Ожидание сети…</string>
+    <string name="Moments_Conn_Connecting">Подключение…</string>
+    <string name="Moments_Conn_Updating">Обновление…</string>
+    <string name="Moments_Conn_Proxy">Подключение к прокси…</string>
+    <string name="Moments_Report_Spam">Нежелательные сообщения</string>
+    <string name="Moments_Report_Violence">Насилие</string>
+    <string name="Moments_Report_Child">Жестокое обращение с детьми</string>
+    <string name="Moments_Report_Drugs">Наркотики</string>
+    <string name="Moments_Report_Personal">Личные данные</string>
+    <string name="Moments_Report_Pornography">Порнография</string>
+    <string name="Moments_Report_Fake">Фальшивка</string>
+    <string name="Moments_Report_Other">Другая причина</string>
+    <string name="Moments_Report_Detail">Подробности</string>
+    <string name="Moments_Report_Sent">Жалоба отправлена</string>
+
+    <string name="SettingsTools">Инструменты</string>
+    <string name="MainTabsMenuSettings">Настройки меню</string>
+    <string name="MainTabsHideLabels">Скрыть подписи кнопок</string>
+    <string name="MainTabsButtons">Кнопки панели навигации</string>
+
+    <string name="Moments_FollowingEntry">Подписки</string>
+    <string name="Moments_FollowersEntry">Подписчики</string>
+    <string name="Moments_FollowingWithCount">Подписки · %d</string>
+    <string name="Moments_FollowersWithCount">Подписчики · %d</string>
+    <string name="Moments_ListPrivate">Этот список скрыт</string>
+    <string name="Moments_ListLoadFailed">Не удалось загрузить этот список</string>
+    <string name="Moments_PostGone">Этой записи уже нет</string>
+    <string name="Moments_CommentGone">Этого комментария уже нет</string>
+    <string name="Moments_Unavailable">Материал недоступен</string>
+
+    <string name="Moments_FollowingPrivate">Подписки · Этот список скрыт</string>
+    <string name="Moments_FollowersPrivate">Подписчики · Этот список скрыт</string>
 </resources>

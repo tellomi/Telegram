@@ -8,6 +8,9 @@ import com.google.gson.JsonParser;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * content-engine contract (docs/api.md). Feed lists are id references.
@@ -19,17 +22,18 @@ public final class FeedContract {
     private FeedContract() {
     }
 
-    /** Engine body limit. The client used to allow 2000. */
-    public static final int MAX_TEXT = 500;
-    /** Counter appears near the end of the engine limit. */
-    public static final int TEXT_COUNTER_FROM = 450;
-    /** Engine comment limit. */
-    public static final int MAX_COMMENT = 500;
-    /** Engine image limit. The client used to allow 12. */
-    public static final int MAX_IMAGES = 10;
+    /** content-engine posts.go MaxPostChars. */
+    public static final int MAX_TEXT = 2000;
+    /** Counter appears 50 characters before the engine text cap. */
+    public static final int TEXT_COUNTER_FROM = 1950;
+    /** content-engine interactions.go comment text cap. */
+    public static final int MAX_COMMENT = 1000;
+    /** content-engine post image cap. */
+    public static final int MAX_IMAGES = 12;
 
     public static final String STREAM_RECOMMEND = "recommend";
     public static final String STREAM_FOLLOWING = "following";
+    public static final String STREAM_FRIENDS = "friends";
     public static final String STREAM_NEARBY = "nearby";
 
     public static final String CARDS_PATH = "/v1/feed/cards";
@@ -120,15 +124,30 @@ public final class FeedContract {
         ArrayList<String> tabs = new ArrayList<>();
         tabs.add(STREAM_RECOMMEND);
         tabs.add(STREAM_FOLLOWING);
+        tabs.add(STREAM_FRIENDS);
         tabs.add(STREAM_NEARBY);
         return tabs;
     }
 
     public static boolean isEngineStream(String stream) {
-        return STREAM_RECOMMEND.equals(stream) || STREAM_FOLLOWING.equals(stream) || STREAM_NEARBY.equals(stream);
+        return STREAM_RECOMMEND.equals(stream) || STREAM_FOLLOWING.equals(stream) || STREAM_FRIENDS.equals(stream) || STREAM_NEARBY.equals(stream);
     }
 
-    /** Null when the stream is not a real engine route (friends, places, new-count). */
+    /** The repost line is only for reason=repost. topic and source are not shown. */
+    public static boolean showRepostHeader(String reason) {
+        return reason == null || reason.length() == 0 || "repost".equals(reason);
+    }
+
+    public static boolean isMutualAudience(String audience) {
+        return "mutual_followers".equals(audience);
+    }
+
+    /** state=unavailable, deleted, or the boolean flag. Non-mutual cards use this. */
+    public static boolean cardUnavailable(boolean flag, String state) {
+        return flag || "unavailable".equals(state) || "deleted".equals(state);
+    }
+
+    /** Null when the stream is not a real engine route (places, new-count). */
     public static String streamPath(String stream, String cursor, String city, String sort) {
         if (!isEngineStream(stream)) {
             return null;
@@ -167,49 +186,12 @@ public final class FeedContract {
     }
 
     /**
-     * Top tabs come from capabilities `tabs` (or config.tabs). Unknown ids,
-     * including friends, are dropped because those routes do not exist.
-     * A missing field falls back to recommend / following / nearby.
+     * Home segments are always recommend, following, friends, nearby.
+     * capabilities.friends_feed and a missing or partial tab list do not hide Friends.
+     * Unknown ids such as places are ignored.
      */
     public static ArrayList<String> tabsFromCapabilities(String json) {
-        JsonObject root = object(json);
-        JsonArray raw = null;
-        boolean present = false;
-        if (root != null) {
-            if (root.has("tabs")) {
-                present = true;
-                raw = array(root.get("tabs"));
-            } else if (root.has("config") && root.get("config").isJsonObject()) {
-                JsonObject config = root.getAsJsonObject("config");
-                if (config.has("tabs")) {
-                    present = true;
-                    raw = array(config.get("tabs"));
-                }
-            } else if (root.has("feed") && root.get("feed").isJsonObject()) {
-                JsonObject feed = root.getAsJsonObject("feed");
-                if (feed.has("tabs")) {
-                    present = true;
-                    raw = array(feed.get("tabs"));
-                }
-            }
-        }
-        if (!present) {
-            return defaultTabs();
-        }
-        ArrayList<String> tabs = new ArrayList<>();
-        if (raw != null) {
-            for (int i = 0; i < raw.size(); i++) {
-                JsonElement element = raw.get(i);
-                if (element == null || !element.isJsonPrimitive()) {
-                    continue;
-                }
-                String id = element.getAsString();
-                if (isEngineStream(id) && !tabs.contains(id)) {
-                    tabs.add(id);
-                }
-            }
-        }
-        return tabs;
+        return defaultTabs();
     }
 
     public static String joinTabs(List<String> tabs) {
@@ -244,9 +226,324 @@ public final class FeedContract {
         return tabs;
     }
 
-    /** The 动态 tab is shown only when both gates pass. */
+    /** The Moments tab is part of the client. App-config and engine status do not hide it. */
     public static boolean showMomentsTab(boolean configKeyPresent, boolean statusVisible) {
-        return configKeyPresent && statusVisible;
+        return true;
+    }
+
+    public static final int LOAD_MORE_REMAINING = 10;
+    public static final int PREFETCH_AHEAD_POSTS = 3;
+    public static final int PREFETCH_BEHIND_POSTS = 1;
+    public static final int PREFETCH_IMAGES_PER_POST = 2;
+    public static final int PREFETCH_MAX_INFLIGHT = 2;
+    public static final float FLING_PAUSE_SPEED = 4f;
+    public static final String AVATAR_FILTER = "40_40";
+
+    public static final class PrefetchPost {
+        public String avatar = "";
+        public final ArrayList<String> images = new ArrayList<String>();
+        public String linkImage = "";
+        public String imageFilter = "";
+    }
+
+    public static final class PrefetchHit {
+        public final String url;
+        public final String filter;
+        public final String key;
+
+        public PrefetchHit(String url, String filter) {
+            this.url = url == null ? "" : url;
+            this.filter = filter == null ? "" : filter;
+            this.key = this.url + "\n" + this.filter;
+        }
+    }
+
+    public static ArrayList<PrefetchHit> prefetchPlan(List<PrefetchPost> posts, int firstVisible, int lastVisible, int direction, boolean allowed, boolean lowTier) {
+        ArrayList<PrefetchHit> hits = new ArrayList<PrefetchHit>();
+        if (!allowed || posts == null || posts.isEmpty() || lastVisible < 0 || firstVisible < 0) {
+            return hits;
+        }
+        int ahead = lowTier ? 1 : PREFETCH_AHEAD_POSTS;
+        int perPost = lowTier ? 1 : PREFETCH_IMAGES_PER_POST;
+        int size = posts.size();
+        ArrayList<Integer> indexes = new ArrayList<Integer>();
+        if (direction >= 0) {
+            for (int step = 1; step <= ahead; step++) {
+                int index = lastVisible + step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = firstVisible - 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        } else {
+            for (int step = 1; step <= ahead; step++) {
+                int index = firstVisible - step;
+                if (index >= 0 && index < size) {
+                    indexes.add(index);
+                }
+            }
+            int behind = lastVisible + 1;
+            if (behind >= 0 && behind < size) {
+                indexes.add(behind);
+            }
+        }
+        for (int i = 0; i < indexes.size(); i++) {
+            PrefetchPost post = posts.get(indexes.get(i));
+            if (post == null) {
+                continue;
+            }
+            if (post.avatar != null && post.avatar.length() > 0) {
+                hits.add(new PrefetchHit(post.avatar, AVATAR_FILTER));
+            }
+            int images = Math.min(perPost, post.images.size());
+            for (int image = 0; image < images; image++) {
+                String url = post.images.get(image);
+                if (url != null && url.length() > 0) {
+                    hits.add(new PrefetchHit(url, post.imageFilter));
+                }
+            }
+            if (post.linkImage != null && post.linkImage.length() > 0) {
+                hits.add(new PrefetchHit(post.linkImage, post.imageFilter));
+            }
+        }
+        return hits;
+    }
+
+    public static boolean shouldLoadMore(int remaining, boolean hasCursor, boolean loading) {
+        return hasCursor && !loading && remaining <= LOAD_MORE_REMAINING;
+    }
+
+    public static int[] mediaCellPx(int count, int screenWidthPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int column = Math.max(Math.round(200f * scale), screenWidthPx - Math.round(72f * scale));
+        if (count <= 1) {
+            int height = Math.min(Math.round(360f * scale), Math.max(Math.round(120f * scale), column));
+            return new int[]{column, height};
+        }
+        int width = (int) (column * 0.78f);
+        return new int[]{width, width};
+    }
+
+    /**
+     * ImageLoader reads "W_H" as dp and multiplies by density. 800_800 on a
+     * 3x phone asks for 2400 px and leaves a 12 MP photo at sample size 1.
+     */
+    /** Single large image uses the ~1080 tier. Carousel cells use the ~360 tier. */
+    public static int renditionTargetPx(int visualCount) {
+        return visualCount <= 1 ? 1080 : 360;
+    }
+
+    /**
+     * One JPEG tier. Renditions are largest-first and never larger than the original.
+     * A direct http(s) url wins. Otherwise the path is media_base_url + key.
+     */
+    public static final class Tier {
+        public final String key;
+        public final String url;
+        public final int w;
+        public final int h;
+
+        public Tier(String key, String url, int w, int h) {
+            this.key = key == null ? "" : key;
+            this.url = url == null ? "" : url;
+            this.w = w;
+            this.h = h;
+        }
+
+        public int longEdge() {
+            return Math.max(w, h);
+        }
+    }
+
+    /** Index of the smallest tier whose long edge is at least targetPx, or -1 to use the original. */
+    public static int chooseRendition(List<Tier> tiers, int targetPx) {
+        int best = -1;
+        int bestEdge = Integer.MAX_VALUE;
+        if (tiers == null || targetPx <= 0) {
+            return -1;
+        }
+        for (int i = 0; i < tiers.size(); i++) {
+            Tier tier = tiers.get(i);
+            if (tier == null) {
+                continue;
+            }
+            int edge = tier.longEdge();
+            if (edge >= targetPx && edge < bestEdge) {
+                best = i;
+                bestEdge = edge;
+            }
+        }
+        return best;
+    }
+
+    public static String resolveMediaUrl(String key, String url, String base) {
+        if (url != null && (url.startsWith("https://") || url.startsWith("http://"))) {
+            return url;
+        }
+        String path = key != null && key.length() > 0 ? key : (url == null ? "" : url);
+        if (path.startsWith("https://") || path.startsWith("http://")) {
+            return path;
+        }
+        if (path.length() == 0 || base == null || base.length() == 0) {
+            return "";
+        }
+        while (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        String root = base;
+        while (root.endsWith("/")) {
+            root = root.substring(0, root.length() - 1);
+        }
+        return root + "/" + path;
+    }
+
+    public static ArrayList<Tier> parseRenditions(String mediaJson) {
+        ArrayList<Tier> tiers = new ArrayList<>();
+        JsonObject root = object(mediaJson);
+        if (root == null || !root.has("renditions") || !root.get("renditions").isJsonArray()) {
+            return tiers;
+        }
+        JsonArray renditions = root.getAsJsonArray("renditions");
+        for (int i = 0; i < renditions.size(); i++) {
+            if (renditions.get(i) == null || !renditions.get(i).isJsonObject()) {
+                continue;
+            }
+            tiers.add(tier(renditions.get(i).getAsJsonObject()));
+        }
+        return tiers;
+    }
+
+    /** poster, or a cover object. Null when neither is an object. */
+    public static Tier parsePoster(String mediaJson) {
+        JsonObject root = object(mediaJson);
+        if (root == null) {
+            return null;
+        }
+        if (root.has("poster") && root.get("poster").isJsonObject()) {
+            return tier(root.getAsJsonObject("poster"));
+        }
+        if (root.has("cover") && root.get("cover").isJsonObject()) {
+            return tier(root.getAsJsonObject("cover"));
+        }
+        return null;
+    }
+
+    private static Tier tier(JsonObject object) {
+        return new Tier(string(object, "key"), string(object, "url"), number(object, "w"), number(object, "h"));
+    }
+
+    private static int number(JsonObject object, String key) {
+        if (object == null || !object.has(key) || object.get(key).isJsonNull() || !object.get(key).isJsonPrimitive()) {
+            return 0;
+        }
+        try {
+            return object.get(key).getAsInt();
+        } catch (Exception ignore) {
+            return 0;
+        }
+    }
+
+    public static String imageFilter(int cellWidthPx, int cellHeightPx, float density) {
+        float scale = density <= 0f ? 1f : density;
+        int width = Math.max(1, Math.min(360, Math.round(cellWidthPx / scale)));
+        int height = Math.max(1, Math.min(360, Math.round(cellHeightPx / scale)));
+        return width + "_" + height;
+    }
+
+    public static int imageSampleSize(int photoW, int photoH, String filter, float density) {
+        String[] args = filter == null ? new String[0] : filter.split("_");
+        if (args.length < 2 || photoW <= 0 || photoH <= 0) {
+            return 1;
+        }
+        float scale = density <= 0f ? 1f : density;
+        float wFilter = Float.parseFloat(args[0]) * scale;
+        float hFilter = Float.parseFloat(args[1]) * scale;
+        float factor;
+        if (wFilter >= hFilter && photoW > photoH) {
+            factor = Math.max(photoW / wFilter, photoH / hFilter);
+        } else {
+            factor = Math.min(photoW / wFilter, photoH / hFilter);
+        }
+        if (factor < 1.2f) {
+            factor = 1f;
+        }
+        if (factor > 1f && (photoW > wFilter || photoH > hFilter)) {
+            int sample = 1;
+            while (sample * 2 < factor) {
+                sample *= 2;
+            }
+            return sample;
+        }
+        return Math.max(1, (int) factor);
+    }
+
+    /**
+     * ARGB_8888 bytes after ImageLoader's power-of-two sample. A 4032×3024
+     * photo at sample size 1 is about 48 MB. Several of those while flinging
+     * are enough for the system to kill the process with no Java exception,
+     * which is what "scrolling returns to the launcher" looks like.
+     */
+    public static long decodedArgbBytes(int photoW, int photoH, int sample) {
+        int step = Math.max(1, sample);
+        long width = Math.max(1, photoW / step);
+        long height = Math.max(1, photoH / step);
+        return width * height * 4L;
+    }
+
+    /**
+     * Same values as {@code ConnectionsManager}: connecting 1, waiting 2,
+     * proxy 4, updating 5. Null means the Moments title stays.
+     */
+    public static String connectionTitleKey(int state) {
+        if (state == 1) {
+            return "Connecting";
+        }
+        if (state == 2) {
+            return "WaitingForNetwork";
+        }
+        if (state == 4) {
+            return "ConnectingToProxyWithDots";
+        }
+        if (state == 5) {
+            return "Updating";
+        }
+        return null;
+    }
+
+    /**
+     * One counter per feed stream. Starting a load invalidates the previous
+     * token so a late response cannot update that stream.
+     */
+    public static final class LoadEpoch {
+        private int current;
+
+        public int begin() {
+            current++;
+            return current;
+        }
+
+        public boolean isCurrent(int token) {
+            return token == current && token != 0;
+        }
+    }
+
+    /** Nearby toggles between time order and the mixed recommendation order. */
+    public static String nextNearbySort(String current) {
+        return "mixed".equals(current) ? "latest" : "mixed";
+    }
+
+    /** True when a freshly fetched first row is not the row already on top. An empty list is not "new posts". */
+    public static boolean hasNewerHead(String currentTopId, String incomingHeadId) {
+        if (incomingHeadId == null || incomingHeadId.length() == 0) {
+            return false;
+        }
+        if (currentTopId == null || currentTopId.length() == 0) {
+            return false;
+        }
+        return !currentTopId.equals(incomingHeadId);
     }
 
     public static boolean statusVisible(String json) {
@@ -409,10 +706,15 @@ public final class FeedContract {
 
     /** Comment voice is `media_keys`, a list of upload keys. Other attachments stay on `attachment`. */
     public static String commentBody(String text, String parentId, String attachmentType, String attachmentKey) {
+        return commentBody(text, parentId, attachmentType, attachmentKey, null);
+    }
+
+    /** Same body, with a client_nonce the caller keeps until the send succeeds. */
+    public static String commentBody(String text, String parentId, String attachmentType, String attachmentKey, String clientNonce) {
         JsonObject body = new JsonObject();
         String value = text == null ? "" : text;
-        if (value.length() > MAX_COMMENT) {
-            value = value.substring(0, MAX_COMMENT);
+        if (value.length() > FeedConfig.MAX_COMMENT) {
+            value = value.substring(0, FeedConfig.MAX_COMMENT);
         }
         body.addProperty("text", value);
         if (parentId != null && parentId.length() > 0) {
@@ -428,12 +730,21 @@ public final class FeedContract {
         if (sticker) {
             body.addProperty("sticker", true);
         }
+        if (isClientNonce(clientNonce)) {
+            body.addProperty("client_nonce", clientNonce);
+        }
         return body.toString();
     }
 
     /** Hot thread. An empty cursor is omitted. Hot cursors are not time cursors. */
     public static String commentsPath(String postId, String cursor) {
-        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=hot&thread=1";
+        return commentsPath(postId, cursor, "hot");
+    }
+
+    /** {@code latest} is the time order. Anything else stays on the hot thread. */
+    public static String commentsPath(String postId, String cursor, String sort) {
+        String which = "latest".equals(sort) ? "latest" : "hot";
+        String path = "/v1/feed/posts/" + enc(postId) + "/comments?sort=" + which + "&thread=1";
         if (cursor != null && cursor.length() > 0 && !"null".equals(cursor)) {
             path += "&cursor=" + enc(cursor);
         }
@@ -460,17 +771,17 @@ public final class FeedContract {
         if (text == null) {
             return "";
         }
-        if (text.length() <= MAX_TEXT) {
+        if (text.length() <= FeedConfig.MAX_TEXT) {
             return text;
         }
-        return text.substring(0, MAX_TEXT);
+        return text.substring(0, FeedConfig.MAX_TEXT);
     }
 
     public static int imageSlotsLeft(int already) {
-        if (already >= MAX_IMAGES) {
+        if (already >= FeedConfig.MAX_IMAGES) {
             return 0;
         }
-        return MAX_IMAGES - Math.max(0, already);
+        return FeedConfig.MAX_IMAGES - Math.max(0, already);
     }
 
     /** JSON null, a blank cursor, and the literal "null" all mean "no next page". */
@@ -669,5 +980,996 @@ public final class FeedContract {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    public static final String VIS_PUBLIC = "public";
+    public static final String VIS_FRIENDS = "friends";
+    public static final String VIS_CONTACTS = "contacts";
+    public static final String VIS_CLOSE_FRIENDS = "close_friends";
+    public static final String VIS_INCLUDE = "include";
+    public static final String VIS_EXCLUDE = "exclude";
+    public static final String VIS_ONLY_ME = "only_me";
+
+    /** List, topic, notification, and comment taps. */
+    public static final String ENTRY_BODY = "body";
+    public static final String ENTRY_COMMENT = "comment";
+    public static final String ENTRY_TOPIC = "topic";
+    public static final String ENTRY_NOTIFICATION = "notification";
+    public static final String ENTRY_PROFILE = "profile";
+    public static final String ENTRY_SEARCH = "search";
+    /** https://tell.cc/m and tellomi://tell.cc/m stay on the standalone detail screen. */
+    public static final String ENTRY_DEEP_LINK = "deep_link";
+
+    private static final Pattern CLIENT_NONCE = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+
+    /**
+     * The comment button keeps the sheet over the current list.
+     * The post body, a profile post, search, a topic, a notification, and a deep link open detail.
+     */
+    public static boolean opensCommentSheet(String entry) {
+        return !opensStandaloneDetail(entry);
+    }
+
+    public static boolean opensStandaloneDetail(String entry) {
+        return ENTRY_BODY.equals(entry)
+                || ENTRY_TOPIC.equals(entry)
+                || ENTRY_NOTIFICATION.equals(entry)
+                || ENTRY_PROFILE.equals(entry)
+                || ENTRY_SEARCH.equals(entry)
+                || ENTRY_DEEP_LINK.equals(entry);
+    }
+
+    /** A cancelled or superseded load must not replace the rows on screen. */
+    public static boolean acceptPage(boolean epochCurrent, String error) {
+        return epochCurrent && (error == null || !"cancelled".equals(error));
+    }
+
+    /** Moments title overlay for a chat-list connection key. Null keeps the Moments title. */
+    public static String connectionMomentsKey(String connectionKey) {
+        if ("WaitingForNetwork".equals(connectionKey)) {
+            return "Moments_Conn_Waiting";
+        }
+        if ("Updating".equals(connectionKey)) {
+            return "Moments_Conn_Updating";
+        }
+        if ("ConnectingToProxyWithDots".equals(connectionKey)) {
+            return "Moments_Conn_Proxy";
+        }
+        if ("Connecting".equals(connectionKey)) {
+            return "Moments_Conn_Connecting";
+        }
+        return null;
+    }
+
+    /** Stable list ids. String.hashCode collides (Aa and BB), and a collision reuses the wrong row. */
+    public static final class StableIds {
+        private final java.util.HashMap<String, Long> ids = new java.util.HashMap<>();
+        private long next = 1;
+
+        public long idFor(String key) {
+            if (key == null || key.length() == 0) {
+                return 0;
+            }
+            Long have = ids.get(key);
+            if (have != null) {
+                return have;
+            }
+            long id = next++;
+            ids.put(key, id);
+            return id;
+        }
+    }
+
+    public static String mediaBindKey(String postId, java.util.List<String> urls) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(postId == null ? "" : postId);
+        if (urls != null) {
+            for (int i = 0; i < urls.size(); i++) {
+                builder.append('\n');
+                String url = urls.get(i);
+                builder.append(url == null ? "" : url);
+            }
+        }
+        return builder.toString();
+    }
+
+    public static boolean sameMediaBind(String previous, String next) {
+        return previous != null && previous.length() > 0 && previous.equals(next);
+    }
+
+    /** Video and voice lengths stay numeric so a Chinese UI never shows an English unit. */
+    public static String clock(int durationMs) {
+        int seconds = Math.max(0, durationMs / 1000);
+        return String.format(java.util.Locale.US, "%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    /**
+     * telegram: the viewer can see this contact's Telegram photo.
+     * http: the feed avatar url. letter: neither.
+     */
+    public static String avatarSource(boolean telegramPhotoVisible, String httpUrl) {
+        if (telegramPhotoVisible) {
+            return "telegram";
+        }
+        if (httpUrl != null && (httpUrl.startsWith("https://") || httpUrl.startsWith("http://"))) {
+            return "http";
+        }
+        return "letter";
+    }
+
+    public static final class RelativeBucket {
+        public final String unit;
+        public final int count;
+        public final String english;
+
+        public RelativeBucket(String unit, int count, String english) {
+            this.unit = unit == null ? "" : unit;
+            this.count = count;
+            this.english = english == null ? "" : english;
+        }
+    }
+
+    public static RelativeBucket relativeBucket(long nowMillis, long createdMillis) {
+        if (createdMillis <= 0) {
+            return new RelativeBucket("", 0, "");
+        }
+        long delta = Math.max(0, nowMillis - createdMillis);
+        if (delta < 60_000L) {
+            return new RelativeBucket("now", 0, "Just now");
+        }
+        if (delta < 3600_000L) {
+            int count = (int) Math.max(1, delta / 60_000L);
+            return new RelativeBucket("minute", count, count == 1 ? "1 minute ago" : count + " minutes ago");
+        }
+        if (delta < 86400_000L) {
+            int count = (int) Math.max(1, delta / 3600_000L);
+            return new RelativeBucket("hour", count, count == 1 ? "1 hour ago" : count + " hours ago");
+        }
+        if (delta < 86400_000L * 7) {
+            int count = (int) Math.max(1, delta / 86400_000L);
+            return new RelativeBucket("day", count, count == 1 ? "1 day ago" : count + " days ago");
+        }
+        if (delta < 86400_000L * 30) {
+            int count = (int) Math.max(1, delta / (86400_000L * 7));
+            return new RelativeBucket("week", count, count == 1 ? "1 week ago" : count + " weeks ago");
+        }
+        if (delta < 86400_000L * 365) {
+            int count = (int) Math.max(1, delta / (86400_000L * 30));
+            return new RelativeBucket("month", count, count == 1 ? "1 month ago" : count + " months ago");
+        }
+        int count = (int) Math.max(1, delta / (86400_000L * 365));
+        return new RelativeBucket("year", count, count == 1 ? "1 year ago" : count + " years ago");
+    }
+
+    /** Chinese keeps a real translation. An empty string or the English sentence uses the Moments string. */
+    public static boolean replaceEnglishTimer(String languageCode, String resolved, String english) {
+        if (languageCode == null || !languageCode.toLowerCase(java.util.Locale.US).startsWith("zh")) {
+            return false;
+        }
+        if (resolved == null || resolved.length() == 0 || resolved.startsWith("LOC_ERR")) {
+            return true;
+        }
+        return english != null && resolved.equals(english);
+    }
+
+    public static boolean isClientNonce(String nonce) {
+        return nonce != null && CLIENT_NONCE.matcher(nonce).matches();
+    }
+
+    public static String newClientNonce() {
+        return UUID.randomUUID().toString();
+    }
+
+    /** include and exclude are the only visibilities that take discover.getAudienceToken. */
+    public static boolean needsAudienceToken(String visibility) {
+        return VIS_INCLUDE.equals(visibility) || VIS_EXCLUDE.equals(visibility);
+    }
+
+    /**
+     * Picker kinds become the engine visibility. Public plus a member list is exclude.
+     * An unknown kind is left as-is and is never rewritten to public.
+     */
+    public static String visibilityOf(String kind, boolean hasMembers) {
+        if (kind == null || kind.length() == 0) {
+            return "";
+        }
+        if ("selected".equals(kind) || VIS_INCLUDE.equals(kind)) {
+            return VIS_INCLUDE;
+        }
+        if ("excluded".equals(kind) || VIS_EXCLUDE.equals(kind)) {
+            return VIS_EXCLUDE;
+        }
+        if ("mutual_followers".equals(kind) || VIS_FRIENDS.equals(kind)) {
+            return VIS_FRIENDS;
+        }
+        if (VIS_CLOSE_FRIENDS.equals(kind)) {
+            return VIS_CLOSE_FRIENDS;
+        }
+        if (VIS_CONTACTS.equals(kind)) {
+            return VIS_CONTACTS;
+        }
+        if (VIS_ONLY_ME.equals(kind)) {
+            return VIS_ONLY_ME;
+        }
+        if (VIS_PUBLIC.equals(kind)) {
+            return hasMembers ? VIS_EXCLUDE : VIS_PUBLIC;
+        }
+        return kind;
+    }
+
+    public static ArrayList<Long> uniqueMemberIds(List<Long> direct, List<? extends List<Long>> groups) {
+        ArrayList<Long> out = new ArrayList<>();
+        addMembers(out, direct);
+        if (groups != null) {
+            for (int i = 0; i < groups.size(); i++) {
+                addMembers(out, groups.get(i));
+            }
+        }
+        return out;
+    }
+
+    private static void addMembers(ArrayList<Long> out, List<Long> ids) {
+        if (ids == null) {
+            return;
+        }
+        for (int i = 0; i < ids.size(); i++) {
+            Long id = ids.get(i);
+            if (id == null || id == 0L || out.contains(id)) {
+                continue;
+            }
+            out.add(id);
+        }
+    }
+
+    /** Images stop at {@link #MAX_IMAGES}. Video and other keys stay. */
+    public static ArrayList<String> limitMediaKeys(List<String> keys, List<String> types) {
+        ArrayList<String> out = new ArrayList<>();
+        if (keys == null) {
+            return out;
+        }
+        int images = 0;
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            if (key == null || key.length() == 0) {
+                continue;
+            }
+            String type = types != null && i < types.size() && types.get(i) != null ? types.get(i) : "image";
+            boolean image = "image".equals(type) || "photo".equals(type);
+            if (image) {
+                if (images >= FeedConfig.MAX_IMAGES) {
+                    continue;
+                }
+                images++;
+            }
+            out.add(key);
+        }
+        return out;
+    }
+
+    /**
+     * Create-post fields the engine accepts. Display names and picker kinds are not sent.
+     * A missing or failed audience token does not produce a body and does not become public.
+     */
+    public static final class PostRequest {
+        public String kind = "post";
+        public String text = "";
+        public String title = "";
+        public String visibility = "";
+        public final ArrayList<Long> userIds = new ArrayList<>();
+        public String audienceToken = "";
+        public final ArrayList<String> mediaKeys = new ArrayList<>();
+        public final ArrayList<String> mediaTypes = new ArrayList<>();
+        public String city = "";
+        public String cityName = "";
+        public boolean allowNearby;
+        public String placeId = "";
+        public String placeName = "";
+        public String quoteOf = "";
+        public String clientNonce = "";
+        public String pollJson = "";
+
+        public PostRequest copy() {
+            PostRequest copy = new PostRequest();
+            copy.kind = kind;
+            copy.text = text;
+            copy.title = title;
+            copy.visibility = visibility;
+            copy.userIds.addAll(userIds);
+            copy.audienceToken = audienceToken;
+            copy.mediaKeys.addAll(mediaKeys);
+            copy.mediaTypes.addAll(mediaTypes);
+            copy.city = city;
+            copy.cityName = cityName;
+            copy.allowNearby = allowNearby;
+            copy.placeId = placeId;
+            copy.placeName = placeName;
+            copy.quoteOf = quoteOf;
+            copy.clientNonce = clientNonce;
+            copy.pollJson = pollJson;
+            return copy;
+        }
+    }
+
+    public static final class PostBuild {
+        public final boolean send;
+        public final String error;
+        public final String body;
+        public final String visibility;
+        public final ArrayList<Long> userIds;
+        public final String nonce;
+
+        private PostBuild(boolean send, String error, String body, String visibility, List<Long> userIds, String nonce) {
+            this.send = send;
+            this.error = error == null ? "" : error;
+            this.body = body;
+            this.visibility = visibility == null ? "" : visibility;
+            this.userIds = new ArrayList<>();
+            if (userIds != null) {
+                this.userIds.addAll(userIds);
+            }
+            this.nonce = nonce == null ? "" : nonce;
+        }
+    }
+
+    public static PostBuild buildPost(PostRequest request, String token, String tokenError) {
+        PostRequest copy = request == null ? new PostRequest() : request.copy();
+        copy.visibility = visibilityOf(copy.visibility, !copy.userIds.isEmpty());
+        if (copy.visibility.length() == 0) {
+            return blocked(copy, "invalid_visibility");
+        }
+        if (copy.kind == null || copy.kind.length() == 0) {
+            copy.kind = "post";
+        }
+        if (!"post".equals(copy.kind) && !"article".equals(copy.kind) && !"story".equals(copy.kind)) {
+            return blocked(copy, "invalid_kind");
+        }
+        if (!isClientNonce(copy.clientNonce)) {
+            return blocked(copy, "invalid_client_nonce");
+        }
+        if (needsAudienceToken(copy.visibility)) {
+            if (copy.userIds.isEmpty()) {
+                return blocked(copy, "invalid_audience");
+            }
+            boolean tokenFailed = (tokenError != null && tokenError.length() > 0) || token == null || token.length() == 0;
+            if (tokenFailed) {
+                String reason = tokenError != null && tokenError.length() > 0 ? tokenError : "audience_token";
+                return blocked(copy, reason);
+            }
+            copy.audienceToken = token;
+        } else if (!copy.userIds.isEmpty()) {
+            return blocked(copy, "invalid_audience");
+        } else {
+            copy.audienceToken = "";
+        }
+        String body = encodePost(copy);
+        if (body == null) {
+            return blocked(copy, "invalid_poll");
+        }
+        return ready(copy, body);
+    }
+
+    /** Visibility change. Same token rule as create. Content fields are not included. */
+    public static PostBuild buildAudience(String visibility, List<Long> userIds, String token, String tokenError) {
+        PostRequest request = new PostRequest();
+        request.kind = "post";
+        request.visibility = visibility == null ? "" : visibility;
+        request.clientNonce = newClientNonce();
+        if (userIds != null) {
+            request.userIds.addAll(userIds);
+        }
+        PostBuild built = buildPost(request, token, tokenError);
+        if (!built.send || built.body == null) {
+            return built;
+        }
+        JsonObject full = object(built.body);
+        JsonObject slim = new JsonObject();
+        if (full != null && full.has("visibility")) {
+            slim.add("visibility", full.get("visibility"));
+        }
+        if (full != null && full.has("audience")) {
+            slim.add("audience", full.get("audience"));
+        }
+        return new PostBuild(true, "", slim.toString(), built.visibility, built.userIds, built.nonce);
+    }
+
+    private static PostBuild blocked(PostRequest request, String error) {
+        return new PostBuild(false, error, null, request.visibility, request.userIds, request.clientNonce);
+    }
+
+    private static PostBuild ready(PostRequest request, String body) {
+        return new PostBuild(true, "", body, request.visibility, request.userIds, request.clientNonce);
+    }
+
+    /** Whitelisted create body. Returns null when poll JSON is not an object. */
+    private static String encodePost(PostRequest request) {
+        JsonObject body = new JsonObject();
+        body.addProperty("kind", request.kind);
+        String text = clampText(request.text);
+        if (text.length() > 0) {
+            body.addProperty("text", text);
+        }
+        if (request.title != null && request.title.length() > 0) {
+            body.addProperty("title", request.title);
+        }
+        body.addProperty("visibility", request.visibility);
+        if (needsAudienceToken(request.visibility)) {
+            JsonObject audience = new JsonObject();
+            audience.addProperty("audience_token", request.audienceToken);
+            body.add("audience", audience);
+        }
+        ArrayList<String> keys = limitMediaKeys(request.mediaKeys, request.mediaTypes);
+        if (!keys.isEmpty()) {
+            JsonArray mediaKeys = new JsonArray();
+            for (int i = 0; i < keys.size(); i++) {
+                mediaKeys.add(keys.get(i));
+            }
+            body.add("media_keys", mediaKeys);
+        }
+        if (request.city != null && request.city.length() > 0) {
+            body.addProperty("city", request.city);
+        }
+        if (request.allowNearby && VIS_PUBLIC.equals(request.visibility)) {
+            body.addProperty("allow_nearby", true);
+        }
+        if (request.placeId != null && request.placeId.length() > 0) {
+            body.addProperty("place_id", request.placeId);
+        }
+        if (request.quoteOf != null && request.quoteOf.length() > 0) {
+            body.addProperty("quote_of", request.quoteOf);
+        }
+        if (request.pollJson != null && request.pollJson.length() > 0) {
+            JsonElement poll;
+            try {
+                poll = JsonParser.parseString(request.pollJson);
+            } catch (Exception e) {
+                return null;
+            }
+            if (poll == null || !poll.isJsonObject()) {
+                return null;
+            }
+            body.add("poll", poll);
+        }
+        body.addProperty("client_nonce", request.clientNonce);
+        return body.toString();
+    }
+
+    public static String draftJson(PostRequest request, List<String> paths, List<String> types) {
+        JsonObject o = new JsonObject();
+        PostRequest source = request == null ? new PostRequest() : request;
+        o.addProperty("text", source.text == null ? "" : source.text);
+        o.addProperty("visibility", source.visibility == null ? "" : source.visibility);
+        JsonArray ids = new JsonArray();
+        for (int i = 0; i < source.userIds.size(); i++) {
+            Long id = source.userIds.get(i);
+            if (id != null && id != 0L) {
+                ids.add(id);
+            }
+        }
+        o.add("user_ids", ids);
+        o.addProperty("quote_of", source.quoteOf == null ? "" : source.quoteOf);
+        o.addProperty("allow_nearby", source.allowNearby);
+        o.addProperty("city", source.city == null ? "" : source.city);
+        o.addProperty("city_name", source.cityName == null ? "" : source.cityName);
+        o.addProperty("place_id", source.placeId == null ? "" : source.placeId);
+        o.addProperty("place_name", source.placeName == null ? "" : source.placeName);
+        if (source.pollJson != null && source.pollJson.length() > 0) {
+            try {
+                JsonElement poll = JsonParser.parseString(source.pollJson);
+                if (poll != null && poll.isJsonObject()) {
+                    o.add("poll", poll);
+                }
+            } catch (Exception ignore) {
+            }
+        }
+        o.add("paths", stringArray(paths));
+        o.add("types", stringArray(types));
+        return o.toString();
+    }
+
+    /** Restores a composer draft. Old drafts that only stored a picker kind still parse. */
+    public static PostRequest parseDraft(String json, List<String> paths, List<String> types) {
+        JsonObject o = object(json);
+        if (o == null) {
+            return null;
+        }
+        PostRequest request = new PostRequest();
+        request.text = string(o, "text");
+        request.quoteOf = string(o, "quote_of");
+        request.city = string(o, "city");
+        request.cityName = string(o, "city_name");
+        request.placeId = string(o, "place_id");
+        request.placeName = string(o, "place_name");
+        if (o.has("allow_nearby") && o.get("allow_nearby").isJsonPrimitive()) {
+            request.allowNearby = o.get("allow_nearby").getAsBoolean();
+        }
+        JsonArray ids = o.has("user_ids") ? array(o.get("user_ids")) : null;
+        if (ids != null) {
+            for (int i = 0; i < ids.size(); i++) {
+                JsonElement element = ids.get(i);
+                if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+                    long id = element.getAsLong();
+                    if (id != 0L) {
+                        request.userIds.add(id);
+                    }
+                }
+            }
+        }
+        String rawVisibility = string(o, "visibility");
+        if (rawVisibility.length() == 0) {
+            rawVisibility = string(o, "audience");
+        }
+        request.visibility = visibilityOf(rawVisibility, !request.userIds.isEmpty());
+        if (o.has("poll") && o.get("poll").isJsonObject()) {
+            request.pollJson = o.get("poll").toString();
+        }
+        fillStrings(paths, o.has("paths") ? array(o.get("paths")) : null);
+        fillStrings(types, o.has("types") ? array(o.get("types")) : null);
+        return request;
+    }
+
+    private static JsonArray stringArray(List<String> values) {
+        JsonArray array = new JsonArray();
+        if (values == null) {
+            return array;
+        }
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.get(i);
+            if (value != null) {
+                array.add(value);
+            }
+        }
+        return array;
+    }
+
+    private static void fillStrings(List<String> into, JsonArray values) {
+        if (into == null) {
+            return;
+        }
+        into.clear();
+        if (values == null) {
+            return;
+        }
+        for (int i = 0; i < values.size(); i++) {
+            JsonElement element = values.get(i);
+            if (element != null && element.isJsonPrimitive()) {
+                into.add(element.getAsString());
+            }
+        }
+    }
+
+    /**
+     * One comment attempt. Failure keeps the text, reply, attachment, and nonce.
+     * Success clears them so the next comment gets a new nonce.
+     */
+    public static final class CommentDraft {
+        public String text = "";
+        public String parentId = "";
+        public String attachmentType = "";
+        public String attachmentKey = "";
+        public String nonce = "";
+
+        public void prepare(String text, String parentId, String attachmentType, String attachmentKey) {
+            this.text = text == null ? "" : text;
+            this.parentId = parentId == null ? "" : parentId;
+            this.attachmentType = attachmentType == null ? "" : attachmentType;
+            this.attachmentKey = attachmentKey == null ? "" : attachmentKey;
+            if (!isClientNonce(nonce)) {
+                nonce = newClientNonce();
+            }
+        }
+
+        public void onSuccess() {
+            text = "";
+            parentId = "";
+            attachmentType = "";
+            attachmentKey = "";
+            nonce = "";
+        }
+
+        public void onFailure() {
+        }
+
+        public String body() {
+            return commentBody(text, parentId, attachmentType, attachmentKey, nonce);
+        }
+    }
+
+    /** First non-empty server label. {@code name} is the display string the engine already localized. */
+    public static String serverCityName(String name, String localName, String label) {
+        if (name != null && name.length() > 0) {
+            return name;
+        }
+        if (localName != null && localName.length() > 0) {
+            return localName;
+        }
+        if (label != null && label.length() > 0) {
+            return label;
+        }
+        return "";
+    }
+
+    /**
+     * Server rows are shown as returned. A blank server name is filled from the
+     * localized fallback only for a code in that list. The fallback list is used
+     * on its own only when the server returned no usable row.
+     */
+    public static ArrayList<String[]> resolveCities(List<String> serverCodes, List<String> serverNames, String[][] fallback, String query) {
+        ArrayList<String[]> out = new ArrayList<>();
+        if (serverCodes != null) {
+            for (int i = 0; i < serverCodes.size(); i++) {
+                String code = serverCodes.get(i) == null ? "" : serverCodes.get(i).trim();
+                String name = serverNames != null && i < serverNames.size() && serverNames.get(i) != null ? serverNames.get(i).trim() : "";
+                if (name.length() == 0) {
+                    name = fallbackName(fallback, code);
+                }
+                if (code.length() > 0 && name.length() > 0) {
+                    out.add(new String[]{code, name});
+                }
+            }
+        }
+        if (!out.isEmpty()) {
+            return out;
+        }
+        return filterFallback(fallback, query);
+    }
+
+    private static String fallbackName(String[][] fallback, String code) {
+        if (fallback == null || code == null) {
+            return "";
+        }
+        for (int i = 0; i < fallback.length; i++) {
+            if (fallback[i] != null && fallback[i].length >= 2 && code.equals(fallback[i][0]) && fallback[i][1] != null) {
+                return fallback[i][1];
+            }
+        }
+        return "";
+    }
+
+    private static ArrayList<String[]> filterFallback(String[][] fallback, String query) {
+        ArrayList<String[]> out = new ArrayList<>();
+        if (fallback == null) {
+            return out;
+        }
+        String text = query == null ? "" : query.trim();
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (int i = 0; i < fallback.length; i++) {
+            if (fallback[i] == null || fallback[i].length < 2 || fallback[i][0] == null || fallback[i][1] == null) {
+                continue;
+            }
+            String code = fallback[i][0];
+            String name = fallback[i][1];
+            if (text.length() == 0 || name.toLowerCase(Locale.ROOT).contains(lower) || code.toLowerCase(Locale.ROOT).contains(lower)) {
+                out.add(new String[]{code, name});
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Search and city lookups. This is not {@link LoadEpoch}: that counter
+     * only covers the home streams. A response is painted only while its
+     * token is still the latest query.
+     */
+    public static final class QueryGeneration {
+        private int current;
+
+        public int next() {
+            current++;
+            return current;
+        }
+
+        public int current() {
+            return current;
+        }
+
+        public boolean accept(int token) {
+            return acceptQuery(token, current);
+        }
+    }
+
+    /** True only for the latest non-zero search or city token. */
+    public static boolean acceptQuery(int token, int current) {
+        return token == current && token != 0;
+    }
+
+    public static final String LIST_PRIVATE = "list_private";
+
+    /** {@code following_list} / {@code followers_list} are public or self. */
+    public static boolean knownListVisibility(String value) {
+        return "public".equals(value) || "self".equals(value);
+    }
+
+    /** The list-visibility error. A network failure is not private. */
+    public static boolean listPrivate(String error, String bodyError) {
+        return LIST_PRIVATE.equals(error) || LIST_PRIVATE.equals(bodyError);
+    }
+
+    /**
+     * GET /v1/feed/profiles/{id}/following or /followers.
+     * An empty cursor is the first page. Null when the profile id is missing.
+     */
+    public static String relationPath(String profileId, boolean followers, String cursor) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        String path = "/v1/feed/profiles/" + enc(profileId) + (followers ? "/followers" : "/following");
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "?cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    /**
+     * GET /v1/feed/profiles/{id}/posts. An empty cursor is the first page.
+     * Null when the profile id is missing.
+     */
+    public static String profilePostsPath(String profileId, String cursor) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        String path = "/v1/feed/profiles/" + enc(profileId) + "/posts";
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "?cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    /** Cache key for one profile's post homepage. Null when the id is missing. */
+    public static String profilePostsStream(String profileId) {
+        if (profileId == null || profileId.length() == 0) {
+            return null;
+        }
+        return "profile:" + profileId;
+    }
+
+    /** A private list is an answer, not a transport failure. */
+    public static boolean profilePostsDenied(String error) {
+        return LIST_PRIVATE.equals(error);
+    }
+
+    /**
+     * Whether the profile posts tab should show.
+     * A failed fetch keeps {@code previous} (null stays unknown).
+     * A successful page shows the tab only when it contains at least one post.
+     */
+    public static Boolean profilePostsVisible(Boolean previous, boolean failed, int visiblePosts) {
+        if (failed) {
+            return previous;
+        }
+        return visiblePosts > 0;
+    }
+
+    /** Unknown and confirmed-empty both keep the tab off. */
+    public static boolean showProfilePostsTab(Boolean visible) {
+        return Boolean.TRUE.equals(visible);
+    }
+
+    /** Offline leaves the cached homepage in place and does not start a request. */
+    public static boolean fetchWhenOnline(boolean networkOnline) {
+        return networkOnline;
+    }
+
+    public static final class RelationPage {
+        /** -1 when the server did not give a count and a cursor says the page is partial. */
+        public int total = -1;
+        public String cursor = "";
+        public boolean hidden;
+        public boolean failed;
+    }
+
+    public static RelationPage parseRelationPage(String json, String error, boolean followers) {
+        RelationPage page = new RelationPage();
+        JsonObject root = object(json);
+        String bodyError = root == null ? "" : string(root, "error");
+        if (listPrivate(error, bodyError)) {
+            page.hidden = true;
+            return page;
+        }
+        if (error != null && error.length() > 0) {
+            page.failed = true;
+            return page;
+        }
+        if (root == null) {
+            page.failed = true;
+            return page;
+        }
+        page.cursor = normalizeCursor(string(root, "cursor"));
+        if (page.cursor.length() == 0) {
+            page.cursor = normalizeCursor(string(root, "next_cursor"));
+        }
+        JsonArray items = array(root.get("items"));
+        if (items == null) {
+            items = array(root.get("users"));
+        }
+        int count = items == null ? 0 : items.size();
+        page.total = relationTotal(root, followers, count, page.cursor);
+        return page;
+    }
+
+    /**
+     * A superseded token never paints. A private or failed first page may
+     * replace the screen with that state. A private or failed later page
+     * leaves the rows already shown.
+     */
+    public static boolean applyRelationPage(boolean generationCurrent, boolean firstPage, boolean failed, boolean hidden) {
+        if (!generationCurrent) {
+            return false;
+        }
+        if (failed || hidden) {
+            return firstPage;
+        }
+        return true;
+    }
+
+    private static int relationTotal(JsonObject root, boolean followers, int items, String cursor) {
+        int direct = firstInt(root, "total", "count");
+        if (direct < 0) {
+            direct = firstInt(root, followers ? "followers_count" : "following_count");
+        }
+        if (direct < 0 && root.has("counts") && root.get("counts").isJsonObject()) {
+            direct = firstInt(root.getAsJsonObject("counts"), "total", followers ? "followers" : "following");
+        }
+        if (direct >= 0) {
+            return direct;
+        }
+        if (cursor == null || cursor.length() == 0) {
+            return Math.max(0, items);
+        }
+        return -1;
+    }
+
+    private static int firstInt(JsonObject object, String... keys) {
+        if (object == null || keys == null) {
+            return -1;
+        }
+        for (int i = 0; i < keys.length; i++) {
+            if (!object.has(keys[i]) || object.get(keys[i]).isJsonNull() || !object.get(keys[i]).isJsonPrimitive()) {
+                continue;
+            }
+            try {
+                return object.get(keys[i]).getAsInt();
+            } catch (Exception ignore) {
+            }
+        }
+        return -1;
+    }
+
+    public static String notificationsPath(String tab, String cursor) {
+        String path = notificationsPath(tab);
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "&cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    /** Marks one tab. An empty body would mark every tab read. */
+    public static String notificationReadBody(String tab) {
+        JsonObject body = new JsonObject();
+        body.addProperty("tab", notificationTab(tab));
+        return body.toString();
+    }
+
+    public static final int OPEN_POST = 1;
+    public static final int OPEN_PROFILE = 2;
+    public static final int OPEN_GONE = 3;
+
+    /**
+     * Follow and mutual open the profile. A post id opens that post.
+     * Unavailable, or a notice with neither post nor user, is the gone state.
+     */
+    public static int notificationOpen(String kind, String postId, String commentId, long userId, boolean unavailable) {
+        if (unavailable) {
+            return OPEN_GONE;
+        }
+        if ("follow".equals(kind) || "mutual".equals(kind)) {
+            return userId != 0 ? OPEN_PROFILE : OPEN_GONE;
+        }
+        if (postId != null && postId.length() > 0) {
+            return OPEN_POST;
+        }
+        if (userId != 0) {
+            return OPEN_PROFILE;
+        }
+        return OPEN_GONE;
+    }
+
+    /** Comment id is kept only when the notice opens a post. */
+    public static String notificationCommentId(int open, String commentId) {
+        if (open != OPEN_POST || commentId == null) {
+            return "";
+        }
+        return commentId;
+    }
+
+    /**
+     * Index in the flattened comment rows, or the root row when the id is a
+     * reply past the preview. -1 when this page does not contain the id.
+     */
+    public static int locateComment(List<String> rootIds, List<List<String>> replyIds, int preview, String target) {
+        if (target == null || target.length() == 0 || rootIds == null) {
+            return -1;
+        }
+        int row = 0;
+        int shownCap = Math.max(0, preview);
+        for (int i = 0; i < rootIds.size(); i++) {
+            int rootRow = row;
+            if (target.equals(rootIds.get(i))) {
+                return rootRow;
+            }
+            row++;
+            List<String> replies = replyIds == null || i >= replyIds.size() || replyIds.get(i) == null ? null : replyIds.get(i);
+            int size = replies == null ? 0 : replies.size();
+            int shown = Math.min(shownCap, size);
+            for (int r = 0; r < size; r++) {
+                if (target.equals(replies.get(r))) {
+                    return r < shown ? row + r : rootRow;
+                }
+            }
+            row += shown;
+        }
+        return -1;
+    }
+
+    /** Topic list position. Back from a post, media, or author restores it. */
+    public static final class TopicPlace {
+        public final String topic;
+        public final String sort;
+        public final int position;
+        public final int offset;
+
+        private TopicPlace(String topic, String sort, int position, int offset) {
+            this.topic = topic == null ? "" : topic;
+            this.sort = "latest".equals(sort) ? "latest" : "hot";
+            if (position < 0) {
+                this.position = 0;
+                this.offset = 0;
+            } else {
+                this.position = position;
+                this.offset = offset;
+            }
+        }
+    }
+
+    public static TopicPlace topicPlace(String topic, String sort, int position, int offset) {
+        return new TopicPlace(topic, sort, position, offset);
+    }
+
+    public static TopicPlace restoreTopic(TopicPlace saved) {
+        return saved == null ? topicPlace("", "hot", 0, 0) : saved;
+    }
+
+    /** Notification filter and scroll. Back returns this place. */
+    public static final class NotificationPlace {
+        public final String tab;
+        public final int position;
+        public final int offset;
+
+        private NotificationPlace(String tab, int position, int offset) {
+            this.tab = notificationTab(tab);
+            if (position < 0) {
+                this.position = 0;
+                this.offset = 0;
+            } else {
+                this.position = position;
+                this.offset = offset;
+            }
+        }
+    }
+
+    public static NotificationPlace notificationPlace(String tab, int position, int offset) {
+        return new NotificationPlace(tab, position, offset);
+    }
+
+    public static NotificationPlace restoreNotifications(NotificationPlace saved) {
+        return saved == null ? notificationPlace(NOTIFICATION_INTERACTIONS, 0, 0) : saved;
+    }
+
+    /** A dirty composer confirms. A clean one may follow the back gesture. */
+    public static boolean composerGestureLeaves(boolean dirty) {
+        return !dirty;
     }
 }

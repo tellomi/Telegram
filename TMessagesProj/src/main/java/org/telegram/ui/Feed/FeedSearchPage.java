@@ -1,5 +1,6 @@
 package org.telegram.ui.Feed;
 
+import org.telegram.messenger.LocaleController;
 import android.content.Context;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -13,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.feed.FeedApi;
+import org.telegram.messenger.feed.FeedContract;
 import org.telegram.messenger.feed.FeedController;
 import org.telegram.messenger.feed.FeedModels;
 import org.telegram.ui.ActionBar.Theme;
@@ -29,6 +31,7 @@ public class FeedSearchPage extends LinearLayout {
     private final DialogsActivity parent;
     private final ArrayList<Row> rows = new ArrayList<>();
     private final RecyclerListView listView;
+    private final FeedContract.QueryGeneration generation = new FeedContract.QueryGeneration();
     private String query = "";
     private String sort = "relevance";
 
@@ -37,12 +40,12 @@ public class FeedSearchPage extends LinearLayout {
         this.parent = parent;
         setOrientation(VERTICAL);
         TextView toggle = new TextView(context);
-        toggle.setText(FeedUi.s("Moments.Sort.Relevance", R.string.FeedSortRelevance));
+        toggle.setText(LocaleController.getString("Moments_Sort_Relevance", R.string.Moments_Sort_Relevance));
         toggle.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         toggle.setPadding(dp(16), dp(8), dp(16), dp(8));
         toggle.setOnClickListener(v -> {
             sort = "relevance".equals(sort) ? "latest" : "relevance";
-            toggle.setText("relevance".equals(sort) ? FeedUi.s("Moments.Sort.Relevance", R.string.FeedSortRelevance) : FeedUi.s("Moments.Sort.Latest", R.string.FeedSortNew));
+            toggle.setText("relevance".equals(sort) ? LocaleController.getString("Moments_Sort_Relevance", R.string.Moments_Sort_Relevance) : LocaleController.getString("Moments_Sort_Latest", R.string.Moments_Sort_Latest));
             search(query);
         });
         addView(toggle);
@@ -58,8 +61,9 @@ public class FeedSearchPage extends LinearLayout {
 
     public void search(String text) {
         query = text == null ? "" : text;
-        rows.clear();
+        final int token = generation.next();
         if (query.length() == 0) {
+            rows.clear();
             ArrayList<String> history = FeedController.getInstance(parent.getCurrentAccount()).searchHistory();
             for (int i = 0; i < history.size(); i++) {
                 rows.add(Row.history(history.get(i)));
@@ -71,6 +75,9 @@ public class FeedSearchPage extends LinearLayout {
         controller.pushSearchHistory(query);
         String path = "/v1/feed/search?q=" + FeedApi.enc(query) + "&scope=all&sort=" + sort;
         controller.api.getJson(path, (json, error) -> {
+            if (!generation.accept(token)) {
+                return;
+            }
             rows.clear();
             if (json == null) {
                 if (listView.getAdapter() != null) listView.getAdapter().notifyDataSetChanged();
@@ -107,6 +114,9 @@ public class FeedSearchPage extends LinearLayout {
                 }
                 final JSONObject postPage = page;
                 controller.resolvePostPage(postPage, (posts, pageError) -> {
+                    if (!generation.accept(token)) {
+                        return;
+                    }
                     if (posts != null) {
                         for (int i = 0; i < posts.size(); i++) {
                             rows.add(Row.post(posts.get(i)));
@@ -177,7 +187,7 @@ public class FeedSearchPage extends LinearLayout {
             TextView text = (TextView) holder.itemView;
             text.setText(row.label);
             text.setOnClickListener(v -> {
-                if (row.post != null && !row.post.unavailable) FeedCommentSheet.open(parent, row.post.id, false);
+                if (row.post != null && !row.post.unavailable) FeedUi.openEntry(parent, row.post, FeedContract.ENTRY_SEARCH, false);
                 else if (row.topic != null) parent.presentFragment(new FeedTopicActivity(row.topic));
                 else if (row.author != null) FeedUi.openProfile(parent, row.author);
                 else if (row.history != null) search(row.history);
@@ -197,7 +207,7 @@ public class FeedSearchPage extends LinearLayout {
         static Row post(FeedModels.Post post) {
             Row row = new Row();
             row.post = post;
-            row.label = post.unavailable ? FeedUi.s("Moments.Unavailable", R.string.FeedUnavailable) : FeedUi.displayName(post.author, UserSafe()) + "\n" + post.text;
+            row.label = post.unavailable ? LocaleController.getString("Moments_Unavailable", R.string.Moments_Unavailable) : FeedUi.displayName(post.author, UserSafe()) + "\n" + post.text;
             return row;
         }
         static Row topic(String name, int count) {
