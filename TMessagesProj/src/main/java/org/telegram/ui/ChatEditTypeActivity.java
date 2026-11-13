@@ -45,6 +45,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -497,6 +498,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                             new ClickableSpan() {
                                 @Override
                                 public void onClick(@NonNull View view) {
+                                    if (!TellomiNativeFeatures.fragmentLinksAllowed()) {
+                                        return;
+                                    }
                                     Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                                 }
                                 @Override

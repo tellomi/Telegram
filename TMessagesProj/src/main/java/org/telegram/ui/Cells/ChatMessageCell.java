@@ -134,6 +134,7 @@ import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.TellomiAccDescr;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -27273,7 +27274,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             if (currentMessageObject.scheduled) {
                                 sb.append(formatString("AccDescrScheduledDate", R.string.AccDescrScheduledDate, currentTimeString));
                             } else {
-                                sb.append(formatString("AccDescrSentDate", R.string.AccDescrSentDate, getString("TodayAt", R.string.TodayAt) + " " + currentTimeString));
+                                sb.append(TellomiAccDescr.sentOrReceivedAt(
+                                        getString("AccDescrSentDate", R.string.AccDescrSentDate),
+                                        getString("TodayAt", R.string.TodayAt),
+                                        currentTimeString));
                                 sb.append(", ");
                                 sb.append(currentMessageObject.isUnread() ? getString("AccDescrMsgUnread", R.string.AccDescrMsgUnread) : getString("AccDescrMsgRead", R.string.AccDescrMsgRead));
                             }
@@ -27290,7 +27294,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     } else {
                         sb.append("\n");
-                        sb.append(formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, getString("TodayAt", R.string.TodayAt) + " " + currentTimeString));
+                        sb.append(TellomiAccDescr.sentOrReceivedAt(
+                                getString("AccDescrReceivedDate", R.string.AccDescrReceivedDate),
+                                getString("TodayAt", R.string.TodayAt),
+                                currentTimeString));
                     }
                     if (getRepliesCount() > 0 && !hasCommentLayout()) {
                         sb.append("\n");

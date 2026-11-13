@@ -41,7 +41,8 @@ env:
   # String "true" or "false". Ordinary push and pull_request are false.
   # The official-restore branch also packages a signed APK artifact. It does
   # not match the publish job, so that artifact is not uploaded to the site.
-  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44' || github.ref == 'refs/heads/cursor/feed-on-master-7033')) }}
+  # The native-feature-audit branch packages a debug APK and does not publish.
+  TELLOMI_PACKAGE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release/android' || github.ref == 'refs/heads/cursor/android-official-restore-2a44' || github.ref == 'refs/heads/cursor/feed-on-master-7033' || github.ref == 'refs/heads/cursor/native-feature-audit-00c9')) }}
 
 jobs:
   workflow:
@@ -202,6 +203,12 @@ jobs:
             echo "type=debug" >> "$GITHUB_OUTPUT"
             echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
             echo "Moments feed branch packages a debug APK and does not read the release keystore."
+            exit 0
+          fi
+          if [ "${GITHUB_REF}" = "refs/heads/cursor/native-feature-audit-00c9" ]; then
+            echo "type=debug" >> "$GITHUB_OUTPUT"
+            echo "native_task=externalNativeBuildDebug" >> "$GITHUB_OUTPUT"
+            echo "Native feature audit branch packages a debug APK and does not read the release keystore."
             exit 0
           fi
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
@@ -371,6 +378,12 @@ jobs:
             echo "Moments feed branch assembles a debug APK artifact and does not publish."
             exit 0
           fi
+          if [ "${GITHUB_REF}" = "refs/heads/cursor/native-feature-audit-00c9" ]; then
+            echo "type=debug" >> "$GITHUB_OUTPUT"
+            echo "gradle_task=assembleAfatDebug" >> "$GITHUB_OUTPUT"
+            echo "Native feature audit branch assembles a debug APK artifact and does not publish."
+            exit 0
+          fi
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
             echo "type=release" >> "$GITHUB_OUTPUT"
             echo "gradle_task=assembleAfatRelease" >> "$GITHUB_OUTPUT"
@@ -518,11 +531,11 @@ jobs:
         env:
           GRADLE_TASK: ${{ steps.variant.outputs.gradle_task }}
           BUILD_TYPE: ${{ steps.variant.outputs.type }}
-          # 14.0.12. afat versionCode = APP_VERSION_CODE * 10 + 9.
+          # 14.0.13. afat versionCode = APP_VERSION_CODE * 10 + 9.
           # publish=release (and a push to release/android) reads
           # android/latest.json and uses the next decade above that versionCode.
-          # Live 14.0.11 afat is 1804719, so configured APP_VERSION_CODE 180472
-          # produces afat 1804729 until the feed moves past it. Digit 0 is unused.
+          # Live 14.0.12 afat is 1804749, so configured APP_VERSION_CODE 180475
+          # produces afat 1804759 until the feed moves past it. Digit 0 is unused.
           # This step does not pass -PTELLOMI_USE_CLOUD_STRINGS. The value stays
           # the one in gradle.properties (true). BuildConfig is checked below.
           PUBLISH_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || '' }}
@@ -548,14 +561,14 @@ jobs:
             esac
           done < <(python3 Tools/tellomi-android-version.py \
             --gradle gradle.properties \
-            --expect-version-name 14.0.12 \
+            --expect-version-name 14.0.13 \
             --floor "${TELLOMI_VERSION_CODE_FLOOR:?}" \
             "${release_args[@]+"${release_args[@]}"}")
           case "$app_version_code" in
             ''|*[!0-9]*) echo "APP_VERSION_CODE is not an integer: ${app_version_code:-missing}" >&2; exit 1 ;;
           esac
-          if [ "$version_name" != "14.0.12" ]; then
-            echo "expected APP_VERSION_NAME 14.0.12, found ${version_name:-missing}" >&2
+          if [ "$version_name" != "14.0.13" ]; then
+            echo "expected APP_VERSION_NAME 14.0.13, found ${version_name:-missing}" >&2
             exit 1
           fi
           floor="${TELLOMI_VERSION_CODE_FLOOR:?}"

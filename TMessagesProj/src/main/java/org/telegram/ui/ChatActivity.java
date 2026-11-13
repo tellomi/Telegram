@@ -139,6 +139,7 @@ import com.google.zxing.common.detector.MathUtils;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.TellomiNativeFeatures;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.BotInlineKeyboard;
@@ -45224,7 +45225,7 @@ public class ChatActivity extends BaseFragment implements
                 AndroidUtilities.addToClipboard("@" + username);
                 BulletinFactory.of(ChatActivity.this).createCopyBulletin(getString(R.string.UsernameCopied)).show();
             });
-            if (selling) {
+            if (selling && TellomiNativeFeatures.fragmentLinksAllowed()) {
                 options.add(R.drawable.outline_gram_24, getString(R.string.BuyUsernameOnFragment), () -> {
                     Browser.openUrl(getContext(), "https://fragment.com/username/" + username);
                 });

@@ -114,10 +114,15 @@ public class AppGlobalConfig {
 
     /** help.getAppConfig. Missing or not true keeps the discover feed off. */
     public final ConfigBoolean tellomiDiscoverFeedEnabled = ofBoolean("tellomi_discover_feed_enabled", false);
+    /**
+     * help.getAppConfig. True only when teamgram-server advertises composer AI
+     * ({@code TELLOMI_AI_COMPOSE=1} and an API key). Official clients ignore the key.
+     */
+    public final ConfigBoolean tellomiAiComposeEnabled = ofBoolean("tellomi_ai_compose_enabled", false);
     /** https://host[:port] with no path. Missing means the feed has no engine to call. */
     public final ConfigString tellomiDiscoverFeedBaseUrl = ofString("tellomi_discover_feed_base_url", null);
 
-    public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", BuildVars.DEBUG_VERSION);
+    public final ConfigBoolean walletAvailable = ofBoolean("wallet_available", TellomiNativeFeatures.WALLET_AVAILABLE);
     public final ConfigBoolean walletPaidMessageRecipientMessageAmountCheck = ofBoolean("wallet_paid_message_recipient_message_amount_check", true);
     public final ConfigLong walletTransferMinNanos = ofLong("wallet_transfer_min_nanos", 100_000_000);
     public final ConfigLong walletGaslessMinNanos = ofLong("wallet_gasless_min_nanos", 100_000_000);
