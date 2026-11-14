@@ -1,0 +1,16 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-083
+  - A-IDX-UPD-007
+  - A-IDX-UPD-009
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Privacy Policy|隐私政策"
+    direction: DOWN
+    timeout: 50000
+    visibilityPercentage: 40
+- tapOn:
+    text: "Privacy Policy|隐私政策"
+- takeScreenshot: privacy

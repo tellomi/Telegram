@@ -1,0 +1,22 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-022
+  - A-MOMENT-023
+  - A-MOMENT-024
+  - A-MOMENT-025
+  - A-MOMENT-026
+  - A-MOMENT-031
+  - A-MOMENT-032
+  - A-MOMENT-033
+  - A-MOMENT-034
+  - A-MOMENT-035
+  - A-MOMENT-036
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "评论.*|Comment.*"
+- extendedWaitUntil:
+    visible:
+      text: "发条评论|Say something|评论已关闭|Comments are turned off|回复|Reply"
+    timeout: 20000
+- takeScreenshot: comment-sheet

@@ -1,0 +1,16 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-104
+  - A-IDX-UPD-007
+  - A-IDX-UPD-009
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Tellomi FAQ|常见问题|FAQ"
+    direction: DOWN
+    timeout: 50000
+    visibilityPercentage: 40
+- tapOn:
+    text: "Tellomi FAQ|常见问题|FAQ"
+- takeScreenshot: faq

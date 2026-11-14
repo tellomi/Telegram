@@ -1,0 +1,22 @@
+appId: app.tellomi.chat
+tags:
+  - A-LANG-007
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Language|语言"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "Language|语言"
+- scrollUntilVisible:
+    element:
+      text: "简体中文|Chinese \\(Simplified\\)|中文"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "简体中文|Chinese \\(Simplified\\)"
+- takeScreenshot: language-manual

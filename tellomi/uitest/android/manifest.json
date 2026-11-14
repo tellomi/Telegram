@@ -1,0 +1,1152 @@
+{
+  "schema": 1,
+  "device_only": {
+    "A-LINK-001": "system call MIME vnd.app.tellomi.chat.call needs the contacts provider and CALL_PHONE on a real device",
+    "A-LINK-002": "launcher video-call shortcut places a camera call; not faked on an emulator",
+    "A-LINK-003": "launcher voice-call shortcut places a microphone call; not faked on an emulator",
+    "A-MOMENT-041": "composer voice control records from the microphone",
+    "A-PERM-008": "feed voice capture requests the microphone",
+    "A-IDX-MOMENT-037": "composer photo and camera capture needs a camera; the photo button itself is A-MOMENT-037"
+  },
+  "blocked": {
+    "A-MOMENT-021": "FeedCollectionActivity has no fixture collection to open",
+    "A-MOMENT-027": "comment delete confirmation is not opened, so a comment is not deleted",
+    "A-MOMENT-028": "comment delete confirmation is not opened, so a comment is not deleted",
+    "A-MOMENT-029": "comment delete confirmation is not opened, so a comment is not deleted",
+    "A-MOMENT-030": "comment delete confirmation is not opened, so a comment is not deleted",
+    "A-MOMENT-044": "mention warning needs a mention of someone who cannot see the post",
+    "A-MOMENT-045": "mention warning needs a mention of someone who cannot see the post",
+    "A-MOMENT-050": "the generic 好 button is not the draft dialog's action; that dialog is covered by its own buttons",
+    "A-MOMENT-052": "video trim dialog needs a clip longer than the limit; no such clip is bundled",
+    "A-MOMENT-054": "quote hint 说点什么 needs an existing post to quote; the test does not publish",
+    "A-MOMENT-063": "detail delete confirmation is not opened, so a post is not deleted",
+    "A-MOMENT-064": "detail delete confirmation is not opened, so a post is not deleted",
+    "A-MOMENT-065": "detail delete confirmation is not opened, so a post is not deleted",
+    "A-MOMENT-066": "detail delete confirmation is not opened, so a post is not deleted",
+    "A-MOMENT-071": "missing-post title needs a deep link to a deleted id",
+    "A-MOMENT-072": "media viewer retry needs a post whose image fails to load",
+    "A-MOMENT-077": "audience-update failure copy only appears after a failed server write",
+    "A-MOMENT-092": "audience-update failure copy only appears after a failed server write",
+    "A-MOMENT-103": "report-submitted copy would require sending a report; the sheet is cancelled instead",
+    "A-MOMENT-114": "FeedTopicActivity has no topic fixture",
+    "A-IDX-NAV-020": "the removed bottom-bar search tab has no control to tap; a header search field still exists, so absence is not recorded as a pass",
+    "A-IDX-ACCT-008": "account deletion is not run against the shared test account",
+    "A-IDX-UPD-005": "help.getAppUpdate and latest.json are server release data, not a screen on a debug install",
+    "A-IDX-UPD-010": "production DC addresses are not a screen; a log line is not treated as a pass",
+    "A-IDX-MOMENT-047": "discover.getEngineCredential is a server token; the feed screen is checked separately",
+    "A-IDX-MOMENT-049": "tellomi_discover_feed_base_url is server configuration, not a screen"
+  },
+  "parts": {
+    "A-IDX-UPD-007": [
+      "privacy",
+      "faq",
+      "tos"
+    ],
+    "A-IDX-UPD-009": [
+      "privacy",
+      "faq"
+    ]
+  },
+  "push_delivery": "device_only. This backlog extract has no push-delivery id; settings toggles are UI checks.",
+  "ids": [
+    {
+      "id": "A-LANG-007",
+      "kind": "language",
+      "where": "language",
+      "detail": "flows/language-auto.yaml,flows/language-manual.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-LINK-001",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "system call MIME vnd.app.tellomi.chat.call needs the contacts provider and CALL_PHONE on a real device",
+      "shard": ""
+    },
+    {
+      "id": "A-LINK-002",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "launcher video-call shortcut places a camera call; not faked on an emulator",
+      "shard": ""
+    },
+    {
+      "id": "A-LINK-003",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "launcher voice-call shortcut places a microphone call; not faked on an emulator",
+      "shard": ""
+    },
+    {
+      "id": "A-LINK-004",
+      "kind": "deeplink",
+      "where": "links-geo",
+      "detail": "flows/links-geo.yaml",
+      "shard": "links-geo"
+    },
+    {
+      "id": "A-LINK-005",
+      "kind": "deeplink",
+      "where": "links-profile",
+      "detail": "flows/links-profile.yaml",
+      "shard": "links-profile"
+    },
+    {
+      "id": "A-LINK-008",
+      "kind": "deeplink",
+      "where": "links-tellcc",
+      "detail": "flows/links-tellcc.yaml",
+      "shard": "links-tellcc"
+    },
+    {
+      "id": "A-LINK-009",
+      "kind": "deeplink",
+      "where": "links-scheme",
+      "detail": "flows/links-scheme.yaml",
+      "shard": "links-scheme"
+    },
+    {
+      "id": "A-MAIN-065",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-001",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-002",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-003",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-004",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-005",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-006",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-010",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-011",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-012",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-013",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-014",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-015",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-016",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-017",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-018",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-019",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-020",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-021",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "FeedCollectionActivity has no fixture collection to open",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-022",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-023",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-024",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-025",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-026",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-027",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "comment delete confirmation is not opened, so a comment is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-028",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "comment delete confirmation is not opened, so a comment is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-029",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "comment delete confirmation is not opened, so a comment is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-030",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "comment delete confirmation is not opened, so a comment is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-031",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-032",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-033",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-034",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-035",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-036",
+      "kind": "maestro",
+      "where": "comment-sheet",
+      "detail": "flows/comment-sheet.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-037",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-038",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-039",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-040",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-041",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "composer voice control records from the microphone",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-042",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-043",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-044",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "mention warning needs a mention of someone who cannot see the post",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-045",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "mention warning needs a mention of someone who cannot see the post",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-046",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-047",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-048",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-049",
+      "kind": "maestro",
+      "where": "composer-draft",
+      "detail": "flows/composer-draft.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-050",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "the generic 好 button is not the draft dialog's action; that dialog is covered by its own buttons",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-051",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-052",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "video trim dialog needs a clip longer than the limit; no such clip is bundled",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-053",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-054",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "quote hint 说点什么 needs an existing post to quote; the test does not publish",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-055",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-056",
+      "kind": "maestro",
+      "where": "composer",
+      "detail": "flows/composer.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-057",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-058",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-059",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-060",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-061",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-063",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "detail delete confirmation is not opened, so a post is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-064",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "detail delete confirmation is not opened, so a post is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-065",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "detail delete confirmation is not opened, so a post is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-066",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "detail delete confirmation is not opened, so a post is not deleted",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-067",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-068",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-069",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-070",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-071",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "missing-post title needs a deep link to a deleted id",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-072",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "media viewer retry needs a post whose image fails to load",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-073",
+      "kind": "maestro",
+      "where": "notif",
+      "detail": "flows/notif.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-074",
+      "kind": "maestro",
+      "where": "notif",
+      "detail": "flows/notif.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-075",
+      "kind": "maestro",
+      "where": "notif",
+      "detail": "flows/notif.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-076",
+      "kind": "maestro",
+      "where": "notif",
+      "detail": "flows/notif.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-077",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "audience-update failure copy only appears after a failed server write",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-078",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-079",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-080",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-081",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-082",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-083",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-084",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-085",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-086",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-087",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-088",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-089",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-090",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-091",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-092",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "audience-update failure copy only appears after a failed server write",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-093",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-095",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-096",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-097",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-098",
+      "kind": "maestro",
+      "where": "feed",
+      "detail": "flows/feed.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-100",
+      "kind": "maestro",
+      "where": "post-report",
+      "detail": "flows/post-report.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-101",
+      "kind": "maestro",
+      "where": "post-report",
+      "detail": "flows/post-report.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-102",
+      "kind": "maestro",
+      "where": "post-report",
+      "detail": "flows/post-report.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-103",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "report-submitted copy would require sending a report; the sheet is cancelled instead",
+      "shard": ""
+    },
+    {
+      "id": "A-MOMENT-104",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-105",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-106",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-108",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-109",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-110",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-112",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-MOMENT-114",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "FeedTopicActivity has no topic fixture",
+      "shard": ""
+    },
+    {
+      "id": "A-PERM-007",
+      "kind": "maestro",
+      "where": "city",
+      "detail": "flows/city.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-PERM-008",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "feed voice capture requests the microphone",
+      "shard": ""
+    },
+    {
+      "id": "A-PROFILE-113",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-PROFILE-114",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-PROFILE-115",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-PROFILE-295",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-PROFILE-296",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-SET-035",
+      "kind": "maestro",
+      "where": "feed-settings",
+      "detail": "flows/feed-settings.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-SET-075",
+      "kind": "maestro",
+      "where": "settings-home",
+      "detail": "flows/settings-home.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-082",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-083",
+      "kind": "url",
+      "where": "about-privacy",
+      "detail": "flows/about-privacy.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-104",
+      "kind": "url",
+      "where": "about-faq",
+      "detail": "flows/about-faq.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-110",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-111",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-112",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-113",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-SET-114",
+      "kind": "maestro",
+      "where": "navbar",
+      "detail": "flows/navbar.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-STORY-136",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-STORY-137",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-NAV-017",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-NAV-020",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "the removed bottom-bar search tab has no control to tap; a header search field still exists, so absence is not recorded as a pass",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-MENU-006",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-MENU-010",
+      "kind": "maestro",
+      "where": "menu",
+      "detail": "flows/menu.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-STORY-028",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-MOMENT-018",
+      "kind": "maestro",
+      "where": "post-menu",
+      "detail": "flows/post-menu.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-MOMENT-026",
+      "kind": "maestro",
+      "where": "post-detail",
+      "detail": "flows/post-detail.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-MOMENT-036",
+      "kind": "maestro",
+      "where": "audience",
+      "detail": "flows/audience.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-MOMENT-037",
+      "kind": "device_only",
+      "where": "device_only",
+      "detail": "composer photo and camera capture needs a camera; the photo button itself is A-MOMENT-037",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-MOMENT-047",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "discover.getEngineCredential is a server token; the feed screen is checked separately",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-MOMENT-049",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "tellomi_discover_feed_base_url is server configuration, not a screen",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-SET-004",
+      "kind": "maestro",
+      "where": "qr",
+      "detail": "flows/qr.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-DATA-011",
+      "kind": "maestro",
+      "where": "data",
+      "detail": "flows/data.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-ACCT-006",
+      "kind": "maestro",
+      "where": "logout",
+      "detail": "flows/logout.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-ACCT-008",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "account deletion is not run against the shared test account",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-UPD-005",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "help.getAppUpdate and latest.json are server release data, not a screen on a debug install",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-UPD-006",
+      "kind": "version",
+      "where": "about-version",
+      "detail": "flows/about-version.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-UPD-007",
+      "kind": "parts",
+      "where": "parts",
+      "detail": "privacy,faq,tos",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-UPD-008",
+      "kind": "version",
+      "where": "about-version",
+      "detail": "flows/about-version.yaml",
+      "shard": "account-a"
+    },
+    {
+      "id": "A-IDX-UPD-009",
+      "kind": "parts",
+      "where": "parts",
+      "detail": "privacy,faq",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-UPD-010",
+      "kind": "blocked",
+      "where": "blocked",
+      "detail": "production DC addresses are not a screen; a log line is not treated as a pass",
+      "shard": ""
+    },
+    {
+      "id": "A-IDX-PROF-029",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-MEDIA-009",
+      "kind": "profile",
+      "where": "profile",
+      "detail": "flows/profile.yaml",
+      "shard": "account-b"
+    },
+    {
+      "id": "A-IDX-LOGIN-018",
+      "kind": "terms",
+      "where": "login-screen",
+      "detail": "flows/login-screen.yaml",
+      "shard": "login-screen"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+appId: app.tellomi.chat
+---
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Don't allow|不允许|Deny|拒绝|Not now|以后再说|Skip|跳过|While using the app|仅在使用中允许|Discard|放弃"
+          optional: true

@@ -1,0 +1,25 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-082
+  - A-SET-110
+  - A-SET-111
+  - A-SET-112
+  - A-SET-113
+  - A-IDX-NAV-017
+  - A-IDX-MENU-006
+  - A-IDX-MENU-010
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "选单设定|Menu settings"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "选单设定|Menu settings"
+- extendedWaitUntil:
+    visible:
+      text: "导航栏按钮|Navigation bar buttons|隐藏按钮文字|Hide button labels"
+    timeout: 20000
+- takeScreenshot: menu

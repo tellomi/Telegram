@@ -1,0 +1,8 @@
+appId: app.tellomi.chat
+tags:
+  - A-IDX-SET-004
+---
+- runFlow: sub/open-settings.yaml
+- tapOn:
+    text: "QR Code|二维码"
+- takeScreenshot: qr

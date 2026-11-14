@@ -1,0 +1,6 @@
+appId: app.tellomi.chat
+tags:
+  - A-LINK-004
+---
+- openLink: "geo:39.9042,116.4074"
+- takeScreenshot: geo

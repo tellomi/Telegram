@@ -1,0 +1,11 @@
+appId: app.tellomi.chat
+tags:
+  - A-LANG-007
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|电话号码|你的手机"
+    timeout: 90000
+- takeScreenshot: language-auto

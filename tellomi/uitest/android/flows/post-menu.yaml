@@ -1,0 +1,22 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-078
+  - A-MOMENT-079
+  - A-MOMENT-080
+  - A-MOMENT-081
+  - A-MOMENT-082
+  - A-MOMENT-083
+  - A-MOMENT-084
+  - A-MOMENT-085
+  - A-MOMENT-086
+  - A-MOMENT-087
+  - A-MOMENT-088
+  - A-MOMENT-089
+  - A-MOMENT-090
+  - A-MOMENT-091
+  - A-IDX-MOMENT-018
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "更多|More"
+- takeScreenshot: post-menu

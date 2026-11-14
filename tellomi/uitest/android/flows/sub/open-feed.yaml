@@ -1,0 +1,12 @@
+appId: app.tellomi.chat
+---
+- runFlow: dismiss.yaml
+- launchApp:
+    clearState: false
+    stopApp: false
+- tapOn:
+    text: "发现|Discover"
+- extendedWaitUntil:
+    visible:
+      text: "发布|Publish|好友|Friends|关注|Following|还没有内容|Nothing here yet|互动|Interactions"
+    timeout: 45000

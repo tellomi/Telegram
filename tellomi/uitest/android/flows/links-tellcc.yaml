@@ -1,0 +1,10 @@
+appId: app.tellomi.chat
+tags:
+  - A-LINK-008
+---
+- openLink: "https://tell.cc/"
+- takeScreenshot: tellcc
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|发现|Discover|Tellomi|电话号码|动态|Moments"
+    timeout: 30000

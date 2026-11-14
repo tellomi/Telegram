@@ -1,0 +1,18 @@
+appId: app.tellomi.chat
+tags:
+  - A-IDX-PROF-029
+  - A-PROFILE-113
+  - A-PROFILE-114
+  - A-PROFILE-115
+  - A-PROFILE-295
+  - A-PROFILE-296
+  - A-IDX-STORY-028
+  - A-IDX-MEDIA-009
+---
+- runFlow: sub/dismiss.yaml
+- launchApp:
+    clearState: false
+    stopApp: false
+- tapOn:
+    text: "我|Me"
+- takeScreenshot: profile

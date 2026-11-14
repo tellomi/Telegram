@@ -1,0 +1,15 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-073
+  - A-MOMENT-074
+  - A-MOMENT-075
+  - A-MOMENT-076
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "互动|Interactions"
+- extendedWaitUntil:
+    visible:
+      text: "评论和回复|Mentions|提及|新关注|New followers"
+    timeout: 20000
+- takeScreenshot: notif

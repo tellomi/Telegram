@@ -1,0 +1,24 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-114
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "通用|General"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "通用|General"
+- extendedWaitUntil:
+    visible:
+      text: "导航栏|Navigation bar"
+    timeout: 15000
+- tapOn:
+    text: "导航栏|Navigation bar"
+- extendedWaitUntil:
+    visible:
+      text: "通话|Calls|发现|Discover"
+    timeout: 15000
+- takeScreenshot: navbar

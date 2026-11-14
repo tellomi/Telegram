@@ -1,0 +1,16 @@
+appId: app.tellomi.chat
+tags:
+  - A-IDX-LOGIN-018
+  - A-IDX-UPD-007
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|电话号码|Terms of Service|服务条款"
+    timeout: 90000
+- takeScreenshot: login-screen
+- tapOn:
+    text: "Terms of Service|服务条款"
+    optional: true
+- takeScreenshot: login-terms

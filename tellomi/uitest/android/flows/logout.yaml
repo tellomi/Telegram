@@ -1,0 +1,22 @@
+appId: app.tellomi.chat
+tags:
+  - A-IDX-ACCT-006
+---
+- runFlow: sub/open-settings.yaml
+- tapOn:
+    text: "More options|更多选项|更多"
+- tapOn:
+    text: "Log out|退出登录|退出"
+- extendedWaitUntil:
+    visible:
+      text: "Log Out|退出登录|Alternative options|其他选项"
+    timeout: 20000
+- tapOn:
+    text: "Log Out|退出登录"
+- tapOn:
+    text: "Log out|退出登录|退出"
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|电话号码"
+    timeout: 60000
+- takeScreenshot: logged-out

@@ -1,0 +1,18 @@
+appId: app.tellomi.chat
+tags:
+  - A-IDX-DATA-011
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Data and Storage|数据和存储|数据与存储"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "Data and Storage|数据和存储|数据与存储"
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- takeScreenshot: data
