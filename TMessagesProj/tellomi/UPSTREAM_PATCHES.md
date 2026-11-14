@@ -1,5 +1,13 @@
 # Upstream patches
 
+## Phone login failures and hidden countries (ISSUE-A-LOGIN-006, ISSUE-A-LOGIN-007)
+
+`help.getCountriesList` marks Test +999 with `hidden`. Boosts already skip that flag. The phone screen copied every row into the picker, so a release build listed Test when the search was 999. `loadCountries` now keeps a hidden row only in a debug build.
+
+`auth.sendCode` errors other than the named phone and flood cases called `AlertsCreator.processError`. That method returns immediately for code 406 and has no `auth.sendCode` branch, so an SMS daily cap or any other send failure left the phone screen with no dialog. Those errors now show the flood string when the text is a limit, and otherwise `ErrorOccurred` plus the server text. The screen stays on the phone number.
+
+Upstream file: `LoginActivity`.
+
 ## Login copy follows Simplified Chinese on first launch (ISSUE-A-LOGIN-003)
 
 `LocaleController` registers built-in `zh_hans` and `zh_hant`. Both use plural code `zh`, so the built-in bin is `values-zh` (`localization_zh.bin`). On first launch, with no `mainconfig` `language`, `TellomiIntro.chooseInitial` matches the device locale and `applyLanguage` is called with `override` false. That does not write `language`. A key Settings already stored is applied with `override` true, which writes `language`. Choosing a language in Settings still calls `applyLanguage` with `override` true. After `langpack.getLanguages`, `applyLoadedLanguage` still applies the device row and does not write `language`.

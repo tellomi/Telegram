@@ -2602,8 +2602,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             for (int k = 0; k < c.country_codes.size(); k++) {
                                 TLRPC.TL_help_countryCode countryCode = c.country_codes.get(k);
                                 if (countryCode != null) {
-                                    CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
-                                    countryWithCode.name = c.name;
+                                    if (!TellomiLoginCountries.visibleInLoginPicker(c.hidden, BuildVars.DEBUG_VERSION)) {
+                                    continue;
+                                }
+                                CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+                                countryWithCode.name = c.name;
                                     countryWithCode.defaultName = c.default_name;
                                     if (countryWithCode.name == null && countryWithCode.defaultName != null) {
                                         countryWithCode.name = countryWithCode.defaultName;
@@ -3240,7 +3243,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("FloodWait", R.string.FloodWait));
                         } else if (error.code != -1000) {
-                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, phoneInputData.phoneNumber);
+                            String message = TellomiLoginErrors.sendCodeMessage(error.code, error.text, getString(R.string.FloodWait), getString(R.string.ErrorOccurred));
+                            if (message != null) {
+                                needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), message);
+                            }
                         }
                     }
                 }
