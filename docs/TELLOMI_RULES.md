@@ -23,3 +23,4 @@
 
 - 改动记入 `TMessagesProj/tellomi/UPSTREAM_PATCHES.md`。
 - 仓库内永久开发规范的权威正文见根目录 `AGENTS.md`。
+- 谷歌表格台账（「问题清单」「测试日志」「AI交接」）见根目录 `AGENTS.md`「谷歌表格台账规则（强制）」。
