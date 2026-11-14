@@ -126,9 +126,12 @@ public final class TellomiMainTabs {
         return tab == CHATS || tab == PROFILE;
     }
 
-    /** Fresh install: Discover, Chats, Profile. Settings, Contacts, and Calls are off. */
+    /**
+     * Fresh install: Discover, Chats, Settings, Profile. Contacts and Calls are off.
+     * Used only when neither the named key nor the legacy key is stored.
+     */
     public static boolean defaultVisible(int tab) {
-        return tab == FEED || tab == CHATS || tab == PROFILE;
+        return tab == FEED || tab == CHATS || tab == SETTINGS || tab == PROFILE;
     }
 
     public static boolean isVisible(Store store, int tab) {

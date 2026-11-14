@@ -18,23 +18,47 @@ import static org.junit.Assert.assertTrue;
 public class TellomiMainTabsTest {
 
     @Test
-    public void freshInstallShowsDiscoverChatsAndProfile() {
-        int[] visible = TellomiMainTabs.visibleTabs(new MemoryStore());
+    public void freshInstallShowsDiscoverChatsSettingsAndProfile() {
+        MemoryStore store = new MemoryStore();
+        int[] visible = TellomiMainTabs.visibleTabs(store);
         assertArrayEquals(new int[]{
                 TellomiMainTabs.FEED,
                 TellomiMainTabs.CHATS,
+                TellomiMainTabs.SETTINGS,
                 TellomiMainTabs.PROFILE
         }, visible);
         assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.FEED));
         assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.CHATS));
+        assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.SETTINGS));
         assertTrue(TellomiMainTabs.defaultVisible(TellomiMainTabs.PROFILE));
-        assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.SETTINGS));
         assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.CONTACTS));
         assertFalse(TellomiMainTabs.defaultVisible(TellomiMainTabs.CALLS));
-        assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.SETTINGS));
+        assertFalse(store.contains(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS)));
         assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.CONTACTS));
         assertFalse(TellomiMainTabs.isVisible(new MemoryStore(), TellomiMainTabs.CALLS));
         assertFalse(TellomiMainTabs.hideLabels(new MemoryStore()));
+    }
+
+    @Test
+    public void storedVisibilityOutranksTheFreshSettingsDefault() {
+        MemoryStore hidden = new MemoryStore();
+        hidden.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), false);
+        assertFalse(TellomiMainTabs.isVisible(hidden, TellomiMainTabs.SETTINGS));
+        assertArrayEquals(new int[]{
+                TellomiMainTabs.FEED,
+                TellomiMainTabs.CHATS,
+                TellomiMainTabs.PROFILE
+        }, TellomiMainTabs.visibleTabs(hidden.copy()));
+
+        MemoryStore shown = new MemoryStore();
+        shown.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), true);
+        assertTrue(TellomiMainTabs.isVisible(shown, TellomiMainTabs.SETTINGS));
+        assertTrue(TellomiMainTabs.visibleTabs(shown.copy())[2] == TellomiMainTabs.SETTINGS);
+
+        MemoryStore legacyOff = new MemoryStore();
+        legacyOff.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS), false);
+        assertFalse(TellomiMainTabs.isVisible(legacyOff, TellomiMainTabs.SETTINGS));
+        assertFalse(legacyOff.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), true));
     }
 
     @Test
@@ -229,8 +253,9 @@ public class TellomiMainTabsTest {
     @Test
     public void freshInstallThirdTabIsMeNotTheOfficialProfileString() throws Exception {
         int[] visible = TellomiMainTabs.visibleTabs(new MemoryStore());
-        assertEquals(3, visible.length);
-        assertEquals(TellomiMainTabs.PROFILE, visible[2]);
+        assertEquals(4, visible.length);
+        assertEquals(TellomiMainTabs.SETTINGS, visible[2]);
+        assertEquals(TellomiMainTabs.PROFILE, visible[3]);
 
         String activity = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java"));
         String menu = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiMenuSettingsActivity.java"));
