@@ -1,5 +1,11 @@
 # Upstream patches
 
+## Fresh-install phone country (ISSUE-A-LOGIN-002)
+
+The phone screen on a fresh login shows China (+86). The SIM country and `help.getNearestDc` do not choose it. The country list still changes the code. `fillNumber` does not copy the SIM line, so a line such as `15551234567` is not shown as `555 123 4567`. The number field stays empty. Changing an existing number still uses that account phone and the previous SIM / nearest-DC branch.
+
+Upstream file: `LoginActivity`.
+
 ## Navigation bar settings page (M2 / D-38)
 
 Settings has a General row (`TellomiSettingsGeneral`, General / 通用) that opens one row, Navigation bar (`TellomiNavBar`, Navigation bar / 导航栏). That page lists the bar in `BAR_ORDER` and toggles Discover, Calls, and Contacts through `TellomiMainTabs`. Chats, Settings, and Profile stay locked. `values-zh/strings.xml` is the `zh` bin, so a downloaded pack that does not contain those keys cannot replace 通用 or 导航栏.
