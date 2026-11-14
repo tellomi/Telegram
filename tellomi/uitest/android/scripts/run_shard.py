@@ -204,9 +204,10 @@ class Shard:
             xml = self.dump_ui()
             self._tap_text(xml, r"Search|搜索")
             adb("shell", "input", "text", "China")
+            adb("shell", "input", "keyevent", "111")
             time.sleep(1)
             xml = self.dump_ui()
-            self._tap_text(xml, r"^China$|^中国$")
+            self._tap_text(xml, r"^\+86$")
             time.sleep(1)
             xml = self.dump_ui()
         if not self._tap_text(xml, r"Phone number|电话号码"):
@@ -426,14 +427,16 @@ class Shard:
         ui = "\n".join(nodes)
         _code, dumpsys = adb("shell", "dumpsys", "activity", "activities", timeout=60)
         status, error, evidence = classify_help_url(dumpsys, ui, "/legal/terms")
-        if status != "pass" and ("Terms of Service" in ui or "服务条款" in ui):
+        if status != "pass":
             from lib.deeplink import intent_urls, url_problem
 
             bad = url_problem(intent_urls(dumpsys + "\n" + ui))
             if bad:
                 status, error, evidence = "fail", f"terms opened {bad}", bad
-            else:
+            elif "Terms of Service" in ui or "服务条款" in ui:
                 status, error, evidence = "pass", "", "terms copy is on the login screen and no telegram.org URL was opened"
+            else:
+                status, error, evidence = "blocked", "the phone screen has no terms link to open", ""
         for backlog_id, part in flow.get("emits_parts", {}).items():
             self.parts.setdefault(backlog_id, {})[part] = self.row(status, flow["file"], shot, error, evidence)
 
@@ -441,6 +444,8 @@ class Shard:
         path = ROOT / flow["file"]
         shot = ""
         statuses = []
+        adb("shell", "pm", "set-app-links", "--package", PACKAGE, "1", "tell.cc")
+        adb("shell", "pm", "set-app-links-user-selection", "--user", "0", "--package", PACKAGE, "true", "tell.cc")
         if flow.get("mime"):
             resolved, logcat = self.probe_mime(flow["mime"])
             status, error = classify_profile_mime(resolved, logcat, False)

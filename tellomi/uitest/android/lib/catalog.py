@@ -135,9 +135,9 @@ FLOWS = [
             "A-IDX-LOGIN-018": chk(
                 "Terms of Service",
                 "服务条款",
-                "Terms of Service\\.",
                 contains=True,
-                missing_error="login screen did not show the terms of service",
+                missing="blocked",
+                missing_error="the phone screen has no terms link; it shows country and phone number only",
             ),
         },
         "emits_parts": {"A-IDX-UPD-007": "tos"},
