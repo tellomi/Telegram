@@ -731,6 +731,26 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "简体中文";
+        localeInfo.nameEnglish = "Chinese (Simplified)";
+        localeInfo.shortName = "zh_hans";
+        localeInfo.pluralLangCode = "zh";
+        localeInfo.pathToFile = null;
+        localeInfo.builtIn = true;
+        languages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "繁體中文";
+        localeInfo.nameEnglish = "Chinese (Traditional)";
+        localeInfo.shortName = "zh_hant";
+        localeInfo.pluralLangCode = "zh";
+        localeInfo.pathToFile = null;
+        localeInfo.builtIn = true;
+        languages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         if (!attachToProcess) {
             systemDefaultLocale = Locale.getDefault();
             return;
@@ -778,40 +798,32 @@ public class LocaleController {
 
         systemDefaultLocale = Locale.getDefault();
         is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
-        LocaleInfo currentInfo = null;
-        boolean override = false;
-
         try {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             String lang = preferences.getString("language", null);
-            if (lang != null) {
-                currentInfo = getLanguageFromDict(lang);
-                if (currentInfo != null) {
-                    override = true;
+            LocaleInfo savedInfo = lang == null ? null : getLanguageFromDict(lang);
+            String languageOnly = null;
+            if (systemDefaultLocale != null && systemDefaultLocale.getLanguage() != null) {
+                LocaleInfo byLanguage = getLanguageFromDict(systemDefaultLocale.getLanguage());
+                if (byLanguage != null) {
+                    languageOnly = byLanguage.getKey();
                 }
             }
-
-            if (currentInfo == null && TellomiIntro.SKIP_WELCOME) {
-                String matched = TellomiIntro.matchShortName(
-                        systemDefaultLocale.getLanguage(),
-                        systemDefaultLocale.getCountry(),
-                        systemDefaultLocale.getScript(),
-                        languageShortNames());
-                if (matched != null) {
-                    currentInfo = getLanguageFromDict(matched);
-                }
-            }
-
-            if (currentInfo == null && systemDefaultLocale.getLanguage() != null) {
-                currentInfo = getLanguageFromDict(systemDefaultLocale.getLanguage());
-            }
+            LocaleInfo byLocale = systemDefaultLocale == null ? null : getLanguageFromDict(getLocaleString(systemDefaultLocale));
+            TellomiIntro.InitialLanguage initial = TellomiIntro.chooseInitial(
+                    savedInfo == null ? null : savedInfo.getKey(),
+                    systemDefaultLocale == null ? null : systemDefaultLocale.getLanguage(),
+                    systemDefaultLocale == null ? null : systemDefaultLocale.getCountry(),
+                    systemDefaultLocale == null ? null : systemDefaultLocale.getScript(),
+                    languageShortNames(),
+                    languageOnly,
+                    byLocale == null ? null : byLocale.getKey());
+            LocaleInfo currentInfo = getLanguageFromDict(initial.key);
+            boolean override = initial.writeLanguage;
             if (currentInfo == null) {
-                currentInfo = getLanguageFromDict(getLocaleString(systemDefaultLocale));
-                if (currentInfo == null) {
-                    currentInfo = getLanguageFromDict("en");
-                }
+                currentInfo = getLanguageFromDict("en");
+                override = false;
             }
-
             applyLanguage(currentInfo, override, true, UserConfig.selectedAccount);
         } catch (Exception e) {
             FileLog.e(e);

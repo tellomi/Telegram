@@ -46,6 +46,48 @@ public final class TellomiIntro {
     }
 
     /**
+     * Language chosen before a langpack is selected. {@code writeLanguage} is
+     * true only when Settings already stored {@code savedKey}. An automatic
+     * match, including Simplified Chinese, does not write {@code language}.
+     */
+    public static final class InitialLanguage {
+        public final String key;
+        public final boolean writeLanguage;
+
+        public InitialLanguage(String key, boolean writeLanguage) {
+            this.key = key;
+            this.writeLanguage = writeLanguage;
+        }
+    }
+
+    /**
+     * {@code savedKey} is a known {@code mainconfig} language key.
+     * {@code languageOnlyKey} and {@code localeStringKey} are dict keys for
+     * the device language and the full locale string, when those rows exist.
+     */
+    public static InitialLanguage chooseInitial(String savedKey, String systemLanguage,
+            String systemCountry, String systemScript, List<String> availableShortNames,
+            String languageOnlyKey, String localeStringKey) {
+        if (savedKey != null) {
+            return new InitialLanguage(savedKey, true);
+        }
+        String chosen = null;
+        if (SKIP_WELCOME) {
+            chosen = matchShortName(systemLanguage, systemCountry, systemScript, availableShortNames);
+        }
+        if (chosen == null) {
+            chosen = languageOnlyKey;
+        }
+        if (chosen == null) {
+            chosen = localeStringKey;
+        }
+        if (chosen == null) {
+            chosen = "en";
+        }
+        return new InitialLanguage(chosen, false);
+    }
+
+    /**
      * Best loaded short name for the device locale, or null when the list has
      * no row for that language. Chinese with no country prefers Simplified
      * ({@code zh_hans} / {@code zh_cn}); Taiwan, Hong Kong, Macau, and Hant

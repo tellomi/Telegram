@@ -1,5 +1,16 @@
 # Upstream patches
 
+## Login copy follows Simplified Chinese on first launch (ISSUE-A-LOGIN-003)
+
+`LocaleController` registers built-in `zh_hans` and `zh_hant`. Both use plural code `zh`, so the built-in bin is `values-zh` (`localization_zh.bin`). On first launch, with no `mainconfig` `language`, `TellomiIntro.chooseInitial` matches the device locale and `applyLanguage` is called with `override` false. That does not write `language`. A key Settings already stored is applied with `override` true, which writes `language`. Choosing a language in Settings still calls `applyLanguage` with `override` true. After `langpack.getLanguages`, `applyLoadedLanguage` still applies the device row and does not write `language`.
+
+The phone and code screens read `YourNumber`, `StartText`, `Country`, `PhoneNumber`, and the other login keys. Those keys were missing from the zh bins, so the title stayed "Your phone number" while strings the pack did contain were Chinese. They are in `values-zh/strings.xml` and `values-zh-rCN/strings.xml`. A downloaded pack that contains a key still replaces it.
+
+Upstream files:
+
+- `LocaleController` — built-in `zh_hans` / `zh_hant`, and the first-launch choice goes through `TellomiIntro.chooseInitial`.
+- `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml` — login screen strings.
+
 ## Navigation bar settings page (M2 / D-38)
 
 Settings has a General row (`TellomiSettingsGeneral`, General / 通用) that opens one row, Navigation bar (`TellomiNavBar`, Navigation bar / 导航栏). That page lists the bar in `BAR_ORDER` and toggles Discover, Calls, and Contacts through `TellomiMainTabs`. Chats, Settings, and Profile stay locked. `values-zh/strings.xml` is the `zh` bin, so a downloaded pack that does not contain those keys cannot replace 通用 or 导航栏.
