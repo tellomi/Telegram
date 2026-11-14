@@ -2,7 +2,12 @@ name: Tellomi UI tests
 
 # Emulator UI coverage for the Tellomi Android backlog. Builds one x86_64 debug
 # APK (assembleAfatDebug) and does not read the release keystore or publish.
+# GitHub only lists workflow_dispatch after the file is on the default branch.
+# The branch push below starts the suite on this PR without merging it.
 on:
+  push:
+    branches:
+      - cursor/android-ui-automation-9e5a
   workflow_dispatch:
     inputs:
       max_shards:
