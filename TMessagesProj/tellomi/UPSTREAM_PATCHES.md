@@ -1,5 +1,23 @@
 # Upstream patches
 
+## Bottom bar order and Discover caption (M2 / D-4, D-42, D-36)
+
+`TellomiMainTabs.BAR_ORDER` is the pager index order. `MainTabsActivity.createView` adds `tabs[index]` from 0 through 5, and `indexToPosition` returns that index. All six, when on, are Discover, Chats, Calls, Contacts, Settings, then Profile. A fresh install is still Discover, Chats, and Profile. Chats and Profile stay locked. Settings, Contacts, and Calls stay off until the user turns them on. `getStartPosition` still returns the chats tab.
+
+Visibility flags stay on the named `mainconfig` keys (`mainTabsFeed`, `mainTabsChats`, `mainTabsCalls`, `mainTabsContacts`, `mainTabsSettings`, `mainTabsProfile`). The older `tellomi_main_tab_visible_N` keys keep the indexes from before this reorder (contacts 0, calls 1, feed 2, chats 3, settings 4, profile 5) and are copied onto those names on the first read. The menu-settings switch order is unchanged.
+
+The feed tab used `Moments_Title`. A downloaded pack replaces that key, and the bundled zh value is 动态. The product caption is 发现. `TellomiTabFeed` is not an official key. `values-zh/strings.xml` is the `zh` bin, the same path as `TellomiTabMe`. The feed screen title stays `Moments_Title`.
+
+`tg://settings/chats/search` is the one main-pager deep link that used a raw index. Upstream 12.4.0 (`fa4e8aa0dd`) wrote `scrollToPosition(2)` when that index was `POSITION_CALLS_OR_SETTINGS`. Tellomi master then put the feed tab at index 2 and left the literal, so the link opens the feed tab. It now passes `TellomiMainTabs.FEED`. Other `scrollToPosition` / `setCurrentItem` literals belong to their own pagers (community, boosts, stories, emoji) and are not the main bar.
+
+Upstream files:
+
+- `MainTabsActivity` — feed tab string resource, and the tab views are filled in `TellomiMainTabs` index order.
+- `LinkManager` — `tg://settings/chats/search` scrolls to `TellomiMainTabs.FEED`.
+- `res/values/strings.xml`, `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml` — `TellomiTabFeed` (`Discover` / `发现`).
+
+`TellomiMenuSettingsActivity` is Tellomi code. Its feed switch uses the same caption. The switch order, locks, and defaults are unchanged.
+
 ## Profile tab label (M2 / ISSUE-A-NAV-001)
 
 After signup the visible bar is Discover, Chats, then the avatar tab. That tab used `R.string.MainTabsProfile`. Cloud strings replace a key the downloaded langpack contains, and the applied zh-Hans value of `MainTabsProfile` is 个人资料. The product caption is 我.
@@ -83,7 +101,7 @@ System language: `LocaleController` construction, when no `mainconfig` `language
 
 ## Profile Moments tab
 
-Native Stories stay on the profile. Archive and album tabs are unchanged. The bottom bar has no Stories item; its feed tab is `Moments_Title` (`Moments` / `动态`). Discover uses `Moments_Story` for a post kind (`Story` / `故事`). Neither place says `快拍`. The profile Stories tab still uses that name in Tellomi, so it must not share the Moments title.
+Native Stories stay on the profile. Archive and album tabs are unchanged. The bottom bar has no Stories item. Its feed tab caption is `TellomiTabFeed` (`Discover` / `发现`); the feed screen title stays `Moments_Title` (`Moments` / `动态`). Discover uses `Moments_Story` for a post kind (`Story` / `故事`). Neither place says `快拍`. The profile Stories tab still uses that name in Tellomi, so it must not share the Moments title.
 
 `ProfileStories` in the bundled strings is `Stories` / `快拍`. A downloaded langpack replaces a key it contains, and the official simplified value of `ProfileStories` is `动态`. The Moments insertion in `updateTabs` therefore sets the existing `TAB_STORIES` title to `Moments_Profile_Stories` (`Stories` / `快拍`) unless that slot is a bot preview. The tab is not removed. `ProfileActivity`'s open animation is unchanged. The post-list row stays `Moments_Profile_OpenPosts` (`All posts` / `帖子`).
 

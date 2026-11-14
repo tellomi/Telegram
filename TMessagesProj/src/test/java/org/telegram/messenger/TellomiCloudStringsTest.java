@@ -182,6 +182,51 @@ public class TellomiCloudStringsTest {
         }
     }
 
+    /**
+     * The feed tab used {@code Moments_Title}. The downloaded zh-Hans pack
+     * contains that key as 动态. {@code TellomiTabFeed} is absent from the
+     * pack, so the {@code zh} builtin ({@code values-zh}) stays 发现.
+     */
+    @Test
+    public void zhPluralCodeKeepsDiscoverCaptionWhenThePackSaysMoments() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiTabFeed", R.string.TellomiTabFeed);
+            bindResource("Moments_Title", R.string.Moments_Title);
+
+            HashMap<String, String> simplified = pack("Moments_Title", "动态");
+            LocaleController controller = LocaleController.getInstance();
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("动态", LocaleController.getString(R.string.Moments_Title));
+            assertFalse(simplified.containsKey("TellomiTabFeed"));
+
+            showBuiltin(controller, "zh-hant", pack("Moments_Title", "動態"), "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("動態", LocaleController.getString(R.string.Moments_Title));
+
+            showBuiltin(controller, "zh_tw", pack("Moments_Title", "動態"), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+
+            showBuiltin(controller, "en", pack("Moments_Title", "Moments"), "src/main/res/values/strings.xml");
+            assertEquals("Discover", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("Moments", LocaleController.getString(R.string.Moments_Title));
+
+            showBuiltin(controller, "zh", pack("TellomiTabFeed", "动态"), "src/main/res/values-zh/strings.xml");
+            assertEquals("动态", LocaleController.getString(R.string.TellomiTabFeed));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
     @Test
     public void pluralFallsBackToOtherInsideTheCloudPack() {
         HashMap<String, String> russian = pack(

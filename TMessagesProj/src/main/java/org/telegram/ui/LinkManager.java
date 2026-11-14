@@ -24,6 +24,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TellomiMainTabs;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -421,7 +422,10 @@ public class LinkManager {
 
             if (mainFragment != null) {
                 if ("search".equalsIgnoreCase(second)) {
-                    mainFragment.viewPager.scrollToPosition(2);
+                    // tg://settings/chats/search. Upstream 12.4.0 (fa4e8aa0dd) scrolled
+                    // to pager index 2, then POSITION_CALLS_OR_SETTINGS. Tellomi master
+                    // left that literal on the feed tab, so the link stays on TellomiMainTabs.FEED.
+                    mainFragment.viewPager.scrollToPosition(TellomiMainTabs.FEED);
                     return true;
                 }
             }
