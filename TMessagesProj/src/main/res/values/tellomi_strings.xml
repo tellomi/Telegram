@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tellomi fallbacks for langpack code en. Official wording when the pack has the key. -->
+    <string name="ForwardHideSenderNamePremium">Subscribe to **Tellomi Premium** to forward formatted messages without the sender’s name.</string>
+    <string name="Moments_Fixture_Actions">Like, comment, repost, share, and save are on this bottom row.</string>
+    <string name="Moments_Fixture_Distance">1–5 km</string>
+    <string name="Moments_Fixture_Fold">The first post. Text longer than five lines folds, and Full text opens the detail.\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6 is where Full text appears.</string>
+    <string name="Moments_Fixture_Friends">Follow each other and you are friends. This post is public, so you can follow from For you.</string>
+    <string name="Moments_Fixture_Nearby">Nearby only shows public posts whose author turned on Show in Nearby.</string>
+    <string name="Moments_Fixture_Place">A place</string>
+    <string name="NewContactPhoneInContacts">This phone number is already in your contacts. **View >**</string>
+    <string name="NewContactPhoneNotOnTelegram">This phone number is not on Tellomi. **Invite >**</string>
+    <string name="NewContactPhoneOnTelegram">This phone number is on Tellomi.</string>
+    <string name="ThemePreviewBetaChat">Tellomi Beta Chat</string>
+</resources>

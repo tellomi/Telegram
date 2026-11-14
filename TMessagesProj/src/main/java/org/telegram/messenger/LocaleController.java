@@ -1407,20 +1407,15 @@ public class LocaleController {
             }
         }
         try {
-            Locale newLocale;
-            String[] args;
+            String localeCode;
             if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
-                args = localeInfo.pluralLangCode.split("_");
+                localeCode = localeInfo.pluralLangCode;
             } else if (!TextUtils.isEmpty(localeInfo.baseLangCode)) {
-                args = localeInfo.baseLangCode.split("_");
+                localeCode = localeInfo.baseLangCode;
             } else {
-                args = localeInfo.shortName.split("_");
+                localeCode = localeInfo.shortName;
             }
-            if (args.length == 1) {
-                newLocale = new Locale(args[0]);
-            } else {
-                newLocale = new Locale(args[0], args[1]);
-            }
+            Locale newLocale = TellomiStringLocales.localeFor(localeCode, localeInfo.shortName);
             if (override) {
                 languageOverride = localeInfo.shortName;
 
@@ -1451,8 +1446,9 @@ public class LocaleController {
             if (!TextUtils.isEmpty(currentLocaleInfo.pluralLangCode)) {
                 currentPluralRules = allRules.get(currentLocaleInfo.pluralLangCode);
             }
-            if (currentPluralRules == null) {
-                currentPluralRules = allRules.get(args[0]);
+            if (currentPluralRules == null && localeCode != null) {
+                int underscore = localeCode.indexOf('_');
+                currentPluralRules = allRules.get(underscore > 0 ? localeCode.substring(0, underscore) : localeCode);
             }
             if (currentPluralRules == null) {
                 currentPluralRules = allRules.get(currentLocale.getLanguage());
@@ -3134,20 +3130,15 @@ public class LocaleController {
                 saveOtherLanguages();
                 try {
                     if (currentLocaleInfo == localeInfo) {
-                        Locale newLocale;
-                        String[] args;
+                        String localeCode;
                         if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
-                            args = localeInfo.pluralLangCode.split("_");
+                            localeCode = localeInfo.pluralLangCode;
                         } else if (!TextUtils.isEmpty(localeInfo.baseLangCode)) {
-                            args = localeInfo.baseLangCode.split("_");
+                            localeCode = localeInfo.baseLangCode;
                         } else {
-                            args = localeInfo.shortName.split("_");
+                            localeCode = localeInfo.shortName;
                         }
-                        if (args.length == 1) {
-                            newLocale = new Locale(args[0]);
-                        } else {
-                            newLocale = new Locale(args[0], args[1]);
-                        }
+                        Locale newLocale = TellomiStringLocales.localeFor(localeCode, localeInfo.shortName);
                         // Automatic system-language selection must not become a saved choice
                         // when the remote pack finishes. Settings already wrote `language`.
                         storeLanguageAfterRemoteSave(mainLanguagePreference(), localeInfo.getKey(), localeInfo.shortName);
