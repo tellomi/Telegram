@@ -1,0 +1,26 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-016
+  - A-MOMENT-017
+  - A-MOMENT-018
+  - A-MOMENT-019
+  - A-MOMENT-020
+  - A-PERM-007
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "发布|Publish"
+- extendedWaitUntil:
+    visible:
+      text: "位置|Place"
+    timeout: 20000
+- tapOn:
+    text: "位置|Place"
+- tapOn:
+    text: "While using the app|仅在使用中允许|Allow|允许"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "切换城市|Switch city|改为手动选择城市|Choose a city|搜索|Search"
+    timeout: 20000
+- takeScreenshot: city

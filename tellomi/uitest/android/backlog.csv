@@ -1,0 +1,158 @@
+sheet_row,id,区域,界面/入口,元素,预期,测试类型,优先级,结果
+2220,A-LANG-007,LANG,LanguageSelectActivity → 设置 → 语言,【settings_row】语言,切换语言。简体优先 zh_hans。自动选择不写入 language，手动选择才写入。,both,P1,失败
+2238,A-LINK-001,LINK,CallsActivity → 系统通讯录呼叫 Tellomi,【deeplink】CallMime,语音或视频。,both,P1,未测
+2239,A-LINK-002,LINK,LaunchActivity → 联系人快捷方式,【deeplink】视频通话 %1$s,直接视频通话。,both,P1,未测
+2240,A-LINK-003,LINK,LaunchActivity → 长按启动器里的联系人快捷方式,【deeplink】语音通话 %1$s,直接语音通话。,both,P1,未测
+2241,A-LINK-004,LINK,LaunchActivity → geo:,【deeplink】GeoScheme,地图。无内置地图时走 TellomiMapApps。,UI,P1,未测
+2242,A-LINK-005,LINK,LaunchActivity → 通讯录里的 Tellomi 资料 MIME,【deeplink】ProfileMime,打开资料。vnd.app.tellomi.chat.profile。,both,P1,未测
+2245,A-LINK-008,LINK,LaunchActivity → https://tell.cc/ 或 http,【deeplink】tell.cc,短链，含动态 /m。,both,P1,未测
+2246,A-LINK-009,LINK,LaunchActivity → tg:// 或 tellomi://,【deeplink】tg://,tellomi:// 先改写成 tg:// 再走原解析。,both,P1,未测
+2314,A-MAIN-065,MAIN,MainTabsActivity → 底部导航第 3 项,【tab】动态,进入动态 FeedActivity。,both,P0,未测
+2416,A-MOMENT-001,MOMENT,FeedActivity → 底部「动态」标签,【button】互动,按钮「互动」。,both,P0,未测
+2417,A-MOMENT-002,MOMENT,FeedActivity → 动态页发布,【button】发布,打开发布器。,both,P0,未测
+2418,A-MOMENT-003,MOMENT,FeedActivity → 底部「动态」标签,【screen】FeedActivity,界面类 FeedActivity（extends BaseFragment）。,UI,P1,未测
+2419,A-MOMENT-004,MOMENT,FeedActivity → 底部「动态」标签,【settings_row】刷新没有新内容，仍显示这些动态。,设置行「刷新没有新内容，仍显示这些动态。」，进入下一级或执行对应操作。,both,P1,未测
+2420,A-MOMENT-005,MOMENT,FeedActivity → 动态顶部,【tab】好友,互关好友。,both,P0,未测
+2421,A-MOMENT-006,MOMENT,FeedActivity → 动态顶部,【tab】关注,关注的人。,both,P0,未测
+2425,A-MOMENT-010,MOMENT,FeedAudiencePicker → 谁可以看,【radio】密友,密友。,both,P1,未测
+2426,A-MOMENT-011,MOMENT,FeedAudiencePicker → 谁可以看,【radio】联系人,联系人。,both,P1,未测
+2427,A-MOMENT-012,MOMENT,FeedAudiencePicker → 谁可以看,【radio】粉丝,粉丝。,both,P1,未测
+2428,A-MOMENT-013,MOMENT,FeedAudiencePicker → 谁可以看,【radio】互关好友,仅互关。每次都要重选，不记住上次。,both,P1,未测
+2429,A-MOMENT-014,MOMENT,FeedAudiencePicker → 谁可以看,【radio】指定的人,指定的人。,both,P1,未测
+2430,A-MOMENT-015,MOMENT,FeedAudiencePicker → 谁可以看,【radio】仅自己,仅自己。,both,P1,未测
+2431,A-MOMENT-016,MOMENT,FeedCityActivity → 打开 FeedCityActivity,【dialog_button】改为手动选择城市,对话框按钮「改为手动选择城市」。,both,P1,未测
+2432,A-MOMENT-017,MOMENT,FeedCityActivity → 打开 FeedCityActivity,【dialog_button】好,对话框按钮「好」。,both,P1,未测
+2433,A-MOMENT-018,MOMENT,FeedCityActivity → 打开 FeedCityActivity,【input】搜索,输入框，占位或标签为「搜索」。,both,P1,未测
+2434,A-MOMENT-019,MOMENT,FeedCityActivity → 打开 FeedCityActivity,【screen】FeedCityActivity,界面类 FeedCityActivity（extends BaseFragment）。,both,P1,未测
+2435,A-MOMENT-020,MOMENT,FeedCityActivity → 打开 FeedCityActivity,【title】切换城市,页面标题「切换城市」。,both,P1,未测
+2436,A-MOMENT-021,MOMENT,FeedCollectionActivity → 打开 FeedCollectionActivity,【screen】FeedCollectionActivity,界面类 FeedCollectionActivity（extends BaseFragment）。,both,P1,未测
+2437,A-MOMENT-022,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【context_menu】复制,长按或上下文菜单「复制」。,both,P1,未测
+2438,A-MOMENT-023,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【context_menu】删除,长按或上下文菜单「删除」。,both,P0,未测
+2439,A-MOMENT-024,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【context_menu】转发,长按或上下文菜单「转发」。,both,P1,未测
+2440,A-MOMENT-025,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【context_menu】回复,长按或上下文菜单「回复」。,both,P1,未测
+2441,A-MOMENT-026,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【context_menu】举报,长按或上下文菜单「举报」。,both,P0,未测
+2442,A-MOMENT-027,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【dialog】删除,对话框文案「删除」。,both,P0,未测
+2443,A-MOMENT-028,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【dialog】回复也会一起删除,对话框文案「回复也会一起删除」。,both,P0,未测
+2444,A-MOMENT-029,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【dialog_button】取消,对话框按钮「取消」。,both,P1,未测
+2445,A-MOMENT-030,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【dialog_button】删除,对话框按钮「删除」。,both,P0,未测
+2446,A-MOMENT-031,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】发条评论，说说你的感受,输入框，占位或标签为「发条评论，说说你的感受」。,both,P0,未测
+2447,A-MOMENT-032,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】评论已关闭,输入框，占位或标签为「评论已关闭」。,both,P0,未测
+2448,A-MOMENT-033,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】只有作者关注的人可以评论,输入框，占位或标签为「只有作者关注的人可以评论」。,both,P0,未测
+2449,A-MOMENT-034,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】只有被提及的人可以评论,输入框，占位或标签为「只有被提及的人可以评论」。,both,P0,未测
+2450,A-MOMENT-035,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】只有互关好友可以评论,输入框，占位或标签为「只有互关好友可以评论」。,both,P0,未测
+2451,A-MOMENT-036,MOMENT,FeedCommentSheet → 打开 FeedCommentSheet,【input】回复 @%s,输入框，占位或标签为「回复 @%s」。,both,P1,未测
+2452,A-MOMENT-037,MOMENT,FeedComposerActivity → 发布器工具,【button】图片,加图片。,both,P1,未测
+2453,A-MOMENT-038,MOMENT,FeedComposerActivity → 发布器工具,【button】位置,位置。,both,P1,未测
+2454,A-MOMENT-039,MOMENT,FeedComposerActivity → 发布器工具,【button】投票,投票。,both,P1,未测
+2455,A-MOMENT-040,MOMENT,FeedComposerActivity → 发布器工具,【button】视频,加视频，超时需裁到上限（默认提示 60 秒）。,both,P1,未测
+2456,A-MOMENT-041,MOMENT,FeedComposerActivity → 发布器工具,【button】语音,录音。请求麦克风。,both,P1,未测
+2457,A-MOMENT-042,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog】这条动态还没有发布,对话框文案「这条动态还没有发布」。,both,P1,未测
+2458,A-MOMENT-043,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog】保存这份草稿？,对话框文案「保存这份草稿？」。,both,P1,未测
+2459,A-MOMENT-044,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog】对方看不到,对话框文案「对方看不到」。,both,P1,未测
+2460,A-MOMENT-045,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog】以下用户看不到这条动态，也不会收到提醒。,对话框文案「以下用户看不到这条动态，也不会收到提醒。」。,both,P1,未测
+2461,A-MOMENT-046,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】取消,对话框按钮「取消」。,both,P1,未测
+2462,A-MOMENT-047,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】继续编辑,对话框按钮「继续编辑」。,both,P1,未测
+2463,A-MOMENT-048,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】放弃,对话框按钮「放弃」。,both,P1,未测
+2464,A-MOMENT-049,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】保存草稿,对话框按钮「保存草稿」。,both,P1,未测
+2465,A-MOMENT-050,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】好,对话框按钮「好」。,both,P1,未测
+2466,A-MOMENT-051,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】发布,对话框按钮「发布」。,both,P0,未测
+2467,A-MOMENT-052,MOMENT,FeedComposerActivity → 动态 → 发布,【dialog_button】请把视频裁剪到 %1$d 秒以内,对话框按钮「请把视频裁剪到 %1$d 秒以内」。,both,P1,未测
+2468,A-MOMENT-053,MOMENT,FeedComposerActivity → 发布动态,【input】写点什么,正文输入。,both,P0,失败
+2469,A-MOMENT-054,MOMENT,FeedComposerActivity → 动态 → 发布,【input】说点什么,输入框，占位或标签为「说点什么」。,both,P0,失败
+2470,A-MOMENT-055,MOMENT,FeedComposerActivity → 动态 → 发布,【screen】FeedComposerActivity,界面类 FeedComposerActivity（extends BaseFragment）。,both,P0,失败
+2471,A-MOMENT-056,MOMENT,FeedComposerActivity → 动态 → 发布,【title】新动态,页面标题「新动态」。,both,P0,失败
+2472,A-MOMENT-057,MOMENT,FeedDetailActivity → 点开一条动态,【context_menu】复制,长按或上下文菜单「复制」。,both,P1,未测
+2473,A-MOMENT-058,MOMENT,FeedDetailActivity → 点开一条动态,【context_menu】删除,长按或上下文菜单「删除」。,both,P0,未测
+2474,A-MOMENT-059,MOMENT,FeedDetailActivity → 点开一条动态,【context_menu】转发,长按或上下文菜单「转发」。,both,P1,未测
+2475,A-MOMENT-060,MOMENT,FeedDetailActivity → 点开一条动态,【context_menu】点赞,长按或上下文菜单「点赞」。,both,P0,未测
+2476,A-MOMENT-061,MOMENT,FeedDetailActivity → 点开一条动态,【context_menu】回复,长按或上下文菜单「回复」。,both,P1,未测
+2478,A-MOMENT-063,MOMENT,FeedDetailActivity → 点开一条动态,【dialog】删除,对话框文案「删除」。,both,P0,未测
+2479,A-MOMENT-064,MOMENT,FeedDetailActivity → 点开一条动态,【dialog】回复也会一起删除,对话框文案「回复也会一起删除」。,both,P0,未测
+2480,A-MOMENT-065,MOMENT,FeedDetailActivity → 点开一条动态,【dialog_button】取消,对话框按钮「取消」。,both,P1,未测
+2481,A-MOMENT-066,MOMENT,FeedDetailActivity → 点开一条动态,【dialog_button】删除,对话框按钮「删除」。,both,P0,未测
+2482,A-MOMENT-067,MOMENT,FeedDetailActivity → 点开一条动态,【input】回复,输入框，占位或标签为「回复」。,both,P0,未测
+2483,A-MOMENT-068,MOMENT,FeedDetailActivity → 点开一条动态,【input】回复,输入框，占位或标签为「回复」。,both,P1,未测
+2484,A-MOMENT-069,MOMENT,FeedDetailActivity → 点开一条动态,【screen】FeedDetailActivity,界面类 FeedDetailActivity（extends BaseFragment）。,both,P1,未测
+2485,A-MOMENT-070,MOMENT,FeedDetailActivity → 点开一条动态,【title】动态,页面标题「动态」。,both,P0,未测
+2486,A-MOMENT-071,MOMENT,FeedDetailActivity → 点开一条动态,【title】这条动态已经不存在,页面标题「这条动态已经不存在」。,both,P1,未测
+2487,A-MOMENT-072,MOMENT,FeedMediaViewer → 打开 FeedMediaViewer,【settings_row】加载失败，点击重试,设置行「加载失败，点击重试」，进入下一级或执行对应操作。,both,P1,未测
+2488,A-MOMENT-073,MOMENT,FeedNotificationsActivity → 打开 FeedNotificationsActivity,【dialog】这条动态已经不存在,对话框文案「这条动态已经不存在」。,both,P1,未测
+2489,A-MOMENT-074,MOMENT,FeedNotificationsActivity → 打开 FeedNotificationsActivity,【dialog_button】好,对话框按钮「好」。,both,P1,未测
+2490,A-MOMENT-075,MOMENT,FeedNotificationsActivity → 打开 FeedNotificationsActivity,【screen】FeedNotificationsActivity,界面类 FeedNotificationsActivity（extends BaseFragment）。,UI,P1,未测
+2491,A-MOMENT-076,MOMENT,FeedNotificationsActivity → 打开 FeedNotificationsActivity,【title】互动,页面标题「互动」。,both,P0,未测
+2492,A-MOMENT-077,MOMENT,FeedPostActions → 自己的帖子,【context_menu】修改谁可以看,修改谁可以看。失败则保留原选择。,both,P1,失败
+2493,A-MOMENT-078,MOMENT,FeedPostActions → 分享菜单,【context_menu】复制链接,复制 tell.cc 链接。,UI,P1,未测
+2494,A-MOMENT-079,MOMENT,FeedPostActions → 自己的帖子,【context_menu】删除,删除。,both,P0,未测
+2495,A-MOMENT-080,MOMENT,FeedPostActions → 自己的帖子更多菜单,【context_menu】编辑,编辑。,both,P0,未测
+2496,A-MOMENT-081,MOMENT,FeedPostActions → 打开 FeedPostActions,【context_menu】其他应用,长按或上下文菜单「其他应用」。,both,P1,未测
+2497,A-MOMENT-082,MOMENT,FeedPostActions → 别人的帖子,【context_menu】隐藏该帖子,隐藏该帖。,both,P0,未测
+2498,A-MOMENT-083,MOMENT,FeedPostActions → 动态卡片,【context_menu】点赞,点赞。,both,P0,未测
+2499,A-MOMENT-084,MOMENT,FeedPostActions → 别人的帖子,【context_menu】屏蔽动态,屏蔽此人动态。,both,P1,未测
+2500,A-MOMENT-085,MOMENT,FeedPostActions → 别人的帖子更多菜单,【context_menu】不感兴趣,不感兴趣。,both,P1,未测
+2501,A-MOMENT-086,MOMENT,FeedPostActions → 转发菜单,【context_menu】引用,引用并写评论。,both,P0,未测
+2502,A-MOMENT-087,MOMENT,FeedPostActions → 打开 FeedPostActions,【context_menu】举报,长按或上下文菜单「举报」。,both,P0,未测
+2503,A-MOMENT-088,MOMENT,FeedPostActions → 转发菜单,【context_menu】转发,转发公开帖。互关帖会被拒绝。,both,P0,未测
+2504,A-MOMENT-089,MOMENT,FeedPostActions → 更多/转发菜单,【context_menu】收藏,收藏。,both,P0,未测
+2505,A-MOMENT-090,MOMENT,FeedPostActions → 打开 FeedPostActions,【context_menu】已收藏,长按或上下文菜单「已收藏」。,both,P0,未测
+2506,A-MOMENT-091,MOMENT,FeedPostActions → 分享菜单,【context_menu】分享到聊天,分享到聊天。,both,P1,未测
+2507,A-MOMENT-092,MOMENT,FeedPostActions → 打开 FeedPostActions,【settings_row】没能更新谁可以看。你的选择还在。,设置行「没能更新谁可以看。你的选择还在。」，进入下一级或执行对应操作。,both,P0,失败
+2508,A-MOMENT-093,MOMENT,FeedPostCell → 打开 FeedPostCell,【button】评论,按钮「评论」。,both,P0,未测
+2510,A-MOMENT-095,MOMENT,FeedPostCell → 打开 FeedPostCell,【button】点赞,按钮「点赞」。,both,P0,未测
+2511,A-MOMENT-096,MOMENT,FeedPostCell → 打开 FeedPostCell,【button】转发,按钮「转发」。,both,P0,未测
+2512,A-MOMENT-097,MOMENT,FeedPostCell → 打开 FeedPostCell,【button】收藏,按钮「收藏」。,both,P0,未测
+2513,A-MOMENT-098,MOMENT,FeedPostCell → 打开 FeedPostCell,【button】已收藏,按钮「已收藏」。,both,P0,未测
+2515,A-MOMENT-100,MOMENT,FeedReportSheet → 打开 FeedReportSheet,【dialog_button】取消,对话框按钮「取消」。,both,P0,未测
+2516,A-MOMENT-101,MOMENT,FeedReportSheet → 打开 FeedReportSheet,【dialog_button】举报,对话框按钮「举报」。,both,P0,未测
+2517,A-MOMENT-102,MOMENT,FeedReportSheet → 打开 FeedReportSheet,【input】补充说明,输入框，占位或标签为「补充说明」。,both,P0,未测
+2518,A-MOMENT-103,MOMENT,FeedReportSheet → 打开 FeedReportSheet,【settings_row】已提交举报,设置行「已提交举报」，进入下一级或执行对应操作。,both,P0,未测
+2519,A-MOMENT-104,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【screen】FeedSettingsActivity,界面类 FeedSettingsActivity（extends BaseFragment）。,both,P1,未测
+2520,A-MOMENT-105,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【section】列表,分组标题「列表」。,both,P0,未测
+2521,A-MOMENT-106,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【section】动态推送,分组标题「动态推送」。,both,P0,未测
+2523,A-MOMENT-108,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【settings_row】已屏蔽的人,设置行「已屏蔽的人」，进入下一级或执行对应操作。,both,P0,未测
+2524,A-MOMENT-109,MOMENT,FeedSettingsActivity → 动态设置,【settings_row】动态推送,推送开关。,both,P1,未测
+2525,A-MOMENT-110,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【title】动态,页面标题「动态」。,both,P0,未测
+2527,A-MOMENT-112,MOMENT,FeedSettingsActivity → 隐私和安全 → 动态,【toggle】谁能看到我的粉丝列表,开关「谁能看到我的粉丝列表」，切换后立即生效。,both,P0,未测
+2529,A-MOMENT-114,MOMENT,FeedTopicActivity → 打开 FeedTopicActivity,【screen】FeedTopicActivity,界面类 FeedTopicActivity（extends BaseFragment）。,both,P1,未测
+3432,A-PERM-007,PERM,FeedCityActivity → 动态同城,【permission】精确位置,位置只用来选城市，不保存。,both,P1,未测
+3433,A-PERM-008,PERM,FeedVoiceCapture → 动态里录音,【permission】录音,请求麦克风。,both,P1,未测
+3864,A-PROFILE-113,PROFILE,ProfileActivity → 点头像或对话标题进入资料页,【menu_item】屏蔽动态,菜单项「屏蔽动态」。,both,P1,未测
+3865,A-PROFILE-114,PROFILE,ProfileActivity → 点头像或对话标题进入资料页,【menu_item】赞过,菜单项「赞过」。,both,P1,未测
+3866,A-PROFILE-115,PROFILE,ProfileActivity → 点头像或对话标题进入资料页,【menu_item】动态收藏,菜单项「动态收藏」。,both,P1,未测
+4046,A-PROFILE-295,PROFILE,SharedMediaLayout → 资料页确认有动态主页后,【tab】帖子,在快拍标签后插入帖子页。,both,P1,未测
+4047,A-PROFILE-296,PROFILE,SharedMediaLayout → 资料页有置顶快拍时,【tab】快拍,标签显示「快拍」。官方 langpack 的 ProfileStories 是「动态」，这里被改成快拍。,both,P0,未测
+4108,A-SET-035,SET,PrivacySettingsActivity → 隐私和安全里的动态分组,【settings_row】动态,进入动态隐私：名单、推送、个性化。,both,P1,未测
+4148,A-SET-075,SET,SettingsActivity → 底部「设置」，或资料页进入设置,【section】工具,分组标题「工具」。,both,P1,未测
+4155,A-SET-082,SET,SettingsActivity → 设置 → 工具,【settings_row】选单设定,打开选单设定。,UI,P1,未测
+4156,A-SET-083,SET,SettingsActivity → 帮助,【settings_row】隐私政策,打开 tellomi.cn 隐私政策。,both,P1,未测
+4177,A-SET-104,SET,SettingsActivity → 帮助,【settings_row】常见问题,打开常见问题。链接被 TellomiBrand 改写。,both,P1,未测
+4183,A-SET-110,SET,TellomiMenuSettingsActivity → 设置 → 工具 → 选单设定,【screen】TellomiMenuSettingsActivity,界面类 TellomiMenuSettingsActivity（extends BaseFragment）。,UI,P1,未测
+4184,A-SET-111,SET,TellomiMenuSettingsActivity → 设置 → 工具 → 选单设定,【section】导航栏按钮,分组标题「导航栏按钮」。,UI,P1,未测
+4185,A-SET-112,SET,TellomiMenuSettingsActivity → 设置 → 工具 → 选单设定,【title】选单设定,页面标题「选单设定」。,both,P1,未测
+4186,A-SET-113,SET,TellomiMenuSettingsActivity → 设置 → 工具 → 选单设定,【toggle】隐藏按钮文字,隐藏底栏文字，只留图标。本地 mainconfig，不同步。,both,P1,未测
+4187,A-SET-114,SET,TellomiMenuSettingsActivity → 选单设定 → 通话,【toggle】通话,显示或隐藏通话标签。,both,P1,未测
+4597,A-STORY-136,STORY,StoryPrivacyBottomSheet → 打开 StoryPrivacyBottomSheet,【section】需要你自己选择，不会记住上次,分组标题「需要你自己选择，不会记住上次」。,both,P1,未测
+4598,A-STORY-137,STORY,StoryPrivacyBottomSheet → 打开 StoryPrivacyBottomSheet,【section】谁可以看,分组标题「谁可以看」。,both,P1,未测
+4807,A-IDX-NAV-017,NAV,主界面底栏 MainTabsActivity（冷启动默认落在聊天）,标签文字显示/隐藏,GlassTabView.setShowsLabel：隐藏标题并让图标居中。开关在选单设定，键 mainTabsHideLabels。,UI,P2,未测
+4809,A-IDX-NAV-020,NAV,主界面底栏 MainTabsActivity（冷启动默认落在聊天）,已移除的底栏搜索按钮,历史上 Tellomi 曾在底栏右侧加搜索（fe3d5f525）。DrKLO 无 INDEX_SEARCH。该按钮、DialogsActivity.openSearchFromMainTab、GlassTabView.TabAnimation.SEARCH 已删除。城市搜索提示 Moments_SearchTab 仍在动态里。,UI,P2,未测
+4811,A-IDX-MENU-006,MENU,设置 > 工具 > 选单设定 TellomiMenuSettingsActivity,开关：资料标签,锁定始终显示。,UI,P1,未测
+4812,A-IDX-MENU-010,MENU,设置 SettingsActivity,工具分组 + 选单设定行,SettingsTools 标题下 MainTabsMenuSettings 行（case 40）打开 TellomiMenuSettingsActivity。这是 Tellomi 新增行。,UI,P1,未测
+4881,A-IDX-STORY-028,STORY,资料页标签,快拍标签标题,有 stories_pinned_available 才出现。标题强制 Moments_Profile_Stories（快拍），避免被 langpack 写成动态。机器人预览位不改。,UI,P0,未测
+4884,A-IDX-MOMENT-018,MOMENT,动态帖子 > 分享菜单,系统分享,系统分享 ACTION_SEND，文本为帖子链接。策略不允许外部分享时此项不出现。,UI,P2,未测
+4885,A-IDX-MOMENT-026,MOMENT,动态图片,点击媒体,FeedMediaViewer 复用 PhotoViewer，不另写查看器。,UI,P0,未测
+4886,A-IDX-MOMENT-036,MOMENT,写动态,可见范围,复用快拍隐私选择，另有动态互关 TYPE_MUTUAL_FOLLOWERS。令牌 discover.getAudienceToken。,both,P0,未测
+4887,A-IDX-MOMENT-037,MOMENT,写动态,选图/拍照,走系统或应用内选择，不把大图打进安装包。,UI,P0,未测
+4888,A-IDX-MOMENT-047,MOMENT,动态引擎,登录令牌,HTTPS 带 discover.getEngineCredential。没有令牌则动态请求失败，应看到错误而不是假成功。,server,P0,未测
+4890,A-IDX-MOMENT-049,MOMENT,动态配置,tellomi_discover_feed_base_url,引擎根 URL，无路径。缺省时 FeedConfig 用 https://feed.tellomi.cn。,server,P0,未测
+4922,A-IDX-SET-004,SET,设置 SettingsActivity（底栏设置，或资料页动作，或聊天更多）,主标签下的二维码按钮,hasMainTabs 时原返回位变成自己的二维码 QrShareActivity。Tellomi 底栏集成。,UI,P2,未测
+4969,A-IDX-DATA-011,DATA,自动下载,快拍,快拍是否自动下载。动态媒体走 Feed 自己的加载，应仍进入 ImageLoader/FileLoader，而不是不受管目录。,UI,P2,未测
+5011,A-IDX-ACCT-006,ACCT,退出页,确认退出,auth.logOut。最后一个账号退出后进入登录页，而不是欢迎轮播（TellomiIntro）。,both,P0,未测
+5013,A-IDX-ACCT-008,ACCT,删除账号,立即注销入口,客户端把 telegram.org/deactivate 重写为 https://tellomi.cn/account/delete/ 。应用内若有删除账号确认，应走到该页或等价的 account.deleteAccount，且必须用专用新号。,both,P0,未测
+5056,A-IDX-UPD-005,UPD,发版说明,应用内更新与安装包,合入 master 不会自动出 APK。正式版还需 help.getAppUpdate / latest.json。测试更新时核对服务端下发的版本，而不是只看源码版本名。,server,P1,未测
+5057,A-IDX-UPD-006,UPD,关于,设置页版本号,显示 Tellomi 版本（营销版本与 APP_VERSION_CODE，例如文档中的 14.0.7 / 180467）。长按进调试。,UI,P2,未测
+5058,A-IDX-UPD-007,UPD,关于,FAQ / 隐私政策 / 服务条款,FAQ、隐私政策、服务条款分别打开 HELP_URL、PRIVACY_URL、TOS_URL。博客到 https://tellomi.cn/changelog/ ，注销说明到 https://tellomi.cn/account/delete/ 。不应再打开 telegram.org。,UI,P1,未测
+5059,A-IDX-UPD-008,UPD,品牌,产品名替换,TELLOMI_REBRAND_STRINGS 时把 Telegram、电报等替换为 BuildVars.APP_NAME（Tellomi）。协议类名不改。翻译界面没有单独 logo，只继承这套文案替换。,UI,P1,未测
+5060,A-IDX-UPD-009,UPD,品牌,链接主机,t.me、telegram.me、telegram.dog 换成 BuildVars.LINK_HOST；telegram.org 换成 tellomi.cn。桌面下载指向 tellomi.cn/download。短信与恢复邮箱变为 support@tellomi.app。,UI,P1,未测
+5061,A-IDX-UPD-010,UPD,连接,生产数据中心,TELLOMI_CUSTOM_BACKEND 时不连 Telegram 生产 DC。可发布包种子为 8.137.198.240:10443、:443，然后 api.tellomi.cn 同端口。help.getConfig 仍可替换地址。包内拒绝 8.156.40.105。,server,P0,未测
+5070,A-IDX-PROF-029,PROF,资料,离线打开,playProfileAnimation==0 时不再把页面停在 alpha 0 等 userInfo。缓存用户立刻显示。TAB_MOMENTS=16 不得写入 sharedMediaData 数组。,UI,P0,未测
+5079,A-IDX-MEDIA-009,MEDIA,资料 > 共享媒体 SharedMediaLayout.updateTabs,标签：快拍,标题必须是快拍。有置顶快拍才出现。 规则：原生 hasMedia[i]>0 才加入。空标签不应常驻。,both,P1,未测
+5114,A-IDX-LOGIN-018,LOGIN,登录,条款与隐私勾选或链接,若该页有条款链接，应打开 tellomi.cn 而不是 telegram.org。,UI,P1,未测

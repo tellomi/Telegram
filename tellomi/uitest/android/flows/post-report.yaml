@@ -1,0 +1,19 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-100
+  - A-MOMENT-101
+  - A-MOMENT-102
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "更多|More"
+- tapOn:
+    text: "举报|Report"
+    optional: true
+- runFlow:
+    when:
+      notVisible: "补充说明|Description|垃圾信息|Spam"
+    commands:
+      - takeScreenshot: BLOCKED-no-report
+      - assertVisible: "___BLOCKED_no-report___"
+- takeScreenshot: post-report

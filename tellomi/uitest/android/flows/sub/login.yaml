@@ -1,0 +1,84 @@
+appId: app.tellomi.chat
+---
+# Phone and code come from the environment. The runner redacts them in logs.
+- launchApp:
+    clearState: false
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|电话号码|你的手机|发现|Discover|Chats|聊天|Settings|设置"
+    timeout: 90000
+- runFlow:
+    when:
+      visible: "发现|Discover|Chats|聊天|Settings|设置"
+    commands:
+      - takeScreenshot: login-already
+- runFlow:
+    when:
+      notVisible: "发现|Discover|Chats|聊天"
+    commands:
+      - assertTrue: ${TELLOMI_TEST_PHONE_NATIONAL.length == 10}
+      - tapOn:
+          text: "Country code"
+      - eraseText: 4
+      - tapOn:
+          text: "Phone number|电话号码"
+      - eraseText: 40
+      - eraseText: 40
+      - inputText: ${TELLOMI_TEST_PHONE_NATIONAL}
+      - tapOn:
+          text: "Done|完成"
+          optional: true
+      - runFlow:
+          when:
+            visible: "Phone number|电话号码|Your Phone"
+          commands:
+            - tapOn:
+                point: "88%,54%"
+      - tapOn:
+          text: "OK"
+          optional: true
+      - takeScreenshot: login-phone-sent
+      - extendedWaitUntil:
+          visible:
+            text: "Code|验证码|Sent|短信|We've sent|检查|Password|密码|First name|名字|发现|Discover"
+          timeout: 90000
+      - runFlow:
+          when:
+            visible: "Code|验证码|Sent|短信|We've sent|检查"
+          commands:
+            - inputText: ${TELLOMI_TEST_CODE}
+            - tapOn:
+                text: "Done|完成"
+                optional: true
+      - runFlow:
+          when:
+            visible: "Password|密码"
+          commands:
+            - runFlow:
+                when:
+                  true: ${TELLOMI_TEST_PASSWORD == ''}
+                file: login-blocked-password.yaml
+            - runFlow:
+                when:
+                  true: ${TELLOMI_TEST_PASSWORD != ''}
+                commands:
+                  - inputText: ${TELLOMI_TEST_PASSWORD}
+                  - tapOn:
+                      text: "Done|完成"
+                      optional: true
+      - runFlow:
+          when:
+            visible: "First name|名字"
+          commands:
+            - tapOn:
+                text: "First name|名字"
+            - inputText: "UiTest"
+            - tapOn:
+                text: "Done|完成"
+                optional: true
+      - extendedWaitUntil:
+          visible:
+            text: "发现|Discover|Chats|聊天|Settings|设置"
+          timeout: 120000
+      - takeScreenshot: login-ok

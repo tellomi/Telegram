@@ -1,0 +1,8 @@
+appId: app.tellomi.chat
+tags:
+  - A-LINK-005
+---
+- launchApp:
+    clearState: false
+    stopApp: false
+- takeScreenshot: profile-mime

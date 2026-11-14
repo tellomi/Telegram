@@ -1,0 +1,12 @@
+appId: app.tellomi.chat
+---
+- runFlow: dismiss.yaml
+- launchApp:
+    clearState: false
+    stopApp: false
+- tapOn:
+    text: "设置|Settings"
+- extendedWaitUntil:
+    visible:
+      text: "语言|Language|工具|Tools|隐私|Privacy|帮助|Help"
+    timeout: 25000

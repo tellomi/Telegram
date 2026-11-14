@@ -1,0 +1,19 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-037
+  - A-MOMENT-038
+  - A-MOMENT-039
+  - A-MOMENT-040
+  - A-MOMENT-051
+  - A-MOMENT-053
+  - A-MOMENT-055
+  - A-MOMENT-056
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "发布|Publish"
+- extendedWaitUntil:
+    visible:
+      text: "新动态|New post"
+    timeout: 20000
+- takeScreenshot: composer

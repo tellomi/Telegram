@@ -1,0 +1,10 @@
+appId: app.tellomi.chat
+tags:
+  - A-LINK-009
+---
+- openLink: "tellomi://resolve?domain=test"
+- takeScreenshot: tellomi-scheme
+- extendedWaitUntil:
+    visible:
+      text: "Your Phone|Phone number|发现|Discover|Tellomi|电话号码"
+    timeout: 30000

@@ -1,0 +1,12 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-075
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "工具|Tools"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- takeScreenshot: settings-home

@@ -1,0 +1,24 @@
+appId: app.tellomi.chat
+tags:
+  - A-MOMENT-057
+  - A-MOMENT-058
+  - A-MOMENT-059
+  - A-MOMENT-060
+  - A-MOMENT-061
+  - A-MOMENT-067
+  - A-MOMENT-068
+  - A-MOMENT-069
+  - A-MOMENT-070
+  - A-IDX-MOMENT-026
+---
+- runFlow: sub/open-feed.yaml
+- tapOn:
+    text: "全文|Full text"
+    optional: true
+- runFlow:
+    when:
+      notVisible: "动态|Post"
+    commands:
+      - takeScreenshot: BLOCKED-no-detail
+      - assertVisible: "___BLOCKED_no-detail___"
+- takeScreenshot: post-detail

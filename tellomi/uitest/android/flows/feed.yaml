@@ -1,0 +1,17 @@
+appId: app.tellomi.chat
+tags:
+  - A-MAIN-065
+  - A-MOMENT-001
+  - A-MOMENT-002
+  - A-MOMENT-003
+  - A-MOMENT-004
+  - A-MOMENT-005
+  - A-MOMENT-006
+  - A-MOMENT-093
+  - A-MOMENT-095
+  - A-MOMENT-096
+  - A-MOMENT-097
+  - A-MOMENT-098
+---
+- runFlow: sub/open-feed.yaml
+- takeScreenshot: feed

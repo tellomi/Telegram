@@ -1,0 +1,33 @@
+appId: app.tellomi.chat
+tags:
+  - A-SET-035
+  - A-MOMENT-104
+  - A-MOMENT-105
+  - A-MOMENT-106
+  - A-MOMENT-108
+  - A-MOMENT-109
+  - A-MOMENT-110
+  - A-MOMENT-112
+---
+- runFlow: sub/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Privacy.*|隐私.*"
+    direction: DOWN
+    timeout: 40000
+    visibilityPercentage: 40
+- tapOn:
+    text: "Privacy.*|隐私.*"
+- scrollUntilVisible:
+    element:
+      text: "动态|Moments"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 40
+- tapOn:
+    text: "动态|Moments"
+- extendedWaitUntil:
+    visible:
+      text: "列表|Lists|动态推送|已屏蔽的人|Muted in feed"
+    timeout: 20000
+- takeScreenshot: feed-settings
