@@ -94,7 +94,7 @@ import me.vkryl.android.animator.FactorAnimator;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
 
-    /** Contacts, calls, moments, chats, settings, profile. Indexes match {@link TellomiMainTabs}. */
+    /** Discover, chats, calls, contacts, settings, profile. Indexes match {@link TellomiMainTabs#BAR_ORDER}. */
     public static final int TABS_COUNT = TellomiMainTabs.COUNT;
     private static final int POSITION_CONTACTS = TellomiMainTabs.CONTACTS;
     private static final int POSITION_CALLS = TellomiMainTabs.CALLS;
@@ -325,12 +325,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.setMaxWidth(dp(560 + DialogsActivity.MAIN_TABS_MARGIN * 2));
 
         tabs = new GlassTabView[TABS_COUNT];
-        tabs[INDEX_CONTACTS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.MainTabsContacts);
-        tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
-        tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.Moments_Title);
+        tabs[INDEX_FEED] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.FEED, R.string.TellomiTabFeed);
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
+        tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
+        tabs[INDEX_CONTACTS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.MainTabsContacts);
         tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
-        tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.MainTabsProfile);
+        tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.TellomiTabMe);
         tabs[INDEX_CHATS].setOnLongClickListener(this::openFoldersSelector);
         tabs[INDEX_CONTACTS].setOnLongClickListener(this::openContactsSelector);
         tabs[INDEX_CALLS].setOnLongClickListener(this::openCallsSelector);
@@ -343,6 +343,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.addTabToIgnoreClick(tabs[INDEX_FEED]);
         tabsView.addTabToIgnoreClick(tabs[INDEX_SETTINGS]);
 
+        // Child order is the pager index, which is TellomiMainTabs.BAR_ORDER.
         for (int index = 0; index < tabs.length; index++) {
             final GlassTabView view = tabs[index];
 

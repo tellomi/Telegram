@@ -1,13 +1,27 @@
 package org.telegram.messenger;
 
+import android.content.Context;
+import android.util.SparseIntArray;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.telegram.localization.LocalizationUtils;
+import org.telegram.utils.localization.Localization;
 
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -118,6 +132,142 @@ public class TellomiCloudStringsTest {
         assertEquals("2 members", LocaleController.formatPluralStringComma("Members", 2));
     }
 
+    /**
+     * zh-Hans reports plural code {@code zh}. {@code applyLanguage} then uses
+     * {@code Locale("zh")}, whose language tag is {@code zh}. The built-in
+     * overlay for that tag is {@code values-zh}, not {@code values-zh-rCN}.
+     * Plural {@code zh-hant} tags as {@code zh} as well. {@code zh_tw} still
+     * uses {@code values-zh-rTW}. The downloaded pack still owns
+     * {@code MainTabsProfile}.
+     */
+    @Test
+    public void zhPluralCodeKeepsAvatarCaptionWhenThePackSaysProfile() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiTabMe", R.string.TellomiTabMe);
+            bindResource("MainTabsProfile", R.string.MainTabsProfile);
+
+            HashMap<String, String> simplified = pack("MainTabsProfile", "个人资料");
+            LocaleController controller = LocaleController.getInstance();
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+            assertEquals("个人资料", LocaleController.getString(R.string.MainTabsProfile));
+            assertFalse(simplified.containsKey("TellomiTabMe"));
+
+            HashMap<String, String> traditional = pack("MainTabsProfile", "個人資料");
+            showBuiltin(controller, "zh-hant", traditional, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+            assertEquals("個人資料", LocaleController.getString(R.string.MainTabsProfile));
+
+            showBuiltin(controller, "zh_tw", pack("MainTabsProfile", "個人資料"), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("我", LocaleController.getString(R.string.TellomiTabMe));
+
+            showBuiltin(controller, "en", pack(), "src/main/res/values/strings.xml");
+            assertEquals(LocalizationUtils.DEFAULT_LOCALIZATION, LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("Me", LocaleController.getString(R.string.TellomiTabMe));
+
+            showBuiltin(controller, "zh", pack("TellomiTabMe", "个人资料"), "src/main/res/values-zh/strings.xml");
+            assertEquals("个人资料", LocaleController.getString(R.string.TellomiTabMe));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
+    /**
+     * The feed tab used {@code Moments_Title}. The downloaded zh-Hans pack
+     * contains that key as 动态. {@code TellomiTabFeed} is absent from the
+     * pack, so the {@code zh} builtin ({@code values-zh}) stays 发现.
+     */
+    @Test
+    public void zhPluralCodeKeepsDiscoverCaptionWhenThePackSaysMoments() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiTabFeed", R.string.TellomiTabFeed);
+            bindResource("Moments_Title", R.string.Moments_Title);
+
+            HashMap<String, String> simplified = pack("Moments_Title", "动态");
+            LocaleController controller = LocaleController.getInstance();
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("动态", LocaleController.getString(R.string.Moments_Title));
+            assertFalse(simplified.containsKey("TellomiTabFeed"));
+
+            showBuiltin(controller, "zh-hant", pack("Moments_Title", "動態"), "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("動態", LocaleController.getString(R.string.Moments_Title));
+
+            showBuiltin(controller, "zh_tw", pack("Moments_Title", "動態"), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("发现", LocaleController.getString(R.string.TellomiTabFeed));
+
+            showBuiltin(controller, "en", pack("Moments_Title", "Moments"), "src/main/res/values/strings.xml");
+            assertEquals("Discover", LocaleController.getString(R.string.TellomiTabFeed));
+            assertEquals("Moments", LocaleController.getString(R.string.Moments_Title));
+
+            showBuiltin(controller, "zh", pack("TellomiTabFeed", "动态"), "src/main/res/values-zh/strings.xml");
+            assertEquals("动态", LocaleController.getString(R.string.TellomiTabFeed));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
+    @Test
+    public void zhPluralCodeKeepsNavBarTitlesWhenThePackOmitsThem() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiSettingsGeneral", R.string.TellomiSettingsGeneral);
+            bindResource("TellomiNavBar", R.string.TellomiNavBar);
+
+            HashMap<String, String> simplified = pack("Settings", "设置");
+            LocaleController controller = LocaleController.getInstance();
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("通用", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+            assertEquals("设置", LocaleController.getString("Settings"));
+            assertFalse(simplified.containsKey("TellomiSettingsGeneral"));
+            assertFalse(simplified.containsKey("TellomiNavBar"));
+
+            showBuiltin(controller, "zh-hant", pack(), "src/main/res/values-zh/strings.xml");
+            assertEquals("通用", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "zh_tw", pack(), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "en", pack(), "src/main/res/values/strings.xml");
+            assertEquals("General", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("Navigation bar", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "zh", pack("TellomiNavBar", "菜单"), "src/main/res/values-zh/strings.xml");
+            assertEquals("菜单", LocaleController.getString(R.string.TellomiNavBar));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
     @Test
     public void pluralFallsBackToOtherInsideTheCloudPack() {
         HashMap<String, String> russian = pack(
@@ -137,6 +287,53 @@ public class TellomiCloudStringsTest {
         String settings = LocaleController.getString("Settings");
         assertFalse(settings.contains("设置"));
         assertEquals("LOC_ERR:Settings", settings);
+    }
+
+    private static void showBuiltin(LocaleController controller, String pluralLangCode, HashMap<String, String> cloud, String builtinXml) throws Exception {
+        controller.useCloudPackForTest(cloud, pluralLangCode);
+        controller.useBuiltInStringsForTest(readStrings(builtinXml));
+    }
+
+    private static HashMap<String, String> readStrings(String relative) throws Exception {
+        String xml = new String(Files.readAllBytes(repoRoot().resolve("TMessagesProj").resolve(relative)), StandardCharsets.UTF_8);
+        HashMap<String, String> values = new HashMap<>();
+        Matcher matcher = Pattern.compile("<string name=\"([^\"]+)\">(.*?)</string>", Pattern.DOTALL).matcher(xml);
+        while (matcher.find()) {
+            values.put(matcher.group(1), matcher.group(2));
+        }
+        return values;
+    }
+
+    private static Path repoRoot() {
+        Path dir = Paths.get("").toAbsolutePath();
+        for (int i = 0; i < 6 && dir != null; i++) {
+            if (Files.exists(dir.resolve("settings.gradle")) && Files.exists(dir.resolve("TMessagesProj"))) {
+                return dir;
+            }
+            dir = dir.getParent();
+        }
+        return Paths.get("").toAbsolutePath();
+    }
+
+    private static void bindResource(String name, int resId) throws Exception {
+        SparseIntArray bindings = resourceBindings();
+        if (bindings == null) {
+            bindings = new SparseIntArray();
+            setResourceBindings(bindings);
+        }
+        bindings.put(resId, name.hashCode());
+    }
+
+    private static SparseIntArray resourceBindings() throws Exception {
+        Field field = Localization.class.getDeclaredField("rawResBindings");
+        field.setAccessible(true);
+        return (SparseIntArray) field.get(null);
+    }
+
+    private static void setResourceBindings(SparseIntArray bindings) throws Exception {
+        Field field = Localization.class.getDeclaredField("rawResBindings");
+        field.setAccessible(true);
+        field.set(null, bindings);
     }
 
     private static HashMap<String, String> pack(String... pairs) {

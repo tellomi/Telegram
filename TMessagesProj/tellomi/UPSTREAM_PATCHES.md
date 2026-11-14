@@ -1,5 +1,61 @@
 # Upstream patches
 
+## Navigation bar settings page (M2 / D-38)
+
+Settings has a General row (`TellomiSettingsGeneral`, General / 通用) that opens one row, Navigation bar (`TellomiNavBar`, Navigation bar / 导航栏). That page lists the bar in `BAR_ORDER` and toggles Discover, Calls, and Contacts through `TellomiMainTabs`. Chats, Settings, and Profile stay locked. `values-zh/strings.xml` is the `zh` bin, so a downloaded pack that does not contain those keys cannot replace 通用 or 导航栏.
+
+`UserConfig.loadConfig` no longer forces `showCallsTab` on when `feedNavCallsShown` is absent. A stored true or false is read as stored. The missing-key default stays the upstream `true`. `MainTabsActivity.applyTellomiTabs` still copies the Calls flag from `TellomiMainTabs` onto `showCallsTab`. Logout still resets `showCallsTab` in `clearConfig`.
+
+Upstream files:
+
+- `SettingsActivity` — the General row.
+- `UserConfig` — drop the one-shot Calls force.
+- `res/values/strings.xml`, `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml` — `TellomiSettingsGeneral` and `TellomiNavBar`.
+
+`TellomiGeneralSettingsActivity` and `TellomiNavBarActivity` are Tellomi code.
+
+## Locked Chats and Settings tabs (M2 / D-7)
+
+Chats, Settings, and Profile cannot be hidden. `isLocked` makes `isVisible` return true and `setVisible` refuse the write. A stored `mainTabsSettings=false`, or the legacy `tellomi_main_tab_visible_4=false`, is left in place and ignored, so an upgrade that hid Settings sees the tab again. The menu-settings switch for a locked tab is already disabled. The chats long-press opens folders. The settings tab has no long-press hide. The calls long-press can still hide Calls.
+
+No upstream files. The lock is in `TellomiMainTabs`.
+
+## Fresh-install Settings tab (M2 / D-5)
+
+A fresh install shows Discover, Chats, Settings, and Profile. Contacts and Calls stay off. Chats and Profile stay locked. `defaultVisible` is the fallback only when `mainTabsSettings` and `tellomi_main_tab_visible_4` are both absent, so an upgrade that already stored the switch keeps that value. Reading the fallback does not write it.
+
+No upstream files. The fallback is in `TellomiMainTabs`.
+
+## Bottom bar order and Discover caption (M2 / D-4, D-42, D-36)
+
+`TellomiMainTabs.BAR_ORDER` is the pager index order. `MainTabsActivity.createView` adds `tabs[index]` from 0 through 5, and `indexToPosition` returns that index. All six, when on, are Discover, Chats, Calls, Contacts, Settings, then Profile. Chats and Profile stay locked. Contacts and Calls stay off until the user turns them on. The fresh-install Settings default is the D-5 section above. `getStartPosition` still returns the chats tab.
+
+Visibility flags stay on the named `mainconfig` keys (`mainTabsFeed`, `mainTabsChats`, `mainTabsCalls`, `mainTabsContacts`, `mainTabsSettings`, `mainTabsProfile`). The older `tellomi_main_tab_visible_N` keys keep the indexes from before this reorder (contacts 0, calls 1, feed 2, chats 3, settings 4, profile 5) and are copied onto those names on the first read. The menu-settings switch order is unchanged.
+
+The feed tab used `Moments_Title`. A downloaded pack replaces that key, and the bundled zh value is 动态. The product caption is 发现. `TellomiTabFeed` is not an official key. `values-zh/strings.xml` is the `zh` bin, the same path as `TellomiTabMe`. The feed screen title stays `Moments_Title`.
+
+`tg://settings/chats/search` is the one main-pager deep link that used a raw index. Upstream 12.4.0 (`fa4e8aa0dd`) wrote `scrollToPosition(2)` when that index was `POSITION_CALLS_OR_SETTINGS`. Tellomi master then put the feed tab at index 2 and left the literal, so the link opens the feed tab. It now passes `TellomiMainTabs.FEED`. Other `scrollToPosition` / `setCurrentItem` literals belong to their own pagers (community, boosts, stories, emoji) and are not the main bar.
+
+Upstream files:
+
+- `MainTabsActivity` — feed tab string resource, and the tab views are filled in `TellomiMainTabs` index order.
+- `LinkManager` — `tg://settings/chats/search` scrolls to `TellomiMainTabs.FEED`.
+- `res/values/strings.xml`, `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml` — `TellomiTabFeed` (`Discover` / `发现`).
+
+`TellomiMenuSettingsActivity` is Tellomi code. Its feed switch uses the same caption. The switch order, locks, and defaults are unchanged.
+
+## Profile tab label (M2 / ISSUE-A-NAV-001)
+
+After signup the visible bar is Discover, Chats, then the avatar tab. That tab used `R.string.MainTabsProfile`. Cloud strings replace a key the downloaded langpack contains, and the applied zh-Hans value of `MainTabsProfile` is 个人资料. The product caption is 我.
+
+`TellomiTabMe` is not an official key, so the pack does not contain it. `langpack.getLanguages` reports `plural_code` `zh` for both zh-Hans and zh-Hant. `applyLanguage` builds the locale from that code, so the locale is `Locale("zh")`. Built-in bins are chosen with `locale.toLanguageTag()`. `values-zh-rCN` is `zh-CN` and `values-zh-rTW` is `zh-TW`, and neither matches `zh`, which would leave the caption as the English `Me`. `values-zh/strings.xml` is the `zh` bin (`我`). Plural `zh-hant` also tags as `zh` (`new Locale("zh", "hant")` drops the invalid region), so that pack reads the same 我. Plural `zh_tw` still uses `values-zh-rTW`. `MainTabsProfile` stays `Profile`.
+
+Upstream files:
+
+- `MainTabsActivity` — the avatar tab’s string resource.
+- `LocaleController` — `useBuiltInStringsForTest`, next to `useCloudPackForTest`, so a unit test can install that `zh` overlay without a process asset.
+
+
 ## Native feature audit 2026-11-14
 
 Teamgram `master` implements the folder, sticker, and connection methods the official client leaves off until `help.getAppConfig`. This server does not send `dialog_filters_enabled`, `background_connection`, `keep_alive_service`, or `save_gifs_with_stickers`, so those DrKLO defaults stayed off. `TellomiNativeFeatures` turns them on. `help.getAppConfig` can still write the key later.
@@ -71,7 +127,7 @@ System language: `LocaleController` construction, when no `mainconfig` `language
 
 ## Profile Moments tab
 
-Native Stories stay on the profile. Archive and album tabs are unchanged. The bottom bar has no Stories item; its feed tab is `Moments_Title` (`Moments` / `动态`). Discover uses `Moments_Story` for a post kind (`Story` / `故事`). Neither place says `快拍`. The profile Stories tab still uses that name in Tellomi, so it must not share the Moments title.
+Native Stories stay on the profile. Archive and album tabs are unchanged. The bottom bar has no Stories item. Its feed tab caption is `TellomiTabFeed` (`Discover` / `发现`); the feed screen title stays `Moments_Title` (`Moments` / `动态`). Discover uses `Moments_Story` for a post kind (`Story` / `故事`). Neither place says `快拍`. The profile Stories tab still uses that name in Tellomi, so it must not share the Moments title.
 
 `ProfileStories` in the bundled strings is `Stories` / `快拍`. A downloaded langpack replaces a key it contains, and the official simplified value of `ProfileStories` is `动态`. The Moments insertion in `updateTabs` therefore sets the existing `TAB_STORIES` title to `Moments_Profile_Stories` (`Stories` / `快拍`) unless that slot is a bot preview. The tab is not removed. `ProfileActivity`'s open animation is unchanged. The post-list row stays `Moments_Profile_OpenPosts` (`All posts` / `帖子`).
 

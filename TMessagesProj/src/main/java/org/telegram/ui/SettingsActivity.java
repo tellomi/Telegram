@@ -725,6 +725,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
+        items.add(SettingCell.Factory.of(41, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_folders, getString(R.string.TellomiSettingsGeneral)));
 
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(getString(R.string.SettingsTools)));
@@ -869,6 +870,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 40:
                 presentSettingFragment(new TellomiMenuSettingsActivity());
+                break;
+            case 41:
+                presentSettingFragment(new TellomiGeneralSettingsActivity());
                 break;
 
             case 11:

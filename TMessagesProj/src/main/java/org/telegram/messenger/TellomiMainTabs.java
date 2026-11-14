@@ -6,8 +6,9 @@ import java.util.Arrays;
  * Device-local visibility for the main bottom bar.
  *
  * Indexes match the order {@code MainTabsActivity} adds tab views, so hiding
- * a tab does not rebuild the pager. Chats and Profile stay visible: Settings
- * is opened from the profile actions when its tab is hidden.
+ * a tab does not rebuild the pager. That order is Discover, Chats, Calls,
+ * Contacts, Settings, Profile, and there are at most six. Chats, Settings, and
+ * Profile stay visible. A stored off value for those tabs is ignored.
  *
  * Values live in {@link MessagesController#getGlobalMainSettings()}, the same
  * {@code mainconfig} file {@link SharedConfig} uses, and are not synced.
@@ -25,23 +26,39 @@ import java.util.Arrays;
  */
 public final class TellomiMainTabs {
 
-    public static final int CONTACTS = 0;
-    public static final int CALLS = 1;
-    public static final int FEED = 2;
-    public static final int CHATS = 3;
+    public static final int FEED = 0;
+    public static final int CHATS = 1;
+    public static final int CALLS = 2;
+    public static final int CONTACTS = 3;
     public static final int SETTINGS = 4;
     public static final int PROFILE = 5;
     public static final int COUNT = 6;
 
-    /** Left-to-right order of the existing bar. */
+    /**
+     * Left-to-right pager order when every tab is on. {@code BAR_ORDER[i] == i}
+     * because {@code MainTabsActivity.createView} adds {@code tabs[index]} in
+     * index order, and that index is the pager position. At most {@link #COUNT}.
+     */
     public static final int[] BAR_ORDER = {
-            CONTACTS, CALLS, FEED, CHATS, SETTINGS, PROFILE
+            FEED, CHATS, CALLS, CONTACTS, SETTINGS, PROFILE
     };
 
     /** Order of the switches on the menu-settings screen. */
     public static final int[] SETTINGS_ORDER = {
             FEED, CHATS, SETTINGS, PROFILE, CONTACTS, CALLS
     };
+
+    /**
+     * {@code tellomi_main_tab_visible_N} was written when the pager was
+     * contacts, calls, feed, chats, settings, profile. Named keys in
+     * {@link #visibleKey} do not use these numbers.
+     */
+    private static final int LEGACY_CONTACTS = 0;
+    private static final int LEGACY_CALLS = 1;
+    private static final int LEGACY_FEED = 2;
+    private static final int LEGACY_CHATS = 3;
+    private static final int LEGACY_SETTINGS = 4;
+    private static final int LEGACY_PROFILE = 5;
 
     public static final String HIDE_LABELS_KEY = "mainTabsHideLabels";
     private static final String LEGACY_HIDE_LABELS_KEY = "tellomi_main_tab_hide_labels";
@@ -78,16 +95,43 @@ public final class TellomiMainTabs {
     }
 
     static String legacyVisibleKey(int tab) {
-        return "tellomi_main_tab_visible_" + tab;
+        return "tellomi_main_tab_visible_" + legacyIndex(tab);
     }
 
+    /** Historical pager index for a pre-reorder visibility flag. */
+    static int legacyIndex(int tab) {
+        if (tab == CONTACTS) {
+            return LEGACY_CONTACTS;
+        }
+        if (tab == CALLS) {
+            return LEGACY_CALLS;
+        }
+        if (tab == FEED) {
+            return LEGACY_FEED;
+        }
+        if (tab == CHATS) {
+            return LEGACY_CHATS;
+        }
+        if (tab == SETTINGS) {
+            return LEGACY_SETTINGS;
+        }
+        if (tab == PROFILE) {
+            return LEGACY_PROFILE;
+        }
+        return tab;
+    }
+
+    /** Chats, Settings, and Profile cannot be hidden. */
     public static boolean isLocked(int tab) {
-        return tab == CHATS || tab == PROFILE;
+        return tab == CHATS || tab == SETTINGS || tab == PROFILE;
     }
 
-    /** Fresh install: Moments, Chats, Profile. Settings, Contacts, and Calls are off. */
+    /**
+     * Fresh install: Discover, Chats, Settings, Profile. Contacts and Calls are off.
+     * Used only when neither the named key nor the legacy key is stored.
+     */
     public static boolean defaultVisible(int tab) {
-        return tab == FEED || tab == CHATS || tab == PROFILE;
+        return tab == FEED || tab == CHATS || tab == SETTINGS || tab == PROFILE;
     }
 
     public static boolean isVisible(Store store, int tab) {
@@ -101,7 +145,7 @@ public final class TellomiMainTabs {
     }
 
     /**
-     * @return false when the tab cannot be changed (Chats, Profile, or an unknown index)
+     * @return false when the tab cannot be changed (Chats, Settings, Profile, or an unknown index)
      */
     public static boolean setVisible(Store store, int tab, boolean visible) {
         if (tab < 0 || tab >= COUNT || isLocked(tab)) {

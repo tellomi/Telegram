@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="TellomiTabMe">我</string>
+    <string name="TellomiTabFeed">发现</string>
+    <string name="TellomiSettingsGeneral">通用</string>
+    <string name="TellomiNavBar">导航栏</string>
+</resources>

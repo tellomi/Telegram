@@ -583,6 +583,17 @@ public class LocaleController {
         }
     }
 
+    /**
+     * Built-in overlay for tests. A downloaded pack is still consulted first.
+     * The locale is left as {@link #useCloudPackForTest} set it, and this
+     * overlay is not replaced on the next read.
+     */
+    void useBuiltInStringsForTest(HashMap<String, String> values) {
+        HashMap<String, String> pack = values == null ? new HashMap<>() : values;
+        localizationInternal = new Localization.Builder().addLocalization(pack).build();
+        localizationInternalLastLocale = currentLocale;
+    }
+
     public static LocaleController getInstance() {
         LocaleController localInstance = Instance;
         if (localInstance == null) {
