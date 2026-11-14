@@ -127,10 +127,20 @@ class Shard:
         env = os.environ.copy()
         env["TELLOMI_TEST_CODE"] = suite_code()
         env.setdefault("TELLOMI_TEST_PASSWORD", "")
-        if self.state["national"]:
-            env["TELLOMI_TEST_PHONE_NATIONAL"] = self.state["national"]
+        national = self.state["national"] or env.get("TELLOMI_TEST_PHONE_NATIONAL", "")
+        if national:
+            env["TELLOMI_TEST_PHONE_NATIONAL"] = national
+        # Maestro 2 does not expand shell variables unless they are passed with -e.
+        command = ["maestro", "test", "--debug-output", str(debug)]
+        if national:
+            command.extend(["-e", f"TELLOMI_TEST_PHONE_NATIONAL={national}"])
+        command.extend([
+            "-e", f"TELLOMI_TEST_CODE={suite_code()}",
+            "-e", f"TELLOMI_TEST_PASSWORD={env.get('TELLOMI_TEST_PASSWORD', '')}",
+            str(flow_path),
+        ])
         proc = subprocess.run(
-            ["maestro", "test", "--debug-output", str(debug), str(flow_path)],
+            command,
             capture_output=True,
             text=True,
             timeout=700,

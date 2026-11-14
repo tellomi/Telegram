@@ -38,6 +38,12 @@ appId: app.tellomi.chat
       - tapOn:
           text: "Done|完成"
           optional: true
+      - runFlow:
+          when:
+            visible: "Your phone number|Please confirm your country code"
+          commands:
+            - tapOn:
+                point: "88%,72%"
       - takeScreenshot: login-phone-sent
       - extendedWaitUntil:
           visible:
