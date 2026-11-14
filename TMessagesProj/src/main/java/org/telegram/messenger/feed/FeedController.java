@@ -3,6 +3,8 @@ package org.telegram.messenger.feed;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -1629,10 +1631,10 @@ public class FeedController {
     public static ArrayList<FeedModels.Post> fixtures(String stream) {
         ArrayList<FeedModels.Post> list = new ArrayList<>();
         String[] texts = new String[]{
-                "第一条动态。正文超过五行时会折叠，点全文进入详情。\n第二行\n第三行\n第四行\n第五行\n第六行才出现全文。",
-                "互相关注就是好友。这条是公开帖，推荐流里可以关注。",
-                "同城只展示作者打开了「在同城展示」的公开帖。",
-                "点赞、评论、转发、分享、收藏都在底部这一排。"
+                LocaleController.getString(R.string.Moments_Fixture_Fold),
+                LocaleController.getString(R.string.Moments_Fixture_Friends),
+                LocaleController.getString(R.string.Moments_Fixture_Nearby),
+                LocaleController.getString(R.string.Moments_Fixture_Actions)
         };
         String[] kinds = new String[]{"public", "mutual_followers", "public", "contacts"};
         for (int i = 0; i < texts.length; i++) {
@@ -1652,11 +1654,11 @@ public class FeedController {
             post.createdAt = System.currentTimeMillis() - (i + 1) * 3600_000L;
             post.likes = 12 - i;
             post.comments = i;
-            post.cityName = "成都";
+            post.cityName = LocaleController.getString(R.string.Moments_City_Chengdu);
             post.allowNearby = FeedModels.STREAM_NEARBY.equals(stream);
             if (i == 2) {
-                post.placeName = "某地点";
-                post.distanceBand = "1–5 km";
+                post.placeName = LocaleController.getString(R.string.Moments_Fixture_Place);
+                post.distanceBand = LocaleController.getString(R.string.Moments_Fixture_Distance);
             }
             list.add(post);
         }

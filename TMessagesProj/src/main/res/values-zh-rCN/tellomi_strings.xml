@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tellomi fallbacks for langpack code zh-hans. Official wording when the pack has the key. -->
+    <string name="ForwardHideSenderNamePremium">订阅 **Tellomi**，即可在转发带格式的消息时隐藏发送者名称。</string>
+    <string name="Moments_Fixture_Actions">点赞、评论、转发、分享、收藏都在底部这一排。</string>
+    <string name="Moments_Fixture_Distance">1–5 公里</string>
+    <string name="Moments_Fixture_Fold">第一条动态。正文超过五行时会折叠，点全文进入详情。\n第二行\n第三行\n第四行\n第五行\n第六行才出现全文。</string>
+    <string name="Moments_Fixture_Friends">互相关注就是好友。这条是公开帖，推荐流里可以关注。</string>
+    <string name="Moments_Fixture_Nearby">同城只展示作者打开了「在同城展示」的公开帖。</string>
+    <string name="Moments_Fixture_Place">某地点</string>
+    <string name="NewContactPhoneInContacts">此手机号码已保存在您的联系人中。 **查看 >**</string>
+    <string name="NewContactPhoneNotOnTelegram">此号码不在 Tellomi 上。**邀请 >**</string>
+    <string name="NewContactPhoneOnTelegram">此号码在 Tellomi 上。</string>
+    <string name="ThemePreviewBetaChat">Tellomi 测试聊天</string>
+</resources>

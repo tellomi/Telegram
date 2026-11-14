@@ -1407,20 +1407,15 @@ public class LocaleController {
             }
         }
         try {
-            Locale newLocale;
-            String[] args;
+            String localeCode;
             if (!TextUtils.isEmpty(localeInfo.pluralLangCode)) {
-                args = localeInfo.pluralLangCode.split("_");
+                localeCode = localeInfo.pluralLangCode;
             } else if (!TextUtils.isEmpty(localeInfo.baseLangCode)) {
-                args = localeInfo.baseLangCode.split("_");
+                localeCode = localeInfo.baseLangCode;
             } else {
-                args = localeInfo.shortName.split("_");
+                localeCode = localeInfo.shortName;
             }
-            if (args.length == 1) {
-                newLocale = new Locale(args[0]);
-            } else {
-                newLocale = new Locale(args[0], args[1]);
-            }
+            Locale newLocale = TellomiStringLocales.localeFor(localeCode, localeInfo.shortName);
             if (override) {
                 languageOverride = localeInfo.shortName;
 
