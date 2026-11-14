@@ -2541,30 +2541,34 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             Collections.sort(countriesArray, Comparator.comparing(o -> o.name));
 
-            String country = null;
-
-            try {
-                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                if (telephonyManager != null) {
-                    country = null;//telephonyManager.getSimCountryIso().toUpperCase();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-
-            if (country != null) {
-                setCountry(languageMap, country.toUpperCase());
+            if (TellomiLoginCountry.useChinaDefault(activityMode == MODE_LOGIN)) {
+                codeField.setText(TellomiLoginCountry.defaultCallingCode(null, null));
             } else {
-                TLRPC.TL_help_getNearestDc req = new TLRPC.TL_help_getNearestDc();
-                getAccountInstance().getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (response == null) {
-                        return;
+                String country = null;
+
+                try {
+                    TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                    if (telephonyManager != null) {
+                        country = null;//telephonyManager.getSimCountryIso().toUpperCase();
                     }
-                    TLRPC.TL_nearestDc res = (TLRPC.TL_nearestDc) response;
-                    if (codeField.length() == 0) {
-                        setCountry(languageMap, res.country.toUpperCase());
-                    }
-                }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+
+                if (country != null) {
+                    setCountry(languageMap, country.toUpperCase());
+                } else {
+                    TLRPC.TL_help_getNearestDc req = new TLRPC.TL_help_getNearestDc();
+                    getAccountInstance().getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (response == null) {
+                            return;
+                        }
+                        TLRPC.TL_nearestDc res = (TLRPC.TL_nearestDc) response;
+                        if (codeField.length() == 0) {
+                            setCountry(languageMap, res.country.toUpperCase());
+                        }
+                    }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                }
             }
             if (codeField.length() == 0) {
                 setCountryButtonText(null);
@@ -3249,6 +3253,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         private boolean numberFilled;
         public void fillNumber() {
+            if (TellomiLoginCountry.skipLineNumberPrefill(activityMode == MODE_LOGIN)) {
+                return;
+            }
             if (numberFilled || activityMode != MODE_LOGIN) {
                 return;
             }
