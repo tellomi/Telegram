@@ -197,6 +197,8 @@
     <string name="MainTabsButtons">导航栏按钮</string>
     <string name="TellomiTabMe">我</string>
     <string name="TellomiTabFeed">发现</string>
+    <string name="TellomiSettingsGeneral">通用</string>
+    <string name="TellomiNavBar">导航栏</string>
 
     <string name="Moments_FollowingEntry">关注</string>
     <string name="Moments_FollowersEntry">粉丝</string>

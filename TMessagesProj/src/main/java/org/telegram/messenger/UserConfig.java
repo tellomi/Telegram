@@ -313,10 +313,6 @@ public class UserConfig extends BaseController {
             loginTime = preferences.getInt("loginTime", currentAccount);
             syncContacts = preferences.getBoolean("syncContacts", true);
             showCallsTab = preferences.getBoolean("showCallsTab", true);
-            if (!preferences.getBoolean("feedNavCallsShown", false)) {
-                showCallsTab = true;
-                preferences.edit().putBoolean("showCallsTab", true).putBoolean("feedNavCallsShown", true).apply();
-            }
             suggestContacts = preferences.getBoolean("suggestContacts", true);
             hasSecureData = preferences.getBoolean("hasSecureData", false);
             notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded4", false);

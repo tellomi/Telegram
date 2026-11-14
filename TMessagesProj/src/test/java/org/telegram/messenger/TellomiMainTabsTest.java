@@ -147,6 +147,40 @@ public class TellomiMainTabsTest {
     }
 
     @Test
+    public void generalSettingsOpensTheNavBarPageOnTheSameStore() throws Exception {
+        String settings = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java"));
+        String general = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiGeneralSettingsActivity.java"));
+        String nav = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiNavBarActivity.java"));
+        String userConfig = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/messenger/UserConfig.java"));
+        assertTrue(settings.contains("getString(R.string.TellomiSettingsGeneral)"));
+        assertTrue(settings.contains("presentSettingFragment(new TellomiGeneralSettingsActivity())"));
+        assertTrue(general.contains("getString(R.string.TellomiSettingsGeneral)"));
+        assertTrue(general.contains("getString(R.string.TellomiNavBar)"));
+        assertTrue(general.contains("presentFragment(new TellomiNavBarActivity())"));
+        assertTrue(nav.contains("getString(R.string.TellomiNavBar)"));
+        assertTrue(nav.contains("for (int tab : TellomiMainTabs.BAR_ORDER)"));
+        assertTrue(nav.contains("TellomiMainTabs.isLocked(tab)"));
+        assertTrue(nav.contains(".setEnabled(!locked)"));
+        assertTrue(nav.contains("TellomiMainTabs.setVisible(store, tab, !TellomiMainTabs.isVisible(store, tab))"));
+        assertTrue(nav.contains("TellomiMainTabsStore.device()"));
+        assertFalse(userConfig.contains("feedNavCallsShown"));
+        assertTrue(userConfig.contains("showCallsTab = preferences.getBoolean(\"showCallsTab\", true);"));
+
+        String english = read(repoRoot().resolve("TMessagesProj/src/main/res/values/strings.xml"));
+        String simplified = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh-rCN/strings.xml"));
+        String traditional = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh-rTW/strings.xml"));
+        String zh = read(repoRoot().resolve("TMessagesProj/src/main/res/values-zh/strings.xml"));
+        assertTrue(english.contains("<string name=\"TellomiSettingsGeneral\">General</string>"));
+        assertTrue(english.contains("<string name=\"TellomiNavBar\">Navigation bar</string>"));
+        assertTrue(simplified.contains("<string name=\"TellomiSettingsGeneral\">通用</string>"));
+        assertTrue(simplified.contains("<string name=\"TellomiNavBar\">导航栏</string>"));
+        assertTrue(traditional.contains("<string name=\"TellomiSettingsGeneral\">通用</string>"));
+        assertTrue(traditional.contains("<string name=\"TellomiNavBar\">导航栏</string>"));
+        assertTrue(zh.contains("<string name=\"TellomiSettingsGeneral\">通用</string>"));
+        assertTrue(zh.contains("<string name=\"TellomiNavBar\">导航栏</string>"));
+    }
+
+    @Test
     public void otherTabsToggleAndSurviveANewStore() {
         MemoryStore store = new MemoryStore();
         assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, false));
