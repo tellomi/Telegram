@@ -40,25 +40,23 @@ public class TellomiMainTabsTest {
     }
 
     @Test
-    public void storedVisibilityOutranksTheFreshSettingsDefault() {
+    public void storedSettingsOffStaysOnTheBar() {
         MemoryStore hidden = new MemoryStore();
         hidden.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), false);
-        assertFalse(TellomiMainTabs.isVisible(hidden, TellomiMainTabs.SETTINGS));
+        assertFalse(TellomiMainTabs.setVisible(hidden, TellomiMainTabs.SETTINGS, false));
+        assertFalse(hidden.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), true));
+        assertTrue(TellomiMainTabs.isVisible(hidden, TellomiMainTabs.SETTINGS));
         assertArrayEquals(new int[]{
                 TellomiMainTabs.FEED,
                 TellomiMainTabs.CHATS,
+                TellomiMainTabs.SETTINGS,
                 TellomiMainTabs.PROFILE
         }, TellomiMainTabs.visibleTabs(hidden.copy()));
 
-        MemoryStore shown = new MemoryStore();
-        shown.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), true);
-        assertTrue(TellomiMainTabs.isVisible(shown, TellomiMainTabs.SETTINGS));
-        assertTrue(TellomiMainTabs.visibleTabs(shown.copy())[2] == TellomiMainTabs.SETTINGS);
-
         MemoryStore legacyOff = new MemoryStore();
         legacyOff.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS), false);
-        assertFalse(TellomiMainTabs.isVisible(legacyOff, TellomiMainTabs.SETTINGS));
-        assertFalse(legacyOff.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), true));
+        assertTrue(TellomiMainTabs.isVisible(legacyOff, TellomiMainTabs.SETTINGS));
+        assertFalse(legacyOff.contains(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS)));
     }
 
     @Test
@@ -85,7 +83,7 @@ public class TellomiMainTabsTest {
         MemoryStore store = new MemoryStore();
         assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CALLS, true));
         assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CONTACTS, true));
-        assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, true));
+        assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, false));
         assertArrayEquals(TellomiMainTabs.BAR_ORDER, TellomiMainTabs.visibleTabs(store));
     }
 
@@ -114,24 +112,44 @@ public class TellomiMainTabsTest {
     }
 
     @Test
-    public void chatsAndProfileStayVisibleEvenIfStoredOff() {
+    public void chatsSettingsAndProfileStayVisibleEvenIfStoredOff() {
         MemoryStore store = new MemoryStore();
         assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.CHATS, false));
+        assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, false));
         assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.PROFILE, false));
         assertFalse(store.contains(TellomiMainTabs.visibleKey(TellomiMainTabs.CHATS)));
+        assertFalse(store.contains(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS)));
         store.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.CHATS), false);
+        store.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), false);
         store.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.PROFILE), false);
         assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.CHATS));
+        assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.SETTINGS));
         assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.PROFILE));
         assertTrue(TellomiMainTabs.isLocked(TellomiMainTabs.CHATS));
+        assertTrue(TellomiMainTabs.isLocked(TellomiMainTabs.SETTINGS));
         assertTrue(TellomiMainTabs.isLocked(TellomiMainTabs.PROFILE));
-        assertFalse(TellomiMainTabs.isLocked(TellomiMainTabs.SETTINGS));
+        assertFalse(TellomiMainTabs.isLocked(TellomiMainTabs.FEED));
+        assertFalse(TellomiMainTabs.isLocked(TellomiMainTabs.CALLS));
+        assertFalse(TellomiMainTabs.isLocked(TellomiMainTabs.CONTACTS));
+    }
+
+    @Test
+    public void chatsAndSettingsLongPressDoesNotHideThem() throws Exception {
+        String activity = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java"));
+        String menu = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/TellomiMenuSettingsActivity.java"));
+        assertTrue(activity.contains("tabs[INDEX_CHATS].setOnLongClickListener(this::openFoldersSelector)"));
+        assertFalse(activity.contains("tabs[INDEX_SETTINGS].setOnLongClickListener"));
+        assertFalse(activity.contains("tabs[INDEX_CHATS].setOnLongClickListener(this::openCallsSelector)"));
+        assertTrue(activity.contains("getString(R.string.HideCallTab)"));
+        assertTrue(menu.contains("boolean locked = TellomiMainTabs.isLocked(tab)"));
+        assertTrue(menu.contains(".setEnabled(!locked)"));
+        assertTrue(menu.contains("if (TellomiMainTabs.isLocked(tab))"));
     }
 
     @Test
     public void otherTabsToggleAndSurviveANewStore() {
         MemoryStore store = new MemoryStore();
-        assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, true));
+        assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.SETTINGS, false));
         assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CONTACTS, true));
         assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.CALLS, true));
         assertTrue(TellomiMainTabs.setVisible(store, TellomiMainTabs.FEED, false));
@@ -149,13 +167,14 @@ public class TellomiMainTabsTest {
         assertFalse(TellomiMainTabs.isVisible(restored, TellomiMainTabs.FEED));
 
         assertTrue(TellomiMainTabs.setVisible(restored, TellomiMainTabs.FEED, true));
-        assertTrue(TellomiMainTabs.setVisible(restored, TellomiMainTabs.SETTINGS, false));
+        assertFalse(TellomiMainTabs.setVisible(restored, TellomiMainTabs.SETTINGS, false));
         TellomiMainTabs.setHideLabels(restored, false);
         assertArrayEquals(new int[]{
                 TellomiMainTabs.FEED,
                 TellomiMainTabs.CHATS,
                 TellomiMainTabs.CALLS,
                 TellomiMainTabs.CONTACTS,
+                TellomiMainTabs.SETTINGS,
                 TellomiMainTabs.PROFILE
         }, TellomiMainTabs.visibleTabs(restored));
         assertFalse(TellomiMainTabs.hideLabels(restored));
@@ -185,14 +204,14 @@ public class TellomiMainTabsTest {
     public void legacyPreferenceKeysAreCopiedForward() {
         MemoryStore store = new MemoryStore();
         store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.FEED), false);
-        store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS), true);
+        store.putBoolean(TellomiMainTabs.legacyVisibleKey(TellomiMainTabs.SETTINGS), false);
         store.putBoolean("tellomi_main_tab_hide_labels", true);
 
         assertFalse(TellomiMainTabs.isVisible(store, TellomiMainTabs.FEED));
         assertTrue(TellomiMainTabs.isVisible(store, TellomiMainTabs.SETTINGS));
         assertTrue(TellomiMainTabs.hideLabels(store));
         assertFalse(store.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.FEED), true));
-        assertTrue(store.getBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS), false));
+        assertFalse(store.contains(TellomiMainTabs.visibleKey(TellomiMainTabs.SETTINGS)));
         assertTrue(store.getBoolean(TellomiMainTabs.HIDE_LABELS_KEY, false));
 
         store.putBoolean(TellomiMainTabs.visibleKey(TellomiMainTabs.FEED), true);
@@ -245,7 +264,7 @@ public class TellomiMainTabsTest {
         assertTrue(legacy.getBoolean("mainTabsContacts", false));
         assertFalse(legacy.getBoolean("mainTabsCalls", true));
         assertFalse(legacy.getBoolean("mainTabsFeed", true));
-        assertTrue(legacy.getBoolean("mainTabsSettings", false));
+        assertFalse(legacy.contains("mainTabsSettings"));
         assertFalse(legacy.contains("mainTabs" + TellomiMainTabs.FEED));
         assertArrayEquals(TellomiMainTabs.visibleTabs(named), TellomiMainTabs.visibleTabs(legacy));
     }

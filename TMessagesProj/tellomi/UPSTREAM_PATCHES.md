@@ -1,5 +1,11 @@
 # Upstream patches
 
+## Locked Chats and Settings tabs (M2 / D-7)
+
+Chats, Settings, and Profile cannot be hidden. `isLocked` makes `isVisible` return true and `setVisible` refuse the write. A stored `mainTabsSettings=false`, or the legacy `tellomi_main_tab_visible_4=false`, is left in place and ignored, so an upgrade that hid Settings sees the tab again. The menu-settings switch for a locked tab is already disabled. The chats long-press opens folders. The settings tab has no long-press hide. The calls long-press can still hide Calls.
+
+No upstream files. The lock is in `TellomiMainTabs`.
+
 ## Fresh-install Settings tab (M2 / D-5)
 
 A fresh install shows Discover, Chats, Settings, and Profile. Contacts and Calls stay off. Chats and Profile stay locked. `defaultVisible` is the fallback only when `mainTabsSettings` and `tellomi_main_tab_visible_4` are both absent, so an upgrade that already stored the switch keeps that value. Reading the fallback does not write it.

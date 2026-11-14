@@ -7,9 +7,8 @@ import java.util.Arrays;
  *
  * Indexes match the order {@code MainTabsActivity} adds tab views, so hiding
  * a tab does not rebuild the pager. That order is Discover, Chats, Calls,
- * Contacts, Settings, Profile, and there are at most six. Chats and Profile
- * stay visible: Settings is opened from the profile actions when its tab is
- * hidden.
+ * Contacts, Settings, Profile, and there are at most six. Chats, Settings, and
+ * Profile stay visible. A stored off value for those tabs is ignored.
  *
  * Values live in {@link MessagesController#getGlobalMainSettings()}, the same
  * {@code mainconfig} file {@link SharedConfig} uses, and are not synced.
@@ -122,8 +121,9 @@ public final class TellomiMainTabs {
         return tab;
     }
 
+    /** Chats, Settings, and Profile cannot be hidden. */
     public static boolean isLocked(int tab) {
-        return tab == CHATS || tab == PROFILE;
+        return tab == CHATS || tab == SETTINGS || tab == PROFILE;
     }
 
     /**
@@ -145,7 +145,7 @@ public final class TellomiMainTabs {
     }
 
     /**
-     * @return false when the tab cannot be changed (Chats, Profile, or an unknown index)
+     * @return false when the tab cannot be changed (Chats, Settings, Profile, or an unknown index)
      */
     public static boolean setVisible(Store store, int tab, boolean visible) {
         if (tab < 0 || tab >= COUNT || isLocked(tab)) {
