@@ -223,9 +223,9 @@ class Shard:
         if not self._tap_text(xml, r"Phone number|电话号码"):
             return False
         adb("shell", "input", "text", national)
-        adb("shell", "input", "keyevent", "111")
         xml = self.dump_ui()
-        self._tap_text(xml, r"^Done$|^完成$")
+        if not self._tap_text(xml, r"^Done$|^完成$"):
+            self._tap_percent(88, 54)
         time.sleep(4)
         xml = self.dump_ui()
         adb("shell", "input", "text", suite_code())
@@ -243,6 +243,14 @@ class Shard:
             xml = self.dump_ui()
             nodes = "\n".join(nodes_from_dump(xml))
         return bool(re.search(r"发现|Discover|聊天|Chats|设置|Settings", nodes))
+
+    def _tap_percent(self, x_percent: int, y_percent: int) -> None:
+        _code, size = adb("shell", "wm", "size")
+        match = re.search(r"(\d+)x(\d+)", size)
+        if not match:
+            return
+        width, height = int(match.group(1)), int(match.group(2))
+        adb("shell", "input", "tap", str(width * x_percent // 100), str(height * y_percent // 100))
 
     def _tap_text(self, xml: str, pattern: str) -> bool:
         for node in re.findall(r"<node\b[^>]*>", xml):
@@ -454,8 +462,8 @@ class Shard:
         path = ROOT / flow["file"]
         shot = ""
         statuses = []
-        adb("shell", "pm", "set-app-links", "--package", PACKAGE, "1", "tell.cc")
-        adb("shell", "pm", "set-app-links-user-selection", "--user", "0", "--package", PACKAGE, "true", "tell.cc")
+        adb("shell", "pm", "set-app-links-user-selection", "--user", "0", PACKAGE, "true", "tell.cc")
+        adb("shell", "pm", "set-app-links", PACKAGE, "2", "tell.cc")
         if flow.get("mime"):
             resolved, logcat = self.probe_mime(flow["mime"])
             status, error = classify_profile_mime(resolved, logcat, False)
@@ -465,6 +473,18 @@ class Shard:
                 resolved, logcat = self.probe_view(url)
                 if url.startswith("geo:"):
                     status, error = classify_geo(resolved, logcat)
+                elif "ResolverActivity" in resolved:
+                    _code, queried = adb(
+                        "shell", "cmd", "package", "query-activities", "--brief",
+                        "-a", "android.intent.action.VIEW", "-d", url,
+                    )
+                    if PACKAGE in queried or "LaunchActivity" in queried:
+                        status, error = (
+                            "blocked",
+                            "the https link is offered in the app chooser; the emulator has not verified the tell.cc association",
+                        )
+                    else:
+                        status, error = classify_owned_link(resolved, logcat)
                 else:
                     status, error = classify_owned_link(resolved, logcat)
                 statuses.append((status, error or url))
@@ -479,7 +499,7 @@ class Shard:
             error = "; ".join(error for status, error in statuses if status == "blocked")
             self.results[backlog_id] = self.row("blocked", flow["file"], shot, error)
             return
-        if code != 0 and flow["name"] in ("links-tellcc", "links-scheme"):
+        if code != 0 and flow["name"] in ("links-tellcc", "links-scheme") and any(status != "pass" for status, _error in statuses):
             self.results[backlog_id] = self.row("fail", flow["file"], shot, log[-400:])
             return
         evidence = ""

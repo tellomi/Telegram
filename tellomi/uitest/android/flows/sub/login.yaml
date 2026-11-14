@@ -34,16 +34,15 @@ appId: app.tellomi.chat
           text: "Phone number|电话号码"
       - eraseText: 16
       - inputText: ${TELLOMI_TEST_PHONE_NATIONAL}
-      - hideKeyboard
       - tapOn:
           text: "Done|完成"
           optional: true
       - runFlow:
           when:
-            visible: "Your phone number|Please confirm your country code"
+            visible: "Phone number|电话号码|Your Phone"
           commands:
             - tapOn:
-                point: "88%,72%"
+                point: "88%,54%"
       - takeScreenshot: login-phone-sent
       - extendedWaitUntil:
           visible:
