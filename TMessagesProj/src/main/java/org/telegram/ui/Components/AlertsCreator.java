@@ -130,6 +130,7 @@ import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.TellomiClearHistory;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.voip.VoIPHelper;
@@ -3169,6 +3170,9 @@ public class AlertsCreator {
 
             cell[0].setPadding(LocaleController.isRTL ? dp(16) : dp(8), 0, LocaleController.isRTL ? dp(8) : dp(16), 0);
             frameLayout.addView(cell[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
+            if (TellomiClearHistory.ALSO_CLEAR.equals(TellomiClearHistory.alsoForUserKey(days == -1, user != null))) {
+                cell[0].setText(LocaleController.formatString(TellomiClearHistory.ALSO_CLEAR, R.string.ClearHistoryOptionAlso, UserObject.getFirstName(user)), "", false, false);
+            }
 
             cell[0].setChecked(false, false);
             cell[0].setOnClickListener(v -> {

@@ -55,6 +55,7 @@
     <string name="Moments_Audience_Mutual">互关好友</string>
     <string name="Moments_Settings_OnlyMe">仅自己</string>
     <string name="Moments_Audience_Followers">粉丝</string>
+    <string name="ClearHistoryOptionAlso">同时为 %1$s 清空历史</string>
     <string name="Moments_Audience_Choose">谁可以看：请选择</string>
     <string name="Moments_WhoCanSee">谁可以看</string>
     <string name="Moments_Audience_Subtitle">需要你自己选择，不会记住上次</string>

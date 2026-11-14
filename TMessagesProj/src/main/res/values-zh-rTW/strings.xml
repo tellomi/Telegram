@@ -5,6 +5,7 @@
     <string name="ContactShortcutVoiceCall">語音通話 %1$s</string>
     <string name="ContactShortcutVideoCall">視訊通話 %1$s</string>
 
+    <string name="ClearHistoryOptionAlso">同時為 %1$s 清空歷史</string>
     <string name="Moments_Comment_SendFailed">留言沒有送出，內容還在。</string>
     <string name="Moments_Audience_Kept">沒能更新誰可以看。你的選擇還在。</string>
     <string name="Moments_Notif_Other">動態通知</string>

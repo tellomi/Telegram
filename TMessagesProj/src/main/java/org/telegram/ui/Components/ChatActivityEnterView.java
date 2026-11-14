@@ -144,6 +144,7 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.ui.TellomiSendIcon;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SharedPrefsHelper;
@@ -3479,7 +3480,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.send_plane_24, resourcesProvider, true) {
+        sendButton = new SendButton(context, TellomiSendIcon.composerDrawable(isInScheduleMode()), resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();

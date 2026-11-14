@@ -37,4 +37,5 @@
     <string name="LoginAccessibilityCountryCode">国家代码</string>
     <string name="ChangePhoneNewNumber">新号码</string>
     <string name="ChangePhoneHelp">我们将向你的新号码发送一条包含验证码的短信。</string>
+    <string name="ClearHistoryOptionAlso">同时为 %1$s 清空历史</string>
 </resources>

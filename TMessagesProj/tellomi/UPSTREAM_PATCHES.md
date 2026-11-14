@@ -1,5 +1,20 @@
 # Upstream patches
 
+## Chat list accessibility, composer arrow, clear-history checkbox (ISSUE-A-CHAT-A11Y, ISSUE-A-CHAT-004, ISSUE-A-CLEARHIST-REVOKE-001)
+
+Dialog rows are canvas-drawn. The name, last message, time, and unread count were written only in `onPopulateAccessibilityEvent`, which UiAutomator does not read. `onInitializeAccessibilityNodeInfo` now sets the same description as the node text and content description, and the cell is important for accessibility.
+
+The composer send control used `send_plane_24`. It now uses the up arrow in `tellomi_send_up`. Schedule mode still uses the clock. Share and the photo picker keep the paper plane.
+
+Clear history inside a private chat goes through `createClearDaysDialogAlert`. That checkbox said “also delete for”, so “also clear history for this user” never appeared. A full clear for a user now uses `ClearHistoryOptionAlso`. Built-in Chinese has that sentence.
+
+Upstream files:
+
+- `DialogCell`
+- `ChatActivityEnterView`
+- `AlertsCreator`
+- `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml`
+
 ## Login copy follows Simplified Chinese on first launch (ISSUE-A-LOGIN-003)
 
 `LocaleController` registers built-in `zh_hans` and `zh_hant`. Both use plural code `zh`, so the built-in bin is `values-zh` (`localization_zh.bin`). On first launch, with no `mainconfig` `language`, `TellomiIntro.chooseInitial` matches the device locale and `applyLanguage` is called with `override` false. That does not write `language`. A key Settings already stored is applied with `override` true, which writes `language`. Choosing a language in Settings still calls `applyLanguage` with `override` true. After `langpack.getLanguages`, `applyLoadedLanguage` still applies the device row and does not write `language`.

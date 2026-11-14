@@ -66,6 +66,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.TellomiDialogRowA11y;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
@@ -691,6 +692,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     public DialogCell(DialogsActivity fragment, Context context, boolean needCheck, boolean forceThreeLines, int account, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         storyParams.allowLongress = true;
         this.resourcesProvider = resourcesProvider;
         parentFragment = fragment;
@@ -5535,11 +5537,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             info.setCheckable(true);
             info.setChecked(true);
         }
+        CharSequence description = accessibilityDescription();
+        if (description != null && description.length() > 0) {
+            info.setContentDescription(description);
+            info.setText(description);
+        }
     }
 
     @Override
     public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
         super.onPopulateAccessibilityEvent(event);
+        CharSequence description = accessibilityDescription();
+        event.setContentDescription(description);
+        setContentDescription(description);
+    }
+
+    private CharSequence accessibilityDescription() {
         StringBuilder sb = new StringBuilder();
         if (titleOverride != null) {
             sb.append(titleOverride);
@@ -5610,9 +5623,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             sb.append(". ");
         }
         if (message == null || currentDialogFolderId != 0) {
-            event.setContentDescription(sb);
-            setContentDescription(sb);
-            return;
+            appendUnreadCount(sb);
+            return sb;
         }
         int lastDate = lastMessageDate;
         if (lastMessageDate == 0) {
@@ -5658,8 +5670,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(messageString);
             }
         }
-        event.setContentDescription(sb);
-        setContentDescription(sb);
+        appendUnreadCount(sb);
+        return sb;
+    }
+
+    private void appendUnreadCount(StringBuilder sb) {
+        if (unreadCount > 0 && !TellomiDialogRowA11y.containsCount(sb, unreadCount)) {
+            sb.append(unreadCount);
+            sb.append(". ");
+        }
     }
 
     private MessageObject getCaptionMessage() {
