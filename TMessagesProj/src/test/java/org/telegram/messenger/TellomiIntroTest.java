@@ -91,10 +91,75 @@ public class TellomiIntroTest {
         assertNull(TellomiIntro.languageToApply(false, "en", "en", "US", "", PACKS));
 
         String locale = read("src/main/java/org/telegram/messenger/LocaleController.java");
-        assertTrue(locale.contains("TellomiIntro.matchShortName"));
+        String intro = read("src/main/java/org/telegram/messenger/TellomiIntro.java");
+        assertTrue(intro.contains("matchShortName"));
+        assertTrue(method(intro, "chooseInitial").contains("matchShortName"));
+        assertTrue(method(intro, "chooseInitial").contains("return new InitialLanguage(chosen, false)"));
+        assertTrue(method(intro, "chooseInitial").contains("return new InitialLanguage(savedKey, true)"));
+        assertTrue(locale.contains("TellomiIntro.chooseInitial"));
+        assertTrue(locale.contains("localeInfo.shortName = \"zh_hans\""));
+        assertTrue(locale.contains("localeInfo.shortName = \"zh_hant\""));
+        assertTrue(locale.contains("localeInfo.pluralLangCode = \"zh\""));
+        assertTrue(locale.contains("initial.writeLanguage"));
+        assertTrue(locale.contains("applyLanguage(currentInfo, override, true, UserConfig.selectedAccount)"));
+        assertTrue(locale.contains("if (override)"));
+        assertTrue(locale.contains("editor.putString(\"language\", localeInfo.getKey())"));
         assertTrue(locale.contains("applyLoadedLanguage"));
         assertTrue(method(locale, "applyLoadedLanguage").contains("languageToApply"));
         assertTrue(method(locale, "applyLoadedLanguage").contains("override = false"));
+    }
+
+    @Test
+    public void firstLaunchUsesSimplifiedChineseAndDoesNotWriteLanguage() {
+        List<String> names = Arrays.asList("en", "ru", "de", "zh_hans", "zh_hant");
+
+        TellomiIntro.InitialLanguage simplified = TellomiIntro.chooseInitial(
+                null, "zh", "CN", "Hans", names, null, null);
+        assertEquals("zh_hans", simplified.key);
+        assertFalse(simplified.writeLanguage);
+
+        TellomiIntro.InitialLanguage simplifiedCountry = TellomiIntro.chooseInitial(
+                null, "zh", "CN", "", names, null, null);
+        assertEquals("zh_hans", simplifiedCountry.key);
+        assertFalse(simplifiedCountry.writeLanguage);
+
+        TellomiIntro.InitialLanguage traditional = TellomiIntro.chooseInitial(
+                null, "zh", "TW", "", names, null, null);
+        assertEquals("zh_hant", traditional.key);
+        assertFalse(traditional.writeLanguage);
+
+        TellomiIntro.InitialLanguage english = TellomiIntro.chooseInitial(
+                null, "en", "US", "", names, "en", null);
+        assertEquals("en", english.key);
+        assertFalse(english.writeLanguage);
+
+        TellomiIntro.InitialLanguage saved = TellomiIntro.chooseInitial(
+                "en", "zh", "CN", "Hans", names, "en", null);
+        assertEquals("en", saved.key);
+        assertTrue(saved.writeLanguage);
+
+        TellomiIntro.InitialLanguage savedChinese = TellomiIntro.chooseInitial(
+                "zh_hans", "en", "US", "", names, "en", null);
+        assertEquals("zh_hans", savedChinese.key);
+        assertTrue(savedChinese.writeLanguage);
+
+        TellomiIntro.InitialLanguage unknown = TellomiIntro.chooseInitial(
+                null, "fr", "FR", "", names, null, null);
+        assertEquals("en", unknown.key);
+        assertFalse(unknown.writeLanguage);
+
+        String simplifiedXml = read("src/main/res/values-zh/strings.xml");
+        String mainlandXml = read("src/main/res/values-zh-rCN/strings.xml");
+        for (String xml : new String[]{simplifiedXml, mainlandXml}) {
+            assertTrue(xml.contains("name=\"YourNumber\">你的电话号码<"));
+            assertTrue(xml.contains("name=\"StartText\">请确认你的国家代码并输入你的电话号码。<"));
+            assertTrue(xml.contains("name=\"Country\">国家<"));
+            assertTrue(xml.contains("name=\"PhoneNumber\">电话号码<"));
+            assertTrue(xml.contains("name=\"LoginAccessibilityCountryCode\">国家代码<"));
+            assertTrue(xml.contains("name=\"YourCode\">手机验证<"));
+            assertTrue(xml.contains("name=\"SentSmsCodeTitle\">输入验证码<"));
+            assertFalse(xml.contains("Your phone number"));
+        }
     }
 
     @Test

@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -266,6 +268,31 @@ public class TellomiCloudStringsTest {
             ApplicationLoader.applicationContext = previous;
             setResourceBindings(previousBindings);
         }
+    }
+
+    @Test
+    public void builtinZhShowsTheLoginTitleUntilThePackHasThatKey() throws Exception {
+        LocaleController controller = LocaleController.getInstance();
+        LocaleController.LocaleInfo builtIn = controller.getLanguageFromDict("zh_hans");
+        assertNotNull(builtIn);
+        assertEquals("zh_hans", builtIn.shortName);
+        assertEquals("zh", builtIn.pluralLangCode);
+        assertTrue(builtIn.isBuiltIn());
+        assertNull(builtIn.pathToFile);
+        assertNotNull(controller.getLanguageFromDict("zh_hant"));
+        assertEquals("zh", controller.getLanguageFromDict("zh_hant").pluralLangCode);
+
+        showBuiltin(controller, "zh", pack("AppName", "Tellomi"), "src/main/res/values-zh/strings.xml");
+        assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+        assertEquals("你的电话号码", LocaleController.getString("YourNumber"));
+        assertEquals("请确认你的国家代码并输入你的电话号码。", LocaleController.getString("StartText"));
+        assertEquals("国家", LocaleController.getString("Country"));
+        assertEquals("电话号码", LocaleController.getString("PhoneNumber"));
+        assertFalse(LocaleController.getString("YourNumber").contains("Your phone"));
+
+        showBuiltin(controller, "zh", pack("YourNumber", "您的手机号码"), "src/main/res/values-zh/strings.xml");
+        assertEquals("您的手机号码", LocaleController.getString("YourNumber"));
+        assertEquals("国家", LocaleController.getString("Country"));
     }
 
     @Test
