@@ -10623,6 +10623,8 @@
     <string name="MainTabsProfile">Profile</string>
     <string name="TellomiTabMe">Me</string>
     <string name="TellomiTabFeed">Discover</string>
+    <string name="TellomiSettingsGeneral">General</string>
+    <string name="TellomiNavBar">Navigation bar</string>
     <string name="MainTabsSettings">Settings</string>
     <string name="SwitchThemeToDay">Day Mode</string>
     <string name="SwitchThemeToNight">Night Mode</string>

@@ -228,6 +228,47 @@ public class TellomiCloudStringsTest {
     }
 
     @Test
+    public void zhPluralCodeKeepsNavBarTitlesWhenThePackOmitsThem() throws Exception {
+        Context previous = ApplicationLoader.applicationContext;
+        SparseIntArray previousBindings = resourceBindings();
+        try {
+            ApplicationLoader.applicationContext = RuntimeEnvironment.getApplication();
+            bindResource("TellomiSettingsGeneral", R.string.TellomiSettingsGeneral);
+            bindResource("TellomiNavBar", R.string.TellomiNavBar);
+
+            HashMap<String, String> simplified = pack("Settings", "设置");
+            LocaleController controller = LocaleController.getInstance();
+            showBuiltin(controller, "zh", simplified, "src/main/res/values-zh/strings.xml");
+            assertEquals("zh", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("通用", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+            assertEquals("设置", LocaleController.getString("Settings"));
+            assertFalse(simplified.containsKey("TellomiSettingsGeneral"));
+            assertFalse(simplified.containsKey("TellomiNavBar"));
+
+            showBuiltin(controller, "zh-hant", pack(), "src/main/res/values-zh/strings.xml");
+            assertEquals("通用", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "zh_tw", pack(), "src/main/res/values-zh-rTW/strings.xml");
+            assertEquals("zh-TW", controller.getCurrentLocale().toLanguageTag());
+            assertEquals("localization_zh_tw.bin", LocalizationUtils.getLocalizationAsset(controller.getCurrentLocale()));
+            assertEquals("导航栏", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "en", pack(), "src/main/res/values/strings.xml");
+            assertEquals("General", LocaleController.getString(R.string.TellomiSettingsGeneral));
+            assertEquals("Navigation bar", LocaleController.getString(R.string.TellomiNavBar));
+
+            showBuiltin(controller, "zh", pack("TellomiNavBar", "菜单"), "src/main/res/values-zh/strings.xml");
+            assertEquals("菜单", LocaleController.getString(R.string.TellomiNavBar));
+        } finally {
+            ApplicationLoader.applicationContext = previous;
+            setResourceBindings(previousBindings);
+        }
+    }
+
+    @Test
     public void pluralFallsBackToOtherInsideTheCloudPack() {
         HashMap<String, String> russian = pack(
                 "Members_other", "%1$d участников");

@@ -1,5 +1,19 @@
 # Upstream patches
 
+## Navigation bar settings page (M2 / D-38)
+
+Settings has a General row (`TellomiSettingsGeneral`, General / 通用) that opens one row, Navigation bar (`TellomiNavBar`, Navigation bar / 导航栏). That page lists the bar in `BAR_ORDER` and toggles Discover, Calls, and Contacts through `TellomiMainTabs`. Chats, Settings, and Profile stay locked. `values-zh/strings.xml` is the `zh` bin, so a downloaded pack that does not contain those keys cannot replace 通用 or 导航栏.
+
+`UserConfig.loadConfig` no longer forces `showCallsTab` on when `feedNavCallsShown` is absent. A stored true or false is read as stored. The missing-key default stays the upstream `true`. `MainTabsActivity.applyTellomiTabs` still copies the Calls flag from `TellomiMainTabs` onto `showCallsTab`. Logout still resets `showCallsTab` in `clearConfig`.
+
+Upstream files:
+
+- `SettingsActivity` — the General row.
+- `UserConfig` — drop the one-shot Calls force.
+- `res/values/strings.xml`, `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml` — `TellomiSettingsGeneral` and `TellomiNavBar`.
+
+`TellomiGeneralSettingsActivity` and `TellomiNavBarActivity` are Tellomi code.
+
 ## Locked Chats and Settings tabs (M2 / D-7)
 
 Chats, Settings, and Profile cannot be hidden. `isLocked` makes `isVisible` return true and `setVisible` refuse the write. A stored `mainTabsSettings=false`, or the legacy `tellomi_main_tab_visible_4=false`, is left in place and ignored, so an upgrade that hid Settings sees the tab again. The menu-settings switch for a locked tab is already disabled. The chats long-press opens folders. The settings tab has no long-press hide. The calls long-press can still hide Calls.
