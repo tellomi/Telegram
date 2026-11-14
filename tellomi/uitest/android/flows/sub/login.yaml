@@ -23,10 +23,8 @@ appId: app.tellomi.chat
       - eraseText: 4
       - tapOn:
           text: "Phone number|电话号码"
-      - pressKey: "KEYCODE_MOVE_END"
-      - eraseText: 30
-      - pressKey: "KEYCODE_MOVE_END"
-      - eraseText: 30
+      - eraseText: 40
+      - eraseText: 40
       - inputText: ${TELLOMI_TEST_PHONE_NATIONAL}
       - tapOn:
           text: "Done|完成"

@@ -218,6 +218,9 @@ class Shard:
         xml = self.dump_ui()
         if not self._tap_text(xml, r"Phone number|电话号码"):
             return False
+        adb("shell", "input", "keyevent", "123")
+        for _ in range(24):
+            adb("shell", "input", "keyevent", "67")
         adb("shell", "input", "text", national)
         xml = self.dump_ui()
         if not self._tap_text(xml, r"^Done$|^完成$"):
