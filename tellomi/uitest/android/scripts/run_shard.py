@@ -208,18 +208,14 @@ class Shard:
         xml = self.dump_ui()
         if not xml:
             return False
-        if not self._tap_text(xml, r"China|中国"):
-            self._tap_text(xml, r"Country|国家|United States|美国")
-            time.sleep(1)
-            xml = self.dump_ui()
-            self._tap_text(xml, r"Search|搜索")
-            adb("shell", "input", "text", "China")
-            adb("shell", "input", "keyevent", "111")
-            time.sleep(1)
-            xml = self.dump_ui()
-            self._tap_text(xml, r"^\+86$")
-            time.sleep(1)
-            xml = self.dump_ui()
+        self._tap_text(xml, r"OK|好")
+        xml = self.dump_ui()
+        if self._tap_text(xml, r"Country code"):
+            adb("shell", "input", "keyevent", "67")
+            adb("shell", "input", "keyevent", "67")
+            adb("shell", "input", "keyevent", "67")
+            adb("shell", "input", "keyevent", "67")
+        xml = self.dump_ui()
         if not self._tap_text(xml, r"Phone number|电话号码"):
             return False
         adb("shell", "input", "text", national)

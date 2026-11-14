@@ -13,6 +13,8 @@ Production answers `99966XYYYY` before SMS. For datacenter digit 1 the code is `
 | A | `9996617092` | `11111` |
 | B | `9996617093` | `11111` |
 
+The number is the whole phone the server sees. The login flow clears the country code before typing it. Prefixing `+86` makes `869996617092`, and production answers `PHONE_NUMBER_INVALID`.
+
 `7001`–`7091` belong to other testers. A `TELLOMI_TEST_PHONE_A` or `TELLOMI_TEST_PHONE_B` secret that is empty uses the dedicated number above. Any other value is refused, including numbers outside `99966170xx`. `TELLOMI_TEST_PASSWORD` is optional and is only typed if the account has a cloud password.
 
 Logged-in flows share one login per phone so a run does not burn the daily `auth.sendCode` cap. Logout is the last flow on that phone.
