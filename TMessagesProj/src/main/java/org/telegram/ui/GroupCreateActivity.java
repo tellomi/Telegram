@@ -854,7 +854,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.contactsDidLoad) {
             if (adapter != null) {
-                adapter.notifyDataSetChanged();
+                adapter.reloadContacts();
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             if (listView != null) {
@@ -1189,7 +1189,25 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
+            fillContacts();
 
+            searchAdapterHelper = new SearchAdapterHelper(false);
+            searchAdapterHelper.setDelegate((searchId) -> {
+                showItemsAnimated(currentItemsCount);
+                if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress() && getItemCount() == 0) {
+                    emptyView.showProgress(false, true);
+                }
+                notifyDataSetChanged();
+            });
+        }
+
+        public void reloadContacts() {
+            fillContacts();
+            notifyDataSetChanged();
+        }
+
+        private void fillContacts() {
+            contacts.clear();
             final HashSet<Long> addedContacts = new HashSet<>();
             ArrayList<TLRPC.TL_contact> arrayList = getContactsController().contacts;
             for (int a = 0; a < arrayList.size(); a++) {
@@ -1238,15 +1256,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     lastContact = contact;
                 }
             }
-
-            searchAdapterHelper = new SearchAdapterHelper(false);
-            searchAdapterHelper.setDelegate((searchId) -> {
-                showItemsAnimated(currentItemsCount);
-                if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress() && getItemCount() == 0) {
-                    emptyView.showProgress(false, true);
-                }
-                notifyDataSetChanged();
-            });
         }
 
         private String firstLetter(String string) {

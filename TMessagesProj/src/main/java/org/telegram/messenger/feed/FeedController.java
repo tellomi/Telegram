@@ -817,7 +817,8 @@ public class FeedController {
     /** First page or the next page. A failure leaves the previous posts and the previous bit. */
     public void loadProfilePosts(String profileId, boolean refresh) {
         String stream = FeedContract.profilePostsStream(profileId);
-        String path = stream == null ? null : FeedContract.profilePostsPath(profileId, refresh ? "" : cursor(stream));
+        String selfId = String.valueOf(UserConfig.getInstance(account).getClientUserId());
+        String path = stream == null ? null : FeedContract.profilePostsPath(profileId, refresh ? "" : cursor(stream), selfId);
         if (path == null) {
             return;
         }

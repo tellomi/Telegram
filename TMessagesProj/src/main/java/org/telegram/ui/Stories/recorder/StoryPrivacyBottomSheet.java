@@ -887,6 +887,10 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 }));
             } else if (pageType == PAGE_TYPE_SHARE) {
+                if (feedMode && selectedType == 0) {
+                    AndroidUtilities.shakeViewSpring(button, 3.5f);
+                    return;
+                }
                 if (!applyWhenDismiss) {
                     StoryPrivacy privacy;
                     if (selectedType == TYPE_SELECTED_CONTACTS) {
@@ -1636,7 +1640,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         public void updateButton(boolean animated) {
             if (pageType == PAGE_TYPE_SHARE) {
                 button.setShowZero(false);
-                button.setEnabled(!feedMode || selectedType != 0);
+                button.setEnabled(true);
                 if (feedMode) {
                     button.setText(LocaleController.getString("Moments_Audience_Done", R.string.Moments_Audience_Done), animated);
                 }

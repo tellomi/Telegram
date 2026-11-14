@@ -2423,6 +2423,9 @@ public class ContactsController extends BaseController {
                 boolean needResort = false;
                 for (int a = 0; a < res.users.size(); a++) {
                     TLRPC.User u = res.users.get(a);
+                    if (u.id == user.id) {
+                        u.contact = true;
+                    }
                     if (u.contact) {
                         Contact phoneBookContact = contactsBookSPhones.get(u.phone);
                         if (phoneBookContact != null) {
@@ -2460,7 +2463,7 @@ public class ContactsController extends BaseController {
                             }
                         }
                     }
-                    if (!u.contact || contactsDict.get(u.id) != null) {
+                    if (!org.telegram.ui.TellomiGroupContacts.includeAddedUser(user.id, u.id, u.contact, contactsDict.get(u.id) != null)) {
                         continue;
                     }
                     TLRPC.TL_contact newContact = new TLRPC.TL_contact();

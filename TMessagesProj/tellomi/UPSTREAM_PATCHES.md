@@ -1,5 +1,19 @@
 # Upstream patches
 
+## New-group contacts and moment audience (ISSUE-A-GRP-001, ISSUE-A-MOM-005)
+
+`GroupCreateAdapter` copied `ContactsController.contacts` once. `contactsDidLoad` only called `notifyDataSetChanged`, so a contact that arrived after the screen opened stayed on “no contacts” until search. The adapter now refills from the controller.
+
+`contacts.addContact` skipped the user when the response omitted `user.contact`. A successful add of that user is now stored as a contact, which is what the new-group list reads. Search already found the user.
+
+The moments audience sheet disabled its confirm control while no row was selected, so the control did nothing. It now stays enabled and shakes until a visibility is chosen. Choosing everyone still publishes with `POST /v1/feed/posts`. Moments do not call `stories.sendStory`.
+
+Upstream files:
+
+- `GroupCreateActivity`
+- `ContactsController`
+- `StoryPrivacyBottomSheet` — feed-mode confirm only
+
 ## Login copy follows Simplified Chinese on first launch (ISSUE-A-LOGIN-003)
 
 `LocaleController` registers built-in `zh_hans` and `zh_hant`. Both use plural code `zh`, so the built-in bin is `values-zh` (`localization_zh.bin`). On first launch, with no `mainconfig` `language`, `TellomiIntro.chooseInitial` matches the device locale and `applyLanguage` is called with `override` false. That does not write `language`. A key Settings already stored is applied with `override` true, which writes `language`. Choosing a language in Settings still calls `applyLanguage` with `override` true. After `langpack.getLanguages`, `applyLoadedLanguage` still applies the device row and does not write `language`.

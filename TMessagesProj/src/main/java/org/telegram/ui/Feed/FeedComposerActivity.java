@@ -143,19 +143,7 @@ public class FeedComposerActivity extends BaseFragment {
         audienceView.setText(LocaleController.getString("Moments_Audience_Choose", R.string.Moments_Audience_Choose));
         audienceView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         audienceView.setTextSize(15);
-        audienceView.setOnClickListener(v -> FeedAudiencePicker.open(this, privacy, picked -> {
-            privacy = picked;
-            audienceUserIds.clear();
-            audienceUserIds.addAll(FeedAudiencePicker.memberIds(picked));
-            audienceVisibility = FeedContract.visibilityOf(FeedAudiencePicker.kind(picked.type), !audienceUserIds.isEmpty());
-            if (!FeedContract.VIS_PUBLIC.equals(audienceVisibility)) {
-                allowNearby = false;
-            }
-            dirty = true;
-            audienceView.setText(FeedAudiencePicker.label(picked));
-            paintNearby();
-            refreshPublish();
-        }));
+        audienceView.setOnClickListener(v -> openAudience());
         column.addView(audienceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
         field = new EditText(context);
@@ -543,12 +531,34 @@ public class FeedComposerActivity extends BaseFragment {
         presentFragment(pollActivity);
     }
 
+    private void openAudience() {
+        FeedAudiencePicker.open(this, privacy, this::applyAudience);
+    }
+
+    private void applyAudience(StoryPrivacyBottomSheet.StoryPrivacy picked) {
+        privacy = picked;
+        audienceUserIds.clear();
+        audienceUserIds.addAll(FeedAudiencePicker.memberIds(picked));
+        audienceVisibility = FeedContract.visibilityOf(FeedAudiencePicker.kind(picked.type), !audienceUserIds.isEmpty());
+        if (!FeedContract.VIS_PUBLIC.equals(audienceVisibility)) {
+            allowNearby = false;
+        }
+        dirty = true;
+        if (audienceView != null) {
+            audienceView.setText(FeedAudiencePicker.label(picked));
+        }
+        paintNearby();
+        refreshPublish();
+    }
+
     private void publish() {
-        if (field.getText().length() == 0 && paths.isEmpty() && poll == null) {
+        boolean hasBody = field.getText().length() > 0 || !paths.isEmpty() || poll != null;
+        int action = FeedContract.publishAction(hasBody, audienceVisibility);
+        if (action == FeedContract.PUBLISH_IDLE) {
             return;
         }
-        if (audienceVisibility.length() == 0 || privacy == null || privacy.type == 0) {
-            audienceView.performClick();
+        if (action == FeedContract.PUBLISH_CHOOSE_AUDIENCE) {
+            openAudience();
             return;
         }
         ArrayList<String> blocked = mentionsWithoutAccess();

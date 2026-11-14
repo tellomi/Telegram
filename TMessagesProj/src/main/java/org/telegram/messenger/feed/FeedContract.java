@@ -1706,8 +1706,20 @@ public final class FeedContract {
      * Null when the profile id is missing.
      */
     public static String profilePostsPath(String profileId, String cursor) {
+        return profilePostsPath(profileId, cursor, null);
+    }
+
+    /**
+     * Another person's posts stay on {@code /v1/feed/profiles/{id}/posts}.
+     * That list omits {@code only_me}. The signed-in profile uses
+     * {@code /v1/feed/me/posts}, which includes them.
+     */
+    public static String profilePostsPath(String profileId, String cursor, String selfId) {
         if (profileId == null || profileId.length() == 0) {
             return null;
+        }
+        if (isOwnProfile(profileId, selfId)) {
+            return mePostsPath(cursor);
         }
         String path = "/v1/feed/profiles/" + enc(profileId) + "/posts";
         String next = normalizeCursor(cursor);
@@ -1715,6 +1727,34 @@ public final class FeedContract {
             path += "?cursor=" + enc(next);
         }
         return path;
+    }
+
+    public static boolean isOwnProfile(String profileId, String selfId) {
+        return profileId != null && profileId.length() > 0 && profileId.equals(selfId);
+    }
+
+    public static String mePostsPath(String cursor) {
+        String path = "/v1/feed/me/posts";
+        String next = normalizeCursor(cursor);
+        if (next.length() > 0) {
+            path += "?cursor=" + enc(next);
+        }
+        return path;
+    }
+
+    public static final int PUBLISH_IDLE = 0;
+    public static final int PUBLISH_CHOOSE_AUDIENCE = 1;
+    public static final int PUBLISH_SEND = 2;
+
+    /** No audience opens the picker. A chosen visibility, including public, is sent as a feed post. */
+    public static int publishAction(boolean hasBody, String visibility) {
+        if (!hasBody) {
+            return PUBLISH_IDLE;
+        }
+        if (visibility == null || visibility.length() == 0) {
+            return PUBLISH_CHOOSE_AUDIENCE;
+        }
+        return PUBLISH_SEND;
     }
 
     /** Cache key for one profile's post homepage. Null when the id is missing. */

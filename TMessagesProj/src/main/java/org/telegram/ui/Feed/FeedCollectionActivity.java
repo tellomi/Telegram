@@ -1,6 +1,7 @@
 package org.telegram.ui.Feed;
 
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserConfig;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -116,7 +117,12 @@ public class FeedCollectionActivity extends BaseFragment {
         if (mode == SAVED) path = "/v1/feed/me/saved";
         else if (mode == LIKED) path = "/v1/feed/me/liked";
         else if (mode == MUTES) path = "/v1/feed/me/feed-mutes";
-        else path = "/v1/feed/profiles/" + profileId + "/posts?filter=" + filter;
+        else if (FeedContract.isOwnProfile(profileId, String.valueOf(UserConfig.getInstance(currentAccount).getClientUserId()))) {
+            path = FeedContract.mePostsPath("");
+            if (filter != null && filter.length() > 0) {
+                path = path + "?filter=" + filter;
+            }
+        } else path = "/v1/feed/profiles/" + profileId + "/posts?filter=" + filter;
         FeedController controller = FeedController.getInstance(currentAccount);
         controller.api.getJson(path, (json, error) -> {
             posts.clear();
