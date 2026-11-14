@@ -1,8 +1,14 @@
 # Upstream patches
 
+## Fresh-install Settings tab (M2 / D-5)
+
+A fresh install shows Discover, Chats, Settings, and Profile. Contacts and Calls stay off. Chats and Profile stay locked. `defaultVisible` is the fallback only when `mainTabsSettings` and `tellomi_main_tab_visible_4` are both absent, so an upgrade that already stored the switch keeps that value. Reading the fallback does not write it.
+
+No upstream files. The fallback is in `TellomiMainTabs`.
+
 ## Bottom bar order and Discover caption (M2 / D-4, D-42, D-36)
 
-`TellomiMainTabs.BAR_ORDER` is the pager index order. `MainTabsActivity.createView` adds `tabs[index]` from 0 through 5, and `indexToPosition` returns that index. All six, when on, are Discover, Chats, Calls, Contacts, Settings, then Profile. A fresh install is still Discover, Chats, and Profile. Chats and Profile stay locked. Settings, Contacts, and Calls stay off until the user turns them on. `getStartPosition` still returns the chats tab.
+`TellomiMainTabs.BAR_ORDER` is the pager index order. `MainTabsActivity.createView` adds `tabs[index]` from 0 through 5, and `indexToPosition` returns that index. All six, when on, are Discover, Chats, Calls, Contacts, Settings, then Profile. Chats and Profile stay locked. Contacts and Calls stay off until the user turns them on. The fresh-install Settings default is the D-5 section above. `getStartPosition` still returns the chats tab.
 
 Visibility flags stay on the named `mainconfig` keys (`mainTabsFeed`, `mainTabsChats`, `mainTabsCalls`, `mainTabsContacts`, `mainTabsSettings`, `mainTabsProfile`). The older `tellomi_main_tab_visible_N` keys keep the indexes from before this reorder (contacts 0, calls 1, feed 2, chats 3, settings 4, profile 5) and are copied onto those names on the first read. The menu-settings switch order is unchanged.
 
