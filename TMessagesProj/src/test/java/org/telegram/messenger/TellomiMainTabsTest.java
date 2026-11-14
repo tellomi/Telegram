@@ -77,6 +77,19 @@ public class TellomiMainTabsTest {
     }
 
     @Test
+    public void settingsChatsSearchLinkOpensTheFeedTab() throws Exception {
+        assertEquals(0, TellomiMainTabs.FEED);
+        assertEquals(2, TellomiMainTabs.CALLS);
+        String links = read(repoRoot().resolve("TMessagesProj/src/main/java/org/telegram/ui/LinkManager.java"));
+        assertTrue(links.contains("\"chats\".equalsIgnoreCase(first)"));
+        assertTrue(links.contains("\"search\".equalsIgnoreCase(second)"));
+        assertTrue(links.contains("mainFragment.viewPager.scrollToPosition(TellomiMainTabs.FEED)"));
+        assertFalse(links.contains("scrollToPosition(2)"));
+        assertFalse(links.contains("scrollToPosition(TellomiMainTabs.CALLS)"));
+        assertFalse(links.contains("scrollToPosition(TellomiMainTabs.CHATS)"));
+    }
+
+    @Test
     public void chatsAndProfileStayVisibleEvenIfStoredOff() {
         MemoryStore store = new MemoryStore();
         assertFalse(TellomiMainTabs.setVisible(store, TellomiMainTabs.CHATS, false));

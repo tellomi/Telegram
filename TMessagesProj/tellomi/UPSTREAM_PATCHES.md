@@ -8,9 +8,12 @@ Visibility flags stay on the named `mainconfig` keys (`mainTabsFeed`, `mainTabsC
 
 The feed tab used `Moments_Title`. A downloaded pack replaces that key, and the bundled zh value is 动态. The product caption is 发现. `TellomiTabFeed` is not an official key. `values-zh/strings.xml` is the `zh` bin, the same path as `TellomiTabMe`. The feed screen title stays `Moments_Title`.
 
+`tg://settings/chats/search` is the one main-pager deep link that used a raw index. Upstream 12.4.0 (`fa4e8aa0dd`) wrote `scrollToPosition(2)` when that index was `POSITION_CALLS_OR_SETTINGS`. Tellomi master then put the feed tab at index 2 and left the literal, so the link opens the feed tab. It now passes `TellomiMainTabs.FEED`. Other `scrollToPosition` / `setCurrentItem` literals belong to their own pagers (community, boosts, stories, emoji) and are not the main bar.
+
 Upstream files:
 
 - `MainTabsActivity` — feed tab string resource, and the tab views are filled in `TellomiMainTabs` index order.
+- `LinkManager` — `tg://settings/chats/search` scrolls to `TellomiMainTabs.FEED`.
 - `res/values/strings.xml`, `res/values-zh/strings.xml`, `res/values-zh-rCN/strings.xml`, `res/values-zh-rTW/strings.xml` — `TellomiTabFeed` (`Discover` / `发现`).
 
 `TellomiMenuSettingsActivity` is Tellomi code. Its feed switch uses the same caption. The switch order, locks, and defaults are unchanged.
