@@ -25,8 +25,8 @@ FEEDS = (
     "https://dl.tellomi.cn/android/latest.json",
     "https://www.tellomi.cn/dl/android/latest.json",
 )
-# Live 14.0.12 afat. Checked-in builds must clear this even before a fetch.
-KNOWN_PUBLISHED_AFAT = 1804749
+# Live 14.0.13 afat. Checked-in builds must clear this even before a fetch.
+KNOWN_PUBLISHED_AFAT = 1804759
 
 
 def read_gradle(path: pathlib.Path) -> tuple[int, str]:
@@ -158,6 +158,11 @@ def self_test() -> None:
     assert next_app_version_code(1804749, 180475) == 180475
     assert afat_code(180475) == 1804759
     assert bundle_code(180475) == 1804751
+    # Live 14.0.13 afat is 1804759. Configured 14.0.14 base 180476 -> afat 1804769.
+    assert next_app_version_code(1804759, 180475) == 180476
+    assert next_app_version_code(1804759, 180476) == 180476
+    assert afat_code(180476) == 1804769
+    assert bundle_code(180476) == 1804761
     # A second release with the same gradle base moves one decade up.
     assert next_app_version_code(1804689, 180468) == 180469
     assert afat_code(180469) == 1804699
@@ -175,6 +180,7 @@ def self_test() -> None:
         (1804679, 180470),
         (1804700, 180470),
         (1804749, 180475),
+        (1804759, 180476),
         (0, 180468),
     ):
         app = next_app_version_code(published, configured)
