@@ -1,0 +1,37 @@
+name: release-guard
+
+# Pull requests into master or release/android. A head that is master is
+# allowed: release/android matches master today, and advancing it from
+# master is a normal fast-forward. The job fails on a lower version, on
+# deletion of a 动态 code directory, or on a tree that drops the changes
+# accepted after #111. See Tools/check-release-guard.py for the paths.
+on:
+  pull_request:
+    branches:
+      - master
+      - release/android
+
+permissions:
+  contents: read
+
+jobs:
+  release-guard:
+    name: release-guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch the pull request base
+        run: git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
+
+      - name: release-guard
+        run: |
+          python3 Tools/check-release-guard.py --self-test
+          python3 Tools/check-release-guard.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}"
