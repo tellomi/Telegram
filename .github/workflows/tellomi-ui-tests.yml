@@ -2,12 +2,10 @@ name: Tellomi UI tests
 
 # Emulator UI coverage for the Tellomi Android backlog. Builds one x86_64 debug
 # APK (assembleAfatDebug) and does not read the release keystore or publish.
-# GitHub only lists workflow_dispatch after the file is on the default branch.
-# The branch push below starts the suite on this PR without merging it.
+# pull_request runs the suite for review. workflow_dispatch and the nightly
+# schedule stay. There is no push filter pinned to one feature branch.
 on:
-  push:
-    branches:
-      - cursor/android-ui-automation-9e5a
+  pull_request:
   workflow_dispatch:
     inputs:
       max_shards:
@@ -306,7 +304,7 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 900
           force-avd-creation: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -camera-back none -prop persist.sys.locale=zh-Hans-CN -prop persist.sys.language=zh -prop persist.sys.country=CN
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -camera-back none
           script: bash tellomi/uitest/android/scripts/ci_shard.sh
 
       - name: Upload shard results

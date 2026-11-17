@@ -64,6 +64,10 @@ def main(argv: list[str]) -> int:
     if step:
         text = Path(step).read_text(encoding="utf-8") if Path(step).exists() else ""
         Path(step).write_text(text + "\n## UI results\n\n`" + line + "`\n", encoding="utf-8")
+    fails = int(summary.get("fail") or 0)
+    if fails > 0:
+        print(f"merge failed: {fails} failing checks", file=sys.stderr)
+        return 1
     return 0
 
 

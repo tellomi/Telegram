@@ -1,6 +1,9 @@
 appId: app.tellomi.chat
 ---
 # Phone and code come from the environment. The runner redacts them in logs.
+# A fresh login already shows China (+86) and an empty number.
+# Clearing that empty field deletes the calling code, so this flow
+# types the 10-digit national number and leaves +86 in place.
 - launchApp:
     clearState: false
     stopApp: false
@@ -19,12 +22,7 @@ appId: app.tellomi.chat
     commands:
       - assertTrue: ${TELLOMI_TEST_PHONE_NATIONAL.length == 10}
       - tapOn:
-          text: "Country code"
-      - eraseText: 4
-      - tapOn:
           text: "Phone number|电话号码"
-      - eraseText: 40
-      - eraseText: 40
       - inputText: ${TELLOMI_TEST_PHONE_NATIONAL}
       - tapOn:
           text: "Done|完成"
@@ -34,7 +32,8 @@ appId: app.tellomi.chat
             visible: "Phone number|电话号码|Your Phone"
           commands:
             - tapOn:
-                point: "88%,54%"
+                text: "Done|完成"
+                optional: true
       - tapOn:
           text: "OK"
           optional: true

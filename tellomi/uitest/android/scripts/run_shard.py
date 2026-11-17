@@ -25,8 +25,17 @@ from lib.deeplink import (  # noqa: E402
     classify_help_url,
     classify_owned_link,
     classify_profile_mime,
+    classify_terms_part,
+    intent_urls,
+    url_problem,
 )
 from lib.language import language_status  # noqa: E402
+from lib.login_screen import (  # noqa: E402
+    calling_code_is_china,
+    phone_delete_count,
+    phone_field_text,
+    status_when_login_failed,
+)
 from lib.phone import resolve_slot, suite_code  # noqa: E402
 from lib.score import (  # noqa: E402
     classify_profile,
@@ -204,23 +213,28 @@ class Shard:
         return False
 
     def adb_login(self, national: str) -> bool:
-        """Tap the phone and code fields from the accessibility dump."""
+        """Type the dedicated number into the empty +86 phone field.
+
+        A fresh login already shows China. Deleting the calling code, or
+        sending DEL into an empty phone field, removes 86 and the number
+        is sent without a country.
+        """
         xml = self.dump_ui()
         if not xml:
             return False
         self._tap_text(xml, r"OK|好")
         xml = self.dump_ui()
-        if self._tap_text(xml, r"Country code"):
-            adb("shell", "input", "keyevent", "67")
-            adb("shell", "input", "keyevent", "67")
-            adb("shell", "input", "keyevent", "67")
-            adb("shell", "input", "keyevent", "67")
-        xml = self.dump_ui()
+        if not calling_code_is_china(xml):
+            if self._tap_text(xml, r"Country code|国家代码"):
+                adb("shell", "input", "text", "86")
+            xml = self.dump_ui()
         if not self._tap_text(xml, r"Phone number|电话号码"):
             return False
-        adb("shell", "input", "keyevent", "123")
-        for _ in range(24):
-            adb("shell", "input", "keyevent", "67")
+        deletes = phone_delete_count(phone_field_text(xml))
+        if deletes:
+            adb("shell", "input", "keyevent", "123")
+            for _ in range(deletes):
+                adb("shell", "input", "keyevent", "67")
         adb("shell", "input", "text", national)
         xml = self.dump_ui()
         if not self._tap_text(xml, r"^Done$|^完成$"):
@@ -313,7 +327,8 @@ class Shard:
             return
         if flow.get("needs_login") and not self.ensure_login():
             shot = self.state.get("login_shot", "")
-            self.mark_flow(flow, "blocked", self.state["login_error"] or "login failed", shot)
+            error = self.state["login_error"] or "login failed"
+            self.mark_flow(flow, status_when_login_failed(error), error, shot)
             return
         if handler == "deeplink":
             self.handle_deeplink(flow)
@@ -353,6 +368,9 @@ class Shard:
                 self.results["A-LANG-007"] = self.row(status, "flows/language-manual.yaml", shot, error)
                 return
         status, error = language_status(auto_xml, manual_xml, login_ok)
+        if not login_ok and status_when_login_failed(self.state.get("login_error") or "") == "fail":
+            status = "fail"
+            error = self.state.get("login_error") or error
         self.results["A-LANG-007"] = self.row(
             status,
             "flows/language-manual.yaml" if login_ok else "flows/language-auto.yaml",
@@ -444,16 +462,13 @@ class Shard:
         ui = "\n".join(nodes)
         _code, dumpsys = adb("shell", "dumpsys", "activity", "activities", timeout=60)
         status, error, evidence = classify_help_url(dumpsys, ui, "/legal/terms")
-        if status != "pass":
-            from lib.deeplink import intent_urls, url_problem
-
-            bad = url_problem(intent_urls(dumpsys + "\n" + ui))
-            if bad:
-                status, error, evidence = "fail", f"terms opened {bad}", bad
-            elif "Terms of Service" in ui or "服务条款" in ui:
-                status, error, evidence = "pass", "", "terms copy is on the login screen and no telegram.org URL was opened"
-            else:
-                status, error, evidence = "blocked", "the phone screen has no terms link to open", ""
+        status, error, evidence = classify_terms_part(
+            status,
+            error,
+            evidence,
+            ui,
+            url_problem(intent_urls(dumpsys + "\n" + ui)),
+        )
         for backlog_id, part in flow.get("emits_parts", {}).items():
             self.parts.setdefault(backlog_id, {})[part] = self.row(status, flow["file"], shot, error, evidence)
 

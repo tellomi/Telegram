@@ -21,8 +21,20 @@ from lib.catalog import (  # noqa: E402
     covered_ids,
     flow_files,
 )
-from lib.deeplink import classify_geo, classify_help_url, classify_owned_link, classify_profile_mime  # noqa: E402
+from lib.deeplink import (  # noqa: E402
+    classify_geo,
+    classify_help_url,
+    classify_owned_link,
+    classify_profile_mime,
+    classify_terms_part,
+)
 from lib.language import language_status  # noqa: E402
+from lib.login_screen import (  # noqa: E402
+    calling_code_is_china,
+    phone_delete_count,
+    phone_field_text,
+    status_when_login_failed,
+)
 from lib.merge import combine_parts, merge_reports  # noqa: E402
 from lib.phone import DEDICATED, FIXED_CODE, resolve_slot, suite_code  # noqa: E402
 from lib.plan import plan_run  # noqa: E402
@@ -55,6 +67,28 @@ class PhoneTests(unittest.TestCase):
         national, error = resolve_slot("A", "9996617093")
         self.assertEqual(national, "")
         self.assertIn("refused", error)
+
+    def test_empty_phone_field_is_not_erased_and_missed_login_fails(self):
+        self.assertEqual(phone_delete_count(""), 0)
+        self.assertEqual(phone_delete_count("999 661 7092"), 10)
+        xml = (
+            '<node text="86" content-desc="Country code" />'
+            '<node text="" content-desc="Phone number" />'
+        )
+        self.assertTrue(calling_code_is_china(xml))
+        self.assertEqual(phone_field_text(xml), "")
+        self.assertEqual(phone_delete_count(phone_field_text(xml)), 0)
+        leftover = '<node text="999661709267" content-desc="Phone number" />'
+        self.assertEqual(phone_delete_count(phone_field_text(leftover)), 12)
+        self.assertEqual(
+            status_when_login_failed("login did not reach the main tabs. maestro"),
+            "fail",
+        )
+        self.assertEqual(status_when_login_failed("login blocked: password"), "blocked")
+        flow = (ROOT / "flows" / "sub" / "login.yaml").read_text(encoding="utf-8")
+        self.assertNotIn("eraseText", flow)
+        self.assertNotIn("Country code", flow)
+        self.assertIn("TELLOMI_TEST_PHONE_NATIONAL", flow)
 
 
 class LanguageTests(unittest.TestCase):
@@ -133,6 +167,40 @@ class DeeplinkTests(unittest.TestCase):
         status, error, _evidence = classify_help_url("dat=https://telegram.org/privacy", "", "/legal/privacy")
         self.assertEqual(status, "fail")
         self.assertIn("telegram.org", error)
+
+    def test_terms_copy_without_the_link_is_not_a_pass(self):
+        status, error, evidence = classify_terms_part(
+            "fail",
+            "no tellomi.cn URL",
+            "",
+            "Terms of Service",
+            None,
+        )
+        self.assertEqual(status, "fail")
+        self.assertIn("tellomi.cn was not opened", error)
+        self.assertEqual(evidence, "")
+        status, error, evidence = classify_terms_part(
+            "pass",
+            "",
+            "https://tellomi.cn/legal/terms",
+            "服务条款",
+            None,
+        )
+        self.assertEqual(status, "pass")
+        self.assertIn("tellomi.cn", evidence)
+        self.assertEqual(error, "")
+        status, _error, _evidence = classify_terms_part("fail", "missing", "", "Your phone number", None)
+        self.assertEqual(status, "blocked")
+        status, error, evidence = classify_terms_part(
+            "fail",
+            "opened a Telegram host",
+            "https://telegram.org/tos",
+            "Terms of Service",
+            "https://telegram.org/tos",
+        )
+        self.assertEqual(status, "fail")
+        self.assertIn("telegram.org", error)
+        self.assertIn("telegram.org", evidence)
 
 
 class PlanTests(unittest.TestCase):
@@ -248,6 +316,12 @@ class MergeTests(unittest.TestCase):
             out = root / "out"
             code = merge_main(["--shards", str(root / "in"), "--out", str(out)])
             self.assertEqual(code, 0)
+            failed = json.loads((shard / "results.json").read_text(encoding="utf-8"))
+            failed["results"]["A-IDX-LOGIN-018"]["status"] = "fail"
+            failed["results"]["A-IDX-LOGIN-018"]["error"] = "login did not reach the main tabs"
+            (shard / "results.json").write_text(json.dumps(failed), encoding="utf-8")
+            code = merge_main(["--shards", str(root / "in"), "--out", str(out)])
+            self.assertEqual(code, 1)
             merged = json.loads((out / "ui-results.json").read_text(encoding="utf-8"))
             self.assertEqual(
                 merged["results"]["A-IDX-LOGIN-018"]["screenshot"],
@@ -269,10 +343,17 @@ class WorkflowTests(unittest.TestCase):
             "TELLOMI_TEST_PHONE_B",
             "max_shards",
             "assembleAfatDebug",
+            "pull_request:",
         ):
             self.assertIn(needle, text)
         self.assertNotIn("release/android", text)
         self.assertNotIn("ANDROID_KEYSTORE", text)
+        self.assertNotIn("cursor/android-ui-automation-9e5a", text)
+        self.assertNotIn("-prop persist.sys.locale", text)
+        shard = (REPO / "tellomi" / "uitest" / "android" / "scripts" / "ci_shard.sh").read_text(encoding="utf-8")
+        self.assertIn("settings put system system_locales zh-Hans-CN", shard)
+        self.assertIn("setprop persist.sys.locale zh-Hans-CN", shard)
+        self.assertIn("zh-Hans-CN was not applied", shard)
 
 
 if __name__ == "__main__":

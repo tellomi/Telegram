@@ -81,6 +81,24 @@ def url_problem(urls: list[str]) -> str | None:
     return None
 
 
+def classify_terms_part(
+    url_status: str,
+    url_error: str,
+    url_evidence: str,
+    ui: str,
+    bad_url: str | None,
+) -> tuple[str, str, str]:
+    """Terms must open tellomi.cn. Copy on the login screen is not a pass."""
+    if url_status == "pass":
+        return url_status, url_error, url_evidence
+    if bad_url:
+        return "fail", f"terms opened {bad_url}", bad_url
+    text = ui or ""
+    if "Terms of Service" in text or "服务条款" in text:
+        return "fail", "terms copy is on the login screen but tellomi.cn was not opened", ""
+    return "blocked", "the phone screen has no terms link to open", ""
+
+
 def classify_help_url(dumpsys: str, ui_text: str, path_hint: str) -> tuple[str, str, str]:
     """Return status, error, and the URL evidence for a help/privacy/terms open."""
     blob = f"{dumpsys or ''}\n{ui_text or ''}"
