@@ -57,6 +57,15 @@ Telegram 的设计是：安装包保持精简，贴纸、主题、文案、配�
 
 每个修复、每个行为变更都要有真实测试（单元测试、协议测试或可复现的集成验证）。禁止用空实现、假 200、伪造成功返回来「先过关」。测试失败时，不能靠放宽断言混过去。
 
+### 7. 界面以完整恢复原版那次为基准
+
+界面以完整恢复原版那次为基准（安卓 #111 / 14.0.8，iOS #138 / 构建 94）。那次之后经用户认可的修改都算正常需求，例如「发现」导航、去掉搜索、隐藏导航栏、跳过欢迎页、默认 +86。
+
+- 「动态」里的数据可以自定义。
+- 禁止用 `master` 或 `main` 整树替换某个发布分支。发布分支不能被整棵换成旧树。
+- AI 只有在用户于该 PR 里明确批准后才能合并。机器人的 review、CI 绿、自动复审 PASS，都不算用户在 PR 里的明确批准。
+- 改界面的 PR 需要附上截图，并得到用户批准。没有截图、没有用户在该 PR 里的批准，不得合入。
+
 ## 开工前检查清单（必须书面回答，并写入 PR 描述）
 
 在写第一行功能代码之前，以及在打开 PR 时，必须明确回答下列问题：
@@ -67,8 +76,9 @@ Telegram 的设计是：安装包保持精简，贴纸、主题、文案、配�
 4. **本次改了哪些 Telegram 原版文件？** 列出路径。若未改原版，写「未改原版」。
 5. **新文件或缓存是否接入了原有存储与自动清理？** 有没有把大资源打进安装包？
 6. **测试是什么？** 指出测试文件或验证步骤。确认不是桩代码，也不是假 200。
+7. **这次有没有改界面？** 若有，附上截图，并写明用户在该 PR 里的批准。未改则写「未改界面」。
 
-没有这六条答案的 PR，不得进入复审，更不得合入。
+没有这七条答案的 PR，不得进入复审，更不得合入。改了界面却没有截图和用户在该 PR 里的批准，不得合入。
 
 
 ## 本仓（Android）对照入口
@@ -80,20 +90,26 @@ Telegram 的设计是：安装包保持精简，贴纸、主题、文案、配�
 - 快拍：`TMessagesProj/src/main/java/org/telegram/ui/Stories/StoriesController.java`。中文必须叫「快拍」，不要与「动态」合并。
 - 媒体下载与缓存：`TMessagesProj/src/main/java/org/telegram/messenger/FileLoader.java`、`ImageLoader.java`、`ImageReceiver.java`。清理入口：`TMessagesProj/src/main/java/org/telegram/ui/CacheControlActivity.java`。新文件必须走这套加载与清理，禁止自建不受管目录。
 - 原版改动登记：`TMessagesProj/tellomi/UPSTREAM_PATCHES.md`。
-- 合入 `master` 不会自动出安装包；出包不要发送下载链接。正式发版还需同步应用内更新（`help.getAppUpdate` / `latest.json`）。
+- 合入 `master` 不会自动出安装包；出包不要发送下载链接。正式发版还需同步应用内更新（`help.getAppUpdate` / `latest.json`）。禁止整树覆盖发布分支。AI 只有在用户于该 PR 里明确批准后才能合并。
 
 ## 禁区
 
 - 不提交密钥、token、生产配置。
 - 不发安卓下载链接。
 - 不修改 Telegram 原有源码，除非检查清单证明必须；改了必须登记 `TMessagesProj/tellomi/UPSTREAM_PATCHES.md`。
+- 界面以完整恢复原版那次为基准（安卓 #111 / 14.0.8，iOS #138 / 构建 94）。那次之后经用户认可的修改都算正常需求。「动态」里的数据可以自定义。
+- 改界面的 PR 需要附截图，并得到用户批准。
+- AI 只有在用户于该 PR 里明确批准后才能合并。机器人复审不算批准。
+- 禁止整树覆盖发布分支。
 - 无桩、无假 200；每个修复都要有真实测试。
 - 生产 Redis 禁 `FLUSHALL`（服务端红线，客户端也不得要求执行）。
 
 ## 合入 / 出包闸门
 
-- CI 绿 + 独立复审 PASS 后 squash 合入 `master`；作者不自合；不 force-push、不 rebase 已推送提交。
-- 合入 `master` 不会自动出安装包。`release/android`、打 tag 或手动工作流才会发 APK。出包不要发送下载链接。
+- AI 只有在用户于该 PR 里明确批准后才能合并。机器人的 review、CI 绿、自动复审 PASS，都不算这份批准。
+- 用户在该 PR 里明确批准后才 squash 合入 `master`；作者不自合；不 force-push、不 rebase 已推送提交。
+- 禁止用 `master` 或 `main` 整树替换发布分支（含 `release/android`）。从 `master` 正常向前推进可以；把发布分支整棵换成旧树不行。
+- 合入 `master` 不会自动出安装包。`release/android`、打 tag 或手动工作流才会发 APK。出包不要发送下载链接。发版同样要用户在对应 PR 里明确批准。
 - 正式发版还需同步应用内更新（`help.getAppUpdate` / `latest.json`）。
 
 ## 谷歌表格台账规则（强制）
