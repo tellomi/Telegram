@@ -351,9 +351,16 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("cursor/android-ui-automation-9e5a", text)
         self.assertNotIn("-prop persist.sys.locale", text)
         shard = (REPO / "tellomi" / "uitest" / "android" / "scripts" / "ci_shard.sh").read_text(encoding="utf-8")
+        self.assertIn("adb root", shard)
+        self.assertIn("did not yield uid 0", shard)
         self.assertIn("settings put system system_locales zh-Hans-CN", shard)
         self.assertIn("setprop persist.sys.locale zh-Hans-CN", shard)
+        self.assertNotIn("setprop persist.sys.locale zh-Hans-CN ||", shard)
         self.assertIn("zh-Hans-CN was not applied", shard)
+        self.assertIn("mGlobalConfiguration", shard)
+        self.assertIn("runtime locale", shard)
+        self.assertIn("adb unroot", shard)
+        self.assertIn("did not return to the shell user", shard)
 
 
 if __name__ == "__main__":
